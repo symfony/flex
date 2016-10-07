@@ -1,0 +1,25 @@
+{
+    "name": "symfony/symfony-start-composer",
+    "type": "composer-plugin",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Fabien Potencier",
+            "email": "fabien.potencier@gmail.com"
+        }
+    ],
+    "require": {
+        "composer-plugin-api": "^1.0"
+    },
+    "require-dev": {
+        "composer/composer": "^1.0.0"
+    },
+    "autoload": {
+        "classmap": [
+            "SymfonyStartPlugin.php"
+        ]
+    },
+    "extra": {
+        "class": "SymfonyStartPlugin"
+    }
+}
