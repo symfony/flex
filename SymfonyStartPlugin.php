@@ -53,6 +53,7 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
     {
         $this->io->write(sprintf('      - Adding "%s" from bundles.ini', $package->getName()));
         $bundlesini = getcwd().'/conf/bundles.ini';
+// FIXME: be sure to not add a bundle twice
         $contents = file_get_contents($bundlesini);
         foreach ($this->parseBundles($dir) as $class => $envs) {
             $contents .= "$class = $envs\n";
@@ -62,10 +63,15 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
 
     private function addBundleConfig($package, $dir)
     {
+        $target = getcwd().'/conf';
+        if (!is_dir($dir.'/conf')) {
+            return;
+        }
         $this->io->write(sprintf('      - Configuring "%s"', $package->getName()));
 // FIXME: make this conf/ directory configurable via composer.json
-        $target = getcwd().'/conf';
+// FIXME: how to manage different versions/branches?
         $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir.'/conf', \RecursiveDirectoryIterator::SKIP_DOTS), \RecursiveIteratorIterator::SELF_FIRST);
+// FIXME: ADD the possibility to fill-in some parameters via questions (and sensible default values)
         foreach ($iterator as $item) {
             if ($item->isDir()) {
                 if (!is_dir($new = $target.'/'.$iterator->getSubPathName())) {
@@ -91,8 +97,11 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
 
     private function removeBundleConfig($package, $dir)
     {
-        $this->io->write(sprintf('      - Removing configuration for "%s"', $package->getName()));
         $target = getcwd().'/conf';
+        if (!is_dir($dir.'/conf')) {
+            return;
+        }
+        $this->io->write(sprintf('      - Removing configuration for "%s"', $package->getName()));
         $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir.'/conf', \RecursiveDirectoryIterator::SKIP_DOTS), \RecursiveIteratorIterator::SELF_FIRST);
         foreach ($iterator as $item) {
             if (!$item->isDir()) {
