@@ -26,14 +26,18 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
             return;
         }
 
-        $this->io->write(sprintf('    Auto-configuring "%s" as a Symfony bundle', $package->getName()));
+        $this->io->write('    Detected auto-configuration settings');
         $this->addBundle($package, $dir);
         $this->addBundleConfig($package, $dir);
+        $this->io->write('');
     }
 
     public function updateConfig(PackageEvent $event)
     {
     }
+
+// FIXME: actually, this mechanism works for any package
+// When installing Doctrine annotation, we can override the framework annotations to true for instance?
 
     public function removeConfig(PackageEvent $event)
     {
@@ -44,15 +48,18 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
             return;
         }
 
-        $this->io->write(sprintf('    Auto-deconfiguring "%s" as a Symfony bundle', $package->getName()));
+        $this->io->write('    Auto-deconfiguring');
         $this->removeBundle($package, $dir);
         $this->removeBundleConfig($package, $dir);
     }
 
     private function addBundle($package, $dir)
     {
-        $this->io->write(sprintf('      - Adding "%s" from bundles.ini', $package->getName()));
         $bundlesini = getcwd().'/conf/bundles.ini';
+        if (!file_exists($bundlesini)) {
+            return;
+        }
+        $this->io->write('    Enabling the package as a Symfony bundle');
 // FIXME: be sure to not add a bundle twice
         $contents = file_get_contents($bundlesini);
         foreach ($this->parseBundles($dir) as $class => $envs) {
@@ -67,7 +74,7 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
         if (!is_dir($dir.'/conf')) {
             return;
         }
-        $this->io->write(sprintf('      - Configuring "%s"', $package->getName()));
+        $this->io->write('    Setting default bundle configuration');
 // FIXME: make this conf/ directory configurable via composer.json
 // FIXME: how to manage different versions/branches?
         $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir.'/conf', \RecursiveDirectoryIterator::SKIP_DOTS), \RecursiveIteratorIterator::SELF_FIRST);
@@ -85,8 +92,11 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
 
     private function removeBundle($package, $dir)
     {
-        $this->io->write(sprintf('      - Removing "%s" from bundles.ini', $package->getName()));
         $bundlesini = getcwd().'/conf/bundles.ini';
+        if (!file_exists($bundlesini)) {
+            return;
+        }
+        $this->io->write('    Disabling the package from Symfony bundles');
         $contents = file_get_contents($bundlesini);
         foreach (array_keys($this->parseBundles($dir)) as $class) {
             $contents = preg_replace('/^'.preg_quote($class, '/').'.+$/m', '', $contents);
@@ -101,7 +111,7 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
         if (!is_dir($dir.'/conf')) {
             return;
         }
-        $this->io->write(sprintf('      - Removing configuration for "%s"', $package->getName()));
+        $this->io->write('    Removing bundle configuration');
         $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir.'/conf', \RecursiveDirectoryIterator::SKIP_DOTS), \RecursiveIteratorIterator::SELF_FIRST);
         foreach ($iterator as $item) {
             if (!$item->isDir()) {
