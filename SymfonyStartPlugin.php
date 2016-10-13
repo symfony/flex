@@ -16,7 +16,6 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
 //        $installer = new SymfonyStartBundleManager($io, $composer);
 //        $composer->getInstallationManager()->addInstaller($installer);
 
-
 // FIXME: clone/update the repo under ~/.composer/...
 // or treat it as a regular package, and force update each time a command is run
 // or API calls, which gives more flexibility and gives us more information as well :)?
@@ -32,7 +31,7 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
     {
         $package = $event->getOperation()->getPackage();
 
-        $dir = __DIR__.'/../symfony-start-repo/'.$package->getName();
+        $dir = __DIR__.'/recipes/'.$package->getName();
         if (!is_dir($dir)) {
             return;
         }
@@ -54,7 +53,7 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
     {
         $package = $event->getOperation()->getPackage();
 
-        $dir = __DIR__.'/../symfony-start-repo/'.$package->getName();
+        $dir = __DIR__.'/recipes/'.$package->getName();
         if (!is_dir($dir)) {
             return;
         }
@@ -169,9 +168,3 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
         );
     }
 }
-
-/*
-class SymfonyStartBundleManager
-{
-}
-*/
