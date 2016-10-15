@@ -5,7 +5,9 @@ use Composer\EventDispatcher\EventSubscriberInterface;
 use Composer\Installer\PackageEvents;
 use Composer\IO\IOInterface;
 use Composer\Plugin\PluginInterface;
+use Composer\Script\Event;
 use Composer\Script\PackageEvent;
+use Composer\Script\ScriptEvents;
 
 class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
 {
@@ -37,8 +39,9 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
         }
 
         $this->io->write('    Detected auto-configuration settings');
-        $this->addBundle($package, $dir);
-        $this->addBundleConfig($package, $dir);
+        $this->registerBundle($package, $dir);
+        $this->registerBundleConfig($package, $dir);
+        $this->registerEnv($package, $dir);
         $this->io->write('');
     }
 
@@ -61,9 +64,43 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
         $this->io->write('    Auto-deconfiguring');
         $this->removeBundle($package, $dir);
         $this->removeBundleConfig($package, $dir);
+        $this->removeEnv($package, $dir);
     }
 
-    private function addBundle($package, $dir)
+    private function registerEnv($package, $dir)
+    {
+        $env = $dir.'/env';
+        if (!file_exists($env)) {
+            return;
+        }
+
+        $this->io->write('    Adding environment variable defaults');
+        $data = sprintf("\n###> %s ###\n", $package->getName());
+        $data .= file_get_contents($env);
+        $data .= sprintf("###< %s ###\n", $package->getName());
+        file_put_contents(getcwd().'/.env.dist', $data, FILE_APPEND);
+        file_put_contents(getcwd().'/.env', $data, FILE_APPEND);
+    }
+
+    private function removeEnv($package, $dir)
+    {
+        foreach (array('.env', '.env.dist') as $file) {
+            $env = getcwd().'/'.$file;
+            if (!file_exists($env)) {
+                continue;
+            }
+
+            $contents = preg_replace(sprintf('{\n+###> %s ###.*###< %s ###\n+}s', $package->getName(), $package->getName()), "\n", file_get_contents($env), -1, $count);
+            if (!$count) {
+                continue;
+            }
+
+            $this->io->write(sprintf('    Removing environment variables in %s', $file));
+            file_put_contents($env, $contents);
+        }
+    }
+
+    private function registerBundle($package, $dir)
     {
         $bundlesini = getcwd().'/conf/bundles.ini';
         if (!file_exists($bundlesini)) {
@@ -84,7 +121,7 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
     }
 
 // FIXME: to be renamed as it's not just for bundles anymore
-    private function addBundleConfig($package, $dir)
+    private function registerBundleConfig($package, $dir)
     {
         if (!is_dir($dir.'/files')) {
             return;
@@ -165,6 +202,9 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
             PackageEvents::POST_PACKAGE_INSTALL => 'installConfig',
             PackageEvents::POST_PACKAGE_UPDATE => 'updateConfig',
             PackageEvents::POST_PACKAGE_UNINSTALL => 'removeConfig',
+
+//            ScriptEvents::POST_INSTALL_CMD => 'updateEnv',
+//            ScriptEvents::POST_UPDATE_CMD => 'updateEnv',
         );
     }
 }
