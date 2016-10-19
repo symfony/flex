@@ -23,10 +23,14 @@
     },
     "autoload": {
         "classmap": [
-            "SymfonyStartPlugin.php"
-        ]
+            "SymfonyStartPlugin.php",
+            "PackageConfigurator.php"
+        ],
+        "psr-4": {
+            "Symfony\\Start\\": "recipes"
+        }
     },
     "extra": {
-        "class": "SymfonyStartPlugin"
+        "class": "Symfony\\Start\\ComposerPlugin"
     }
 }
