@@ -9,10 +9,7 @@
         }
     ],
     "repositories": [
-        {
-            "type": "path",
-            "url": "../../fabpot/dotenv"
-        }
+        { "type": "composer", "url": "http://localhost:5678" }
     ],
     "require": {
         "composer-plugin-api": "^1.0",
@@ -31,6 +28,9 @@
         }
     },
     "extra": {
+        "branch-alias": {
+            "dev-master": "1.0-dev"
+        },
         "class": "Symfony\\Start\\ComposerPlugin"
     }
 }

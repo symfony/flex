@@ -42,10 +42,20 @@ class ComposerPlugin implements PluginInterface, EventSubscriberInterface
     {
         $package = $event->getOperation()->getPackage();
         foreach ($this->filterPackageNames($package) as $name) {
-            $this->io->write(sprintf('    Auto-deconfiguring "%s"', $name));
+            $this->io->write(sprintf('    Auto-unconfiguring "%s"', $name));
             $configurator = $this->getConfigurator($name);
             $configurator->unconfigure($package, $name, __DIR__.'/recipes/'.$name);
         }
+    }
+
+    public function postInstall(Event $event)
+    {
+        
+    }
+
+    public function postUpdate(Event $event)
+    {
+        
     }
 
     private function filterPackageNames(Package $package)
@@ -76,8 +86,8 @@ class ComposerPlugin implements PluginInterface, EventSubscriberInterface
             PackageEvents::POST_PACKAGE_UPDATE => 'updateConfig',
             PackageEvents::POST_PACKAGE_UNINSTALL => 'removeConfig',
 
-//            ScriptEvents::POST_INSTALL_CMD => 'updateEnv',
-//            ScriptEvents::POST_UPDATE_CMD => 'updateEnv',
+            ScriptEvents::POST_INSTALL_CMD => 'postInstall',
+            ScriptEvents::POST_UPDATE_CMD => 'postUpdate',
         );
     }
 }
