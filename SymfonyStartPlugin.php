@@ -3,10 +3,15 @@
 namespace Symfony\Start;
 
 use Composer\Composer;
+use Composer\Factory;
 use Composer\EventDispatcher\EventSubscriberInterface;
 use Composer\Installer\PackageEvents;
 use Composer\IO\IOInterface;
+use Composer\Json\JsonFile;
+use Composer\Json\JsonManipulator;
+use Composer\Package\Link;
 use Composer\Package\Package;
+use Composer\Package\Version\VersionParser;
 use Composer\Plugin\PluginInterface;
 use Composer\Script\Event;
 use Composer\Script\PackageEvent;
@@ -51,7 +56,21 @@ class ComposerPlugin implements PluginInterface, EventSubscriberInterface
     public function postCreate(Event $event)
     {
         // create .env
-        $this->io->write('POST CREATE '.getcwd().'***');
+        copy(getcwd().'/.env.dist', getcwd().'/.env');
+
+        $requirements = array(
+            new PackageRequirement('symfony/framework-bundle','3.2.x-dev', false),
+        );
+
+        $json = new JsonFile(Factory::getComposerFile());
+        if (!$this->updateFileCleanly($json, $requirements)) {
+            $def = $json->read();
+            foreach ($requirements as $requirement) {
+                $def[$requirement->getRequireKey()][$requirement->getPackage()] = $requirement->getConstraint();
+                unset($def[$requirement->getRemoveKey()][$requirement->getPackage()]);
+            }
+            $json->write($def);
+        }
     }
 
     public function postInstall(Event $event)
@@ -85,6 +104,23 @@ class ComposerPlugin implements PluginInterface, EventSubscriberInterface
         return new $class($this->composer, $this->io);
     }
 
+    private function updateFileCleanly($json, array $requirements)
+    {
+        $manipulator = new JsonManipulator(file_get_contents($json->getPath()));
+        foreach ($requirements as $requirement) {
+            if (!$manipulator->addLink($requirement->getRequireKey(), $requirement->getPackage(), $requirement->getConstraint())) {
+                return false;
+            }
+            if (!$manipulator->removeSubNode($requirement->getRemoveKey(), $requirement->getPackage())) {
+                return false;
+            }
+        }
+
+        file_put_contents($json->getPath(), $manipulator->getContents());
+
+        return true;
+    }
+
     public static function getSubscribedEvents()
     {
         return array(
@@ -97,5 +133,47 @@ class ComposerPlugin implements PluginInterface, EventSubscriberInterface
             ScriptEvents::POST_INSTALL_CMD => 'postInstall',
             ScriptEvents::POST_UPDATE_CMD => 'postUpdate',
         );
+    }
+}
+
+class PackageRequirement
+{
+    private $package;
+    private $constraint;
+    private $dev;
+
+    public function __construct($package, $constraint, $dev)
+    {
+        $this->package = $package;
+        $this->constraint = $constraint;
+        $this->dev = (bool) $dev;
+
+        $versionParser = new VersionParser();
+        $versionParser->parseConstraints($constraint);
+    }
+
+    public function getPackage()
+    {
+        return $this->package;
+    }
+
+    public function getConstraint()
+    {
+        return $this->constraint;
+    }
+
+    public function isDev()
+    {
+        return $this->dev;
+    }
+
+    public function getRemoveKey()
+    {
+        return $this->dev ? 'require' : 'require-dev';
+    }
+
+    public function getRequireKey()
+    {
+        return $this->dev ? 'require-dev' : 'require';
     }
 }
