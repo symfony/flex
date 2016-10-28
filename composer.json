@@ -20,7 +20,7 @@
     },
     "config": {
         "secure-http": false
-    }
+    },
     "autoload": {
         "classmap": [
             "SymfonyStartPlugin.php",
