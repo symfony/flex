@@ -48,15 +48,10 @@ class ComposerPlugin implements PluginInterface, EventSubscriberInterface
         }
     }
 
-    public function preCreate(Event $event)
-    {
-// FIXME: wrap io to select what we want to display and how we want it to be displayed
-        $this->io->write('PRE CREATE');
-    }
-
     public function postCreate(Event $event)
     {
-        $this->io->write('POST CREATE');
+        // create .env
+        $this->io->write('POST CREATE '.getcwd().'***');
     }
 
     public function postInstall(Event $event)
@@ -97,7 +92,6 @@ class ComposerPlugin implements PluginInterface, EventSubscriberInterface
             PackageEvents::POST_PACKAGE_UPDATE => 'updateConfig',
             PackageEvents::POST_PACKAGE_UNINSTALL => 'removeConfig',
 
-            ScriptEvents::POST_ROOT_PACKAGE_INSTALL => 'preCreate',
             ScriptEvents::POST_CREATE_PROJECT_CMD => 'postCreate',
 
             ScriptEvents::POST_INSTALL_CMD => 'postInstall',
