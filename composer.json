@@ -18,6 +18,9 @@
     "require-dev": {
         "composer/composer": "^1.0.0"
     },
+    "config": {
+        "secure-http": false
+    }
     "autoload": {
         "classmap": [
             "SymfonyStartPlugin.php",
