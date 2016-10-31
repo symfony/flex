@@ -16,7 +16,7 @@ use Composer\Script\Event;
 use Composer\Script\PackageEvent;
 use Composer\Script\ScriptEvents;
 
-class ComposerPlugin implements PluginInterface, EventSubscriberInterface
+class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
 {
     private $composer;
     private $io;
