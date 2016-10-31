@@ -33,7 +33,7 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
         foreach ($this->filterPackageNames($package) as $name) {
             $this->io->write(sprintf('    Detected auto-configuration settings for "%s"', $name));
             $configurator = $this->getConfigurator($name);
-            $configurator->configure($package, $name, __DIR__.'/recipes/'.$name);
+            $configurator->configure($package, $name, $this->getRecipesDir().'/'.$name);
             $this->io->write('');
         }
     }
@@ -48,7 +48,7 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
         foreach ($this->filterPackageNames($package) as $name) {
             $this->io->write(sprintf('    Auto-unconfiguring "%s"', $name));
             $configurator = $this->getConfigurator($name);
-            $configurator->unconfigure($package, $name, __DIR__.'/recipes/'.$name);
+            $configurator->unconfigure($package, $name, $this->getRecipesDir().'/'.$name);
         }
     }
 
@@ -63,7 +63,7 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
     private function filterPackageNames(Package $package)
     {
         foreach ($package->getNames() as $name) {
-            if (!is_dir(__DIR__.'/recipes/'.$name)) {
+            if (!is_dir($this->getRecipesDir().'/'.$name)) {
                 continue;
             }
 
@@ -79,6 +79,11 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
         }
 
         return new $class($this->composer, $this->io);
+    }
+
+    private function getRecipesDir()
+    {
+        return __DIR__.'/../recipes';
     }
 
     public static function getSubscribedEvents()
