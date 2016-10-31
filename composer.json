@@ -8,14 +8,8 @@
             "email": "fabien.potencier@gmail.com"
         }
     ],
-    "repositories": [
-        { "type": "composer", "url": "http://localhost:5678" }
-    ],
     "require": {
         "composer-plugin-api": "^1.0",
-        "fabpot/dotenv": "@dev"
-    },
-    "require-dev": {
         "composer/composer": "^1.0.0"
     },
     "config": {

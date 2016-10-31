@@ -53,34 +53,12 @@ class ComposerPlugin implements PluginInterface, EventSubscriberInterface
         }
     }
 
-    public function postCreate(Event $event)
-    {
-        // create .env
-        copy(getcwd().'/.env.dist', getcwd().'/.env');
-
-        $requirements = array(
-            new PackageRequirement('symfony/framework-bundle','3.2.x-dev', false),
-        );
-
-        $json = new JsonFile(Factory::getComposerFile());
-        if (!$this->updateFileCleanly($json, $requirements)) {
-            $def = $json->read();
-            foreach ($requirements as $requirement) {
-                $def[$requirement->getRequireKey()][$requirement->getPackage()] = $requirement->getConstraint();
-                unset($def[$requirement->getRemoveKey()][$requirement->getPackage()]);
-            }
-            $json->write($def);
-        }
-    }
-
     public function postInstall(Event $event)
     {
-        
     }
 
     public function postUpdate(Event $event)
     {
-        
     }
 
     private function filterPackageNames(Package $package)
@@ -104,32 +82,12 @@ class ComposerPlugin implements PluginInterface, EventSubscriberInterface
         return new $class($this->composer, $this->io);
     }
 
-    private function updateFileCleanly($json, array $requirements)
-    {
-        $manipulator = new JsonManipulator(file_get_contents($json->getPath()));
-        foreach ($requirements as $requirement) {
-            if (!$manipulator->addLink($requirement->getRequireKey(), $requirement->getPackage(), $requirement->getConstraint())) {
-                return false;
-            }
-            if (!$manipulator->removeSubNode($requirement->getRemoveKey(), $requirement->getPackage())) {
-                return false;
-            }
-        }
-
-        file_put_contents($json->getPath(), $manipulator->getContents());
-
-        return true;
-    }
-
     public static function getSubscribedEvents()
     {
         return array(
             PackageEvents::POST_PACKAGE_INSTALL => 'installConfig',
             PackageEvents::POST_PACKAGE_UPDATE => 'updateConfig',
             PackageEvents::POST_PACKAGE_UNINSTALL => 'removeConfig',
-
-            ScriptEvents::POST_CREATE_PROJECT_CMD => 'postCreate',
-
             ScriptEvents::POST_INSTALL_CMD => 'postInstall',
             ScriptEvents::POST_UPDATE_CMD => 'postUpdate',
         );
