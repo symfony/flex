@@ -19,10 +19,10 @@
     },
     "autoload": {
         "classmap": [
-            "SymfonyStartPlugin.php"
+            "src/SymfonyStartPlugin.php"
         ],
         "psr-4": {
-            "Symfony\\Start\\": ".",
+            "Symfony\\Start\\": "src",
             "Symfony\\Start\\Recipes\\": "recipes"
         }
     },
