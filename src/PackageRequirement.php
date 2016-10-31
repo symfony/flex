@@ -2,6 +2,8 @@
 
 namespace Symfony\Start;
 
+use Composer\Package\Version\VersionParser;
+
 class PackageRequirement
 {
     private $package;

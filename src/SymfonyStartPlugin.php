@@ -11,7 +11,6 @@ use Composer\Json\JsonFile;
 use Composer\Json\JsonManipulator;
 use Composer\Package\Link;
 use Composer\Package\Package;
-use Composer\Package\Version\VersionParser;
 use Composer\Plugin\PluginInterface;
 use Composer\Script\Event;
 use Composer\Script\PackageEvent;
