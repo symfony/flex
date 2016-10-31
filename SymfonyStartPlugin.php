@@ -74,7 +74,7 @@ class ComposerPlugin implements PluginInterface, EventSubscriberInterface
 
     private function getConfigurator($name)
     {
-        $class = 'Symfony\\Start\\'.$name.'\\Configurator';
+        $class = 'Symfony\\Start\\Recipes\\'.$name.'\\Configurator';
         if (!class_exists($class)) {
             $class = 'Symfony\Start\PackageConfigurator';
         }

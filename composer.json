@@ -19,11 +19,11 @@
     },
     "autoload": {
         "classmap": [
-            "SymfonyStartPlugin.php",
-            "PackageConfigurator.php"
+            "SymfonyStartPlugin.php"
         ],
         "psr-4": {
-            "Symfony\\Start\\": "recipes"
+            "Symfony\\Start\\": ".",
+            "Symfony\\Start\\Recipes\\": "recipes"
         }
     },
     "extra": {
