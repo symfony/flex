@@ -44,6 +44,7 @@ class PackageConfigurator
 
         $this->io->write('    Enabling the package as a Symfony bundle');
 // FIXME: be sure to not add a bundle twice
+// FIXME: be sure that FrameworkBundle is always first
         $contents = file_get_contents($bundlesini);
         foreach ($bundles as $class => $envs) {
             $contents .= "$class = $envs\n";
