@@ -5,6 +5,7 @@ namespace Symfony\Start;
 use Composer\Composer;
 use Composer\Factory;
 use Composer\EventDispatcher\EventSubscriberInterface;
+use Composer\Installer\PackageEvent;
 use Composer\Installer\PackageEvents;
 use Composer\IO\IOInterface;
 use Composer\Json\JsonFile;
@@ -13,7 +14,6 @@ use Composer\Package\Link;
 use Composer\Package\Package;
 use Composer\Plugin\PluginInterface;
 use Composer\Script\Event;
-use Composer\Script\PackageEvent;
 use Composer\Script\ScriptEvents;
 
 class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
