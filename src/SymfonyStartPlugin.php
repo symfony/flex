@@ -95,6 +95,7 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
     {
         // FIXME: check that APP_ENV is taken into account, the same for the APP_DEBUG, ...
 // FIXME: see which flags to pass (not about keeping the possibility to not warmup the cache here)
+// FIXME: The problem is that the output will be filtered by the StreamIO of Composer-API, how to display something still?
         $this->execute('cache:clear');
     }
 
