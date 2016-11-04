@@ -34,7 +34,7 @@ class PackageConfigurator
     public function unconfigure(Package $package, $name, $dir)
     {
         $this->removeBundle($package, $name, $dir);
-        $this->removeConfig($package, $name, $dir);
+        $this->removeFiles($package, $name, $dir);
         $this->removeEnv($package, $name, $dir);
     }
 
@@ -78,9 +78,13 @@ class PackageConfigurator
         }
 
         $targetDir = getcwd();
-        $packageDir = $package->getTargetDir();
-        $this->copyFiles($manifest['recipe'], $source, $target, $recipeDir, $targetDir);
-        $this->copyFiles($manifest['package'], $source, $target, $packageDir, $targetDir);
+        $packageDir = $this->composer->getInstallationManager()->getInstallPath($package);
+        if (isset($manifest['recipe'])) {
+            $this->copyFiles($manifest['recipe'], $recipeDir, $targetDir);
+        }
+        if (isset($manifest['package'])) {
+            $this->copyFiles($manifest['package'], $packageDir, $targetDir);
+        }
     }
 
     private function registerEnv(Package $package, $name, $dir)
@@ -118,7 +122,7 @@ class PackageConfigurator
         file_put_contents($bundlesini, $contents);
     }
 
-    private function removeConfig(Package $package, $name, $dir)
+    private function removeFiles(Package $package, $name, $dir)
     {
         if (!is_dir($dir.'/files')) {
             return;
@@ -196,7 +200,7 @@ class PackageConfigurator
         return parse_ini_file($file, true, INI_SCANNER_RAW);
     }
 
-    private function copyFiles($manifest, $source, $target, $from, $to)
+    private function copyFiles($manifest, $from, $to)
     {
         foreach ($manifest as $source => $target) {
             $target = $this->expandTargetDir($target);
@@ -220,11 +224,12 @@ class PackageConfigurator
         return preg_replace_callback('{%(.+?)%}', function ($matches) use ($options) {
 // FIXME: we should have a validator checking recipes when they are merged into the repo
 // so that exceptions here are just not possible
-            if (!isset($options[$matches[1]])) {
-                throw new InvalidArgumentException(sprintf('Placeholder "%s" does not exist.', $matches[1]));
+            $option = str_replace('_', '-', strtolower($matches[1]));
+            if (!isset($options[$option])) {
+                throw new \InvalidArgumentException(sprintf('Placeholder "%s" does not exist.', $matches[1]));
             }
 
-            return $options[$matches[1]];
+            return $options[$option];
         }, $target);
     }
 

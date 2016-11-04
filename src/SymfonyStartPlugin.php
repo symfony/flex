@@ -81,8 +81,8 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
 
 // FIXME: may be better to just let users configure which commands to run automatically via a config as well?
 // FIXME: at least, we should not configure the bin dir, but the bin/console script
-        if (!is_dir($this->options['symfony-bin-dir'])) {
-            $this->io->writeError(sprintf('<warning>The "%s" (%s) specified in "composer.json" was not found in "%s", can not run automatic post commands.</warning>', 'symfony-bin-dir', $this->options['symfony-bin-dir'], getcwd()));
+        if (!is_dir($this->options['bin-dir'])) {
+            $this->io->writeError(sprintf('<warning>The "%s" (%s) specified in "composer.json" was not found in "%s", can not run automatic post commands.</warning>', 'bin-dir', $this->options['bin-dir'], getcwd()));
 
             return;
         }
@@ -102,7 +102,7 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
 
     private function installAssets()
     {
-        $this->execute('assets:install --symlink --relative '.escapeshellarg($this->options['symfony-web-dir']));
+        $this->execute('assets:install --symlink --relative '.escapeshellarg($this->options['web-dir']));
     }
 
     private function execute($cmd)
@@ -118,7 +118,7 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
         }
         $phpArgs = implode(' ', array_map('escapeshellarg', $arguments));
 
-        $console = escapeshellarg($this->options['symfony-bin-dir'].'/console');
+        $console = escapeshellarg($this->options['bin-dir'].'/console');
         if ($this->io->isDecorated()) {
             $console .= ' --ansi';
         }
@@ -159,10 +159,10 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
             'etc-dir' => 'etc',
             'src-dir' => 'src',
             'web-dir' => 'web',
-//            'symfony-cache-warmup' => true,
+//            'cache-warmup' => true,
         ), $this->composer->getPackage()->getExtra());
 
-//        $this->options['symfony-cache-warmup'] = getenv('SYMFONY_CACHE_WARMUP') ?: $this->options['symfony-cache-warmup'];
+//        $this->options['cache-warmup'] = getenv('CACHE_WARMUP') ?: $this->options['cache-warmup'];
     }
 
     public function getPackageNamespace($package)
