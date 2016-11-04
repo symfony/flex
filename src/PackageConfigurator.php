@@ -54,12 +54,18 @@ class PackageConfigurator
 
     private function registerConfig(Package $package, $name, $dir)
     {
+        if (is_file($dir.'/parameters.ini')) {
+            $this->io->write('    Setting parameters');
+            $this->updateParametersIni($dir.'/parameters.ini');
+        }
+
         if (!is_dir($dir.'/files')) {
             return;
         }
+
         $this->io->write('    Setting default configuration');
         $target = getcwd();
-// FIXME: make this erc/ directory configurable via composer.json
+// FIXME: make this etc/ directory configurable via composer.json
 // $extra = $composer->getPackage()->getExtra();
 // if (isset($extra['asset-repositories']) && is_array($extra['asset-repositories'])) {
 // FIXME: how to manage different versions/branches?
@@ -158,5 +164,36 @@ class PackageConfigurator
         }
 
         return $bundles;
+    }
+
+    private function updateParametersIni($iniFile)
+    {
+        $target = getcwd().'/conf/parameters.ini';
+        $original = $this->readIniRaw($target);
+        $changes = $this->readIniRaw($iniFile);
+        $contents = rtrim(file_get_contents($target), "\n")."\n";
+        foreach ($changes as $key => $value) {
+            if (isset($original['parameters'][$key])) {
+                // replace value
+                $contents = preg_replace('{^( *)'.$key.'( *)=( *).*$}im', "$1$key$2$3$value", $contents);
+            } else {
+                // add a new entry
+                $contents .= "  $key = $value\n";
+            }
+        }
+
+        file_put_contents($target, $contents);
+    }
+
+    private function readIniRaw($file)
+    {
+        // first pass to catch parsing errors
+        $result = parse_ini_file($file, true);
+        if (false === $result || array() === $result) {
+            throw new InvalidArgumentException(sprintf('The "%s" file is not valid.', $file));
+        }
+
+        // real raw parsing
+        return parse_ini_file($file, true, INI_SCANNER_RAW);
     }
 }
