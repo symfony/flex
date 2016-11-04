@@ -257,11 +257,15 @@ class PackageConfigurator
 
     private function copyDir($source, $target)
     {
+        if (!is_dir($target)) {
+            mkdir($target, 0777, true);
+        }
+
         $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($source, \RecursiveDirectoryIterator::SKIP_DOTS), \RecursiveIteratorIterator::SELF_FIRST);
         foreach ($iterator as $item) {
             if ($item->isDir()) {
                 if (!is_dir($new = $target.'/'.$iterator->getSubPathName())) {
-                    mkdir($new, 0777, true);
+                    mkdir($new);
                 }
             } else {
 // FIXME: it does not keep fs rights! executable fe bin/console?
@@ -272,7 +276,7 @@ class PackageConfigurator
 
     private function removeFilesFromDir($source, $target)
     {
-        $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($source, \RecursiveDirectoryIterator::SKIP_DOTS), \RecursiveIteratorIterator::SELF_FIRST);
+        $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($source, \RecursiveDirectoryIterator::SKIP_DOTS), \RecursiveIteratorIterator::CHILD_FIRST);
         foreach ($iterator as $item) {
             if ($item->isDir()) {
                 // that removes the dir only if it is empty
