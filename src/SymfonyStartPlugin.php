@@ -82,9 +82,7 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
 // FIXME: may be better to just let users configure which commands to run automatically via a config as well?
 // FIXME: at least, we should not configure the bin dir, but the bin/console script
         if (!is_dir($this->options['bin-dir'])) {
-            $this->io->writeError(sprintf('<warning>The "%s" (%s) specified in "composer.json" was not found in "%s", can not run automatic post commands.</warning>', 'bin-dir', $this->options['bin-dir'], getcwd()));
-
-            return;
+            mkdir($this->options['bin-dir'], 0777, true);
         }
 
 // FIXME: this should be moved to the recipe of symfony/framework-bundle instead
