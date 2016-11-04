@@ -56,7 +56,7 @@ class PackageConfigurator
         foreach ($bundles as $class => $envs) {
             $contents .= "$class = $envs\n";
         }
-        file_put_contents($bundlesini, $contents);
+        file_put_contents($bundlesini, ltrim($contents));
     }
 
     private function copyData(Package $package, $name, $recipeDir)
@@ -116,10 +116,10 @@ class PackageConfigurator
         $this->io->write('    Disabling the Symfony bundle');
         $contents = file_get_contents($bundlesini);
         foreach (array_keys($bundles) as $class) {
-            $contents = preg_replace('/^'.preg_quote($class, '/').'.+$/m', '', $contents);
+            $contents = preg_replace('{^'.preg_quote($class).'.+$}m', '', $contents);
             $contents = preg_replace("/\n+/", "\n", $contents);
         }
-        file_put_contents($bundlesini, $contents);
+        file_put_contents($bundlesini, ltrim($contents));
     }
 
     private function removeData(Package $package, $name, $recipeDir)
