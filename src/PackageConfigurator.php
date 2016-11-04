@@ -10,17 +10,24 @@ class PackageConfigurator
 {
     private $composer;
     private $io;
+    private $options;
 
-    public function __construct(Composer $composer, IOInterface $io)
+    public function __construct(Composer $composer, IOInterface $io, $options)
     {
         $this->composer = $composer;
         $this->io = $io;
+        $this->options = $options;
+    }
+
+    public function getOption($name)
+    {
+        return isset($this->options[$name]) ? $this->options[$name] : null;
     }
 
     public function configure(Package $package, $name, $dir)
     {
         $this->registerBundle($package, $name, $dir);
-        $this->registerConfig($package, $name, $dir);
+        $this->copyData($package, $name, $dir);
         $this->registerEnv($package, $name, $dir);
     }
 
@@ -52,36 +59,28 @@ class PackageConfigurator
         file_put_contents($bundlesini, $contents);
     }
 
-    private function registerConfig(Package $package, $name, $dir)
+    private function copyData(Package $package, $name, $recipeDir)
     {
-        if (is_file($dir.'/parameters.ini')) {
+        if (is_file($recipeDir.'/parameters.ini')) {
             $this->io->write('    Setting parameters');
-            $this->updateParametersIni($dir.'/parameters.ini');
+            $this->updateParametersIni($recipeDir.'/parameters.ini');
         }
 
-        if (!is_dir($dir.'/files')) {
+        if (!is_file($recipeDir.'/manifest.ini')) {
             return;
         }
 
-        $this->io->write('    Setting default configuration');
-        $target = getcwd();
-// FIXME: make this etc/ directory configurable via composer.json
-// $extra = $composer->getPackage()->getExtra();
-// if (isset($extra['asset-repositories']) && is_array($extra['asset-repositories'])) {
-// FIXME: how to manage different versions/branches?
-// FIXME: never override an existing file, or at least ask the question!
-        $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir.'/files', \RecursiveDirectoryIterator::SKIP_DOTS), \RecursiveIteratorIterator::SELF_FIRST);
-// FIXME: ADD the possibility to fill-in some parameters via questions (and sensible default values)
-        foreach ($iterator as $item) {
-            if ($item->isDir()) {
-                if (!is_dir($new = $target.'/'.$iterator->getSubPathName())) {
-                    mkdir($new);
-                }
-            } else {
-// FIXME: does it keep fs rights? executable fe bin/console?
-                copy($item, $target.'/'.$iterator->getSubPathName());
-            }
+        $this->io->write('    Setting configuration and copying files');
+
+        $manifest = parse_ini_file($recipeDir.'/manifest.ini', true);
+        if (false === $manifest || array() === $manifest) {
+            throw new InvalidArgumentException(sprintf('The "%s" file is not valid.', $recipeDir.'/manifest.ini'));
         }
+
+        $targetDir = getcwd();
+        $packageDir = $package->getTargetDir();
+        $this->copyFiles($manifest['recipe'], $source, $target, $recipeDir, $targetDir);
+        $this->copyFiles($manifest['package'], $source, $target, $packageDir, $targetDir);
     }
 
     private function registerEnv(Package $package, $name, $dir)
@@ -195,5 +194,52 @@ class PackageConfigurator
 
         // real raw parsing
         return parse_ini_file($file, true, INI_SCANNER_RAW);
+    }
+
+    private function copyFiles($manifest, $source, $target, $from, $to)
+    {
+        foreach ($manifest as $source => $target) {
+            $target = $this->expandTargetDir($target);
+
+            if ('/' === $source[strlen($source) - 1]) {
+// FIXME: how to manage different versions/branches?
+// FIXME: never override an existing file, or at least ask the question! Or display a diff, for files that should not be modified like for symfony/requirements
+// FIXME: ADD the possibility to fill-in some parameters via questions (and sensible default values)
+                $this->copyDir($from.'/'.$source, $to.'/'.$target);
+            } else {
+// FIXME: it does not keep fs rights! executable fe bin/console?
+                copy($from.'/'.$source, $to.'/'.$target);
+            }
+        }
+    }
+
+    private function expandTargetDir($target)
+    {
+        $options = $this->options;
+
+        return preg_replace_callback('{%(.+?)%}', function ($matches) use ($options) {
+// FIXME: we should have a validator checking recipes when they are merged into the repo
+// so that exceptions here are just not possible
+            if (!isset($options[$matches[1]])) {
+                throw new InvalidArgumentException(sprintf('Placeholder "%s" does not exist.', $matches[1]));
+            }
+
+            return $options[$matches[1]];
+        }, $target);
+    }
+
+    private function copyDir($source, $target)
+    {
+        $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($source, \RecursiveDirectoryIterator::SKIP_DOTS), \RecursiveIteratorIterator::SELF_FIRST);
+        foreach ($iterator as $item) {
+            if ($item->isDir()) {
+                if (!is_dir($new = $target.'/'.$iterator->getSubPathName())) {
+                    mkdir($new);
+                }
+            } else {
+// FIXME: it does not keep fs rights! executable fe bin/console?
+                copy($item, $target.'/'.$iterator->getSubPathName());
+            }
+        }
     }
 }

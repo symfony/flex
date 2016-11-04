@@ -23,7 +23,7 @@
         ],
         "psr-4": {
             "Symfony\\Start\\": "src",
-            "Symfony\\Start\\Recipes\\": "recipes"
+            "Symfony\\Recipes\\": "recipes"
         }
     },
     "extra": {

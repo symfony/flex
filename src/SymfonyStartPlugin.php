@@ -87,6 +87,7 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
             return;
         }
 
+// FIXME: this should be moved to the recipe of symfony/framework-bundle instead
         $this->clearCache();
         $this->installAssets();
     }
@@ -142,23 +143,37 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
 
     private function getConfigurator($name)
     {
-        $class = 'Symfony\\Start\\Recipes\\'.$name.'\\Configurator';
+        $class = 'Symfony\Recipes\\'.$this->getPackageNamespace($name).'\Configurator';
         if (!class_exists($class)) {
             $class = 'Symfony\Start\PackageConfigurator';
         }
 
-        return new $class($this->composer, $this->io);
+        return new $class($this->composer, $this->io, $this->options);
     }
 
     private function initOptions()
     {
         $this->options = array_merge(array(
-            'symfony-bin-dir' => 'bin',
-            'symfony-web-dir' => 'web',
+            'bin-dir' => 'bin',
+            'conf-dir' => 'conf',
+            'etc-dir' => 'etc',
+            'src-dir' => 'src',
+            'web-dir' => 'web',
 //            'symfony-cache-warmup' => true,
         ), $this->composer->getPackage()->getExtra());
 
 //        $this->options['symfony-cache-warmup'] = getenv('SYMFONY_CACHE_WARMUP') ?: $this->options['symfony-cache-warmup'];
+    }
+
+    public function getPackageNamespace($package)
+    {
+        list($vendor, $project) = explode('/', $package);
+
+        $nameFixer = function ($name) {
+            return str_replace(array('.', '_', '-'), array('', '', ''), $name);
+        };
+
+        return $nameFixer($vendor).'\\'.$nameFixer($project);
     }
 
     private function getRecipesDir()
