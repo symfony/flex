@@ -24,28 +24,28 @@ class PackageConfigurator
         return isset($this->options[$name]) ? $this->options[$name] : null;
     }
 
-    public function configure(Package $package, $name, $dir)
+    public function configure(Package $package, $name, $recipeDir)
     {
-        $this->registerBundle($package, $name, $dir);
-        $this->copyData($package, $name, $dir);
-        $this->registerEnv($package, $name, $dir);
+        $this->registerBundle($package, $name, $recipeDir);
+        $this->copyData($package, $name, $recipeDir);
+        $this->registerEnv($package, $name, $recipeDir);
     }
 
-    public function unconfigure(Package $package, $name, $dir)
+    public function unconfigure(Package $package, $name, $recipeDir)
     {
-        $this->removeBundle($package, $name, $dir);
-        $this->removeFiles($package, $name, $dir);
-        $this->removeEnv($package, $name, $dir);
+        $this->removeBundle($package, $name, $recipeDir);
+        $this->removeData($package, $name, $recipeDir);
+        $this->removeEnv($package, $name, $recipeDir);
     }
 
-    private function registerBundle(Package $package, $name, $dir)
+    private function registerBundle(Package $package, $name, $recipeDir)
     {
         $bundlesini = getcwd().'/conf/bundles.ini';
         if (!file_exists($bundlesini)) {
             return;
         }
 
-        if (!$bundles = $this->parseBundles($dir)) {
+        if (!$bundles = $this->parseBundles($recipeDir)) {
             return;
         }
 
@@ -87,9 +87,9 @@ class PackageConfigurator
         }
     }
 
-    private function registerEnv(Package $package, $name, $dir)
+    private function registerEnv(Package $package, $name, $recipeDir)
     {
-        $env = $dir.'/env';
+        $env = $recipeDir.'/env';
         if (!file_exists($env)) {
             return;
         }
@@ -102,14 +102,14 @@ class PackageConfigurator
         file_put_contents(getcwd().'/.env', $data, FILE_APPEND);
     }
 
-    private function removeBundle(Package $package, $name, $dir)
+    private function removeBundle(Package $package, $name, $recipeDir)
     {
         $bundlesini = getcwd().'/conf/bundles.ini';
         if (!file_exists($bundlesini)) {
             return;
         }
 
-        if (!$bundles = $this->parseBundles($dir)) {
+        if (!$bundles = $this->parseBundles($recipeDir)) {
             return;
         }
 
@@ -122,7 +122,7 @@ class PackageConfigurator
         file_put_contents($bundlesini, $contents);
     }
 
-    private function removeFiles(Package $package, $name, $dir)
+    private function removeData(Package $package, $name, $recipeDir)
     {
 // FIXME: what about parameters.ini, difficult to revert that (too many possible side effect
 //        between bundles changing the same value)
@@ -148,7 +148,7 @@ class PackageConfigurator
         }
     }
 
-    private function removeEnv(Package $package, $name, $dir)
+    private function removeEnv(Package $package, $name, $recipeDir)
     {
         foreach (array('.env', '.env.dist') as $file) {
             $env = getcwd().'/'.$file;
@@ -166,14 +166,14 @@ class PackageConfigurator
         }
     }
 
-    private function parseBundles($dir)
+    private function parseBundles($recipeDir)
     {
-        if (!is_file($dir.'/bundles.ini')) {
+        if (!is_file($recipeDir.'/bundles.ini')) {
             return [];
         }
 
         $bundles = [];
-        foreach (parse_ini_file($dir.'/bundles.ini') as $class => $envs) {
+        foreach (parse_ini_file($recipeDir.'/bundles.ini') as $class => $envs) {
             $bundles[$class] = $envs;
         }
 
