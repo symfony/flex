@@ -261,7 +261,7 @@ class PackageConfigurator
         foreach ($iterator as $item) {
             if ($item->isDir()) {
                 if (!is_dir($new = $target.'/'.$iterator->getSubPathName())) {
-                    mkdir($new);
+                    mkdir($new, 0777, true);
                 }
             } else {
 // FIXME: it does not keep fs rights! executable fe bin/console?
