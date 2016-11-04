@@ -124,16 +124,27 @@ class PackageConfigurator
 
     private function removeFiles(Package $package, $name, $dir)
     {
-        if (!is_dir($dir.'/files')) {
+// FIXME: what about parameters.ini, difficult to revert that (too many possible side effect
+//        between bundles changing the same value)
+
+        if (!is_file($recipeDir.'/manifest.ini')) {
             return;
         }
-        $this->io->write('    Removing configuration');
-        $target = getcwd();
-        $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir.'/files', \RecursiveDirectoryIterator::SKIP_DOTS), \RecursiveIteratorIterator::SELF_FIRST);
-        foreach ($iterator as $item) {
-            if (!$item->isDir()) {
-                @unlink($target.'/'.$iterator->getSubPathName());
-            }
+
+        $this->io->write('    Removing configuration and files');
+
+        $manifest = parse_ini_file($recipeDir.'/manifest.ini', true);
+        if (false === $manifest || array() === $manifest) {
+            throw new InvalidArgumentException(sprintf('The "%s" file is not valid.', $recipeDir.'/manifest.ini'));
+        }
+
+        $targetDir = getcwd();
+        $packageDir = $this->composer->getInstallationManager()->getInstallPath($package);
+        if (isset($manifest['recipe'])) {
+            $this->removeFiles($manifest['recipe'], $recipeDir, $targetDir);
+        }
+        if (isset($manifest['package'])) {
+            $this->removeFiles($manifest['package'], $packageDir, $targetDir);
         }
     }
 
@@ -204,7 +215,6 @@ class PackageConfigurator
     {
         foreach ($manifest as $source => $target) {
             $target = $this->expandTargetDir($target);
-
             if ('/' === $source[strlen($source) - 1]) {
 // FIXME: how to manage different versions/branches?
 // FIXME: never override an existing file, or at least ask the question! Or display a diff, for files that should not be modified like for symfony/requirements
@@ -213,6 +223,18 @@ class PackageConfigurator
             } else {
 // FIXME: it does not keep fs rights! executable fe bin/console?
                 copy($from.'/'.$source, $to.'/'.$target);
+            }
+        }
+    }
+
+    private function removeFiles($manifest, $from, $to)
+    {
+        foreach ($manifest as $source => $target) {
+            $target = $this->expandTargetDir($target);
+            if ('/' === $source[strlen($source) - 1]) {
+                $this->removeFilesFromDir($from.'/'.$source, $to.'/'.$target);
+            } else {
+                @unlink($to.'/'.$target);
             }
         }
     }
@@ -244,6 +266,19 @@ class PackageConfigurator
             } else {
 // FIXME: it does not keep fs rights! executable fe bin/console?
                 copy($item, $target.'/'.$iterator->getSubPathName());
+            }
+        }
+    }
+
+    private function removeFilesFromDir($source, $target)
+    {
+        $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($source, \RecursiveDirectoryIterator::SKIP_DOTS), \RecursiveIteratorIterator::SELF_FIRST);
+        foreach ($iterator as $item) {
+            if ($item->isDir()) {
+                // that removes the dir only if it is empty
+                @rmdir($target.'/'.$iterator->getSubPathName());
+            } else {
+                @unlink($target.'/'.$iterator->getSubPathName());
             }
         }
     }
