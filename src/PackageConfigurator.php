@@ -175,7 +175,7 @@ class PackageConfigurator
         foreach ($changes as $key => $value) {
             if (isset($original['parameters'][$key])) {
                 // replace value
-                $contents = preg_replace('{^( *)'.$key.'( *)=( *).*$}im', "$1$key$2$3$value", $contents);
+                $contents = preg_replace('{^( *)'.$key.'( *)=( *).*$}im', "$1$key$2=$3$value", $contents);
             } else {
                 // add a new entry
                 $contents .= "  $key = $value\n";
