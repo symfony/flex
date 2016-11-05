@@ -66,6 +66,7 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
 
     public function executeAutoScripts(Event $event)
     {
+        error_log("HEREH\n");
         print_r($event);
         $event->stopPropagation();
     }

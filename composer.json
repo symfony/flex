@@ -17,7 +17,6 @@
     "config": {
         "secure-http": false
     },
-    "bin": ["bin/symfony-composer-start-script-executor.php"],
     "autoload": {
         "classmap": [
             "src/SymfonyStartPlugin.php"
