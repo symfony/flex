@@ -56,9 +56,7 @@ class PackageConfigurator
 
         $jsonContents = $json->read();
         $autoScripts = isset($jsonContents['scripts']['auto-scripts']) ? $jsonContents['scripts']['auto-scripts'] : array();
-        foreach ($scripts as $cmd => $type) {
-            $autoScripts[] = sprintf('symfony-composer-start-script-executor.php %s %s', $type, $cmd);
-        }
+        $autoScripts = array_merge($autoScripts, $scripts);
 
         $manipulator = new JsonManipulator(file_get_contents($json->getPath()));
         $manipulator->addSubNode('scripts', 'auto-scripts', $autoScripts);

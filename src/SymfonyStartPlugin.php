@@ -5,6 +5,7 @@ namespace Symfony\Start;
 use Composer\Composer;
 use Composer\Factory;
 use Composer\EventDispatcher\EventSubscriberInterface;
+use Composer\EventDispatcher\ScriptExecutionException;
 use Composer\Installer\PackageEvent;
 use Composer\Installer\PackageEvents;
 use Composer\IO\IOInterface;
@@ -16,6 +17,7 @@ use Composer\Plugin\PluginInterface;
 use Composer\Semver\Constraint\EmptyConstraint;
 use Composer\Script\Event;
 use Composer\Script\ScriptEvents;
+use Composer\Util\ProcessExecutor;
 
 class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
 {
@@ -66,8 +68,24 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
 
     public function executeAutoScripts(Event $event)
     {
-        error_log("HEREH\n");
-        print_r($event);
+        $process = new ProcessExecutor($this->io);
+        $scripts = $this->composer->getPackage()->getScripts();
+        $executor = new Executor();
+        if (isset($scripts[$event->getName()])) {
+            foreach ($scripts[$event->getName()] as $cmd => $type) {
+                if ($this->io->isVerbose()) {
+                    $this->io->writeError(sprintf('> %s: %s', $event->getName(), $cmd));
+                } else {
+                    $this->io->writeError(sprintf('> %s', $cmd));
+                }
+                if (0 !== $exitCode = $process->execute($cmd)) {
+                    $this->io->writeError(sprintf('<error>Script %s handling the %s event returned with error code %s</error>', $cmd, $event->getName(), $exitCode));
+
+                    throw new ScriptExecutionException(sprintf('Error Output: %s', $process->getErrorOutput()), $exitCode);
+                }
+            }
+        }
+
         $event->stopPropagation();
     }
 
@@ -130,7 +148,7 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
             PackageEvents::POST_PACKAGE_UNINSTALL => 'removeConfig',
             ScriptEvents::POST_INSTALL_CMD => 'postInstall',
             ScriptEvents::POST_UPDATE_CMD => 'postUpdate',
-            'auto-scripts' => 'executeAutoScripts';
+            'auto-scripts' => 'executeAutoScripts',
         );
     }
 }
