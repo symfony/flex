@@ -3,7 +3,9 @@
 namespace Symfony\Start;
 
 use Composer\Composer;
+use Composer\Factory;
 use Composer\IO\IOInterface;
+use Composer\Json\JsonManipulator;
 use Composer\Package\Package;
 
 class PackageConfigurator
@@ -26,95 +28,73 @@ class PackageConfigurator
 
     public function configure(Package $package, $name, $recipeDir)
     {
-        $this->registerBundle($package, $name, $recipeDir);
-        $this->copyData($package, $name, $recipeDir);
-        $this->registerEnv($package, $name, $recipeDir);
+        $manifest = $this->readIniRaw($recipeDir.'/manifest.ini');
+
+        // check that there are not unknown keys
+        if ($diff = array_intersect(array_keys($manifest), array('bundles', 'copy-from-recipe', 'copy-from-package', 'parameters', 'env', 'composer-scripts'))) {
+            throw new InvalidArgumentException(sprintf('Unknown keys "%s" in package "%s".', implode(', ', $diff), $name));
+        }
+
+        if (isset($manifest['bundles'])) {
+            $this->registerBundle($this->parseBundles($manifest['bundles']));
+        }
+
+        $this->copyData($package, $manifest, $recipeDir);
+
+        if (isset($manifest['env'])) {
+            $this->registerEnv($package, $manifest['env'], $name, $recipeDir);
+        }
+
+        if (isset($manifest['composer-scripts'])) {
+            $this->registerComposerScripts($manifest['composer-scripts']);
+        }
+    }
+
+    public function registerComposerScripts($scripts)
+    {
+        $json = Factory::getComposerFile();
+
+        $jsonContents = $json->read();
+        $autoScripts = isset($jsonContents['scripts']['auto-scripts']) ? $jsonContents['scripts']['auto-scripts'] : array();
+        foreach ($scripts as $cmd => $type) {
+            $autoScripts[] = sprintf('symfony-composer-start-script-executor.php %s %s', $type, $cmd);
+        }
+
+        $manipulator = new JsonManipulator(file_get_contents($json->getPath()));
+        $manipulator->addSubNode('scripts', 'auto-scripts', $autoScripts);
+
+        file_put_contents($json->getPath(), $manipulator->getContents());
     }
 
     public function unconfigure(Package $package, $name, $recipeDir)
     {
-        $this->removeBundle($package, $name, $recipeDir);
-        $this->removeData($package, $name, $recipeDir);
-        $this->removeEnv($package, $name, $recipeDir);
+        if (isset($manifest['bundles'])) {
+            $this->removeBundle($this->parseBundles($manifest['bundles']));
+        }
+
+        $this->removeData($package, $manifest, $recipeDir);
+
+        $this->removeEnv($package, $manifest['env'], $name, $recipeDir);
     }
 
-    private function registerBundle(Package $package, $name, $recipeDir)
+    private function registerBundle($bundles)
     {
-        $bundlesini = getcwd().'/conf/bundles.ini';
-        if (!file_exists($bundlesini)) {
-            return;
-        }
-
-        if (!$bundles = $this->parseBundles($recipeDir)) {
-            return;
-        }
-
         $this->io->write('    Enabling the package as a Symfony bundle');
 // FIXME: be sure to not add a bundle twice
 // FIXME: be sure that FrameworkBundle is always first
-        $contents = file_get_contents($bundlesini);
+        $bundlesini = getcwd().'/conf/bundles.ini';
+        $contents = file_exists($bundlesini) ? file_get_contents($bundlesini) : '';
         foreach ($bundles as $class => $envs) {
             $contents .= "$class = $envs\n";
         }
         file_put_contents($bundlesini, ltrim($contents));
     }
 
-    private function copyData(Package $package, $name, $recipeDir)
+    private function removeBundle($bundles)
     {
-        if (is_file($recipeDir.'/parameters.ini')) {
-            $this->io->write('    Setting parameters');
-            $this->updateParametersIni($recipeDir.'/parameters.ini');
-        }
-
-        if (!is_file($recipeDir.'/manifest.ini')) {
-            return;
-        }
-
-        $this->io->write('    Setting configuration and copying files');
-
-        $manifest = parse_ini_file($recipeDir.'/manifest.ini', true);
-        if (false === $manifest || array() === $manifest) {
-            throw new InvalidArgumentException(sprintf('The "%s" file is not valid.', $recipeDir.'/manifest.ini'));
-        }
-
-        $targetDir = getcwd();
-        $packageDir = $this->composer->getInstallationManager()->getInstallPath($package);
-        if (isset($manifest['recipe'])) {
-            $this->copyFiles($manifest['recipe'], $recipeDir, $targetDir);
-        }
-        if (isset($manifest['package'])) {
-            $this->copyFiles($manifest['package'], $packageDir, $targetDir);
-        }
-    }
-
-    private function registerEnv(Package $package, $name, $recipeDir)
-    {
-        $env = $recipeDir.'/env';
-        if (!file_exists($env)) {
-            return;
-        }
-
-        $this->io->write('    Adding environment variable defaults');
-        $data = sprintf("\n###> %s ###\n", $name);
-        $data .= file_get_contents($env);
-        $data .= sprintf("###< %s ###\n", $name);
-        file_put_contents(getcwd().'/.env.dist', $data, FILE_APPEND);
-        file_put_contents(getcwd().'/.env', $data, FILE_APPEND);
-    }
-
-    private function removeBundle(Package $package, $name, $recipeDir)
-    {
-        $bundlesini = getcwd().'/conf/bundles.ini';
-        if (!file_exists($bundlesini)) {
-            return;
-        }
-
-        if (!$bundles = $this->parseBundles($recipeDir)) {
-            return;
-        }
-
         $this->io->write('    Disabling the Symfony bundle');
-        $contents = file_get_contents($bundlesini);
+        $bundlesini = getcwd().'/conf/bundles.ini';
+        $contents = file_exists($bundlesini) ? file_get_contents($bundlesini) : '';
         foreach (array_keys($bundles) as $class) {
             $contents = preg_replace('{^'.preg_quote($class).'.+$}m', '', $contents);
             $contents = preg_replace("/\n+/", "\n", $contents);
@@ -122,30 +102,57 @@ class PackageConfigurator
         file_put_contents($bundlesini, ltrim($contents));
     }
 
-    private function removeData(Package $package, $name, $recipeDir)
+    private function copyData(Package $package, $manifest, $recipeDir)
+    {
+        if (isset($manifest['parameters'])) {
+            $this->io->write('    Setting parameters');
+            $this->updateParametersIni($manifest['parameters']);
+        }
+
+        if (isset($manifest['copy-from-recipe']) || isset($manifest['copy-from-package'])) {
+            $this->io->write('    Setting configuration and copying files');
+
+            if (isset($manifest['copy-from-recipe'])) {
+                $this->copyFiles($manifest['copy-from-recipe'], $recipeDir, getcwd());
+            }
+
+            if (isset($manifest['copy-from-package'])) {
+                $packageDir = $this->composer->getInstallationManager()->getInstallPath($package);
+                $this->copyFiles($manifest['copy-from-package'], $packageDir, getcwd());
+            }
+        }
+    }
+
+    private function removeData(Package $package, $manifest, $recipeDir)
     {
 // FIXME: what about parameters.ini, difficult to revert that (too many possible side effect
 //        between bundles changing the same value)
-
-        if (!is_file($recipeDir.'/manifest.ini')) {
+        if (!isset($manifest['copy-from-recipe']) && !isset($manifest['copy-from-package'])) {
             return;
         }
 
         $this->io->write('    Removing configuration and files');
 
-        $manifest = parse_ini_file($recipeDir.'/manifest.ini', true);
-        if (false === $manifest || array() === $manifest) {
-            throw new InvalidArgumentException(sprintf('The "%s" file is not valid.', $recipeDir.'/manifest.ini'));
+        if (isset($manifest['copy-from-recipe'])) {
+            $this->removeFiles($manifest['copy-from-recipe'], $recipeDir, getcwd());
         }
 
-        $targetDir = getcwd();
-        $packageDir = $this->composer->getInstallationManager()->getInstallPath($package);
-        if (isset($manifest['recipe'])) {
-            $this->removeFiles($manifest['recipe'], $recipeDir, $targetDir);
+        if (isset($manifest['copy-from-package'])) {
+            $packageDir = $this->composer->getInstallationManager()->getInstallPath($package);
+            $this->removeFiles($manifest['copy-from-package'], $packageDir, getcwd());
         }
-        if (isset($manifest['package'])) {
-            $this->removeFiles($manifest['package'], $packageDir, $targetDir);
+    }
+
+    private function registerEnv(Package $package, $vars, $name, $recipeDir)
+    {
+        $this->io->write('    Adding environment variable defaults');
+        $data = sprintf("\n###> %s ###\n", $name);
+        foreach ($vars as $key => $value) {
+            $date .= "$key=$value\n";
         }
+        $data .= sprintf("###< %s ###\n", $name);
+        file_put_contents(getcwd().'/.env.dist', $data, FILE_APPEND);
+        file_put_contents(getcwd().'/.env', $data, FILE_APPEND);
     }
 
     private function removeEnv(Package $package, $name, $recipeDir)
@@ -166,27 +173,22 @@ class PackageConfigurator
         }
     }
 
-    private function parseBundles($recipeDir)
+    private function parseBundles($manifest)
     {
-        if (!is_file($recipeDir.'/bundles.ini')) {
-            return [];
-        }
-
-        $bundles = [];
-        foreach (parse_ini_file($recipeDir.'/bundles.ini') as $class => $envs) {
+        $bundles = array();
+        foreach ($manifest as $class => $envs) {
             $bundles[$class] = $envs;
         }
 
         return $bundles;
     }
 
-    private function updateParametersIni($iniFile)
+    private function updateParametersIni($parameters)
     {
         $target = getcwd().'/conf/parameters.ini';
         $original = $this->readIniRaw($target);
-        $changes = $this->readIniRaw($iniFile);
         $contents = rtrim(file_get_contents($target), "\n")."\n";
-        foreach ($changes as $key => $value) {
+        foreach ($parameters as $key => $value) {
             if (isset($original['parameters'][$key])) {
                 // replace value
                 $contents = preg_replace('{^( *)'.$key.'( *)=( *).*$}im', "$1$key$2=$3$value", $contents);
