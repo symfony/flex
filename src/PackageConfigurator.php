@@ -3,6 +3,7 @@
 namespace Symfony\Start;
 
 use Composer\Composer;
+use Composer\Json\JsonFile;
 use Composer\Factory;
 use Composer\IO\IOInterface;
 use Composer\Json\JsonManipulator;
@@ -31,8 +32,8 @@ class PackageConfigurator
         $manifest = $this->readIniRaw($recipeDir.'/manifest.ini');
 
         // check that there are not unknown keys
-        if ($diff = array_intersect(array_keys($manifest), array('bundles', 'copy-from-recipe', 'copy-from-package', 'parameters', 'env', 'composer-scripts'))) {
-            throw new InvalidArgumentException(sprintf('Unknown keys "%s" in package "%s".', implode(', ', $diff), $name));
+        if ($diff = array_diff(array_keys($manifest), array('bundles', 'copy-from-recipe', 'copy-from-package', 'parameters', 'env', 'composer-scripts'))) {
+            throw new \InvalidArgumentException(sprintf('Unknown keys "%s" in package "%s" manifest.', implode('", "', $diff), $name));
         }
 
         if (isset($manifest['bundles'])) {
@@ -52,7 +53,7 @@ class PackageConfigurator
 
     public function registerComposerScripts($scripts)
     {
-        $json = Factory::getComposerFile();
+        $json = new JsonFile(Factory::getComposerFile());
 
         $jsonContents = $json->read();
         $autoScripts = isset($jsonContents['scripts']['auto-scripts']) ? $jsonContents['scripts']['auto-scripts'] : array();
@@ -239,6 +240,7 @@ class PackageConfigurator
         }
     }
 
+// FIXME: duplocated in SymfonyStartPlugin
     private function expandTargetDir($target)
     {
         $options = $this->options;

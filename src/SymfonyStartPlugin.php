@@ -18,6 +18,7 @@ use Composer\Semver\Constraint\EmptyConstraint;
 use Composer\Script\Event;
 use Composer\Script\ScriptEvents;
 use Composer\Util\ProcessExecutor;
+use Symfony\Component\Process\PhpExecutableFinder;
 
 class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
 {
@@ -70,7 +71,6 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
     {
         $process = new ProcessExecutor($this->io);
         $scripts = $this->composer->getPackage()->getScripts();
-        $executor = new Executor();
         if (isset($scripts[$event->getName()])) {
             foreach ($scripts[$event->getName()] as $cmd => $type) {
                 if ($this->io->isVerbose()) {
@@ -78,15 +78,67 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
                 } else {
                     $this->io->writeError(sprintf('> %s', $cmd));
                 }
-                if (0 !== $exitCode = $process->execute($cmd)) {
-                    $this->io->writeError(sprintf('<error>Script %s handling the %s event returned with error code %s</error>', $cmd, $event->getName(), $exitCode));
 
-                    throw new ScriptExecutionException(sprintf('Error Output: %s', $process->getErrorOutput()), $exitCode);
+                if (null !== $cmd = $this->expandCmd($type, $this->expandTargetDir($cmd))) {
+                    if (0 !== $exitCode = $process->execute($cmd)) {
+                        $this->io->writeError(sprintf('<error>Script %s handling the %s event returned with error code %s</error>', $cmd, $event->getName(), $exitCode));
+
+                        throw new ScriptExecutionException(sprintf('Error Output: %s', $process->getErrorOutput()), $exitCode);
+                    }
                 }
             }
         }
 
         $event->stopPropagation();
+    }
+
+    private function expandCmd($type, $cmd)
+    {
+        switch ($type) {
+            case 'symfony-cmd':
+                return $this->expandSymfonyCmd($cmd);
+            case 'php-script':
+                return $this->expandPhpScript($cmd);
+            case 'script':
+                return $cmd;
+            default:
+                throw new InvalidArgumentException(sprintf('Command type "%s" is not valid.', $type));
+        }
+    }
+
+    private function expandSymfonyCmd($cmd)
+    {
+        $repo = $this->composer->getRepositoryManager()->getLocalRepository();
+        if (!$repo->findPackage('symfony/console', new EmptyConstraint())) {
+// FIXME: we need a way to disable the automatic run of cache:clear and assets:install
+//        via the composer extra configuration
+            $this->io->writeError('<warning>The symfony/console package is required if you want to automatically clear the cache and install assets.</warning>');
+
+            return;
+        }
+
+        $console = escapeshellarg($this->options['bin-dir'].'/console');
+        if ($this->io->isDecorated()) {
+            $console .= ' --ansi';
+        }
+
+        return $this->expandPhpScript($console.' '.$cmd);
+    }
+
+    private function expandPhpScript($cmd)
+    {
+        $phpFinder = new PhpExecutableFinder();
+        if (!$php = $phpFinder->find(false)) {
+            throw new \RuntimeException('The PHP executable could not be found, add it to your PATH and try again.');
+        }
+
+        $arguments = $phpFinder->findArguments();
+        if (false !== $ini = php_ini_loaded_file()) {
+            $arguments[] = '--php-ini='.$ini;
+        }
+        $phpArgs = implode(' ', array_map('escapeshellarg', $arguments));
+
+        return $php.($phpArgs ? ' '.$phpArgs : '').' '.$cmd;
     }
 
     private function filterPackageNames(Package $package)
@@ -133,6 +185,23 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
         };
 
         return $nameFixer($vendor).'\\'.$nameFixer($project);
+    }
+
+// FIXME: duplocated in PackageConfigurator
+    private function expandTargetDir($target)
+    {
+        $options = $this->options;
+
+        return preg_replace_callback('{%(.+?)%}', function ($matches) use ($options) {
+// FIXME: we should have a validator checking recipes when they are merged into the repo
+// so that exceptions here are just not possible
+            $option = str_replace('_', '-', strtolower($matches[1]));
+            if (!isset($options[$option])) {
+                throw new \InvalidArgumentException(sprintf('Placeholder "%s" does not exist.', $matches[1]));
+            }
+
+            return $options[$option];
+        }, $target);
     }
 
     private function getRecipesDir()
