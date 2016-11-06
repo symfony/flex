@@ -18,7 +18,10 @@ use Composer\Semver\Constraint\EmptyConstraint;
 use Composer\Script\Event;
 use Composer\Script\ScriptEvents;
 use Composer\Util\ProcessExecutor;
+use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Output\StreamOutput;
 use Symfony\Component\Process\PhpExecutableFinder;
+use Symfony\Component\Process\Process;
 use Symfony\Start\PackageConfigurator;
 
 class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
@@ -70,44 +73,43 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
 
     public function executeAutoScripts(Event $event)
     {
-        $process = new ProcessExecutor($this->io);
+        $process = new ProcessExecutor();
 
         // force reloading scripts as we might have added and removed during this run
         $json = new JsonFile(Factory::getComposerFile());
         $jsonContents = $json->read();
 
         if (isset($jsonContents['scripts']['auto-scripts'])) {
-            $io = $this->io;
-            $outputHandler = function ($type, $buffer) use ($io) {
-                if (!$io->isVerbose()) {
-                    return;
+            foreach ($jsonContents['scripts']['auto-scripts'] as $cmd => $type) {
+                if (null === $expandedCmd = $this->expandCmd($type, $this->expandTargetDir($cmd))) {
+                    continue;
                 }
 
-                $method = 'err' === $type ? 'writeError' : 'write';
-                $io->$method($buffer);
-            };
+                $cmdOutput = new StreamOutput(fopen('php://memory', 'rw'), OutputInterface::VERBOSITY_VERBOSE, $this->io->isDecorated());
+                $outputHandler = function ($type, $buffer) use ($cmdOutput) {
+                    $cmdOutput->write($buffer, OutputInterface::OUTPUT_RAW);
+                };
 
-            foreach ($jsonContents['scripts']['auto-scripts'] as $cmd => $type) {
-                if (null !== $expandedCmd = $this->expandCmd($type, $this->expandTargetDir($cmd))) {
-                    $this->io->writeError(sprintf('Executing script %s', $cmd), $this->io->isVerbose());
-                    $exitCode = $process->execute($expandedCmd, $outputHandler);
-                    if (0 === $exitCode) {
-                        $code = ' <info>[OK]</info>';
-                    } else {
-                        $code = ' <error>[KO]</error>';
-                    }
+                $this->io->writeError(sprintf('Executing script %s', $cmd), $this->io->isVerbose());
+                $exitCode = $process->execute($expandedCmd, $outputHandler);
+                if (0 === $exitCode) {
+                    $code = ' <info>[OK]</info>';
+                } else {
+                    $code = ' <error>[KO]</error>';
+                }
 
-                    if ($this->io->isVerbose()) {
-                        $this->io->writeError(sprintf('Executed script %s %s', $cmd, $code));
-                    } else {
-                        $this->io->writeError($code);
-                    }
+                if ($this->io->isVerbose()) {
+                    $this->io->writeError(sprintf('Executed script %s %s', $cmd, $code));
+                } else {
+                    $this->io->writeError($code);
+                }
 
-                    if (0 !== $exitCode) {
-                        $this->io->writeError(' <error>[KO]</error>');
-                        $this->io->writeError(sprintf('<error>Script %s handling the %s event returned with error code %s</error>', $cmd, $event->getName(), $exitCode));
-
-                        throw new ScriptExecutionException(sprintf('Error Output: %s', $process->getErrorOutput()), $exitCode);
+                if (0 !== $exitCode) {
+                    $this->io->writeError(' <error>[KO]</error>');
+                    $this->io->writeError(sprintf('<error>Script %s returned with error code %s</error>', $cmd, $exitCode));
+                    fseek($cmdOutput->getStream(), 0);
+                    foreach (explode("\n", stream_get_contents($cmdOutput->getStream())) as $line) {
+                        $this->io->writeError('!!  '.$line);
                     }
                 }
             }
@@ -142,9 +144,9 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
         }
 
         $console = escapeshellarg($this->options['bin-dir'].'/console');
-        if ($this->io->isDecorated()) {
+//        if ($this->io->isDecorated()) {
             $console .= ' --ansi';
-        }
+//        }
 
         return $this->expandPhpScript($console.' '.$cmd);
     }
