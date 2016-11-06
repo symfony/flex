@@ -70,6 +70,7 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
     public function executeAutoScripts(Event $event)
     {
         $process = new ProcessExecutor($this->io);
+
         $scripts = $this->composer->getPackage()->getScripts();
         if (isset($scripts[$event->getName()])) {
             foreach ($scripts[$event->getName()] as $cmd => $type) {

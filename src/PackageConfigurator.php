@@ -56,7 +56,9 @@ class PackageConfigurator
 
         $this->removeData($package, $manifest, $recipeDir);
 
-        $this->removeEnv($package, $manifest['env'], $name, $recipeDir);
+        if (isset($manifest['env'])) {
+            $this->removeEnv($package, $manifest['env'], $name, $recipeDir);
+        }
     }
 
     private function registerBundle($bundles)
