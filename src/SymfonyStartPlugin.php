@@ -90,12 +90,19 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
                 if (null !== $expandedCmd = $this->expandCmd($type, $this->expandTargetDir($cmd))) {
                     $this->io->writeError(sprintf('Executing script %s', $cmd), $this->io->isVerbose());
                     $exitCode = $process->execute($expandedCmd, $outputHandler);
-                    if ($this->io->isVerbose()) {
-                        $this->io->writeError(sprintf('Executed script %s', $cmd), false);
-                    }
                     if (0 === $exitCode) {
-                        $this->io->writeError(' <info>[OK]</info>');
+                        $code = ' <info>[OK]</info>';
                     } else {
+                        $code = ' <error>[KO]</error>';
+                    }
+
+                    if ($this->io->isVerbose()) {
+                        $this->io->writeError(sprintf('Executed script %s %s', $cmd, $code));
+                    } else {
+                        $this->io->writeError($code);
+                    }
+
+                    if (0 !== $exitCode) {
                         $this->io->writeError(' <error>[KO]</error>');
                         $this->io->writeError(sprintf('<error>Script %s handling the %s event returned with error code %s</error>', $cmd, $event->getName(), $exitCode));
 
