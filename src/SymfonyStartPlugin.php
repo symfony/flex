@@ -78,14 +78,25 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
         if (isset($jsonContents['scripts']['auto-scripts'])) {
             $io = $this->io;
             $outputHandler = function ($type, $buffer) use ($io) {
+                if (!$io->isVerbose()) {
+                    return;
+                }
+
                 $method = 'err' === $type ? 'writeError' : 'write';
                 $io->$method($buffer);
             };
 
             foreach ($jsonContents['scripts']['auto-scripts'] as $cmd => $type) {
-                $this->io->writeError(sprintf('> %s', $cmd));
-                if (null !== $cmd = $this->expandCmd($type, $this->expandTargetDir($cmd))) {
-                    if (0 !== $exitCode = $process->execute($cmd, $outputHandler)) {
+                if (null !== $expandedCmd = $this->expandCmd($type, $this->expandTargetDir($cmd))) {
+                    $this->io->writeError(sprintf('Executing script %s', $cmd), $this->io->isVerbose());
+                    $exitCode = $process->execute($expandedCmd, $outputHandler);
+                    if ($this->io->isVerbose()) {
+                        $this->io->writeError(sprintf('Executed script %s', $cmd), false);
+                    }
+                    if (0 === $exitCode) {
+                        $this->io->writeError(' <info>[OK]</info>');
+                    } else {
+                        $this->io->writeError(' <error>[KO]</error>');
                         $this->io->writeError(sprintf('<error>Script %s handling the %s event returned with error code %s</error>', $cmd, $event->getName(), $exitCode));
 
                         throw new ScriptExecutionException(sprintf('Error Output: %s', $process->getErrorOutput()), $exitCode);
