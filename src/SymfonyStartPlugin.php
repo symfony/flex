@@ -19,6 +19,7 @@ use Composer\Script\Event;
 use Composer\Script\ScriptEvents;
 use Composer\Util\ProcessExecutor;
 use Symfony\Component\Process\PhpExecutableFinder;
+use Symfony\Start\PackageConfigurator;
 
 class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
 {
@@ -177,12 +178,7 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
 
     private function getConfigurator($name)
     {
-        $class = 'Symfony\Recipes\\'.$this->getPackageNamespace($name).'\Configurator';
-        if (!class_exists($class)) {
-            $class = 'Symfony\Start\PackageConfigurator';
-        }
-
-        return new $class($this->composer, $this->io, $this->options);
+        return new PackageConfigurator($this->composer, $this->io, $this->options);
     }
 
     private function initOptions()
@@ -197,17 +193,6 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
         ), $this->composer->getPackage()->getExtra());
 
 //        $this->options['cache-warmup'] = getenv('CACHE_WARMUP') ?: $this->options['cache-warmup'];
-    }
-
-    public function getPackageNamespace($package)
-    {
-        list($vendor, $project) = explode('/', $package);
-
-        $nameFixer = function ($name) {
-            return str_replace(array('.', '_', '-'), array('', '', ''), $name);
-        };
-
-        return $nameFixer($vendor).'\\'.$nameFixer($project);
     }
 
 // FIXME: duplocated in PackageConfigurator
