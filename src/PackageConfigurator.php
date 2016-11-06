@@ -29,12 +29,7 @@ class PackageConfigurator
 
     public function configure(Package $package, $name, $recipeDir)
     {
-        $manifest = $this->readIniRaw($recipeDir.'/manifest.ini');
-
-        // check that there are not unknown keys
-        if ($diff = array_diff(array_keys($manifest), array('bundles', 'copy-from-recipe', 'copy-from-package', 'parameters', 'env', 'composer-scripts'))) {
-            throw new \InvalidArgumentException(sprintf('Unknown keys "%s" in package "%s" manifest.', implode('", "', $diff), $name));
-        }
+        $manifest = $this->loadManifest($recipeDir);
 
         if (isset($manifest['bundles'])) {
             $this->registerBundle($this->parseBundles($manifest['bundles']));
@@ -51,22 +46,10 @@ class PackageConfigurator
         }
     }
 
-    public function registerComposerScripts($scripts)
-    {
-        $json = new JsonFile(Factory::getComposerFile());
-
-        $jsonContents = $json->read();
-        $autoScripts = isset($jsonContents['scripts']['auto-scripts']) ? $jsonContents['scripts']['auto-scripts'] : array();
-        $autoScripts = array_merge($autoScripts, $scripts);
-
-        $manipulator = new JsonManipulator(file_get_contents($json->getPath()));
-        $manipulator->addSubNode('scripts', 'auto-scripts', $autoScripts);
-
-        file_put_contents($json->getPath(), $manipulator->getContents());
-    }
-
     public function unconfigure(Package $package, $name, $recipeDir)
     {
+        $manifest = $this->loadManifest($recipeDir);
+
         if (isset($manifest['bundles'])) {
             $this->removeBundle($this->parseBundles($manifest['bundles']));
         }
@@ -170,6 +153,20 @@ class PackageConfigurator
             $this->io->write(sprintf('    Removing environment variables from %s', $file));
             file_put_contents($env, $contents);
         }
+    }
+
+    public function registerComposerScripts($scripts)
+    {
+        $json = new JsonFile(Factory::getComposerFile());
+
+        $jsonContents = $json->read();
+        $autoScripts = isset($jsonContents['scripts']['auto-scripts']) ? $jsonContents['scripts']['auto-scripts'] : array();
+        $autoScripts = array_merge($autoScripts, $scripts);
+
+        $manipulator = new JsonManipulator(file_get_contents($json->getPath()));
+        $manipulator->addSubNode('scripts', 'auto-scripts', $autoScripts);
+
+        file_put_contents($json->getPath(), $manipulator->getContents());
     }
 
     private function parseBundles($manifest)
@@ -287,5 +284,17 @@ class PackageConfigurator
                 @unlink($target.'/'.$iterator->getSubPathName());
             }
         }
+    }
+
+    private function loadManifest($recipeDir)
+    {
+        $manifest = $this->readIniRaw($recipeDir.'/manifest.ini');
+
+        // check that there are not unknown keys
+        if ($diff = array_diff(array_keys($manifest), array('bundles', 'copy-from-recipe', 'copy-from-package', 'parameters', 'env', 'composer-scripts'))) {
+            throw new \InvalidArgumentException(sprintf('Unknown keys "%s" in package "%s" manifest.', implode('", "', $diff), $name));
+        }
+
+        return $manifest;
     }
 }
