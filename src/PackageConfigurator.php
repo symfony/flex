@@ -147,7 +147,7 @@ class PackageConfigurator
         $this->io->write('    Adding environment variable defaults');
         $data = sprintf("\n###> %s ###\n", $name);
         foreach ($vars as $key => $value) {
-            $date .= "$key=$value\n";
+            $data .= "$key=$value\n";
         }
         $data .= sprintf("###< %s ###\n", $name);
         file_put_contents(getcwd().'/.env.dist', $data, FILE_APPEND);
