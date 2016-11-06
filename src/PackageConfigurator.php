@@ -139,6 +139,9 @@ class PackageConfigurator
             $data .= "$key=$value\n";
         }
         $data .= sprintf("###< %s ###\n", $name);
+        if (!file_exists(getcwd().'/.env')) {
+            copy(getcwd().'/.env.dist', getcwd().'/.env');
+        }
         file_put_contents(getcwd().'/.env.dist', $data, FILE_APPEND);
         file_put_contents(getcwd().'/.env', $data, FILE_APPEND);
     }
