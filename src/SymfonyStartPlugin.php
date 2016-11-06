@@ -71,15 +71,12 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
     {
         $process = new ProcessExecutor($this->io);
 
-        $scripts = $this->composer->getPackage()->getScripts();
-        if (isset($scripts[$event->getName()])) {
-            foreach ($scripts[$event->getName()] as $cmd => $type) {
-                if ($this->io->isVerbose()) {
-                    $this->io->writeError(sprintf('> %s: %s', $event->getName(), $cmd));
-                } else {
-                    $this->io->writeError(sprintf('> %s', $cmd));
-                }
-
+        // force reloading scripts as we might have added and removed during this run
+        $json = new JsonFile(Factory::getComposerFile());
+        $jsonContents = $json->read();
+        if (isset($jsonContents['scripts']['auto-scripts'])) {
+            foreach ($jsonContents['scripts']['auto-scripts'] as $cmd => $type) {
+                $this->io->writeError(sprintf('> %s', $cmd));
                 if (null !== $cmd = $this->expandCmd($type, $this->expandTargetDir($cmd))) {
                     if (0 !== $exitCode = $process->execute($cmd)) {
                         $this->io->writeError(sprintf('<error>Script %s handling the %s event returned with error code %s</error>', $cmd, $event->getName(), $exitCode));
