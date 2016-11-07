@@ -4,7 +4,7 @@ namespace Symfony\Start\Configurator;
 
 use Symfony\Start\Recipe;
 
-class CopyFromRecipeConfigurator extends AbstractCopyConfigurator
+class CopyFromPackageConfigurator extends AbstractCopyConfigurator
 {
     public function configure(Recipe $recipe, $config)
     {

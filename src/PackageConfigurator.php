@@ -27,14 +27,14 @@ class PackageConfigurator
             'env' => Configurator\EnvConfigurator::class,
             'parameters' => Configurator\ParametersConfigurator::class,
         );
-        foreach ($maps as $key => $class) {
+        foreach ($map as $key => $class) {
             $this->map[$key] = new $class($composer, $io, $this->options);
         }
     }
 
     public function configure(Recipe $recipe)
     {
-        $manifest = json_decode(file_get_contents($recipeDir.'/manifest.ini'));
+        $manifest = json_decode(file_get_contents($recipe->getDir().'/manifest.ini'));
         foreach ($manifest as $key => $config) {
             if (!isset($this->map[$key])) {
                 throw new \InvalidArgumentException(sprintf('Unknown key "%s" in package "%s" manifest.', $key, $name));
@@ -46,7 +46,7 @@ class PackageConfigurator
 
     public function unconfigure(Recipe $recipe)
     {
-        $manifest = json_decode(file_get_contents($recipeDir.'/manifest.ini'));
+        $manifest = json_decode(file_get_contents($recipe->getDir().'/manifest.ini'));
         foreach ($manifest as $key => $config) {
             if (!isset($this->map[$key])) {
                 throw new \InvalidArgumentException(sprintf('Unknown key "%s" in package "%s" manifest.', $key, $name));
