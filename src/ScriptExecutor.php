@@ -90,9 +90,9 @@ class ScriptExecutor
         }
 
         $console = escapeshellarg($this->options->get('bin-dir').'/console');
-//        if ($this->io->isDecorated()) {
+        if ($this->io->isDecorated()) {
             $console .= ' --ansi';
-//        }
+        }
 
         return $this->expandPhpScript($console.' '.$cmd);
     }

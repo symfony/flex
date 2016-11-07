@@ -10,11 +10,9 @@ use Composer\Installer\PackageEvents;
 use Composer\IO\IOInterface;
 use Composer\Json\JsonFile;
 use Composer\Json\JsonManipulator;
-use Composer\Package\Link;
 use Composer\Package\Package;
 use Composer\Plugin\PluginInterface;
 use Composer\Script\Event;
-use Symfony\Start\PackageConfigurator;
 
 class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
 {
@@ -35,8 +33,8 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
         foreach ($this->filterPackageNames($package) as $name) {
             $this->io->write(sprintf('    Detected auto-configuration settings for "%s"', $name));
             $configurator = new PackageConfigurator($this->composer, $this->io, $this->options);
-            $configurator->configure($package, $name, $this->getRecipesDir().'/'.$name);
-            $this->io->write('');
+            $recipe = new Recipe($package, $name, $this->getRecipesDir().'/'.$name);
+            $configurator->configure($recipe);
         }
     }
 
@@ -50,7 +48,8 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
         foreach ($this->filterPackageNames($package) as $name) {
             $this->io->write(sprintf('    Auto-unconfiguring "%s"', $name));
             $configurator = new PackageConfigurator($this->composer, $this->io, $this->options);
-            $configurator->unconfigure($package, $name, $this->getRecipesDir().'/'.$name);
+            $recipe = new Recipe($package, $name, $this->getRecipesDir().'/'.$name);
+            $configurator->unconfigure($recipe);
         }
     }
 
