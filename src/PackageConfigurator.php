@@ -15,16 +15,11 @@ class PackageConfigurator
     private $io;
     private $options;
 
-    public function __construct(Composer $composer, IOInterface $io, $options)
+    public function __construct(Composer $composer, IOInterface $io, Options $options)
     {
         $this->composer = $composer;
         $this->io = $io;
         $this->options = $options;
-    }
-
-    public function getOption($name)
-    {
-        return isset($this->options[$name]) ? $this->options[$name] : null;
     }
 
     public function configure(Package $package, $name, $recipeDir)
@@ -237,7 +232,7 @@ class PackageConfigurator
     private function copyFiles($manifest, $from, $to)
     {
         foreach ($manifest as $source => $target) {
-            $target = $this->expandTargetDir($target);
+            $target = $this->options->expandTargetDir($target);
             if ('/' === $source[strlen($source) - 1]) {
 // FIXME: how to manage different versions/branches?
 // FIXME: never override an existing file, or at least ask the question! Or display a diff, for files that should not be modified like for symfony/requirements
@@ -253,30 +248,13 @@ class PackageConfigurator
     private function removeFiles($manifest, $from, $to)
     {
         foreach ($manifest as $source => $target) {
-            $target = $this->expandTargetDir($target);
+            $target = $this->options->expandTargetDir($target);
             if ('/' === $source[strlen($source) - 1]) {
                 $this->removeFilesFromDir($from.'/'.$source, $to.'/'.$target);
             } else {
                 @unlink($to.'/'.$target);
             }
         }
-    }
-
-// FIXME: duplocated in SymfonyStartPlugin
-    private function expandTargetDir($target)
-    {
-        $options = $this->options;
-
-        return preg_replace_callback('{%(.+?)%}', function ($matches) use ($options) {
-// FIXME: we should have a validator checking recipes when they are merged into the repo
-// so that exceptions here are just not possible
-            $option = str_replace('_', '-', strtolower($matches[1]));
-            if (!isset($options[$option])) {
-                throw new \InvalidArgumentException(sprintf('Placeholder "%s" does not exist.', $matches[1]));
-            }
-
-            return $options[$option];
-        }, $target);
     }
 
     private function copyDir($source, $target)
