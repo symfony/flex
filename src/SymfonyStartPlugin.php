@@ -111,6 +111,8 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
                     foreach (explode("\n", stream_get_contents($cmdOutput->getStream())) as $line) {
                         $this->io->writeError('!!  '.$line);
                     }
+
+                    throw new ScriptExecutionException($cmd, $exitCode);
                 }
             }
         }
