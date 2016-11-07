@@ -6,7 +6,7 @@ use Symfony\Start\Recipe;
 
 class BundlesConfigurator extends AbstractConfigurator
 {
-    private function configure(Recipe $recipe, $bundles)
+    public function configure(Recipe $recipe, $bundles)
     {
         $this->io->write('    Enabling the package as a Symfony bundle');
 // FIXME: be sure to not add a bundle twice
@@ -19,7 +19,7 @@ class BundlesConfigurator extends AbstractConfigurator
         file_put_contents($bundlesini, ltrim($contents));
     }
 
-    private function unconfigure(Recipe $recipe, $bundles)
+    public function unconfigure(Recipe $recipe, $bundles)
     {
         $this->io->write('    Disabling the Symfony bundle');
         $bundlesini = getcwd().'/conf/bundles.ini';

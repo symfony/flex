@@ -13,7 +13,7 @@ class CopyFromRecipeConfigurator extends AbstractCopyConfigurator
         $this->copyFiles($config, $recipe->getDir(), getcwd());
     }
 
-    public function configure(Recipe $recipe, $config)
+    public function unconfigure(Recipe $recipe, $config)
     {
         $this->io->write('    Removing configuration and files');
 

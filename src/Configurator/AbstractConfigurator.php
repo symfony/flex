@@ -2,6 +2,9 @@
 
 namespace Symfony\Start\Configurator;
 
+use Composer\Composer;
+use Composer\IO\IOInterface;
+use Symfony\Start\Options;
 use Symfony\Start\Recipe;
 
 abstract class AbstractConfigurator
@@ -17,7 +20,7 @@ abstract class AbstractConfigurator
         $this->options = $options;
     }
 
-    public function configure(Recipe $recipe, $config);
+    abstract public function configure(Recipe $recipe, $config);
 
-    public function unconfigure(Recipe $recipe, $config);
+    abstract public function unconfigure(Recipe $recipe, $config);
 }

@@ -14,7 +14,7 @@ class Recipe
     {
         $this->package = $package;
         $this->name = $name;
-        $this->recipeDir = $recipeDir;
+        $this->dir = $dir;
     }
 
     public function getPackage()

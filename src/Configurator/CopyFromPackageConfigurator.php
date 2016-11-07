@@ -14,7 +14,7 @@ class CopyFromPackageConfigurator extends AbstractCopyConfigurator
         $this->copyFiles($config, $packageDir, getcwd());
     }
 
-    public function configure(Recipe $recipe, $config)
+    public function unconfigure(Recipe $recipe, $config)
     {
         $this->io->write('    Removing configuration and files');
         $packageDir = $this->composer->getInstallationManager()->getInstallPath($recipe->getPackage());

@@ -9,11 +9,11 @@ class EnvConfigurator extends AbstractConfigurator
     public function configure(Recipe $recipe, $vars)
     {
         $this->io->write('    Adding environment variable defaults');
-        $data = sprintf("\n###> %s ###\n", $name);
+        $data = sprintf("\n###> %s ###\n", $recipe->getName());
         foreach ($vars as $key => $value) {
             $data .= "$key=$value\n";
         }
-        $data .= sprintf("###< %s ###\n", $name);
+        $data .= sprintf("###< %s ###\n", $recipe->getName());
         if (!file_exists(getcwd().'/.env')) {
             copy(getcwd().'/.env.dist', getcwd().'/.env');
         }
@@ -21,7 +21,7 @@ class EnvConfigurator extends AbstractConfigurator
         file_put_contents(getcwd().'/.env', $data, FILE_APPEND);
     }
 
-    public function configure(Recipe $recipe, $vars)
+    public function unconfigure(Recipe $recipe, $vars)
     {
         foreach (array('.env', '.env.dist') as $file) {
             $env = getcwd().'/'.$file;
@@ -29,7 +29,7 @@ class EnvConfigurator extends AbstractConfigurator
                 continue;
             }
 
-            $contents = preg_replace(sprintf('{\n+###> %s ###.*###< %s ###\n+}s', $name, $name), "\n", file_get_contents($env), -1, $count);
+            $contents = preg_replace(sprintf('{\n+###> %s ###.*###< %s ###\n+}s', $recipe->getName(), $recipe->getName()), "\n", file_get_contents($env), -1, $count);
             if (!$count) {
                 continue;
             }

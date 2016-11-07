@@ -12,13 +12,13 @@ class ParametersConfigurator extends AbstractConfigurator
         $this->updateParametersIni($parameters);
     }
 
-    public function unconfigure($parameters)
+    public function unconfigure(Recipe $recipe, $parameters)
     {
 // FIXME: what about parameters.ini, difficult to revert that (too many possible side effect
 //        between bundles changing the same value)
     }
 
-    private function updateParametersIni(Recipe $recipe, $parameters)
+    private function updateParametersIni($parameters)
     {
         $target = getcwd().'/conf/parameters.ini';
         $original = $this->readIniRaw($target);
