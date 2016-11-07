@@ -2,6 +2,7 @@
 
 namespace Symfony\Start;
 
+use Composer\Composer;
 use Composer\EventDispatcher\ScriptExecutionException;
 use Composer\IO\IOInterface;
 use Composer\Util\ProcessExecutor;
