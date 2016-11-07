@@ -25,6 +25,7 @@ class ParametersConfigurator extends AbstractConfigurator
         $contents = rtrim(file_get_contents($target), "\n")."\n";
         foreach ($parameters as $key => $value) {
             if (isset($original['parameters'][$key])) {
+                $value = var_export($value, true);
                 // replace value
                 $contents = preg_replace('{^( *)'.$key.'( *)=( *).*$}im', "$1$key$2=$3$value", $contents);
             } else {
