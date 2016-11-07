@@ -5,6 +5,7 @@ namespace Symfony\Start;
 use Composer\Composer;
 use Composer\EventDispatcher\ScriptExecutionException;
 use Composer\IO\IOInterface;
+use Composer\Semver\Constraint\EmptyConstraint;
 use Composer\Util\ProcessExecutor;
 use Symfony\Component\Console\Output\StreamOutput;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -26,7 +27,7 @@ class ScriptExecutor
         $this->executor = $executor ?: new ProcessExecutor();
     }
 
-    public function executeScripts($type, $cmd)
+    public function execute($type, $cmd)
     {
         if (null === $expandedCmd = $this->expandCmd($type, $this->options->expandTargetDir($cmd))) {
             return;
@@ -88,7 +89,7 @@ class ScriptExecutor
             return;
         }
 
-        $console = escapeshellarg($this->options['bin-dir'].'/console');
+        $console = escapeshellarg($this->options->get('bin-dir').'/console');
 //        if ($this->io->isDecorated()) {
             $console .= ' --ansi';
 //        }

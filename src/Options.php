@@ -11,6 +11,11 @@ class Options
         $this->options = $options;
     }
 
+    public function get($name)
+    {
+        return isset($this->options[$name]) ? $this->options[$name] : null;
+    }
+
     public function expandTargetDir($target)
     {
         $options = $this->options;

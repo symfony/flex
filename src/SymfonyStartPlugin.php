@@ -13,7 +13,6 @@ use Composer\Json\JsonManipulator;
 use Composer\Package\Link;
 use Composer\Package\Package;
 use Composer\Plugin\PluginInterface;
-use Composer\Semver\Constraint\EmptyConstraint;
 use Composer\Script\Event;
 use Symfony\Start\PackageConfigurator;
 
@@ -62,9 +61,9 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
         $jsonContents = $json->read();
 
         if (isset($jsonContents['scripts']['auto-scripts'])) {
-            $process = new ScriptExecutor($this->composer, $this->io, $this->options);
+            $executor = new ScriptExecutor($this->composer, $this->io, $this->options);
             foreach ($jsonContents['scripts']['auto-scripts'] as $cmd => $type) {
-                $process->execute($type, $cmd);
+                $executor->execute($type, $cmd);
             }
         }
 
