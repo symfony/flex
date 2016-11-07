@@ -5,6 +5,7 @@ namespace Symfony\Start;
 use Composer\Composer;
 use Composer\IO\IOInterface;
 use Composer\Package\Package;
+use Composer\Json\JsonFile;
 
 class PackageConfigurator
 {
@@ -34,7 +35,8 @@ class PackageConfigurator
 
     public function configure(Recipe $recipe)
     {
-        $manifest = json_decode(file_get_contents($recipe->getDir().'/manifest.json'));
+        $json = new JsonFile($recipe->getDir().'/manifest.json', null, $this->io);
+        $manifest = $json->read();
         foreach ($manifest as $key => $config) {
             if (!isset($this->map[$key])) {
                 throw new \InvalidArgumentException(sprintf('Unknown key "%s" in package "%s" manifest.', $key, $name));
@@ -46,7 +48,8 @@ class PackageConfigurator
 
     public function unconfigure(Recipe $recipe)
     {
-        $manifest = json_decode(file_get_contents($recipe->getDir().'/manifest.json'));
+        $json = new JsonFile($recipe->getDir().'/manifest.json', null, $this->io);
+        $manifest = $json->read();
         foreach ($manifest as $key => $config) {
             if (!isset($this->map[$key])) {
                 throw new \InvalidArgumentException(sprintf('Unknown key "%s" in package "%s" manifest.', $key, $name));
