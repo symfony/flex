@@ -9,7 +9,6 @@ use Composer\Installer\PackageEvent;
 use Composer\Installer\PackageEvents;
 use Composer\IO\IOInterface;
 use Composer\Json\JsonFile;
-use Composer\Json\JsonManipulator;
 use Composer\Package\Package;
 use Composer\Plugin\PluginInterface;
 use Composer\Script\Event;
@@ -19,12 +18,24 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
     private $composer;
     private $io;
     private $options;
+    private $map;
 
     public function activate(Composer $composer, IOInterface $io)
     {
         $this->composer = $composer;
         $this->io = $io;
         $this->options = $this->initOptions();
+        $map = array(
+            'bundles' => Configurator\BundlesConfigurator::class,
+            'composer-scripts' => Configurator\ComposerScriptsConfigurator::class,
+            'copy-from-recipe' => Configurator\CopyFromRecipeConfigurator::class,
+            'copy-from-package' => Configurator\CopyFromPackageConfigurator::class,
+            'env' => Configurator\EnvConfigurator::class,
+            'parameters' => Configurator\ParametersConfigurator::class,
+        );
+        foreach ($map as $key => $class) {
+            $this->map[$key] = new $class($composer, $io, $this->options);
+        }
     }
 
     public function configurePackage(PackageEvent $event)
@@ -32,13 +43,11 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
         $package = $event->getOperation()->getPackage();
         foreach ($this->filterPackageNames($package) as $name) {
             $this->io->write(sprintf('    Detected auto-configuration settings for "%s"', $name));
-            $configurator = new PackageConfigurator($this->composer, $this->io, $this->options);
-            $recipe = new Recipe($package, $name, $this->getRecipesDir().'/'.$name);
-            $configurator->configure($recipe);
+            $this->install(new Recipe($package, $name, $this->getRecipesDir().'/'.$name));
         }
     }
 
-    public function updatePackage(PackageEvent $event)
+    public function reconfigurePackage(PackageEvent $event)
     {
     }
 
@@ -47,9 +56,7 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
         $package = $event->getOperation()->getPackage();
         foreach ($this->filterPackageNames($package) as $name) {
             $this->io->write(sprintf('    Auto-unconfiguring "%s"', $name));
-            $configurator = new PackageConfigurator($this->composer, $this->io, $this->options);
-            $recipe = new Recipe($package, $name, $this->getRecipesDir().'/'.$name);
-            $configurator->unconfigure($recipe);
+            $this->uninstall(new Recipe($package, $name, $this->getRecipesDir().'/'.$name));
         }
     }
 
@@ -67,6 +74,32 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
         }
 
         $event->stopPropagation();
+    }
+
+    private function install(Recipe $recipe)
+    {
+        $json = new JsonFile($recipe->getDir().'/manifest.json', null, $this->io);
+        $manifest = $json->read();
+        foreach ($manifest as $key => $config) {
+            if (!isset($this->map[$key])) {
+                throw new \InvalidArgumentException(sprintf('Unknown key "%s" in package "%s" manifest.', $key, $name));
+            }
+
+            $this->map[$key]->configure($recipe, $config);
+        }
+    }
+
+    private function uninstall(Recipe $recipe)
+    {
+        $json = new JsonFile($recipe->getDir().'/manifest.json', null, $this->io);
+        $manifest = $json->read();
+        foreach ($manifest as $key => $config) {
+            if (!isset($this->map[$key])) {
+                throw new \InvalidArgumentException(sprintf('Unknown key "%s" in package "%s" manifest.', $key, $name));
+            }
+
+            $this->map[$key]->unconfigure($recipe, $config);
+        }
     }
 
     private function filterPackageNames(Package $package)
