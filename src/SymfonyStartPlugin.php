@@ -149,7 +149,7 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
     {
         return array(
             PackageEvents::POST_PACKAGE_INSTALL => 'configurePackage',
-            PackageEvents::POST_PACKAGE_UPDATE => 'updatePackage',
+            PackageEvents::POST_PACKAGE_UPDATE => 'reconfigurePackage',
             PackageEvents::POST_PACKAGE_UNINSTALL => 'unconfigurePackage',
             ScriptEvents::POST_INSTALL_CMD => 'postInstall',
             ScriptEvents::POST_UPDATE_CMD => 'postUpdate',
