@@ -12,6 +12,7 @@ use Composer\Json\JsonFile;
 use Composer\Package\Package;
 use Composer\Plugin\PluginInterface;
 use Composer\Script\Event;
+use Composer\Script\ScriptEvents;
 
 class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
 {
@@ -57,6 +58,18 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
         foreach ($this->filterPackageNames($package) as $name) {
             $this->io->write(sprintf('    Auto-unconfiguring "%s"', $name));
             $this->uninstall(new Recipe($package, $name, $this->getRecipesDir().'/'.$name));
+        }
+    }
+
+    public function postInstall(Event $event)
+    {
+        $this->postUpdate($event);
+    }
+
+    public function postUpdate(Event $event)
+    {
+        if (!file_exists(getcwd().'/.env')) {
+            copy(getcwd().'/.env.dist', getcwd().'/.env');
         }
     }
 
@@ -140,6 +153,8 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
             PackageEvents::POST_PACKAGE_INSTALL => 'configurePackage',
             PackageEvents::POST_PACKAGE_UPDATE => 'updatePackage',
             PackageEvents::POST_PACKAGE_UNINSTALL => 'unconfigurePackage',
+            ScriptEvents::POST_INSTALL_CMD => 'postInstall',
+            ScriptEvents::POST_UPDATE_CMD => 'postUpdate',
             'auto-scripts' => 'executeAutoScripts',
         );
     }
