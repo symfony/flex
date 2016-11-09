@@ -75,18 +75,16 @@ class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
 
     public function executeAutoScripts(Event $event)
     {
+        $event->stopPropagation();
+
         // force reloading scripts as we might have added and removed during this run
         $json = new JsonFile(Factory::getComposerFile());
         $jsonContents = $json->read();
 
-        if (isset($jsonContents['scripts']['auto-scripts'])) {
-            $executor = new ScriptExecutor($this->composer, $this->io, $this->options);
-            foreach ($jsonContents['scripts']['auto-scripts'] as $cmd => $type) {
-                $executor->execute($type, $cmd);
-            }
+        $executor = new ScriptExecutor($this->composer, $this->io, $this->options);
+        foreach ($jsonContents['scripts']['auto-scripts'] as $cmd => $type) {
+            $executor->execute($type, $cmd);
         }
-
-        $event->stopPropagation();
     }
 
     private function install(Recipe $recipe)
