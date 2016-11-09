@@ -15,6 +15,10 @@ abstract class AbstractCopyConfigurator extends AbstractConfigurator
                 $this->copyDir($from.'/'.$source, $to.'/'.$target);
             } else {
 // FIXME: it does not keep fs rights! executable fe bin/console?
+                if (!is_dir(dirname($to.'/'.$target))) {
+                    mkdir(dirname($to.'/'.$target), 0777, true);
+                }
+
                 copy($from.'/'.$source, $to.'/'.$target);
             }
         }
