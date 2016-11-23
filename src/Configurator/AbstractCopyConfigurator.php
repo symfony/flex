@@ -1,6 +1,6 @@
 <?php
 
-namespace Symfony\Start\Configurator;
+namespace Symfony\Flex\Configurator;
 
 abstract class AbstractCopyConfigurator extends AbstractConfigurator
 {

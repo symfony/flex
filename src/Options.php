@@ -1,6 +1,6 @@
 <?php
 
-namespace Symfony\Start;
+namespace Symfony\Flex;
 
 class Options
 {

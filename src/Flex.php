@@ -1,6 +1,6 @@
 <?php
 
-namespace Symfony\Start;
+namespace Symfony\Flex;
 
 use Composer\Composer;
 use Composer\Factory;
@@ -14,7 +14,7 @@ use Composer\Plugin\PluginInterface;
 use Composer\Script\Event;
 use Composer\Script\ScriptEvents;
 
-class SymfonyStartPlugin implements PluginInterface, EventSubscriberInterface
+class Flex implements PluginInterface, EventSubscriberInterface
 {
     private $composer;
     private $io;

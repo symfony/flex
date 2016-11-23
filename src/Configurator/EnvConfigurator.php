@@ -1,8 +1,8 @@
 <?php
 
-namespace Symfony\Start\Configurator;
+namespace Symfony\Flex\Configurator;
 
-use Symfony\Start\Recipe;
+use Symfony\Flex\Recipe;
 
 class EnvConfigurator extends AbstractConfigurator
 {

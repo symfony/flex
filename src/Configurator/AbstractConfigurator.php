@@ -1,11 +1,11 @@
 <?php
 
-namespace Symfony\Start\Configurator;
+namespace Symfony\Flex\Configurator;
 
 use Composer\Composer;
 use Composer\IO\IOInterface;
-use Symfony\Start\Options;
-use Symfony\Start\Recipe;
+use Symfony\Flex\Options;
+use Symfony\Flex\Recipe;
 
 abstract class AbstractConfigurator
 {

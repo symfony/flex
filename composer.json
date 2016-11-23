@@ -1,5 +1,5 @@
 {
-    "name": "symfony/symfony-start-composer",
+    "name": "symfony/flex",
     "type": "composer-plugin",
     "license": "MIT",
     "authors": [
@@ -19,17 +19,16 @@
     },
     "autoload": {
         "classmap": [
-            "src/SymfonyStartPlugin.php"
+            "src/Flex.php"
         ],
         "psr-4": {
-            "Symfony\\Start\\": "src",
-            "Symfony\\Recipes\\": "recipes"
+            "Symfony\\Flex\\": "src"
         }
     },
     "extra": {
         "branch-alias": {
             "dev-master": "1.0-dev"
         },
-        "class": "Symfony\\Start\\SymfonyStartPlugin"
+        "class": "Symfony\\Flex\\Flex"
     }
 }
