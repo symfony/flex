@@ -9,26 +9,28 @@ class BundlesConfigurator extends AbstractConfigurator
     public function configure(Recipe $recipe, $bundles)
     {
         $this->io->write('    Enabling the package as a Symfony bundle');
-// FIXME: be sure to not add a bundle twice
 // FIXME: be sure that FrameworkBundle is always first
-        $bundlesini = getcwd().'/conf/bundles.ini';
-        $contents = file_exists($bundlesini) ? file_get_contents($bundlesini) : '';
+        $file = getcwd().'/conf/bundles.php';
+        $registered = file_exists($file) ? (require $file) : array();
         foreach ($this->parseBundles($bundles) as $class => $envs) {
-            $contents .= "$class = $envs\n";
+            $registered[$class] = $envs;
         }
-        file_put_contents($bundlesini, ltrim($contents));
+        file_put_contents($file, sprintf("<?php\nreturn %s;\n", var_export($registered, true)));
     }
 
     public function unconfigure(Recipe $recipe, $bundles)
     {
         $this->io->write('    Disabling the Symfony bundle');
-        $bundlesini = getcwd().'/conf/bundles.ini';
-        $contents = file_exists($bundlesini) ? file_get_contents($bundlesini) : '';
-        foreach (array_keys($this->parseBundles($bundles)) as $class) {
-            $contents = preg_replace('{^'.preg_quote($class).'.+$}m', '', $contents);
-            $contents = preg_replace("/\n+/", "\n", $contents);
+        $file = getcwd().'/conf/bundles.php';
+        if (!file_exists($file)) {
+            return;
         }
-        file_put_contents($bundlesini, ltrim($contents));
+
+        $registered = require $file;
+        foreach (array_keys($this->parseBundles($bundles)) as $class) {
+            unset($registered[$class]);
+        }
+        file_put_contents($file, sprintf("<?php\nreturn %s;\n", var_export($registered, true)));
     }
 
     private function parseBundles($manifest)
