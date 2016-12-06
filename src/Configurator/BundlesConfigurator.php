@@ -59,9 +59,9 @@ class BundlesConfigurator extends AbstractConfigurator
     {
         $contents = "<?php\n\nreturn [\n";
         foreach ($bundles as $class => $envs) {
-            $contents .= "    $class => [";
+            $contents .= "    '$class' => [";
             foreach (array_keys($envs) as $env) {
-                $contents .= "\"$env\" => true, ";
+                $contents .= "'$env' => true, ";
             }
             $contents = substr($contents, 0, -2)."],\n";
         }
