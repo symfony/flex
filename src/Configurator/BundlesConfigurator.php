@@ -12,12 +12,12 @@ class BundlesConfigurator extends AbstractConfigurator
 // FIXME: be sure that FrameworkBundle is always first
         $file = getcwd().'/conf/bundles.php';
         $registered = file_exists($file) ? (require $file) : array();
-        foreach ($this->parseBundles($bundles) as $class => $envs) {
+        foreach ($this->parse($bundles) as $class => $envs) {
             foreach ($envs as $env) {
                 $registered[$class][$env] = true;
             }
         }
-        file_put_contents($file, sprintf("<?php\nreturn %s;\n", var_export($registered, true)));
+        $this->dump($file, $registered);
     }
 
     public function unconfigure(Recipe $recipe, $bundles)
@@ -29,13 +29,13 @@ class BundlesConfigurator extends AbstractConfigurator
         }
 
         $registered = require $file;
-        foreach (array_keys($this->parseBundles($bundles)) as $class) {
+        foreach (array_keys($this->parse($bundles)) as $class) {
             unset($registered[$class]);
         }
-        file_put_contents($file, sprintf("<?php\nreturn %s;\n", var_export($registered, true)));
+        $this->dump($file, $registered);
     }
 
-    private function parseBundles($manifest)
+    private function parse($manifest)
     {
         $bundles = array();
         foreach ($manifest as $class => $envs) {
@@ -43,5 +43,19 @@ class BundlesConfigurator extends AbstractConfigurator
         }
 
         return $bundles;
+    }
+
+    private function dump($file, $bundles)
+    {
+        $contents = "<?php\nreturn [\n";
+        foreach ($bundles as $class => $envs) {
+            $contents .= "    $class => [";
+            foreach (array_keys($envs) as $env) {
+                $contents .= "$env => true, ";
+            }
+            $contents = substr($contents, -2)."],\n";
+        }
+        $contents .= "\n];\n";
+        file_put_contents($file, $contents);
     }
 }
