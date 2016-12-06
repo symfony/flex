@@ -13,7 +13,9 @@ class BundlesConfigurator extends AbstractConfigurator
         $file = getcwd().'/conf/bundles.php';
         $registered = file_exists($file) ? (require $file) : array();
         foreach ($this->parseBundles($bundles) as $class => $envs) {
-            $registered[$class] = $envs;
+            foreach ($envs as $env) {
+                $registered[$class][$env] = true;
+            }
         }
         file_put_contents($file, sprintf("<?php\nreturn %s;\n", var_export($registered, true)));
     }
