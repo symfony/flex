@@ -10,8 +10,8 @@ class BundlesConfigurator extends AbstractConfigurator
     {
         $this->io->write('    Enabling the package as a Symfony bundle');
 // FIXME: be sure that FrameworkBundle is always first
-        $file = getcwd().'/conf/bundles.php';
-        $registered = file_exists($file) ? (require $file) : array();
+        $file = $this->getConfFile();
+        $registered = $this->load($file);
         foreach ($this->parse($bundles) as $class => $envs) {
             foreach ($envs as $env) {
                 $registered[$class][$env] = true;
@@ -23,12 +23,12 @@ class BundlesConfigurator extends AbstractConfigurator
     public function unconfigure(Recipe $recipe, $bundles)
     {
         $this->io->write('    Disabling the Symfony bundle');
-        $file = getcwd().'/conf/bundles.php';
+        $file = $this->getConfFile();
         if (!file_exists($file)) {
             return;
         }
 
-        $registered = require $file;
+        $registered = $this->load($file);
         foreach (array_keys($this->parse($bundles)) as $class) {
             unset($registered[$class]);
         }
@@ -45,17 +45,37 @@ class BundlesConfigurator extends AbstractConfigurator
         return $bundles;
     }
 
+    private function load($file)
+    {
+        $bundles = file_exists($file) ? (require $file) : [];
+        if (!is_array($bundles)) {
+            $bundles = [];
+        }
+
+        return $bundles;
+    }
+
     private function dump($file, $bundles)
     {
-        $contents = "<?php\nreturn [\n";
+        $contents = "<?php\n\nreturn [\n";
         foreach ($bundles as $class => $envs) {
             $contents .= "    $class => [";
             foreach (array_keys($envs) as $env) {
-                $contents .= "$env => true, ";
+                $contents .= "\"$env\" => true, ";
             }
-            $contents = substr($contents, -2)."],\n";
+            $contents = substr($contents, 0, -2)."],\n";
         }
-        $contents .= "\n];\n";
+        $contents .= "];\n";
+
+        if (!is_dir(dirname($file))) {
+            mkdir(dirname($file), 0777, true);
+        }
+
         file_put_contents($file, $contents);
+    }
+
+    private function getConfFile()
+    {
+        return getcwd().'/conf/bundles.php';
     }
 }
