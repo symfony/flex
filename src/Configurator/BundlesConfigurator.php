@@ -76,6 +76,6 @@ class BundlesConfigurator extends AbstractConfigurator
 
     private function getConfFile()
     {
-        return getcwd().'/conf/bundles.php';
+        return getcwd().'/etc/bundles.php';
     }
 }

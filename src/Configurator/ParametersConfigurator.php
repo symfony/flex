@@ -14,13 +14,13 @@ class ParametersConfigurator extends AbstractConfigurator
 
     public function unconfigure(Recipe $recipe, $parameters)
     {
-// FIXME: what about parameters.yaml, difficult to revert that (too many possible side effect
+// FIXME: what about config.yaml, difficult to revert that (too many possible side effect
 //        between bundles changing the same value)
     }
 
     private function updateParametersIni($parameters)
     {
-        $target = getcwd().'/conf/parameters.yaml';
+        $target = getcwd().'/etc/config.yaml';
         $contents = file_get_contents($target);
         foreach ($parameters as $key => $value) {
 // FIXME: we don't have access to YAML here :( Or can we?

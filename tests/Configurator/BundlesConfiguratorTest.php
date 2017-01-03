@@ -23,14 +23,14 @@ class BundlesConfiguratorTest extends \PHPUnit_Framework_TestCase
 
         $recipe = $this->getMockBuilder('Symfony\Flex\Recipe')->disableOriginalConstructor()->getMock();
 
-        $config = sys_get_temp_dir().'/conf/bundles.php';
+        $config = sys_get_temp_dir().'/etc/bundles.php';
         @unlink($config);
         $configurator->configure($recipe, array('FooBundle' => ['dev', 'test']));
         $this->assertEquals(<<<EOF
 <?php
 
 return [
-    FooBundle => ["dev" => true, "test" => true],
+    'FooBundle' => ['dev' => true, 'test' => true],
 ];
 
 EOF
