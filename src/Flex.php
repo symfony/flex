@@ -10,7 +10,7 @@ use Composer\Installer\PackageEvents;
 use Composer\IO\IOInterface;
 use Composer\IO\NullIO;
 use Composer\Json\JsonFile;
-use Composer\Package\Package;
+use Composer\Package\PackageInterface;
 use Composer\Plugin\PluginInterface;
 use Composer\Script\Event;
 use Composer\Script\ScriptEvents;
@@ -112,7 +112,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
     }
 
-    private function filterPackageNames(Package $package)
+    private function filterPackageNames(PackageInterface $package)
     {
 // FIXME: getNames() can return n names
         $name = $package->getNames()[0];
