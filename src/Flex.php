@@ -8,6 +8,7 @@ use Composer\EventDispatcher\EventSubscriberInterface;
 use Composer\Installer\PackageEvent;
 use Composer\Installer\PackageEvents;
 use Composer\IO\IOInterface;
+use Composer\IO\NullIO;
 use Composer\Json\JsonFile;
 use Composer\Package\Package;
 use Composer\Plugin\PluginInterface;
@@ -136,60 +137,20 @@ class Flex implements PluginInterface, EventSubscriberInterface
         return new Options($options);
     }
 
-    // FIXME: we can probably reuse the RemoteFilesystem class of Composer
-    // For that, we should probably not return 404 but an empty array when we don't have any configuration for a package
     private function getRemoteContent($name)
     {
-        $context = stream_context_create(array(
-            'http' => array(
-                'method' => 'GET',
-                'ignore_errors' => true,
-                'follow_location' => true,
-                'max_redirects' => 3,
-                'timeout' => 10,
-            ),
-//            'ssl' => array(
-//                'cafile' => $certFile,
-//                'verify_peer' => 1,
-//                'verify_host' => 2,
-//            ),
-        ));
+        $config = $this->composer->getConfig();
+        $config->merge(array('config' => array('secure-http' => false)));
+        $config->prohibitUrlByConfig('http://flex.symfony.com', new NullIO());
+        $rfs = Factory::createRemoteFilesystem($this->io, $config);
 
-        $level = error_reporting(0);
-        $body = file_get_contents('https://flex.symfony.com/packages/'.$name, 0, $context);
-        error_reporting($level);
-        if (false === $body) {
-            $error = error_get_last();
-
-            throw new \RuntimeException(sprintf('An error occurred: %s.', $error['message']));
+        try {
+            return json_decode($rfs->getContents('flex.symfony.com', 'https://flex.symfony.com/packages/'.$name, false), true);
+        } catch (TransportException $e) {
+            if (0 !== $e->getCode() && 404 == $e->getCode()) {
+                return;
+            }
         }
-
-        // status code
-        if (!preg_match('{HTTP/\d\.\d (\d+) }i', $http_response_header[0], $match)) {
-            throw new \RuntimeException('An unknown error occurred.');
-        }
-
-        $statusCode = $match[1];
-        if (400 == $statusCode) {
-            $data = json_decode($body, true);
-
-            throw new \RuntimeException($data['error']);
-        }
-
-        if (404 == $statusCode) {
-            return;
-        }
-
-        if (200 != $statusCode) {
-            throw new \RuntimeException(sprintf('The web service failed for an unknown reason (HTTP %s).', $statusCode));
-        }
-
-        return json_decode($body, true);
-    }
-
-    private function getRecipesDir()
-    {
-        return __DIR__.'/../recipes';
     }
 
     public static function getSubscribedEvents()
