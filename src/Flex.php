@@ -3,6 +3,7 @@
 namespace Symfony\Flex;
 
 use Composer\Composer;
+use Composer\Downloader\TransportException;
 use Composer\Factory;
 use Composer\EventDispatcher\EventSubscriberInterface;
 use Composer\Installer\PackageEvent;
