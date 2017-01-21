@@ -8,13 +8,13 @@ class Recipe
 {
     private $package;
     private $name;
-    private $dir;
+    private $data;
 
-    public function __construct(Package $package, $name, $dir)
+    public function __construct(Package $package, $name, $data)
     {
         $this->package = $package;
         $this->name = $name;
-        $this->dir = $dir;
+        $this->data = $data;
     }
 
     public function getPackage()
@@ -27,8 +27,8 @@ class Recipe
         return $this->name;
     }
 
-    public function getDir()
+    public function getData()
     {
-        return $this->dir;
+        return $this->data;
     }
 }

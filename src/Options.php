@@ -20,7 +20,7 @@ class Options
     {
         $options = $this->options;
 
-        return preg_replace_callback('{%(.+?)%}', function ($matches) use ($options) {
+        return rtrim(preg_replace_callback('{%(.+?)%}', function ($matches) use ($options) {
 // FIXME: we should have a validator checking recipes when they are merged into the repo
 // so that exceptions here are just not possible
             $option = str_replace('_', '-', strtolower($matches[1]));
@@ -29,6 +29,6 @@ class Options
             }
 
             return $options[$option];
-        }, $target);
+        }, $target), '/');
     }
 }
