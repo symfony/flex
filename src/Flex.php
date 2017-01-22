@@ -21,24 +21,14 @@ class Flex implements PluginInterface, EventSubscriberInterface
     private $composer;
     private $io;
     private $options;
-    private $map;
+    private $configurator;
 
     public function activate(Composer $composer, IOInterface $io)
     {
         $this->composer = $composer;
         $this->io = $io;
         $this->options = $this->initOptions();
-        $map = array(
-            'bundles' => Configurator\BundlesConfigurator::class,
-            'composer-scripts' => Configurator\ComposerScriptsConfigurator::class,
-            'copy-from-recipe' => Configurator\CopyFromRecipeConfigurator::class,
-            'copy-from-package' => Configurator\CopyFromPackageConfigurator::class,
-            'env' => Configurator\EnvConfigurator::class,
-            'parameters' => Configurator\ParametersConfigurator::class,
-        );
-        foreach ($map as $key => $class) {
-            $this->map[$key] = new $class($composer, $io, $this->options);
-        }
+        $this->configurator = new Configurator($composer, $io, $this->options);
     }
 
     public function configurePackage(PackageEvent $event)
@@ -46,7 +36,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $package = $event->getOperation()->getPackage();
         foreach ($this->filterPackageNames($package) as $name => $data) {
             $this->io->write(sprintf('    Detected auto-configuration settings for "%s"', $name));
-            $this->install(new Recipe($package, $name, $data));
+            $this->configurator->install(new Recipe($package, $name, $data));
         }
     }
 
@@ -59,7 +49,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $package = $event->getOperation()->getPackage();
         foreach ($this->filterPackageNames($package) as $name => $data) {
             $this->io->write(sprintf('    Auto-unconfiguring "%s"', $name));
-            $this->uninstall(new Recipe($package, $name, $data));
+            $this->configurator->unconfigure(new Recipe($package, $name, $data));
         }
     }
 
@@ -86,30 +76,6 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $executor = new ScriptExecutor($this->composer, $this->io, $this->options);
         foreach ($jsonContents['scripts']['auto-scripts'] as $cmd => $type) {
             $executor->execute($type, $cmd);
-        }
-    }
-
-    private function install(Recipe $recipe)
-    {
-        $manifest = $recipe->getData()['manifest'];
-        foreach ($manifest as $key => $config) {
-            if (!isset($this->map[$key])) {
-                throw new \InvalidArgumentException(sprintf('Unknown key "%s" in package "%s" manifest.', $key, $name));
-            }
-
-            $this->map[$key]->configure($recipe, $config);
-        }
-    }
-
-    private function uninstall(Recipe $recipe)
-    {
-        $manifest = $recipe->getData()['manifest'];
-        foreach ($manifest as $key => $config) {
-            if (!isset($this->map[$key])) {
-                throw new \InvalidArgumentException(sprintf('Unknown key "%s" in package "%s" manifest.', $key, $name));
-            }
-
-            $this->map[$key]->unconfigure($recipe, $config);
         }
     }
 

@@ -10,17 +10,17 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
     {
         $this->io->write('    Setting configuration and copying files');
 
-        $this->copyFiles($config, $recipe->getData(), getcwd());
+        $this->copyFiles($config, $recipe->getFiles(), getcwd());
     }
 
     public function unconfigure(Recipe $recipe, $config)
     {
         $this->io->write('    Removing configuration and files');
 
-        $this->removeFiles($config, $recipe->getData(), getcwd());
+        $this->removeFiles($config, $recipe->getFiles(), getcwd());
     }
 
-    private function copyFiles($manifest, $data, $to)
+    private function copyFiles($manifest, $files, $to)
     {
         foreach ($manifest as $source => $target) {
             $target = $this->options->expandTargetDir($target);
@@ -28,16 +28,16 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
 // FIXME: how to manage different versions/branches?
 // FIXME: never override an existing file, or at least ask the question! Or display a diff, for files that should not be modified like for symfony/requirements
 // FIXME: ADD the possibility to fill-in some parameters via questions (and sensible default values)
-                $this->copyDir($source, $to.'/'.$target, $data);
+                $this->copyDir($source, $to.'/'.$target, $files);
             } else {
-                $this->copyFile($to.'/'.$target, $data['files'][$source]);
+                $this->copyFile($to.'/'.$target, $files[$source]);
             }
         }
     }
 
-    private function copyDir($source, $target, $data)
+    private function copyDir($source, $target, $files)
     {
-        foreach ($data['files'] as $file => $contents) {
+        foreach ($files as $file => $contents) {
             if (0 === strpos($file, $source)) {
                 $this->copyFile($target.'/'.substr($file, strlen($source)), $contents);
             }
@@ -54,12 +54,12 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
         file_put_contents($to, $contents);
     }
 
-    private function removeFiles($manifest, $data, $to)
+    private function removeFiles($manifest, $files, $to)
     {
         foreach ($manifest as $source => $target) {
             $target = $this->options->expandTargetDir($target);
             if ('/' === $source[strlen($source) - 1]) {
-                foreach (array_keys($data['files']) as $file) {
+                foreach (array_keys($files) as $file) {
                     if (0 === strpos($file, $source)) {
                         $this->removeFile($to.'/'.$target.'/'.substr($file, strlen($source)));
                     }
