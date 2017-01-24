@@ -26,6 +26,7 @@ class Configurator
             'copy-from-package' => Configurator\CopyFromPackageConfigurator::class,
             'env' => Configurator\EnvConfigurator::class,
             'parameters' => Configurator\ParametersConfigurator::class,
+            'makefile' => Configurator\MakefileConfigurator::class,
         );
     }
 
