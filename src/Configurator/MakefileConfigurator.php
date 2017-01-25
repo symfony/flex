@@ -9,19 +9,19 @@ class MakefileConfigurator extends AbstractConfigurator
     public function configure(Recipe $recipe, $definitions)
     {
         $this->io->write('    Adding Makefile entries');
-        $data = sprintf("\n###> %s ###\n%s\n###< %s ###\n", $recipe->getName(), $definitions, $recipe->getName());
+        $data = sprintf("\n###> %s ###\n%s\n###< %s ###\n", $recipe->getName(), implode("\n", $definitions), $recipe->getName());
         file_put_contents(getcwd().'/Makefile', $data, FILE_APPEND);
     }
 
     public function unconfigure(Recipe $recipe, $vars)
     {
         if (!file_exists($makefile = getcwd().'/Makefile')) {
-            continue;
+            return;
         }
 
         $contents = preg_replace(sprintf('{\n+###> %s ###.*###< %s ###\n+}s', $recipe->getName(), $recipe->getName()), "\n", file_get_contents($makefile), -1, $count);
         if (!$count) {
-            continue;
+            return;
         }
 
         $this->io->write(sprintf('    Removing Makefile entries from %s', $file));
