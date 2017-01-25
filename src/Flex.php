@@ -83,7 +83,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
     {
 // FIXME: getNames() can return n names
         $name = $package->getNames()[0];
-        if ($body = $this->getRemoteContent($name)) {
+        if ($body = $this->getRemoteContent($package, $name)) {
             yield $name => $body;
         }
     }
@@ -104,15 +104,23 @@ class Flex implements PluginInterface, EventSubscriberInterface
         return new Options($options);
     }
 
-    private function getRemoteContent($name)
+    private function getRemoteContent(PackageInterface $package, $name)
     {
+        $version = $package->getFullPrettyVersion(false);
+        if (false !== strpos($version, ' ')) {
+            list($version, $ref) = explode(' ', $version);
+            $url = sprintf("https://flex.symfony.com/packages/%s?v=%s&r=%s", $name, urlencode($version), urlencode($ref));
+        } else {
+            $url = sprintf("https://flex.symfony.com/packages/%s?v=%s", $name, urlencode($version));
+        }
+
         $config = $this->composer->getConfig();
         $config->merge(array('config' => array('secure-http' => false)));
         $config->prohibitUrlByConfig('http://flex.symfony.com', new NullIO());
         $rfs = Factory::createRemoteFilesystem($this->io, $config);
 
         try {
-            return json_decode($rfs->getContents('flex.symfony.com', 'https://flex.symfony.com/packages/'.$name, false), true);
+            return json_decode($rfs->getContents('flex.symfony.com', $url, false), true);
         } catch (TransportException $e) {
             if (0 !== $e->getCode() && 404 == $e->getCode()) {
                 return;
