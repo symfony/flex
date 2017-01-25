@@ -34,7 +34,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
     public function configurePackage(PackageEvent $event)
     {
         $package = $event->getOperation()->getPackage();
-        foreach ($this->filterPackageNames($package) as $name => $data) {
+        foreach ($this->filterPackageNames($package, 'install') as $name => $data) {
             $this->io->write(sprintf('    Detected auto-configuration settings for "%s"', $name));
             $this->configurator->install(new Recipe($package, $name, $data));
         }
@@ -47,7 +47,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
     public function unconfigurePackage(PackageEvent $event)
     {
         $package = $event->getOperation()->getPackage();
-        foreach ($this->filterPackageNames($package) as $name => $data) {
+        foreach ($this->filterPackageNames($package, 'uninstall') as $name => $data) {
             $this->io->write(sprintf('    Auto-unconfiguring "%s"', $name));
             $this->configurator->unconfigure(new Recipe($package, $name, $data));
         }
@@ -79,11 +79,11 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
     }
 
-    private function filterPackageNames(PackageInterface $package)
+    private function filterPackageNames(PackageInterface $package, $operation)
     {
 // FIXME: getNames() can return n names
         $name = $package->getNames()[0];
-        if ($body = $this->getRemoteContent($package, $name)) {
+        if ($body = $this->getRemoteContent($package, $name, $operation)) {
             yield $name => $body;
         }
     }
@@ -104,14 +104,14 @@ class Flex implements PluginInterface, EventSubscriberInterface
         return new Options($options);
     }
 
-    private function getRemoteContent(PackageInterface $package, $name)
+    private function getRemoteContent(PackageInterface $package, $name, $operation)
     {
         $version = $package->getFullPrettyVersion(false);
         if (false !== strpos($version, ' ')) {
             list($version, $ref) = explode(' ', $version);
-            $url = sprintf("https://flex.symfony.com/packages/%s?v=%s&r=%s", $name, urlencode($version), urlencode($ref));
+            $url = sprintf("https://flex.symfony.com/packages/%s?o=%s&v=%s&r=%s", $name, $operation, urlencode($version), urlencode($ref));
         } else {
-            $url = sprintf("https://flex.symfony.com/packages/%s?v=%s", $name, urlencode($version));
+            $url = sprintf("https://flex.symfony.com/packages/%s?o=%s&v=%s", $name, $operation, urlencode($version));
         }
 
         $config = $this->composer->getConfig();
