@@ -117,10 +117,16 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $config = $this->composer->getConfig();
         $config->merge(array('config' => array('secure-http' => false)));
         $config->prohibitUrlByConfig('http://flex.symfony.com', new NullIO());
+        $options = [
+            'http' => [
+                'header' => "Flex-ID: ".$this->composer->getConfig()->get('flex-id'),
+            ],
+        ];
+
         $rfs = Factory::createRemoteFilesystem($this->io, $config);
 
         try {
-            return json_decode($rfs->getContents('flex.symfony.com', $url, false), true);
+            return json_decode($rfs->getContents('flex.symfony.com', $url, false, $options), true);
         } catch (TransportException $e) {
             if (0 !== $e->getCode() && 404 == $e->getCode()) {
                 return;
