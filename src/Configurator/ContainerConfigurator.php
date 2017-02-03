@@ -4,7 +4,7 @@ namespace Symfony\Flex\Configurator;
 
 use Symfony\Flex\Recipe;
 
-class ParametersConfigurator extends AbstractConfigurator
+class ContainerConfigurator extends AbstractConfigurator
 {
     public function configure(Recipe $recipe, $parameters)
     {
@@ -20,7 +20,7 @@ class ParametersConfigurator extends AbstractConfigurator
 
     private function updateParametersIni($parameters)
     {
-        $target = getcwd().'/etc/config.yaml';
+        $target = getcwd().'/etc/container.yaml';
         $contents = file_get_contents($target);
         foreach ($parameters as $key => $value) {
 // FIXME: we don't have access to YAML here :( Or can we?
