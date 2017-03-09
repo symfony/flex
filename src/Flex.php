@@ -92,7 +92,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
     private function filterPackageNames(PackageInterface $package, $operation)
     {
-// FIXME: getNames() can return n names
+        // FIXME: getNames() can return n names
         $name = $package->getNames()[0];
         if ($body = $this->getRemoteContent($package, $name, $operation)) {
             yield $name => $body;

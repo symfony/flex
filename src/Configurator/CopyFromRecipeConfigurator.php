@@ -35,9 +35,6 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
         foreach ($manifest as $source => $target) {
             $target = $this->options->expandTargetDir($target);
             if ('/' === $source[strlen($source) - 1]) {
-// FIXME: how to manage different versions/branches?
-// FIXME: never override an existing file, or at least ask the question! Or display a diff, for files that should not be modified like for symfony/requirements
-// FIXME: ADD the possibility to fill-in some parameters via questions (and sensible default values)
                 $this->copyDir($source, $to.'/'.$target, $files);
             } else {
                 $this->copyFile($to.'/'.$target, $files[$source]);

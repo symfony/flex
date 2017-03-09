@@ -33,8 +33,6 @@ class Options
         $options = $this->options;
 
         return rtrim(preg_replace_callback('{%(.+?)%}', function ($matches) use ($options) {
-// FIXME: we should have a validator checking recipes when they are merged into the repo
-// so that exceptions here are just not possible
             $option = str_replace('_', '-', strtolower($matches[1]));
             if (!isset($options[$option])) {
                 throw new \InvalidArgumentException(sprintf('Placeholder "%s" does not exist.', $matches[1]));

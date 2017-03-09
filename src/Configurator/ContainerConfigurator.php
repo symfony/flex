@@ -26,8 +26,7 @@ class ContainerConfigurator extends AbstractConfigurator
 
     public function unconfigure(Recipe $recipe, $parameters)
     {
-// FIXME: what about config.yaml, difficult to revert that (too many possible side effect
-//        between bundles changing the same value)
+        // FIXME: hard to do, but as adding parameters should be very rare, that's fine
     }
 
     private function updateParametersIni($parameters)
@@ -35,8 +34,7 @@ class ContainerConfigurator extends AbstractConfigurator
         $target = getcwd().'/etc/container.yaml';
         $contents = file_get_contents($target);
         foreach ($parameters as $key => $value) {
-// FIXME: we don't have access to YAML here :( Or can we?
-// so, only string, bools, int... work here
+            // FIXME: var_export() only works for basics types, but we don't have access to the Symfony YAML component here
             $value = var_export($value, true);
             $count = 0;
             $contents = preg_replace('{^( *)'.$key.'( *):( *).*$}im', "$1$key$2:$3$value", $contents, -1, $count);

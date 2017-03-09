@@ -93,8 +93,6 @@ class ScriptExecutor
     {
         $repo = $this->composer->getRepositoryManager()->getLocalRepository();
         if (!$repo->findPackage('symfony/console', new EmptyConstraint())) {
-// FIXME: we need a way to disable the automatic run of cache:clear and assets:install
-//        via the composer extra configuration
             $this->io->writeError(sprintf('<warning>Skipping "%s" (needs symfony/console to run).</warning>', $cmd));
 
             return;
