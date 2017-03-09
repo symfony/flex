@@ -47,9 +47,13 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
 
     private function copyDir($source, $target, $files)
     {
-        foreach ($files as $file => $contents) {
+        foreach ($files as $file => $data) {
             if (0 === strpos($file, $source)) {
-                $this->copyFile($target.'/'.substr($file, strlen($source)), $contents);
+                $file = $target.'/'.substr($file, strlen($source));
+                $this->copyFile($file, $data['contents']);
+                if ($data['executable']) {
+                    @chmod($file, fileperms($file) | 0111);
+                }
             }
         }
     }
