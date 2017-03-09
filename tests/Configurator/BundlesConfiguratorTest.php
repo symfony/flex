@@ -19,8 +19,9 @@ function getcwd()
 namespace Symfony\Flex\Tests\Configurator;
 
 use Symfony\Flex\Configurator\BundlesConfigurator;
+use PHPUnit\Framework\TestCase;
 
-class BundlesConfiguratorTest extends \PHPUnit_Framework_TestCase
+class BundlesConfiguratorTest extends TestCase
 {
     public function testConfigure()
     {
