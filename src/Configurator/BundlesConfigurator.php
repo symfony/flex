@@ -55,7 +55,7 @@ class BundlesConfigurator extends AbstractConfigurator
 
     private function parse($manifest)
     {
-        $bundles = array();
+        $bundles = [];
         foreach ($manifest as $class => $envs) {
             $bundles[ltrim($class, '\\')] = $envs;
         }

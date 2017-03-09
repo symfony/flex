@@ -31,7 +31,7 @@ class Configurator
         $this->composer = $composer;
         $this->io = $io;
         $this->options = $options;
-        $this->configurators = array(
+        $this->configurators = [
             'bundles' => Configurator\BundlesConfigurator::class,
             'composer-scripts' => Configurator\ComposerScriptsConfigurator::class,
             'copy-from-recipe' => Configurator\CopyFromRecipeConfigurator::class,
@@ -39,7 +39,7 @@ class Configurator
             'env' => Configurator\EnvConfigurator::class,
             'container' => Configurator\ContainerConfigurator::class,
             'makefile' => Configurator\MakefileConfigurator::class,
-        );
+        ];
     }
 
     public function install(Recipe $recipe)

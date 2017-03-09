@@ -57,7 +57,7 @@ class Recipe
     public function getFiles()
     {
         if (!isset($this->data['files'])) {
-            return array();
+            return [];
         }
 
         return $this->data['files'];

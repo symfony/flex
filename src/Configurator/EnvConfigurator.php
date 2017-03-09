@@ -35,7 +35,7 @@ class EnvConfigurator extends AbstractConfigurator
 
     public function unconfigure(Recipe $recipe, $vars)
     {
-        foreach (array('.env', '.env.dist') as $file) {
+        foreach (['.env', '.env.dist'] as $file) {
             $env = getcwd().'/'.$file;
             if (!file_exists($env)) {
                 continue;

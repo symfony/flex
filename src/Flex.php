@@ -101,13 +101,13 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
     private function initOptions()
     {
-        $options = array_merge(array(
+        $options = array_merge([
             'bin-dir' => 'bin',
             'conf-dir' => 'conf',
             'etc-dir' => 'etc',
             'src-dir' => 'src',
             'web-dir' => 'web',
-        ), $this->composer->getPackage()->getExtra());
+        ], $this->composer->getPackage()->getExtra());
 
         return new Options($options);
     }
@@ -142,13 +142,13 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
     public static function getSubscribedEvents()
     {
-        return array(
+        return [
             PackageEvents::POST_PACKAGE_INSTALL => 'configurePackage',
             PackageEvents::POST_PACKAGE_UPDATE => 'reconfigurePackage',
             PackageEvents::POST_PACKAGE_UNINSTALL => 'unconfigurePackage',
             ScriptEvents::POST_INSTALL_CMD => 'postInstall',
             ScriptEvents::POST_UPDATE_CMD => 'postUpdate',
             'auto-scripts' => 'executeAutoScripts',
-        );
+        ];
     }
 }
