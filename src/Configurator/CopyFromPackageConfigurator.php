@@ -37,18 +37,14 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
         foreach ($manifest as $source => $target) {
             $target = $this->options->expandTargetDir($target);
             if ('/' === $source[strlen($source) - 1]) {
-// FIXME: how to manage different versions/branches?
-// FIXME: never override an existing file, or at least ask the question! Or display a diff, for files that should not be modified like for symfony/requirements
-// FIXME: ADD the possibility to fill-in some parameters via questions (and sensible default values)
                 $this->copyDir($from.'/'.$source, $to.'/'.$target);
             } else {
-// FIXME: it does not keep fs rights! executable fe bin/console?
                 if (!is_dir(dirname($to.'/'.$target))) {
                     mkdir(dirname($to.'/'.$target), 0777, true);
                 }
 
                 if (!file_exists($to.'/'.$target)) {
-                    copy($from.'/'.$source, $to.'/'.$target);
+                    $this->copyFile($from.'/'.$source, $to.'/'.$target);
                 }
             }
         }
@@ -79,10 +75,15 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
                     mkdir($new);
                 }
             } elseif (!file_exists($target.'/'.$iterator->getSubPathName())) {
-// FIXME: it does not keep fs rights! executable fe bin/console?
-                copy($item, $target.'/'.$iterator->getSubPathName());
+                $this->copyFile($item, $target.'/'.$iterator->getSubPathName());
             }
         }
+    }
+
+    public function copyFile($source, $target)
+    {
+        copy($source, $target);
+        @chmod($target, fileperms($target) | (fileperms($source) & 0111));
     }
 
     private function removeFilesFromDir($source, $target)
