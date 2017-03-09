@@ -21,10 +21,16 @@ class BundlesConfigurator extends AbstractConfigurator
     public function configure(Recipe $recipe, $bundles)
     {
         $this->io->write('    Enabling the package as a Symfony bundle');
-// FIXME: be sure that FrameworkBundle is always first
         $file = $this->getConfFile();
         $registered = $this->load($file);
-        foreach ($this->parse($bundles) as $class => $envs) {
+        $classes = $this->parse($bundles);
+        if (isset($classes[$fwb = 'Symfony\Bundle\FrameworkBundle\FrameworkBundle'])) {
+            foreach ($classes[$fwb] as $env) {
+                $registered[$fwb][$env] = true;
+            }
+            unset($classes[$fwb]);
+        }
+        foreach ($classes as $class => $envs) {
             foreach ($envs as $env) {
                 $registered[$class][$env] = true;
             }
@@ -51,7 +57,7 @@ class BundlesConfigurator extends AbstractConfigurator
     {
         $bundles = array();
         foreach ($manifest as $class => $envs) {
-            $bundles[$class] = $envs;
+            $bundles[ltrim($class, '\\')] = $envs;
         }
 
         return $bundles;

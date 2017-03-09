@@ -35,11 +35,15 @@ class BundlesConfiguratorTest extends TestCase
 
         $config = sys_get_temp_dir().'/etc/bundles.php';
         @unlink($config);
-        $configurator->configure($recipe, array('FooBundle' => ['dev', 'test']));
+        $configurator->configure($recipe, [
+            'FooBundle' => ['dev', 'test'],
+            'Symfony\Bundle\FrameworkBundle\FrameworkBundle' => ['all'],
+        ]);
         $this->assertEquals(<<<EOF
 <?php
 
 return [
+    'Symfony\Bundle\FrameworkBundle\FrameworkBundle' => ['all' => true],
     'FooBundle' => ['dev' => true, 'test' => true],
 ];
 
