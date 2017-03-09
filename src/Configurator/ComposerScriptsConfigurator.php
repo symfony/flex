@@ -1,5 +1,14 @@
 <?php
 
+/*
+ * This file is part of the Symfony package.
+ *
+ * (c) Fabien Potencier <fabien@symfony.com>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
 namespace Symfony\Flex\Configurator;
 
 use Composer\Factory;
@@ -7,6 +16,9 @@ use Composer\Json\JsonFile;
 use Composer\Json\JsonManipulator;
 use Symfony\Flex\Recipe;
 
+/**
+ * @author Fabien Potencier <fabien@symfony.com>
+ */
 class ComposerScriptsConfigurator extends AbstractConfigurator
 {
     public function configure(Recipe $recipe, $scripts)
