@@ -107,10 +107,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             'etc-dir' => 'etc',
             'src-dir' => 'src',
             'web-dir' => 'web',
-//            'cache-warmup' => true,
         ), $this->composer->getPackage()->getExtra());
-
-//        $options['cache-warmup'] = getenv('CACHE_WARMUP') ?: $options['cache-warmup'];
 
         return new Options($options);
     }
