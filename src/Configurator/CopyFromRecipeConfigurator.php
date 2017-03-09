@@ -60,8 +60,9 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
             mkdir(dirname($to), 0777, true);
         }
 
-// FIXME: we need a way to say if a file should be executable
-        file_put_contents($to, $contents);
+        if (!file_exists($to)) {
+            file_put_contents($to, $contents);
+        }
     }
 
     private function removeFiles($manifest, $files, $to)

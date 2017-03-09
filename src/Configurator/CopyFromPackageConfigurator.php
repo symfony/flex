@@ -47,7 +47,9 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
                     mkdir(dirname($to.'/'.$target), 0777, true);
                 }
 
-                copy($from.'/'.$source, $to.'/'.$target);
+                if (!file_exists($to.'/'.$target)) {
+                    copy($from.'/'.$source, $to.'/'.$target);
+                }
             }
         }
     }
@@ -76,7 +78,7 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
                 if (!is_dir($new = $target.'/'.$iterator->getSubPathName())) {
                     mkdir($new);
                 }
-            } else {
+            } elseif (!file_exists($target.'/'.$iterator->getSubPathName())) {
 // FIXME: it does not keep fs rights! executable fe bin/console?
                 copy($item, $target.'/'.$iterator->getSubPathName());
             }
