@@ -9,13 +9,11 @@
         }
     ],
     "require": {
-        "composer-plugin-api": "^1.0"
+        "php": "^7.0",
+        "composer-plugin-api": "^1.1"
     },
     "require-dev": {
-        "composer/composer": "^1.0.0"
-    },
-    "config": {
-        "secure-http": false
+        "composer/composer": "^1.4"
     },
     "autoload": {
         "classmap": [
