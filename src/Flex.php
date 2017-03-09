@@ -18,7 +18,6 @@ use Composer\EventDispatcher\EventSubscriberInterface;
 use Composer\Installer\PackageEvent;
 use Composer\Installer\PackageEvents;
 use Composer\IO\IOInterface;
-use Composer\IO\NullIO;
 use Composer\Json\JsonFile;
 use Composer\Package\PackageInterface;
 use Composer\Plugin\PluginInterface;
@@ -127,8 +126,6 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
 
         $config = $this->composer->getConfig();
-        $config->merge(array('config' => array('secure-http' => false)));
-        $config->prohibitUrlByConfig('http://flex.symfony.com', new NullIO());
         $options = [
             'http' => [
                 'header' => "Flex-ID: ".$this->composer->getConfig()->get('flex-id'),
