@@ -37,6 +37,10 @@ class MakefileConfigurator extends AbstractConfigurator
         }
 
         $this->io->write(sprintf('    Removing Makefile entries from %s', $file));
-        file_put_contents($makefile, $contents);
+        if (!trim($contents)) {
+            @unlink($makefile);
+        } else {
+            file_put_contents($makefile, $contents);
+        }
     }
 }
