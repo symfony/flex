@@ -31,28 +31,35 @@ class Configurator
         $this->composer = $composer;
         $this->io = $io;
         $this->options = $options;
+        // ordered list of configurators
         $this->configurators = [
             'bundles' => Configurator\BundlesConfigurator::class,
-            'composer-scripts' => Configurator\ComposerScriptsConfigurator::class,
             'copy-from-recipe' => Configurator\CopyFromRecipeConfigurator::class,
             'copy-from-package' => Configurator\CopyFromPackageConfigurator::class,
             'env' => Configurator\EnvConfigurator::class,
             'container' => Configurator\ContainerConfigurator::class,
             'makefile' => Configurator\MakefileConfigurator::class,
+            'composer-scripts' => Configurator\ComposerScriptsConfigurator::class,
         ];
     }
 
     public function install(Recipe $recipe)
     {
-        foreach ($recipe->getManifest() as $key => $config) {
-            $this->get($key)->configure($recipe, $config);
+        $manifest = $recipe->getManifest();
+        foreach ($this->configurators as $key => $configurator) {
+            if (isset($manifest[$key])) {
+                $this->get($configurator)->configure($recipe, $manifest[$key]);
+            }
         }
     }
 
     public function unconfigure(Recipe $recipe)
     {
-        foreach ($recipe->getManifest() as $key => $config) {
-            $this->get($key)->unconfigure($recipe, $config);
+        $manifest = $recipe->getManifest();
+        foreach ($this->configurators as $key => $configurator) {
+            if (isset($manifest[$key])) {
+                $this->get($configurator)->unconfigure($recipe, $manifest[$key]);
+            }
         }
     }
 
