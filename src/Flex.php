@@ -71,7 +71,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
     public function postUpdate(Event $event)
     {
-        if (!file_exists(getcwd().'/.env')) {
+        if (!file_exists(getcwd().'/.env') && file_exists(getcwd().'/.env.dist')) {
             copy(getcwd().'/.env.dist', getcwd().'/.env');
         }
     }
