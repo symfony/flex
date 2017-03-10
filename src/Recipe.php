@@ -42,9 +42,6 @@ class Recipe
         return $this->name;
     }
 
-    /**
-     * @return Manifest
-     */
     public function getManifest()
     {
         if (!isset($this->data['manifest'])) {
