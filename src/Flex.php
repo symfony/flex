@@ -137,6 +137,8 @@ class Flex implements PluginInterface, EventSubscriberInterface
             if (0 !== $e->getCode() && 404 == $e->getCode()) {
                 return;
             }
+
+            throw $e;
         }
     }
 
