@@ -40,6 +40,7 @@ class Configurator
             'container' => Configurator\ContainerConfigurator::class,
             'makefile' => Configurator\MakefileConfigurator::class,
             'composer-scripts' => Configurator\ComposerScriptsConfigurator::class,
+            'gitignore' => Configurator\GitignoreConfigurator::class,
         ];
     }
 
