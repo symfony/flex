@@ -41,6 +41,16 @@ class Downloader
         $rfs = Factory::createRemoteFilesystem($this->io, $this->composer->getConfig());
         $json = new JsonFile('https://flex.symfony.com/'.ltrim($path, '/'), $rfs, $this->io);
 
-        return $json->read();
+        try {
+            return $json->read();
+        } catch (\RuntimeException $e) {
+            if (($ex = $e->getPrevious()) instanceof TransportException) {
+                if (0 !== $ex->getCode() && 404 == $ex->getCode()) {
+                    return;
+                }
+
+                throw $e;
+            }
+        }
     }
 }
