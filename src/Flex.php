@@ -36,6 +36,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
     private $options;
     private $configurator;
     private $downloader;
+    private $postInstallOutput = [''];
 
     public function activate(Composer $composer, IOInterface $io)
     {
@@ -59,7 +60,13 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $package = $event->getOperation()->getPackage();
         foreach ($this->filterPackageNames($package, 'install') as $name => $data) {
             $this->io->write(sprintf('    Detected auto-configuration settings for "%s"', $name));
-            $this->configurator->install(new Recipe($package, $name, $data));
+            $recipe = new Recipe($package, $name, $data);
+            $this->configurator->install($recipe);
+
+            $manifest = $recipe->getManifest();
+            if (isset($manifest['post-install-output'])) {
+                $this->postInstallOutput = array_merge($this->postInstallOutput, $manifest['post-install-output'], ['']);
+            }
         }
     }
 
@@ -100,6 +107,8 @@ class Flex implements PluginInterface, EventSubscriberInterface
         foreach ($jsonContents['scripts']['auto-scripts'] as $cmd => $type) {
             $executor->execute($type, $cmd);
         }
+
+        $this->io->write($this->postInstallOutput);
     }
 
     private function filterPackageNames(PackageInterface $package, $operation)
