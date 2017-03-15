@@ -12,6 +12,7 @@
 namespace Symfony\Flex;
 
 use Composer\Composer;
+use Composer\Console\Application;
 use Composer\Downloader\TransportException;
 use Composer\Factory;
 use Composer\EventDispatcher\EventSubscriberInterface;
@@ -23,6 +24,7 @@ use Composer\Package\PackageInterface;
 use Composer\Plugin\PluginInterface;
 use Composer\Script\Event;
 use Composer\Script\ScriptEvents;
+use Symfony\Flex\Command;
 
 /**
  * @author Fabien Potencier <fabien@symfony.com>
@@ -33,6 +35,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
     private $io;
     private $options;
     private $configurator;
+    private $downloader;
 
     public function activate(Composer $composer, IOInterface $io)
     {
@@ -40,6 +43,15 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $this->io = $io;
         $this->options = $this->initOptions();
         $this->configurator = new Configurator($composer, $io, $this->options);
+        $this->downloader = new Downloader($composer, $io);
+
+        foreach (debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT) as $trace) {
+            if (isset($trace['object']) && $trace['object'] instanceof Application) {
+                $trace['object']->add(new Command\RequireCommand($this->downloader));
+                $trace['object']->add(new Command\RemoveCommand($this->downloader));
+                break;
+            }
+        }
     }
 
     public function configurePackage(PackageEvent $event)
@@ -94,7 +106,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
     {
         // FIXME: getNames() can return n names
         $name = $package->getNames()[0];
-        if ($body = $this->getRemoteContent($package, $name, $operation)) {
+        if ($body = $this->getPackageRecipe($package, $name, $operation)) {
             yield $name => $body;
         }
     }
@@ -112,34 +124,16 @@ class Flex implements PluginInterface, EventSubscriberInterface
         return new Options($options);
     }
 
-    private function getRemoteContent(PackageInterface $package, $name, $operation)
+    private function getPackageRecipe(PackageInterface $package, $name, $operation)
     {
         $version = $package->getFullPrettyVersion(false);
+        $path = sprintf("/packages/%s?o=%s&v=%s", $name, $operation, urlencode($version));
         if (false !== strpos($version, ' ')) {
             list($version, $ref) = explode(' ', $version);
-            $url = sprintf("https://flex.symfony.com/packages/%s?o=%s&v=%s&r=%s", $name, $operation, urlencode($version), urlencode($ref));
-        } else {
-            $url = sprintf("https://flex.symfony.com/packages/%s?o=%s&v=%s", $name, $operation, urlencode($version));
+            $path .= sprintf("&r=%s", urlencode($ref));
         }
 
-        $config = $this->composer->getConfig();
-        $options = [
-            'http' => [
-                'header' => "Flex-ID: ".$this->composer->getConfig()->get('flex-id'),
-            ],
-        ];
-
-        $rfs = Factory::createRemoteFilesystem($this->io, $config);
-
-        try {
-            return json_decode($rfs->getContents('flex.symfony.com', $url, false, $options), true);
-        } catch (TransportException $e) {
-            if (0 !== $e->getCode() && 404 == $e->getCode()) {
-                return;
-            }
-
-            throw $e;
-        }
+        return $this->downloader->getContents($path);
     }
 
     public static function getSubscribedEvents()
