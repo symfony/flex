@@ -33,12 +33,12 @@ class GitignoreConfigurator extends AbstractConfigurator
     {
         $file = getcwd().'/.gitignore';
         if (!file_exists($file)) {
-            continue;
+            return;
         }
 
         $contents = preg_replace(sprintf('{\n+###> %s ###.*###< %s ###\n+}s', $recipe->getName(), $recipe->getName()), "\n", file_get_contents($file), -1, $count);
         if (!$count) {
-            continue;
+            return;
         }
 
         $this->io->write('    Removing entries in .gitignore');
