@@ -126,8 +126,9 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
     private function getPackageRecipe(PackageInterface $package, $name, $operation)
     {
+        $path = sprintf("/packages/%s?o=%s&v=%s", $name, $operation, urlencode($package->getPrettyVersion()));
+
         $version = $package->getFullPrettyVersion(false);
-        $path = sprintf("/packages/%s?o=%s&v=%s", $name, $operation, urlencode($version));
         if (false !== strpos($version, ' ')) {
             list($version, $ref) = explode(' ', $version);
             $path .= sprintf("&r=%s", urlencode($ref));
