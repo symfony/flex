@@ -43,20 +43,28 @@ class Downloader
             $this->sess = bin2hex(random_bytes(16));
         }
 
-        $rfs = Factory::createRemoteFilesystem($this->io, $this->composer->getConfig());
+        $config = $this->composer->getConfig();
+        $rfs = Factory::createRemoteFilesystem($this->io, $config);
+
+        $options = [];
+        if ($config->get('flex-id')) {
+            $options['http'] = [
+                'header' => "Flex-ID: ".$config->get('flex-id'),
+            ];
+        }
+
         $url = 'https://flex.symfony.com/'.ltrim($path, '/').(false === strpos($path, '&') ? '?' : '&' ).'s='.$this->sess;
-        $json = new JsonFile($url, $rfs, $this->io);
 
         try {
-            return $json->read();
-        } catch (\RuntimeException $e) {
-            if (($ex = $e->getPrevious()) instanceof TransportException) {
-                if (0 !== $ex->getCode() && 404 == $ex->getCode()) {
-                    return;
-                }
-
-                throw $e;
+            $json = $rfs->getContents('https://flex.symfony.com/', $url, false, $options);
+        } catch (TransportException $e) {
+            if (0 !== $e->getCode() && 404 == $e->getCode()) {
+                return;
             }
+
+            throw $e;
         }
+
+        return JsonFile::parseJson($json, $url);
     }
 }
