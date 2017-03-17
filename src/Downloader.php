@@ -24,6 +24,7 @@ class Downloader
 {
     private $composer;
     private $io;
+    private $sess;
 
     public function __construct(Composer $composer, IoInterface $io)
     {
@@ -38,8 +39,13 @@ class Downloader
      */
     public function getContents($path)
     {
+        if (null === $this->sess) {
+            $this->sess = bin2hex(random_bytes(16));
+        }
+
         $rfs = Factory::createRemoteFilesystem($this->io, $this->composer->getConfig());
-        $json = new JsonFile('https://flex.symfony.com/'.ltrim($path, '/'), $rfs, $this->io);
+        $url = 'https://flex.symfony.com/'.ltrim($path, '/').(false === strpos($path, '&') ? '?' : '&' ).'s='.$this->sess;
+        $json = new JsonFile($url, $rfs, $this->io);
 
         try {
             return $json->read();
