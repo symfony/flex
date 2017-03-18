@@ -49,6 +49,7 @@ class RequireCommand extends BaseRequireCommand
         }
 
         $input->setArgument('packages', array_unique(array_map('strval', $packages)));
+        $input->setOption('no-suggest', true);
 
         return parent::execute($input, $output);
     }
