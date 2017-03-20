@@ -46,10 +46,11 @@ class Downloader
         $config = $this->composer->getConfig();
         $rfs = Factory::createRemoteFilesystem($this->io, $config);
 
+        $extra = $this->composer->getPackage()->getExtra();
         $options = [];
-        if ($config->get('flex-id')) {
+        if (isset($extra['flex-id']) && $extra['flex-id']) {
             $options['http'] = [
-                'header' => "Flex-ID: ".$config->get('flex-id'),
+                'header' => "Flex-ID: ".$extra['flex-id'],
             ];
         }
 
