@@ -25,7 +25,7 @@ class PackageResolver
     public function __construct(Downloader $downloader)
     {
         if (null === self::$cache) {
-            self::$cache = $downloader->getContents('/map.json');
+            self::$cache = $downloader->getContents('/aliases.json');
         }
     }
 
