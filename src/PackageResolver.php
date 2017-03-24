@@ -18,11 +18,11 @@ class PackageResolver
 {
     private static $cache;
 
+    private $downloader
+
     public function __construct(Downloader $downloader)
     {
-        if (null === self::$cache) {
-            self::$cache = $downloader->getContents('/aliases.json');
-        }
+        $this->downloader = $downloader;
     }
 
     public function resolve(array $packages = [])
@@ -30,6 +30,10 @@ class PackageResolver
         $installs = [];
         foreach ($packages as $package) {
             if (false === strpos($package, '/')) {
+                if (null === self::$cache) {
+                    self::$cache = $this->downloader->getContents('/aliases.json');
+                }
+
                 while (isset(self::$cache[$package])) {
                     $package = self::$cache[$package];
                 }
@@ -39,14 +43,5 @@ class PackageResolver
         }
 
         return array_unique($installs);
-    }
-
-    private function lookup($name)
-    {
-        while (isset(self::$cache[$name])) {
-            $name = self::$cache[$name];
-        }
-
-        return $name;
     }
 }
