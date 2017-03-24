@@ -32,8 +32,8 @@ class RequireCommand extends BaseRequireCommand
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $io = $this->getIO();
-        $lookup = new PackageResolver($this->downloader);
-        $packages = $lookup->resolve($input->getArgument('packages'));
+        $resolver = new PackageResolver($this->downloader);
+        $packages = $resolver->resolve($input->getArgument('packages'));
         foreach ($packages as $package) {
             if (!$package instanceof Package) {
                 continue;

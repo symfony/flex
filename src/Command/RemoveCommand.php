@@ -32,8 +32,8 @@ class RemoveCommand extends BaseRemoveCommand
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $io = $this->getIO();
-        $lookup = new PackageResolver($this->downloader);
-        $packages = $lookup->resolve($input->getArgument('packages'));
+        $resolver = new PackageResolver($this->downloader);
+        $packages = $resolver->resolve($input->getArgument('packages'));
         $input->setArgument('packages', array_unique(array_map(function ($package) {
             return $package instanceof Package ? $package->getName() : $package;
         }, $packages)));
