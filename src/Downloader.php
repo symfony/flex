@@ -50,7 +50,7 @@ class Downloader
         $options = [];
         if (isset($extra['flex-id']) && $extra['flex-id']) {
             $options['http'] = [
-                'header' => "Flex-ID: ".$extra['flex-id'],
+                'header' => 'Flex-ID: '.$extra['flex-id'],
             ];
         }
 

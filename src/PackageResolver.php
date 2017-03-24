@@ -11,10 +11,6 @@
 
 namespace Symfony\Flex;
 
-use Composer\Factory;
-use Composer\IO\NullIO;
-use Symfony\Flex\Downloader;
-
 /**
  * @author Fabien Potencier <fabien@symfony.com>
  */

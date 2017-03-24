@@ -13,7 +13,6 @@ namespace Symfony\Flex;
 
 use Composer\Composer;
 use Composer\Console\Application;
-use Composer\Downloader\TransportException;
 use Composer\Factory;
 use Composer\EventDispatcher\EventSubscriberInterface;
 use Composer\Installer\PackageEvent;
@@ -24,7 +23,6 @@ use Composer\Package\PackageInterface;
 use Composer\Plugin\PluginInterface;
 use Composer\Script\Event;
 use Composer\Script\ScriptEvents;
-use Symfony\Flex\Command;
 
 /**
  * @author Fabien Potencier <fabien@symfony.com>
@@ -135,12 +133,12 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
     private function getPackageRecipe(PackageInterface $package, $name, $operation)
     {
-        $path = sprintf("/recipes/%s?o=%s&v=%s", $name, $operation, urlencode($package->getPrettyVersion()));
+        $path = sprintf('/recipes/%s?o=%s&v=%s', $name, $operation, urlencode($package->getPrettyVersion()));
 
         $version = $package->getFullPrettyVersion(false);
         if (false !== strpos($version, ' ')) {
             list($version, $ref) = explode(' ', $version);
-            $path .= sprintf("&r=%s", urlencode($ref));
+            $path .= sprintf('&r=%s', urlencode($ref));
         }
 
         return $this->downloader->getContents($path);
