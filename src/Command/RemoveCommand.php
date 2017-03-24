@@ -15,8 +15,7 @@ use Composer\Command\RemoveCommand as BaseRemoveCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Flex\Downloader;
-use Symfony\Flex\Package\Package;
-use Symfony\Flex\Package\PackageResolver;
+use Symfony\Flex\PackageResolver;
 
 class RemoveCommand extends BaseRemoveCommand
 {
@@ -33,10 +32,7 @@ class RemoveCommand extends BaseRemoveCommand
     {
         $io = $this->getIO();
         $resolver = new PackageResolver($this->downloader);
-        $packages = $resolver->resolve($input->getArgument('packages'));
-        $input->setArgument('packages', array_unique(array_map(function ($package) {
-            return $package instanceof Package ? $package->getName() : $package;
-        }, $packages)));
+        $input->setArgument('packages', $resolver->resolve($input->getArgument('packages')));
 
         return parent::execute($input, $output);
     }

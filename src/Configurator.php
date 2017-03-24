@@ -13,7 +13,6 @@ namespace Symfony\Flex;
 
 use Composer\Composer;
 use Composer\IO\IOInterface;
-use Composer\Package\Package;
 
 /**
  * @author Fabien Potencier <fabien@symfony.com>

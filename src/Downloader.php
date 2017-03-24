@@ -54,7 +54,7 @@ class Downloader
             ];
         }
 
-        $url = 'https://flex.symfony.com/'.ltrim($path, '/').(false === strpos($path, '&') ? '?' : '&' ).'s='.$this->sess;
+        $url = 'https://flex.symfony.com/'.ltrim($path, '/').(false === strpos($path, '&') ? '?' : '&').'s='.$this->sess;
 
         try {
             $json = $rfs->getContents('https://flex.symfony.com/', $url, false, $options);

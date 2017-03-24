@@ -15,8 +15,7 @@ use Composer\Command\RequireCommand as BaseRequireCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Flex\Downloader;
-use Symfony\Flex\Package\Package;
-use Symfony\Flex\Package\PackageResolver;
+use Symfony\Flex\PackageResolver;
 
 class RequireCommand extends BaseRequireCommand
 {
@@ -33,22 +32,7 @@ class RequireCommand extends BaseRequireCommand
     {
         $io = $this->getIO();
         $resolver = new PackageResolver($this->downloader);
-        $packages = $resolver->resolve($input->getArgument('packages'));
-        foreach ($packages as $package) {
-            if (!$package instanceof Package) {
-                continue;
-            }
-
-            if ($package->isDev() && !$input->getOption('dev')) {
-                $io->writeError(sprintf('<warning>Package "%s" should be installed with the "--dev" option.</>', $package->getName()));
-            }
-
-            if (!$package->isDev() && $input->getOption('dev')) {
-                $io->writeError(sprintf('<warning>Package "%s" should be installed without the "--dev" option.</>', $package->getName()));
-            }
-        }
-
-        $input->setArgument('packages', array_unique(array_map('strval', $packages)));
+        $input->setArgument('packages', $resolver->resolve($input->getArgument('packages')));
         $input->setOption('no-suggest', true);
 
         return parent::execute($input, $output);
