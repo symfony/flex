@@ -18,7 +18,8 @@ use Composer\Package\Version\VersionParser;
  */
 class PackageResolver
 {
-    private static $cache;
+    private static $aliases;
+    private static $versions;
 
     private $downloader;
 
@@ -33,12 +34,13 @@ class PackageResolver
         $installs = [];
         foreach ($parser->parseNameVersionPairs($packages) as $require) {
             if (false === strpos($require['name'], '/')) {
-                if (null === self::$cache) {
-                    self::$cache = $this->downloader->getContents('/aliases.json');
+                if (null === self::$aliases) {
+                    self::$aliases = $this->downloader->getContents('/aliases.json');
+                    self::$versions = $this->downloader->getContents('/versions.json');
                 }
 
-                while (isset(self::$cache[$require['name']])) {
-                    $require['name'] = self::$cache[$require['name']];
+                while (isset(self::$aliases[$require['name']])) {
+                    $require['name'] = self::$aliases[$require['name']];
                 }
             }
 
@@ -50,6 +52,20 @@ class PackageResolver
 
     private function parseVersion($package, $version)
     {
-        return $version ? ':'.$version : '';
+        if (!$version) {
+            return '';
+        }
+
+        if (!isset(self::$versions['splits'][$package])) {
+            return ':'.$version;
+        }
+
+        if ('next' === $version) {
+            $version = '^'.self::$versions[$version].'@dev';
+        } elseif (in_array($version, ['lts', 'previous', 'stable'])) {
+            $version = '^'.self::$versions[$version];
+        }
+
+        return ':'.$version;
     }
 }
