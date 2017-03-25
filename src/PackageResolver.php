@@ -28,26 +28,43 @@ class PackageResolver
         $this->downloader = $downloader;
     }
 
-    public function resolve(array $packages = [])
+    public function resolve(array $arguments = [])
     {
-        $parser = new VersionParser();
-        $installs = [];
-        foreach ($parser->parseNameVersionPairs($packages) as $require) {
-            if (false === strpos($require['name'], '/')) {
+        // first pass split on : and = to separate package names and versions
+        $explodedArguments = [];
+        foreach ($arguments as $argument) {
+            if ((false !== $pos = strpos($argument, ':')) || (false !== $pos = strpos($argument, '='))) {
+                $explodedArguments[] = substr($argument, 0, $pos);
+                $explodedArguments[] = substr($argument, $pos + 1);
+            } else {
+                $explodedArguments[] = $argument;
+            }
+        }
+
+        // second pass to resolve package names
+        $packages = [];
+        foreach ($explodedArguments as $argument) {
+            if (false === strpos($argument, '/')) {
                 if (null === self::$aliases) {
                     self::$aliases = $this->downloader->getContents('/aliases.json');
                     self::$versions = $this->downloader->getContents('/versions.json');
                 }
 
-                while (isset(self::$aliases[$require['name']])) {
-                    $require['name'] = self::$aliases[$require['name']];
+                while (isset(self::$aliases[$argument])) {
+                    $argument = self::$aliases[$argument];
                 }
             }
 
-            $installs[] = $require['name'].$this->parseVersion($require['name'], isset($require['version']) ? $require['version'] : null);
+            $packages[] = $argument;
         }
 
-        return array_unique($installs);
+        // third pass to resolve versions
+        $requires= [];
+        foreach ((new VersionParser())->parseNameVersionPairs($packages) as $package) {
+            $requires[] = $package['name'].$this->parseVersion($package['name'], isset($package['version']) ? $package['version'] : null);
+        }
+
+        return array_unique($requires);
     }
 
     private function parseVersion($package, $version)
