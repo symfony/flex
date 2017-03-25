@@ -11,6 +11,8 @@
 
 namespace Symfony\Flex;
 
+use Composer\Package\Version\VersionParser;
+
 /**
  * @author Fabien Potencier <fabien@symfony.com>
  */
@@ -27,21 +29,27 @@ class PackageResolver
 
     public function resolve(array $packages = [])
     {
+        $parser = new VersionParser();
         $installs = [];
-        foreach ($packages as $package) {
-            if (false === strpos($package, '/')) {
+        foreach ($parser->parseNameVersionPairs($packages) as $require) {
+            if (false === strpos($require['name'], '/')) {
                 if (null === self::$cache) {
                     self::$cache = $this->downloader->getContents('/aliases.json');
                 }
 
-                while (isset(self::$cache[$package])) {
-                    $package = self::$cache[$package];
+                while (isset(self::$cache[$require['name']])) {
+                    $require['name'] = self::$cache[$require['name']];
                 }
             }
 
-            $installs[] = $package;
+            $installs[] = $require['name'].$this->parseVersion($require['name'], isset($require['version']) ? $require['version'] : null);
         }
 
         return array_unique($installs);
+    }
+
+    private function parseVersion($package, $version)
+    {
+        return $version ? ':'.$version : '';
     }
 }
