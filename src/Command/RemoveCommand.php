@@ -14,25 +14,22 @@ namespace Symfony\Flex\Command;
 use Composer\Command\RemoveCommand as BaseRemoveCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Flex\Downloader;
 use Symfony\Flex\PackageResolver;
 
 class RemoveCommand extends BaseRemoveCommand
 {
-    private $downloader;
+    private $resolver;
 
-    public function __construct(Downloader $downloader)
+    public function __construct(PackageResolver $resolver)
     {
-        $this->downloader = $downloader;
+        $this->resolver = $resolver;
 
         parent::__construct();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $io = $this->getIO();
-        $resolver = new PackageResolver($this->downloader);
-        $input->setArgument('packages', $resolver->resolve($input->getArgument('packages')));
+        $input->setArgument('packages', $this->resolver->resolve($input->getArgument('packages')));
 
         return parent::execute($input, $output);
     }

@@ -46,8 +46,9 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
         foreach (debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT) as $trace) {
             if (isset($trace['object']) && $trace['object'] instanceof Application) {
-                $trace['object']->add(new Command\RequireCommand($this->downloader));
-                $trace['object']->add(new Command\RemoveCommand($this->downloader));
+                $resolver = new PackageResolver($this->downloader);
+                $trace['object']->add(new Command\RequireCommand($resolver));
+                $trace['object']->add(new Command\RemoveCommand($resolver));
                 break;
             }
         }

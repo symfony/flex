@@ -18,7 +18,7 @@ class PackageResolver
 {
     private static $cache;
 
-    private $downloader
+    private $downloader;
 
     public function __construct(Downloader $downloader)
     {
