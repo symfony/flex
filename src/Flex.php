@@ -48,6 +48,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             if (isset($trace['object']) && $trace['object'] instanceof Application) {
                 $resolver = new PackageResolver($this->downloader);
                 $trace['object']->add(new Command\RequireCommand($resolver));
+                $trace['object']->add(new Command\UpdateCommand($resolver));
                 $trace['object']->add(new Command\RemoveCommand($resolver));
                 break;
             }
