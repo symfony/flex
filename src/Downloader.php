@@ -11,6 +11,7 @@
 
 namespace Symfony\Flex;
 
+use Composer\Cache;
 use Composer\Composer;
 use Composer\Downloader\TransportException;
 use Composer\Factory;
@@ -22,14 +23,30 @@ use Composer\Json\JsonFile;
  */
 class Downloader
 {
+    const ENDPOINT = 'https://flex.symfony.com';
+
     private $composer;
     private $io;
     private $sess;
+    private $cache;
+    private $rfs;
+    private $degradedMode = false;
+    private $options = [];
 
     public function __construct(Composer $composer, IoInterface $io)
     {
         $this->composer = $composer;
         $this->io = $io;
+        $config = $this->composer->getConfig();
+        $this->rfs = Factory::createRemoteFilesystem($io, $config);
+        $this->cache = new Cache($io, $config->get('cache-repo-dir').'/'.preg_replace('{[^a-z0-9.]}i', '-', self::ENDPOINT));
+        $this->sess = bin2hex(random_bytes(16));
+        $extra = $this->composer->getPackage()->getExtra();
+        if (isset($extra['flex-id']) && $extra['flex-id']) {
+            $this->options['http'] = [
+                'header' => ['Flex-ID: '.$extra['flex-id']],
+            ];
+        }
     }
 
     /**
@@ -39,33 +56,106 @@ class Downloader
      */
     public function getContents($path)
     {
-        if (null === $this->sess) {
-            $this->sess = bin2hex(random_bytes(16));
-        }
-
-        $config = $this->composer->getConfig();
-        $rfs = Factory::createRemoteFilesystem($this->io, $config);
-
-        $extra = $this->composer->getPackage()->getExtra();
-        $options = [];
-        if (isset($extra['flex-id']) && $extra['flex-id']) {
-            $options['http'] = [
-                'header' => 'Flex-ID: '.$extra['flex-id'],
-            ];
-        }
-
-        $url = 'https://flex.symfony.com/'.ltrim($path, '/').(false === strpos($path, '&') ? '?' : '&').'s='.$this->sess;
+        $url = self::ENDPOINT.'/'.ltrim($path, '/').(false === strpos($path, '&') ? '?' : '&').'s='.$this->sess;
+        $cacheKey = ltrim($path, '/');
 
         try {
-            $json = $rfs->getContents('https://flex.symfony.com/', $url, false, $options);
+            if ($contents = $this->cache->read($cacheKey)) {
+                $contents = json_decode($contents, true);
+                if (isset($contents['last-modified'])) {
+                    $response = $this->fetchFileIfLastModified($url, $cacheKey, $contents['last-modified']);
+
+                    return true === $response ? $contents : $response;
+                }
+            }
+
+            return $this->fetchFile($url, $cacheKey);
         } catch (TransportException $e) {
-            if (0 !== $e->getCode() && 404 == $e->getCode()) {
+            if (404 === $e->getStatusCode()) {
                 return;
             }
 
             throw $e;
         }
+    }
 
-        return JsonFile::parseJson($json, $url);
+    private function fetchFile($filename, $cacheKey)
+    {
+        $retries = 3;
+        while ($retries--) {
+            try {
+                $json = $this->rfs->getContents(self::ENDPOINT, $filename, false, $this->options);
+                return $this->parseJson($json, $filename, $cacheKey);
+            } catch (\Exception $e) {
+                if ($retries) {
+                    usleep(100000);
+                    continue;
+                }
+
+                if ($contents = $this->cache->read($cacheKey)) {
+                    $this->switchToDegradedMode();
+
+                    return JsonFile::parseJson($contents, $this->cache->getRoot().$cacheKey);
+                }
+
+                throw $e;
+            }
+        }
+
+        return $data;
+    }
+
+    private function fetchFileIfLastModified($filename, $cacheKey, $lastModifiedTime)
+    {
+        $options = $this->options;
+        $retries = 3;
+        while ($retries--) {
+            try {
+                $options['http']['header'][] = 'If-Modified-Since: '.$lastModifiedTime;
+                $json = $this->rfs->getContents(self::ENDPOINT, $filename, false, $options);
+                if ($this->rfs->findStatusCode($this->rfs->getLastHeaders()) === 304) {
+                    return true;
+                }
+
+                return $this->parseJson($json, $filename);
+            } catch (\Exception $e) {
+                if ($retries) {
+                    usleep(100000);
+                    continue;
+                }
+
+                $this->switchToDegradedMode();
+
+                return true;
+            }
+        }
+    }
+
+    private function parseJson($json, $filename, $cacheKey)
+    {
+        $data = JsonFile::parseJson($json, $filename);
+        if (!empty($data['warning'])) {
+            $this->io->writeError('<warning>Warning from '.self::ENDPOINT.': '.$data['warning'].'</warning>');
+        }
+        if (!empty($data['info'])) {
+            $this->io->writeError('<info>Info from '.self::ENDPOINT.': '.$data['info'].'</info>');
+        }
+
+        if ($lastModifiedDate = $this->rfs->findHeaderValue($this->rfs->getLastHeaders(), 'last-modified')) {
+            $data['last-modified'] = $lastModifiedDate;
+            $json = json_encode($data);
+        }
+        $this->cache->write($cacheKey, $json);
+
+        return $data;
+    }
+
+    private function switchToDegradedMode()
+    {
+        if (!$this->degradedMode) {
+            $this->io->writeError('<warning>'.$e->getMessage().'</warning>');
+            $this->io->writeError('<warning>'.self::ENDPOINT.' could not be fully loaded, package information was loaded from the local cache and may be out of date</warning>');
+        }
+        $this->degradedMode = true;
     }
 }
