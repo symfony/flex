@@ -35,9 +35,17 @@ class Flex implements PluginInterface, EventSubscriberInterface
     private $configurator;
     private $downloader;
     private $postInstallOutput = [''];
+    private static $activated = true;
 
     public function activate(Composer $composer, IOInterface $io)
     {
+        if (!extension_loaded('openssl')) {
+            self::$activated = false;
+            $this->io->writeError('<warning>Symfony Flex has been disabled. You must enable the openssl extension in your php.ini to use it.</warning>');
+
+            return;
+        }
+
         $this->composer = $composer;
         $this->io = $io;
         $this->options = $this->initOptions();
@@ -148,6 +156,10 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
     public static function getSubscribedEvents()
     {
+        if (!self::$activated) {
+            return [];
+        }
+
         return [
             PackageEvents::POST_PACKAGE_INSTALL => 'configurePackage',
             PackageEvents::POST_PACKAGE_UPDATE => 'reconfigurePackage',
