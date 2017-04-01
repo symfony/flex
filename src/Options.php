@@ -30,15 +30,13 @@ class Options
 
     public function expandTargetDir($target)
     {
-        $options = $this->options;
-
-        return rtrim(preg_replace_callback('{%(.+?)%}', function ($matches) use ($options) {
+        return preg_replace_callback('{%(.+?)%}', function ($matches) {
             $option = str_replace('_', '-', strtolower($matches[1]));
-            if (!isset($options[$option])) {
+            if (!isset($this->options[$option])) {
                 throw new \InvalidArgumentException(sprintf('Placeholder "%s" does not exist.', $matches[1]));
             }
 
-            return $options[$option];
-        }, $target), '/');
+            return rtrim($this->options[$option], '/');
+        }, $target);
     }
 }
