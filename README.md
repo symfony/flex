@@ -2,8 +2,8 @@
     <img src="https://symfony.com/logos/symfony_black_02.svg">
 </a></p>
 
-**WARNING** Symfony Flex is alpha software; it can delete some of your files,
-use a source code management tool.
+**WARNING** Symfony Flex is alpha software; use it at your own risk, protect
+your code with a source code management tool.
 
 [Symfony][1] Flex helps developers create Symfony applications, from the most
 simple micro-style projects to the more complex ones with dozens of
