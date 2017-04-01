@@ -61,7 +61,7 @@ class Downloader
             if ($contents = $this->cache->read($cacheKey)) {
                 $contents = json_decode($contents, true);
                 if (isset($contents['last-modified'])) {
-                    $response = $this->fetchFileIfLastModified($url, $contents['last-modified']);
+                    $response = $this->fetchFileIfLastModified($url, $cacheKey, $contents['last-modified']);
 
                     return true === $response ? $contents : $response;
                 }
@@ -103,7 +103,7 @@ class Downloader
         return $data;
     }
 
-    private function fetchFileIfLastModified($filename, $lastModifiedTime)
+    private function fetchFileIfLastModified($filename, $cacheKey, $lastModifiedTime)
     {
         $options = $this->options;
         $retries = 3;
