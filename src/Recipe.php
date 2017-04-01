@@ -45,7 +45,7 @@ class Recipe
     public function getManifest()
     {
         if (!isset($this->data['manifest'])) {
-            throw new \LogicException(sprintf('Manifest is not available for recipe "%s".', $name));
+            throw new \LogicException(sprintf('Manifest is not available for recipe "%s".', $this->name));
         }
 
         return $this->data['manifest'];
