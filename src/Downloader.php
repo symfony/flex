@@ -93,7 +93,7 @@ class Downloader
                 }
 
                 if ($contents = $this->cache->read($cacheKey)) {
-                    $this->switchToDegradedMode();
+                    $this->switchToDegradedMode($e);
 
                     return JsonFile::parseJson($contents, $this->cache->getRoot().$cacheKey);
                 }
@@ -124,7 +124,7 @@ class Downloader
                     continue;
                 }
 
-                $this->switchToDegradedMode();
+                $this->switchToDegradedMode($e);
 
                 return true;
             }
@@ -150,7 +150,7 @@ class Downloader
         return $data;
     }
 
-    private function switchToDegradedMode()
+    private function switchToDegradedMode(\Exception $e)
     {
         if (!$this->degradedMode) {
             $this->io->writeError('<warning>'.$e->getMessage().'</warning>');
