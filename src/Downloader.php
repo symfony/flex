@@ -25,7 +25,6 @@ class Downloader
 {
     const ENDPOINT = 'https://flex.symfony.com';
 
-    private $composer;
     private $io;
     private $sess;
     private $cache;
@@ -35,13 +34,12 @@ class Downloader
 
     public function __construct(Composer $composer, IoInterface $io)
     {
-        $this->composer = $composer;
         $this->io = $io;
-        $config = $this->composer->getConfig();
+        $config = $composer->getConfig();
         $this->rfs = Factory::createRemoteFilesystem($io, $config);
         $this->cache = new Cache($io, $config->get('cache-repo-dir').'/'.preg_replace('{[^a-z0-9.]}i', '-', self::ENDPOINT));
         $this->sess = bin2hex(random_bytes(16));
-        $extra = $this->composer->getPackage()->getExtra();
+        $extra = $composer->getPackage()->getExtra();
         if (isset($extra['flex-id']) && $extra['flex-id']) {
             $this->options['http'] = [
                 'header' => ['Flex-ID: '.$extra['flex-id']],
