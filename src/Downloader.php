@@ -42,7 +42,7 @@ class Downloader
         $this->cache = new Cache($io, $config->get('cache-repo-dir').'/'.preg_replace('{[^a-z0-9.]}i', '-', self::ENDPOINT));
         $this->sess = bin2hex(random_bytes(16));
         $extra = $this->composer->getPackage()->getExtra();
-        if (isset($extra['flex-id']) && $extra['flex-id']) {
+        if ($extra['flex-id'] ?? false) {
             $this->options['http'] = [
                 'header' => ['Flex-ID: '.$extra['flex-id']],
             ];

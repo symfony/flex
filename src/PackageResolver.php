@@ -61,7 +61,7 @@ class PackageResolver
         // third pass to resolve versions
         $requires= [];
         foreach ((new VersionParser())->parseNameVersionPairs($packages) as $package) {
-            $requires[] = $package['name'].$this->parseVersion($package['name'], isset($package['version']) ? $package['version'] : null);
+            $requires[] = $package['name'].$this->parseVersion($package['name'], $package['version'] ?? null);
         }
 
         return array_unique($requires);
