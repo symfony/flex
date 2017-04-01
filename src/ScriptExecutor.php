@@ -67,7 +67,7 @@ class ScriptExecutor
             $this->io->writeError(' <error>[KO]</error>');
             $this->io->writeError(sprintf('<error>Script %s returned with error code %s</error>', $cmd, $exitCode));
             fseek($cmdOutput->getStream(), 0);
-            foreach (explode("\n", stream_get_contents($cmdOutput->getStream())) as $line) {
+            foreach (explode(PHP_EOL, stream_get_contents($cmdOutput->getStream())) as $line) {
                 $this->io->writeError('!!  '.$line);
             }
 
