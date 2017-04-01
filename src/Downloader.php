@@ -85,6 +85,7 @@ class Downloader
         while ($retries--) {
             try {
                 $json = $this->rfs->getContents(self::ENDPOINT, $filename, false, $this->options);
+
                 return $this->parseJson($json, $filename, $cacheKey);
             } catch (\Exception $e) {
                 if ($retries) {
@@ -113,7 +114,7 @@ class Downloader
             try {
                 $options['http']['header'][] = 'If-Modified-Since: '.$lastModifiedTime;
                 $json = $this->rfs->getContents(self::ENDPOINT, $filename, false, $options);
-                if ($this->rfs->findStatusCode($this->rfs->getLastHeaders()) === 304) {
+                if (304 === $this->rfs->findStatusCode($this->rfs->getLastHeaders())) {
                     return true;
                 }
 
