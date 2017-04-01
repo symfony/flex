@@ -100,8 +100,6 @@ class Downloader
                 throw $e;
             }
         }
-
-        return $data;
     }
 
     private function fetchFileIfLastModified($filename, $cacheKey, $lastModifiedTime)
