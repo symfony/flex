@@ -13,6 +13,7 @@ namespace Symfony\Flex;
 
 use Composer\Composer;
 use Composer\IO\IOInterface;
+use Composer\Configurator\AbstractConfigurator;
 
 /**
  * @author Fabien Potencier <fabien@symfony.com>
@@ -63,10 +64,7 @@ class Configurator
         }
     }
 
-    /**
-     * @return Configurator\AbstractConfigurator
-     */
-    private function get($key)
+    private function get($key): AbstractConfigurator
     {
         if (!isset($this->configurators[$key])) {
             throw new \InvalidArgumentException(sprintf('Unknown configurator "%s".', $key));

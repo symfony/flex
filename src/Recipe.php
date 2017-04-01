@@ -29,10 +29,7 @@ class Recipe
         $this->data = $data;
     }
 
-    /**
-     * @return Package
-     */
-    public function getPackage()
+    public function getPackage(): Package
     {
         return $this->package;
     }
