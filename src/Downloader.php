@@ -117,7 +117,7 @@ class Downloader
                     return true;
                 }
 
-                return $this->parseJson($json, $filename);
+                return $this->parseJson($json, $filename, $cacheKey);
             } catch (\Exception $e) {
                 if ($retries) {
                     usleep(100000);
