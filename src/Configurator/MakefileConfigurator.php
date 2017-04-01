@@ -21,7 +21,7 @@ class MakefileConfigurator extends AbstractConfigurator
     public function configure(Recipe $recipe, $definitions)
     {
         $this->io->write('    Adding Makefile entries');
-        $data = sprintf("\n###> %s ###\n%s\n###< %s ###\n", $recipe->getName(), implode("\n", $definitions), $recipe->getName());
+        $data = sprintf("%s###> %s ###%s%s%s###< %s ###%s", PHP_EOL, $recipe->getName(), PHP_EOL, implode(PHP_EOL, $definitions), PHP_EOL, $recipe->getName(), PHP_EOL);
         file_put_contents(getcwd().'/Makefile', $data, FILE_APPEND);
     }
 
@@ -31,7 +31,7 @@ class MakefileConfigurator extends AbstractConfigurator
             return;
         }
 
-        $contents = preg_replace(sprintf('{\n+###> %s ###.*###< %s ###\n+}s', $recipe->getName(), $recipe->getName()), "\n", file_get_contents($makefile), -1, $count);
+        $contents = preg_replace(sprintf('{%s+###> %s ###.*###< %s ###%s+}s', PHP_EOL, $recipe->getName(), $recipe->getName(), PHP_EOL), PHP_EOL, file_get_contents($makefile), -1, $count);
         if (!$count) {
             return;
         }
