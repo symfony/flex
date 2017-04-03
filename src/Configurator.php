@@ -64,7 +64,7 @@ class Configurator
         }
     }
 
-    private function get($key): AbstractConfigurator
+    private function get($key)
     {
         if (!isset($this->configurators[$key])) {
             throw new \InvalidArgumentException(sprintf('Unknown configurator "%s".', $key));
