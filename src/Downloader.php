@@ -31,7 +31,7 @@ class Downloader
     private $rfs;
     private $degradedMode = false;
     private $endpoint;
-    private $options = [];
+    private $flexId;
 
     public function __construct(Composer $composer, IoInterface $io)
     {
@@ -41,12 +41,11 @@ class Downloader
         $this->rfs = Factory::createRemoteFilesystem($io, $config);
         $this->cache = new Cache($io, $config->get('cache-repo-dir').'/'.preg_replace('{[^a-z0-9.]}i', '-', $this->endpoint));
         $this->sess = bin2hex(random_bytes(16));
-        $extra = $composer->getPackage()->getExtra();
-        if ($extra['flex-id'] ?? false) {
-            $this->options['http'] = [
-                'header' => ['Flex-ID: '.$extra['flex-id']],
-            ];
-        }
+    }
+
+    public function setFlexId($id = null)
+    {
+        $this->flexId = $id;
     }
 
     /**
@@ -84,7 +83,7 @@ class Downloader
         $retries = 3;
         while ($retries--) {
             try {
-                $json = $this->rfs->getContents($this->endpoint, $url, false, $this->options);
+                $json = $this->rfs->getContents($this->endpoint, $url, false, $this->getOptions());
 
                 return $this->parseJson($json, $url, $cacheKey);
             } catch (\Exception $e) {
@@ -106,7 +105,7 @@ class Downloader
 
     private function fetchFileIfLastModified($url, $cacheKey, $lastModifiedTime)
     {
-        $options = $this->options;
+        $options = $this->getOptions();
         $retries = 3;
         while ($retries--) {
             try {
@@ -156,5 +155,14 @@ class Downloader
             $this->io->writeError('<warning>'.$url.' could not be fully loaded, package information was loaded from the local cache and may be out of date</warning>');
         }
         $this->degradedMode = true;
+    }
+
+    private function getOptions()
+    {
+        if (!$this->flexId) {
+            return [];
+        }
+
+        return ['http' => ['header' => ['Flex-ID: '.$this->flexId]]];
     }
 }

@@ -19,6 +19,7 @@ use Composer\Installer\PackageEvent;
 use Composer\Installer\PackageEvents;
 use Composer\IO\IOInterface;
 use Composer\Json\JsonFile;
+use Composer\Json\JsonManipulator;
 use Composer\Package\PackageInterface;
 use Composer\Plugin\PluginInterface;
 use Composer\Script\Event;
@@ -51,6 +52,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $this->options = $this->initOptions();
         $this->configurator = new Configurator($composer, $io, $this->options);
         $this->downloader = new Downloader($composer, $io);
+        $this->downloader->setFlexId($this->getFlexId());
 
         foreach (debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT) as $trace) {
             if (isset($trace['object']) && $trace['object'] instanceof Application) {
@@ -152,6 +154,32 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
 
         return $this->downloader->getContents($path);
+    }
+
+    private function getFlexId()
+    {
+        $extra = $this->composer->getPackage()->getExtra();
+
+        // don't want to be registered
+        if (getenv('FLEX_SKIP_REGISTRATION') || !isset($extra['flex-id'])) {
+            return;
+        }
+
+        // already registered
+        if ($extra['flex-id']) {
+            return $extra['flex-id'];
+        }
+
+        // get a new ID
+        $id = $this->downloader->getContents('/ulid')['ulid'];
+
+        // update composer.json
+        $json = new JsonFile(Factory::getComposerFile());
+        $manipulator = new JsonManipulator(file_get_contents($json->getPath()));
+        $manipulator->addProperty('extra.flex-id', $id);
+        file_put_contents($json->getPath(), $manipulator->getContents());
+
+        return $id;
     }
 
     public static function getSubscribedEvents()
