@@ -30,14 +30,16 @@ class Downloader
     private $cache;
     private $rfs;
     private $degradedMode = false;
+    private $endpoint;
     private $options = [];
 
     public function __construct(Composer $composer, IoInterface $io)
     {
         $this->io = $io;
         $config = $composer->getConfig();
+        $this->endpoint = rtrim(getenv('FLEX_ENDPOINT') ?: self::ENDPOINT, '/');
         $this->rfs = Factory::createRemoteFilesystem($io, $config);
-        $this->cache = new Cache($io, $config->get('cache-repo-dir').'/'.preg_replace('{[^a-z0-9.]}i', '-', self::ENDPOINT));
+        $this->cache = new Cache($io, $config->get('cache-repo-dir').'/'.preg_replace('{[^a-z0-9.]}i', '-', $this->endpoint));
         $this->sess = bin2hex(random_bytes(16));
         $extra = $composer->getPackage()->getExtra();
         if ($extra['flex-id'] ?? false) {
@@ -54,7 +56,7 @@ class Downloader
      */
     public function getContents($path)
     {
-        $url = self::ENDPOINT.'/'.ltrim($path, '/').(false === strpos($path, '&') ? '?' : '&').'s='.$this->sess;
+        $url = $this->endpoint.'/'.ltrim($path, '/').(false === strpos($path, '&') ? '?' : '&').'s='.$this->sess;
         $cacheKey = ltrim($path, '/');
 
         try {
@@ -82,7 +84,7 @@ class Downloader
         $retries = 3;
         while ($retries--) {
             try {
-                $json = $this->rfs->getContents(self::ENDPOINT, $filename, false, $this->options);
+                $json = $this->rfs->getContents($this->endpoint, $filename, false, $this->options);
 
                 return $this->parseJson($json, $filename, $cacheKey);
             } catch (\Exception $e) {
@@ -109,7 +111,7 @@ class Downloader
         while ($retries--) {
             try {
                 $options['http']['header'][] = 'If-Modified-Since: '.$lastModifiedTime;
-                $json = $this->rfs->getContents(self::ENDPOINT, $filename, false, $options);
+                $json = $this->rfs->getContents($this->endpoint, $filename, false, $options);
                 if (304 === $this->rfs->findStatusCode($this->rfs->getLastHeaders())) {
                     return true;
                 }
@@ -132,10 +134,10 @@ class Downloader
     {
         $data = JsonFile::parseJson($json, $filename);
         if (!empty($data['warning'])) {
-            $this->io->writeError('<warning>Warning from '.self::ENDPOINT.': '.$data['warning'].'</warning>');
+            $this->io->writeError('<warning>Warning from '.$this->endpoint.': '.$data['warning'].'</warning>');
         }
         if (!empty($data['info'])) {
-            $this->io->writeError('<info>Info from '.self::ENDPOINT.': '.$data['info'].'</info>');
+            $this->io->writeError('<info>Info from '.$this->endpoint.': '.$data['info'].'</info>');
         }
 
         if ($lastModifiedDate = $this->rfs->findHeaderValue($this->rfs->getLastHeaders(), 'last-modified')) {
@@ -151,7 +153,7 @@ class Downloader
     {
         if (!$this->degradedMode) {
             $this->io->writeError('<warning>'.$e->getMessage().'</warning>');
-            $this->io->writeError('<warning>'.self::ENDPOINT.' could not be fully loaded, package information was loaded from the local cache and may be out of date</warning>');
+            $this->io->writeError('<warning>'.$this->endpoint.' could not be fully loaded, package information was loaded from the local cache and may be out of date</warning>');
         }
         $this->degradedMode = true;
     }
