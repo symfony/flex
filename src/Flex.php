@@ -145,15 +145,17 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
     private function getPackageRecipe(PackageInterface $package, $name, $operation)
     {
-        $path = sprintf('/recipes/%s?o=%s&v=%s', $name, $operation, urlencode($package->getPrettyVersion()));
+        $path = sprintf('/recipes/%s', $name);
+        $args = [
+            'o' => $operation,
+            'v' => $package->getPrettyVersion(),
+        ];
 
-        $version = $package->getFullPrettyVersion(false);
-        if (false !== strpos($version, ' ')) {
-            list($version, $ref) = explode(' ', $version);
-            $path .= sprintf('&r=%s', urlencode($ref));
+        if ($alias = $package->getExtra()['branch-alias']['dev-master'] ?? null) {
+            $args['a'] = $alias;
         }
 
-        return $this->downloader->getContents($path);
+        return $this->downloader->getContents($path.'?'.http_build_query($args, '', '&', PHP_QUERY_RFC3986));
     }
 
     private function getFlexId()
