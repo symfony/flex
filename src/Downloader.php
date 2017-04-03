@@ -79,14 +79,14 @@ class Downloader
         }
     }
 
-    private function fetchFile($filename, $cacheKey)
+    private function fetchFile($url, $cacheKey)
     {
         $retries = 3;
         while ($retries--) {
             try {
-                $json = $this->rfs->getContents($this->endpoint, $filename, false, $this->options);
+                $json = $this->rfs->getContents($this->endpoint, $url, false, $this->options);
 
-                return $this->parseJson($json, $filename, $cacheKey);
+                return $this->parseJson($json, $url, $cacheKey);
             } catch (\Exception $e) {
                 if ($retries) {
                     usleep(100000);
@@ -94,7 +94,7 @@ class Downloader
                 }
 
                 if ($contents = $this->cache->read($cacheKey)) {
-                    $this->switchToDegradedMode($e);
+                    $this->switchToDegradedMode($e, $url);
 
                     return JsonFile::parseJson($contents, $this->cache->getRoot().$cacheKey);
                 }
@@ -104,40 +104,40 @@ class Downloader
         }
     }
 
-    private function fetchFileIfLastModified($filename, $cacheKey, $lastModifiedTime)
+    private function fetchFileIfLastModified($url, $cacheKey, $lastModifiedTime)
     {
         $options = $this->options;
         $retries = 3;
         while ($retries--) {
             try {
                 $options['http']['header'][] = 'If-Modified-Since: '.$lastModifiedTime;
-                $json = $this->rfs->getContents($this->endpoint, $filename, false, $options);
+                $json = $this->rfs->getContents($this->endpoint, $url, false, $options);
                 if (304 === $this->rfs->findStatusCode($this->rfs->getLastHeaders())) {
                     return true;
                 }
 
-                return $this->parseJson($json, $filename, $cacheKey);
+                return $this->parseJson($json, $url, $cacheKey);
             } catch (\Exception $e) {
                 if ($retries) {
                     usleep(100000);
                     continue;
                 }
 
-                $this->switchToDegradedMode($e);
+                $this->switchToDegradedMode($e, $url);
 
                 return true;
             }
         }
     }
 
-    private function parseJson($json, $filename, $cacheKey)
+    private function parseJson($json, $url, $cacheKey)
     {
-        $data = JsonFile::parseJson($json, $filename);
+        $data = JsonFile::parseJson($json, $url);
         if (!empty($data['warning'])) {
-            $this->io->writeError('<warning>Warning from '.$this->endpoint.': '.$data['warning'].'</warning>');
+            $this->io->writeError('<warning>Warning from '.$url.': '.$data['warning'].'</warning>');
         }
         if (!empty($data['info'])) {
-            $this->io->writeError('<info>Info from '.$this->endpoint.': '.$data['info'].'</info>');
+            $this->io->writeError('<info>Info from '.$url.': '.$data['info'].'</info>');
         }
 
         if ($lastModifiedDate = $this->rfs->findHeaderValue($this->rfs->getLastHeaders(), 'last-modified')) {
@@ -149,11 +149,11 @@ class Downloader
         return $data;
     }
 
-    private function switchToDegradedMode(\Exception $e)
+    private function switchToDegradedMode(\Exception $e, $url)
     {
         if (!$this->degradedMode) {
             $this->io->writeError('<warning>'.$e->getMessage().'</warning>');
-            $this->io->writeError('<warning>'.$this->endpoint.' could not be fully loaded, package information was loaded from the local cache and may be out of date</warning>');
+            $this->io->writeError('<warning>'.$url.' could not be fully loaded, package information was loaded from the local cache and may be out of date</warning>');
         }
         $this->degradedMode = true;
     }
