@@ -13,7 +13,7 @@ namespace Symfony\Flex;
 
 use Composer\Composer;
 use Composer\IO\IOInterface;
-use Composer\Configurator\AbstractConfigurator;
+use Symfony\Flex\Configurator\AbstractConfigurator;
 
 /**
  * @author Fabien Potencier <fabien@symfony.com>
