@@ -151,6 +151,10 @@ class Flex implements PluginInterface, EventSubscriberInterface
             'v' => $package->getPrettyVersion(),
         ];
 
+        if ($date = $package->getReleaseDate()) {
+            $args['t'] = $date->format(\DateTime::RFC3339);
+        }
+
         if ($alias = $package->getExtra()['branch-alias']['dev-master'] ?? null) {
             $args['a'] = $alias;
         }
