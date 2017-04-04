@@ -65,6 +65,26 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
     }
 
+    public function configureProject(Event $event)
+    {
+        $projectName = strtolower(basename(getcwd()));
+        if (!empty($_SERVER['USERNAME'])) {
+            $packageName = $_SERVER['USERNAME'].'/'.$projectName;
+        } elseif (true === extension_loaded('posix') && $user = posix_getpwuid(posix_getuid())) {
+            $packageName = $user['name'].'/'.$projectName;
+        } elseif (get_current_user()) {
+            $packageName = get_current_user().'/'.$projectName;
+        } else {
+            // needed because package names must use the "foo/bar" format
+            $packageName = $projectName.'/'.$projectName;
+        }
+
+        $json = new JsonFile(Factory::getComposerFile());
+        $manipulator = new JsonManipulator(file_get_contents($json->getPath()));
+        $manipulator->addProperty('name', $packageName);
+        file_put_contents($json->getPath(), $manipulator->getContents());
+    }
+
     public function configurePackage(PackageEvent $event)
     {
         $package = $event->getOperation()->getPackage();
@@ -192,6 +212,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
 
         return [
+            PackageEvents::POST_CREATE_PROJECT_CMD => 'configureProject',
             PackageEvents::POST_PACKAGE_INSTALL => 'configurePackage',
             PackageEvents::POST_PACKAGE_UPDATE => 'reconfigurePackage',
             PackageEvents::POST_PACKAGE_UNINSTALL => 'unconfigurePackage',
