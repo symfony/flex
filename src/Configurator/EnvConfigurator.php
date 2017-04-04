@@ -23,6 +23,9 @@ class EnvConfigurator extends AbstractConfigurator
         $this->io->write('    Adding environment variable defaults');
         $data = sprintf("\n###> %s ###\n", $recipe->getName());
         foreach ($vars as $key => $value) {
+            if ('%generate(secret)%' === $value) {
+                $value = bin2hex(random_bytes(16));
+            }
             $data .= "$key=$value\n";
         }
         $data .= sprintf("###< %s ###\n", $recipe->getName());
