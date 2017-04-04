@@ -51,24 +51,26 @@ class Downloader
     /**
      * Decodes a JSON HTTP response body.
      *
-     * @param $path The path to get on the Flex server
+     * @param string $path    The path to get on the Flex server
+     * @param array  $headers An array of HTTP headers
      */
-    public function getContents($path)
+    public function getContents($path, array $headers = [])
     {
-        $url = $this->endpoint.'/'.ltrim($path, '/').(false === strpos($path, '&') ? '?' : '&').'s='.$this->sess;
+        $headers[] = 'Session-ID: '.$this->sess;
+        $url = $this->endpoint.'/'.ltrim($path, '/');
         $cacheKey = ltrim($path, '/');
 
         try {
             if ($contents = $this->cache->read($cacheKey)) {
                 $contents = json_decode($contents, true);
                 if (isset($contents['last-modified'])) {
-                    $response = $this->fetchFileIfLastModified($url, $cacheKey, $contents['last-modified']);
+                    $response = $this->fetchFileIfLastModified($url, $cacheKey, $contents['last-modified'], $headers);
 
                     return true === $response ? $contents : $response;
                 }
             }
 
-            return $this->fetchFile($url, $cacheKey);
+            return $this->fetchFile($url, $cacheKey, $headers);
         } catch (TransportException $e) {
             if (404 === $e->getStatusCode()) {
                 return;
@@ -78,12 +80,13 @@ class Downloader
         }
     }
 
-    private function fetchFile($url, $cacheKey)
+    private function fetchFile($url, $cacheKey, $headers)
     {
+        $options = $this->getOptions($headers);
         $retries = 3;
         while ($retries--) {
             try {
-                $json = $this->rfs->getContents($this->endpoint, $url, false, $this->getOptions());
+                $json = $this->rfs->getContents($this->endpoint, $url, false, $options);
 
                 return $this->parseJson($json, $url, $cacheKey);
             } catch (\Exception $e) {
@@ -103,13 +106,13 @@ class Downloader
         }
     }
 
-    private function fetchFileIfLastModified($url, $cacheKey, $lastModifiedTime)
+    private function fetchFileIfLastModified($url, $cacheKey, $lastModifiedTime, $headers)
     {
-        $options = $this->getOptions();
+        $headers[] = 'If-Modified-Since: '.$lastModifiedTime;
+        $options = $this->getOptions($headers);
         $retries = 3;
         while ($retries--) {
             try {
-                $options['http']['header'][] = 'If-Modified-Since: '.$lastModifiedTime;
                 $json = $this->rfs->getContents($this->endpoint, $url, false, $options);
                 if (304 === $this->rfs->findStatusCode($this->rfs->getLastHeaders())) {
                     return true;
@@ -157,12 +160,14 @@ class Downloader
         $this->degradedMode = true;
     }
 
-    private function getOptions()
+    private function getOptions(array $headers)
     {
-        if (!$this->flexId) {
-            return [];
+        $options = ['http' => ['header' => $headers]];
+
+        if ($this->flexId) {
+            $options['http']['header'][] = 'Flex-ID: '.$this->flexId;
         }
 
-        return ['http' => ['header' => ['Flex-ID: '.$this->flexId]]];
+        return $options;
     }
 }
