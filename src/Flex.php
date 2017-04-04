@@ -75,7 +75,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         } elseif (get_current_user()) {
             $packageName = get_current_user().'/'.$projectName;
         } else {
-            // needed because package names must be use the "foo/bar" format
+            // needed because package names must use the "foo/bar" format
             $packageName = $projectName.'/'.$projectName;
         }
 
