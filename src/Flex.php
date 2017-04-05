@@ -155,9 +155,9 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
     private function getPackageRecipe(PackageInterface $package, $name, $operation)
     {
-        $headers = ['Operation: '.$operation];
+        $headers = ['Package-Operation: '.$operation];
         if ($date = $package->getReleaseDate()) {
-            $headers[] = 'Release-Time: '.$date->format(\DateTime::RFC3339);
+            $headers[] = 'Package-Release: '.$date->format(\DateTime::RFC3339);
         }
 
         if ($alias = $package->getExtra()['branch-alias']['dev-master'] ?? null) {

@@ -56,7 +56,7 @@ class Downloader
      */
     public function getContents($path, array $headers = [])
     {
-        $headers[] = 'Session-ID: '.$this->sess;
+        $headers[] = 'Package-Session: '.$this->sess;
         $url = $this->endpoint.'/'.ltrim($path, '/');
         $cacheKey = ltrim($path, '/');
 
@@ -165,7 +165,7 @@ class Downloader
         $options = ['http' => ['header' => $headers]];
 
         if ($this->flexId) {
-            $options['http']['header'][] = 'Flex-ID: '.$this->flexId;
+            $options['http']['header'][] = 'Project: '.$this->flexId;
         }
 
         return $options;
