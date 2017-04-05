@@ -1,0 +1,7 @@
+---------------------------------------------------------------------------
+
+by fabpot at 2017-04-05T14:20:21Z
+
+I added name and description to "fix" the validator warnings. I was not aware of the `--no-check-publish` though.
+
+We can definitely assume that almost 100% of the projects managed by Symfony Flex will be proprietary. So, I think I'm 👍 to make such a change.
