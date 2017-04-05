@@ -15,9 +15,12 @@ use Composer\Composer;
 use Composer\Console\Application;
 use Composer\Factory;
 use Composer\EventDispatcher\EventSubscriberInterface;
+use Composer\Installer;
 use Composer\Installer\PackageEvent;
 use Composer\Installer\PackageEvents;
+use Composer\Installer\SuggestedPackagesReporter;
 use Composer\IO\IOInterface;
+use Composer\IO\NullIO;
 use Composer\Json\JsonFile;
 use Composer\Json\JsonManipulator;
 use Composer\Package\PackageInterface;
@@ -54,12 +57,25 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $this->downloader = new Downloader($composer, $io);
         $this->downloader->setFlexId($this->getFlexId());
 
+        $search = 2;
         foreach (debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT) as $trace) {
-            if (isset($trace['object']) && $trace['object'] instanceof Application) {
+            if (!isset($trace['object'])) {
+                continue;
+            }
+
+            if ($trace['object'] instanceof Application) {
                 $resolver = new PackageResolver($this->downloader);
                 $trace['object']->add(new Command\RequireCommand($resolver));
                 $trace['object']->add(new Command\UpdateCommand($resolver));
                 $trace['object']->add(new Command\RemoveCommand($resolver));
+                --$search;
+            } elseif ($trace['object'] instanceof Installer) {
+                $suggestedPackagesReporter = new SuggestedPackagesReporter(new NullIO());
+                $trace['object']->setSuggestedPackagesReporter($suggestedPackagesReporter);
+                --$search;
+            }
+
+            if (0 === $search) {
                 break;
             }
         }
