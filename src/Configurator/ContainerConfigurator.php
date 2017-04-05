@@ -39,7 +39,7 @@ class ContainerConfigurator extends AbstractConfigurator
             $count = 0;
             $contents = preg_replace('{^( *)'.$key.'( *):( *).*$}im', "$1$key$2:$3$value", $contents, -1, $count);
             if (!$count) {
-                $contents .= "    $key: $value\n";
+                $contents .= "    $key: $value".PHP_EOL;
             }
         }
 

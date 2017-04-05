@@ -21,14 +21,14 @@ class EnvConfigurator extends AbstractConfigurator
     public function configure(Recipe $recipe, $vars)
     {
         $this->io->write('    Adding environment variable defaults');
-        $data = sprintf("\n###> %s ###\n", $recipe->getName());
+        $data = sprintf("%s###> %s ###%s", PHP_EOL, $recipe->getName(), PHP_EOL);
         foreach ($vars as $key => $value) {
             if ('%generate(secret)%' === $value) {
                 $value = bin2hex(random_bytes(16));
             }
-            $data .= "$key=$value\n";
+            $data .= "$key=$value".PHP_EOL;
         }
-        $data .= sprintf("###< %s ###\n", $recipe->getName());
+        $data .= sprintf("###< %s ###%s", $recipe->getName(), PHP_EOL);
         if (!file_exists(getcwd().'/.env')) {
             copy(getcwd().'/.env.dist', getcwd().'/.env');
         }
@@ -44,7 +44,7 @@ class EnvConfigurator extends AbstractConfigurator
                 continue;
             }
 
-            $contents = preg_replace(sprintf('{\n+###> %s ###.*###< %s ###\n+}s', $recipe->getName(), $recipe->getName()), "\n", file_get_contents($env), -1, $count);
+            $contents = preg_replace(sprintf('{%s+###> %s ###.*###< %s ###%s+}s', PHP_EOL, $recipe->getName(), $recipe->getName(), PHP_EOL), PHP_EOL, file_get_contents($env), -1, $count);
             if (!$count) {
                 continue;
             }
