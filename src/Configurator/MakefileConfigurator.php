@@ -22,7 +22,7 @@ class MakefileConfigurator extends AbstractConfigurator
     {
         $this->io->write('    Adding Makefile entries');
         $data = sprintf("%s###> %s ###%s%s%s###< %s ###%s", PHP_EOL, $recipe->getName(), PHP_EOL, implode(PHP_EOL, $definitions), PHP_EOL, $recipe->getName(), PHP_EOL);
-        file_put_contents(getcwd().'/Makefile', $data, FILE_APPEND);
+        file_put_contents(getcwd().'/Makefile', ltrim($data, PHP_EOL), FILE_APPEND);
     }
 
     public function unconfigure(Recipe $recipe, $vars)
@@ -40,7 +40,7 @@ class MakefileConfigurator extends AbstractConfigurator
         if (!trim($contents)) {
             @unlink($makefile);
         } else {
-            file_put_contents($makefile, $contents);
+            file_put_contents($makefile, ltrim($contents, PHP_EOL));
         }
     }
 }
