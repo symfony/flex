@@ -212,10 +212,10 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
 
         return [
-            PackageEvents::POST_CREATE_PROJECT_CMD => 'configureProject',
             PackageEvents::POST_PACKAGE_INSTALL => 'configurePackage',
             PackageEvents::POST_PACKAGE_UPDATE => 'reconfigurePackage',
             PackageEvents::POST_PACKAGE_UNINSTALL => 'unconfigurePackage',
+            ScriptEvents::POST_CREATE_PROJECT_CMD => 'configureProject',
             ScriptEvents::POST_INSTALL_CMD => 'postInstall',
             ScriptEvents::POST_UPDATE_CMD => 'postUpdate',
             'auto-scripts' => 'executeAutoScripts',
