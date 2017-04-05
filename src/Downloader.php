@@ -90,6 +90,10 @@ class Downloader
 
                 return $this->parseJson($json, $url, $cacheKey);
             } catch (\Exception $e) {
+                if ($e instanceof TransportException && 404 === $e->getStatusCode()) {
+                    throw $e;
+                }
+
                 if ($retries) {
                     usleep(100000);
                     continue;
@@ -120,6 +124,10 @@ class Downloader
 
                 return $this->parseJson($json, $url, $cacheKey);
             } catch (\Exception $e) {
+                if ($e instanceof TransportException && 404 === $e->getStatusCode()) {
+                    throw $e;
+                }
+
                 if ($retries) {
                     usleep(100000);
                     continue;
