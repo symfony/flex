@@ -144,9 +144,8 @@ class Downloader
 
         if ($lastModifiedDate = $this->rfs->findHeaderValue($this->rfs->getLastHeaders(), 'last-modified')) {
             $data['last-modified'] = $lastModifiedDate;
-            $json = json_encode($data);
+            $this->cache->write($cacheKey, json_encode($data));
         }
-        $this->cache->write($cacheKey, $json);
 
         return $data;
     }
