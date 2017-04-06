@@ -11,6 +11,7 @@
 
 namespace Symfony\Flex;
 
+use Composer\Command\CreateProjectCommand;
 use Composer\Composer;
 use Composer\Console\Application;
 use Composer\Factory;
@@ -20,6 +21,7 @@ use Composer\Installer\PackageEvent;
 use Composer\Installer\PackageEvents;
 use Composer\Installer\SuggestedPackagesReporter;
 use Composer\IO\IOInterface;
+use Composer\IO\ConsoleIO;
 use Composer\IO\NullIO;
 use Composer\Json\JsonFile;
 use Composer\Json\JsonManipulator;
@@ -57,21 +59,28 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $this->downloader = new Downloader($composer, $io);
         $this->downloader->setFlexId($this->getFlexId());
 
-        $search = 2;
+        $search = 3;
         foreach (debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT) as $trace) {
             if (!isset($trace['object'])) {
                 continue;
             }
 
             if ($trace['object'] instanceof Application) {
+                --$search;
                 $resolver = new PackageResolver($this->downloader);
                 $trace['object']->add(new Command\RequireCommand($resolver));
                 $trace['object']->add(new Command\UpdateCommand($resolver));
                 $trace['object']->add(new Command\RemoveCommand($resolver));
-                --$search;
             } elseif ($trace['object'] instanceof Installer) {
-                $trace['object']->setSuggestedPackagesReporter(new SuggestedPackagesReporter(new NullIO()));
                 --$search;
+                $trace['object']->setSuggestedPackagesReporter(new SuggestedPackagesReporter(new NullIO()));
+            } elseif ($trace['object'] instanceof CreateProjectCommand) {
+                --$search;
+                if ($io instanceof ConsoleIO) {
+                    $p = new \ReflectionProperty($io, 'input');
+                    $p->setAccessible(true);
+                    $p->getValue($io)->setInteractive(false);
+                }
             }
 
             if (0 === $search) {
