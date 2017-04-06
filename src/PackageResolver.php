@@ -47,7 +47,6 @@ class PackageResolver
             if (false === strpos($argument, '/')) {
                 if (null === self::$aliases) {
                     self::$aliases = $this->downloader->getContents('/aliases.json');
-                    self::$versions = $this->downloader->getContents('/versions.json');
                 }
 
                 while (isset(self::$aliases[$argument])) {
@@ -71,6 +70,10 @@ class PackageResolver
     {
         if (!$version) {
             return '';
+        }
+
+        if (null === self::$versions) {
+            self::$versions = $this->downloader->getContents('/versions.json');
         }
 
         if (!isset(self::$versions['splits'][$package])) {
