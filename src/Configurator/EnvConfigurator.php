@@ -26,7 +26,11 @@ class EnvConfigurator extends AbstractConfigurator
             if ('%generate(secret)%' === $value) {
                 $value = bin2hex(random_bytes(16));
             }
-            $data .= "$key=$value".PHP_EOL;
+            if ('#' === $key[0]) {
+                $data .= "# ".$value.PHP_EOL;
+            } else {
+                $data .= "$key=$value".PHP_EOL;
+            }
         }
         $data .= sprintf("###< %s ###%s", $recipe->getName(), PHP_EOL);
         if (!file_exists(getcwd().'/.env')) {
