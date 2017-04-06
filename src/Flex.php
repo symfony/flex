@@ -45,7 +45,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
     {
         if (!extension_loaded('openssl')) {
             self::$activated = false;
-            $this->io->writeError('<warning>Symfony Flex has been disabled. You must enable the openssl extension in your php.ini to use it.</warning>');
+            $this->io->writeError('<warning>Symfony Flex has been disabled. You must enable the openssl extension in your "php.ini" file.</warning>');
 
             return;
         }
@@ -70,8 +70,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
                 $trace['object']->add(new Command\RemoveCommand($resolver));
                 --$search;
             } elseif ($trace['object'] instanceof Installer) {
-                $suggestedPackagesReporter = new SuggestedPackagesReporter(new NullIO());
-                $trace['object']->setSuggestedPackagesReporter($suggestedPackagesReporter);
+                $trace['object']->setSuggestedPackagesReporter(new SuggestedPackagesReporter(new NullIO()));
                 --$search;
             }
 
