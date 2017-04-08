@@ -26,7 +26,9 @@ use Composer\IO\NullIO;
 use Composer\Json\JsonFile;
 use Composer\Json\JsonManipulator;
 use Composer\Package\PackageInterface;
+use Composer\Plugin\CommandEvent;
 use Composer\Plugin\PluginInterface;
+use Composer\Plugin\PluginEvents;
 use Composer\Script\Event;
 use Composer\Script\ScriptEvents;
 
@@ -41,6 +43,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
     private $configurator;
     private $downloader;
     private $postInstallOutput = [''];
+    private $isInstall = false;
     private static $activated = true;
 
     public function activate(Composer $composer, IOInterface $io)
@@ -91,6 +94,10 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
     public function configureProject(Event $event)
     {
+        if ($this->isInstall) {
+            return;
+        }
+
         $json = new JsonFile(Factory::getComposerFile());
         $manipulator = new JsonManipulator(file_get_contents($json->getPath()));
         // 'name' and 'description' are only required for public packages
@@ -101,6 +108,10 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
     public function configurePackage(PackageEvent $event)
     {
+        if ($this->isInstall) {
+            return;
+        }
+
         $package = $event->getOperation()->getPackage();
         foreach ($this->filterPackageNames($package, 'install') as $name => $data) {
             $this->io->write(sprintf('    Detected auto-configuration settings for "%s"', $name));
@@ -116,10 +127,17 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
     public function reconfigurePackage(PackageEvent $event)
     {
+        if ($this->isInstall) {
+            return;
+        }
     }
 
     public function unconfigurePackage(PackageEvent $event)
     {
+        if ($this->isInstall) {
+            return;
+        }
+
         $package = $event->getOperation()->getPackage();
         foreach ($this->filterPackageNames($package, 'uninstall') as $name => $data) {
             $this->io->write(sprintf('    Auto-unconfiguring "%s"', $name));
@@ -129,11 +147,19 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
     public function postInstall(Event $event)
     {
+        if ($this->isInstall) {
+            return;
+        }
+
         $this->postUpdate($event);
     }
 
     public function postUpdate(Event $event)
     {
+        if ($this->isInstall) {
+            return;
+        }
+
         if (!file_exists(getcwd().'/.env') && file_exists(getcwd().'/.env.dist')) {
             copy(getcwd().'/.env.dist', getcwd().'/.env');
         }
@@ -153,6 +179,13 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
 
         $this->io->write($this->postInstallOutput);
+    }
+
+    public function disableFlexOnInstall(CommandEvent $event)
+    {
+        if ('install' === $event->getCommandName()) {
+            $this->isInstall = true;
+        }
     }
 
     private function filterPackageNames(PackageInterface $package, $operation)
@@ -229,6 +262,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             PackageEvents::POST_PACKAGE_INSTALL => 'configurePackage',
             PackageEvents::POST_PACKAGE_UPDATE => 'reconfigurePackage',
             PackageEvents::POST_PACKAGE_UNINSTALL => 'unconfigurePackage',
+            PluginEvents::COMMAND => 'disableFlexOnInstall',
             ScriptEvents::POST_CREATE_PROJECT_CMD => 'configureProject',
             ScriptEvents::POST_INSTALL_CMD => 'postInstall',
             ScriptEvents::POST_UPDATE_CMD => 'postUpdate',
