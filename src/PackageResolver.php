@@ -28,7 +28,7 @@ class PackageResolver
         $this->downloader = $downloader;
     }
 
-    public function resolve(array $arguments = [])
+    public function resolve(array $arguments = []): array
     {
         $versionParser = new VersionParser();
 
@@ -75,7 +75,7 @@ class PackageResolver
         return array_unique($requires);
     }
 
-    private function parseVersion($package, $version)
+    private function parseVersion($package, $version): string
     {
         if (!$version) {
             return '';

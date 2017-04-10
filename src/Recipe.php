@@ -22,7 +22,7 @@ class Recipe
     private $name;
     private $data;
 
-    public function __construct(Package $package, $name, $data)
+    public function __construct(Package $package, string $name, $data)
     {
         $this->package = $package;
         $this->name = $name;
@@ -34,12 +34,12 @@ class Recipe
         return $this->package;
     }
 
-    public function getName()
+    public function getName(): string
     {
         return $this->name;
     }
 
-    public function getManifest()
+    public function getManifest(): array
     {
         if (!isset($this->data['manifest'])) {
             throw new \LogicException(sprintf('Manifest is not available for recipe "%s".', $this->name));
@@ -48,7 +48,7 @@ class Recipe
         return $this->data['manifest'];
     }
 
-    public function getFiles()
+    public function getFiles(): array
     {
         return $this->data['files'] ?? [];
     }

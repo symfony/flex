@@ -53,7 +53,7 @@ class BundlesConfigurator extends AbstractConfigurator
         $this->dump($file, $registered);
     }
 
-    private function parse($manifest)
+    private function parse(array $manifest): array
     {
         $bundles = [];
         foreach ($manifest as $class => $envs) {
@@ -63,7 +63,7 @@ class BundlesConfigurator extends AbstractConfigurator
         return $bundles;
     }
 
-    private function load($file)
+    private function load(string $file): array
     {
         $bundles = file_exists($file) ? (require $file) : [];
         if (!is_array($bundles)) {
@@ -73,7 +73,7 @@ class BundlesConfigurator extends AbstractConfigurator
         return $bundles;
     }
 
-    private function dump($file, $bundles)
+    private function dump(string $file, array $bundles)
     {
         $contents = "<?php".PHP_EOL.PHP_EOL."return [".PHP_EOL;
         foreach ($bundles as $class => $envs) {
@@ -92,7 +92,7 @@ class BundlesConfigurator extends AbstractConfigurator
         file_put_contents($file, $contents);
     }
 
-    private function getConfFile()
+    private function getConfFile(): string
     {
         return getcwd().'/etc/bundles.php';
     }

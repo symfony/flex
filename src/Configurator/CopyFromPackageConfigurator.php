@@ -32,7 +32,7 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
         $this->removeFiles($config, $packageDir, getcwd());
     }
 
-    private function copyFiles($manifest, $from, $to)
+    private function copyFiles(array $manifest, string $from, string $to)
     {
         foreach ($manifest as $source => $target) {
             $target = $this->options->expandTargetDir($target);
@@ -50,7 +50,7 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
         }
     }
 
-    private function removeFiles($manifest, $from, $to)
+    private function removeFiles(array $manifest, string $from, string $to)
     {
         foreach ($manifest as $source => $target) {
             $target = $this->options->expandTargetDir($target);
@@ -62,7 +62,7 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
         }
     }
 
-    private function copyDir($source, $target)
+    private function copyDir(string $source, string $target)
     {
         if (!is_dir($target)) {
             mkdir($target, 0777, true);
@@ -80,13 +80,13 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
         }
     }
 
-    public function copyFile($source, $target)
+    public function copyFile(string $source, string $target)
     {
         copy($source, $target);
         @chmod($target, fileperms($target) | (fileperms($source) & 0111));
     }
 
-    private function removeFilesFromDir($source, $target)
+    private function removeFilesFromDir(string $source, string $target)
     {
         $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($source, \RecursiveDirectoryIterator::SKIP_DOTS), \RecursiveIteratorIterator::CHILD_FIRST);
         foreach ($iterator as $item) {
