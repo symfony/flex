@@ -23,7 +23,7 @@ use Composer\Json\JsonFile;
  */
 class Downloader
 {
-    const ENDPOINT = 'https://flex.symfony.com';
+    private const ENDPOINT = 'https://flex.symfony.com';
 
     private $io;
     private $sess;

@@ -36,7 +36,7 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
     {
         foreach ($manifest as $source => $target) {
             $target = $this->options->expandTargetDir($target);
-            if ('/' === $source[strlen($source) - 1]) {
+            if ('/' === $source[-1]) {
                 $this->copyDir($from.'/'.$source, $to.'/'.$target);
             } else {
                 if (!is_dir(dirname($to.'/'.$target))) {
@@ -54,7 +54,7 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
     {
         foreach ($manifest as $source => $target) {
             $target = $this->options->expandTargetDir($target);
-            if ('/' === $source[strlen($source) - 1]) {
+            if ('/' === $source[-1]) {
                 $this->removeFilesFromDir($from.'/'.$source, $to.'/'.$target);
             } else {
                 @unlink($to.'/'.$target);
