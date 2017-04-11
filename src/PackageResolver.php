@@ -50,7 +50,7 @@ class PackageResolver
         foreach ($explodedArguments as $argument) {
             if (false === strpos($argument, '/')) {
                 if (null === self::$aliases) {
-                    self::$aliases = $this->downloader->getContents('/aliases.json');
+                    self::$aliases = $this->downloader->get('/aliases.json')->getBody();
                 }
 
                 if (isset(self::$aliases[$argument])) {
@@ -87,7 +87,7 @@ class PackageResolver
         }
 
         if (null === self::$versions) {
-            self::$versions = $this->downloader->getContents('/versions.json');
+            self::$versions = $this->downloader->get('/versions.json')->getBody();
         }
 
         if (!isset(self::$versions['splits'][$package])) {
