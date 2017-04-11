@@ -34,7 +34,7 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
     {
         foreach ($manifest as $source => $target) {
             $target = $this->options->expandTargetDir($target);
-            if ('/' === $source[strlen($source) - 1]) {
+            if ('/' === $source[-1]) {
                 $this->copyDir($source, $to.'/'.$target, $files);
             } else {
                 $this->copyFile($to.'/'.$target, $files[$source]);
@@ -70,7 +70,7 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
     {
         foreach ($manifest as $source => $target) {
             $target = $this->options->expandTargetDir($target);
-            if ('/' === $source[strlen($source) - 1]) {
+            if ('/' === $source[-1]) {
                 foreach (array_keys($files) as $file) {
                     if (0 === strpos($file, $source)) {
                         $this->removeFile($to.'/'.$target.'/'.substr($file, strlen($source)));
