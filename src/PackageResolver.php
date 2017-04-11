@@ -30,7 +30,7 @@ class PackageResolver
         $this->downloader = $downloader;
     }
 
-    public function resolve(array $arguments = [])
+    public function resolve(iterable $arguments = []): iterable
     {
         $versionParser = new VersionParser();
 
@@ -74,13 +74,13 @@ class PackageResolver
         // third pass to resolve versions
         $requires= [];
         foreach ($versionParser->parseNameVersionPairs($packages) as $package) {
-            $requires[] = $package['name'].$this->parseVersion($package['name'], $package['version'] ?? null);
+            $requires[] = $package['name'].$this->parseVersion($package['name'], $package['version'] ?? '');
         }
 
         return array_unique($requires);
     }
 
-    private function parseVersion($package, $version)
+    private function parseVersion(string $package, string $version): string
     {
         if (!$version) {
             return '';
@@ -103,7 +103,10 @@ class PackageResolver
         return ':'.$version;
     }
 
-    private function throwAlternatives($argument)
+    /**
+     * @throws \UnexpectedValueException
+     */
+    private function throwAlternatives(string $argument): void
     {
         $alternatives = [];
         foreach (self::$aliases as $alias => $package) {

@@ -18,18 +18,18 @@ use Symfony\Flex\Recipe;
  */
 class ContainerConfigurator extends AbstractConfigurator
 {
-    public function configure(Recipe $recipe, $parameters)
+    public function configure(Recipe $recipe, $parameters): void
     {
         $this->io->write('    Setting parameters');
         $this->updateParametersIni($parameters);
     }
 
-    public function unconfigure(Recipe $recipe, $parameters)
+    public function unconfigure(Recipe $recipe, $parameters): void
     {
         // FIXME: hard to do, but as adding parameters should be very rare, that's fine
     }
 
-    private function updateParametersIni($parameters)
+    private function updateParametersIni(iterable $parameters): void
     {
         $target = getcwd().'/etc/container.yaml';
         $contents = file_get_contents($target);

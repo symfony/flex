@@ -38,7 +38,10 @@ class ScriptExecutor
         $this->executor = $executor ?: new ProcessExecutor();
     }
 
-    public function execute($type, $cmd)
+    /**
+     * @throw ScriptExecutionException if the executed command returns a non-0 exit code
+     */
+    public function execute($type, $cmd): void
     {
         if (null === $expandedCmd = $this->expandCmd($type, $this->options->expandTargetDir($cmd))) {
             return;
@@ -75,7 +78,7 @@ class ScriptExecutor
         }
     }
 
-    private function expandCmd($type, $cmd)
+    private function expandCmd($type, $cmd): ?string
     {
         switch ($type) {
             case 'symfony-cmd':
@@ -89,13 +92,13 @@ class ScriptExecutor
         }
     }
 
-    private function expandSymfonyCmd($cmd)
+    private function expandSymfonyCmd(string $cmd): ?string
     {
         $repo = $this->composer->getRepositoryManager()->getLocalRepository();
         if (!$repo->findPackage('symfony/console', new EmptyConstraint())) {
             $this->io->writeError(sprintf('<warning>Skipping "%s" (needs symfony/console to run).</warning>', $cmd));
 
-            return;
+            return null;
         }
 
         $console = escapeshellarg($this->options->get('bin-dir').'/console');
@@ -106,7 +109,7 @@ class ScriptExecutor
         return $this->expandPhpScript($console.' '.$cmd);
     }
 
-    private function expandPhpScript($cmd)
+    private function expandPhpScript(string $cmd): string
     {
         $phpFinder = new PhpExecutableFinder();
         if (!$php = $phpFinder->find(false)) {

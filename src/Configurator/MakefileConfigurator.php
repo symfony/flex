@@ -18,14 +18,14 @@ use Symfony\Flex\Recipe;
  */
 class MakefileConfigurator extends AbstractConfigurator
 {
-    public function configure(Recipe $recipe, $definitions)
+    public function configure(Recipe $recipe, $definitions): void
     {
         $this->io->write('    Adding Makefile entries');
         $data = sprintf("%s###> %s ###%s%s%s###< %s ###%s", PHP_EOL, $recipe->getName(), PHP_EOL, implode(PHP_EOL, $definitions), PHP_EOL, $recipe->getName(), PHP_EOL);
         file_put_contents(getcwd().'/Makefile', ltrim($data, PHP_EOL), FILE_APPEND);
     }
 
-    public function unconfigure(Recipe $recipe, $vars)
+    public function unconfigure(Recipe $recipe, $vars): void
     {
         if (!file_exists($makefile = getcwd().'/Makefile')) {
             return;

@@ -18,7 +18,7 @@ use Symfony\Flex\Recipe;
  */
 class EnvConfigurator extends AbstractConfigurator
 {
-    public function configure(Recipe $recipe, $vars)
+    public function configure(Recipe $recipe, $vars): void
     {
         $this->io->write('    Adding environment variable defaults');
         $data = sprintf("%s###> %s ###%s", PHP_EOL, $recipe->getName(), PHP_EOL);
@@ -40,7 +40,7 @@ class EnvConfigurator extends AbstractConfigurator
         file_put_contents(getcwd().'/.env', $data, FILE_APPEND);
     }
 
-    public function unconfigure(Recipe $recipe, $vars)
+    public function unconfigure(Recipe $recipe, $vars): void
     {
         foreach (['.env', '.env.dist'] as $file) {
             $env = getcwd().'/'.$file;

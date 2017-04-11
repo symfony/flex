@@ -23,12 +23,12 @@ class Options
         $this->options = $options;
     }
 
-    public function get($name)
+    public function get(string $name): ?string
     {
         return $this->options[$name] ?? null;
     }
 
-    public function expandTargetDir($target)
+    public function expandTargetDir(string $target): string
     {
         return preg_replace_callback('{%(.+?)%}', function ($matches) {
             $option = str_replace('_', '-', strtolower($matches[1]));

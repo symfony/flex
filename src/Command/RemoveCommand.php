@@ -27,7 +27,7 @@ class RemoveCommand extends BaseRemoveCommand
         parent::__construct();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): ?int
     {
         $input->setArgument('packages', $this->resolver->resolve($input->getArgument('packages')));
 

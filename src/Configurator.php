@@ -44,7 +44,7 @@ class Configurator
         ];
     }
 
-    public function install(Recipe $recipe)
+    public function install(Recipe $recipe): void
     {
         $manifest = $recipe->getManifest();
         foreach (array_keys($this->configurators) as $key) {
@@ -54,7 +54,7 @@ class Configurator
         }
     }
 
-    public function unconfigure(Recipe $recipe)
+    public function unconfigure(Recipe $recipe): void
     {
         $manifest = $recipe->getManifest();
         foreach (array_keys($this->configurators) as $key) {
