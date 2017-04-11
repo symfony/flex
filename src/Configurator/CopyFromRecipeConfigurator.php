@@ -30,7 +30,7 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
         $this->removeFiles($config, $recipe->getFiles(), getcwd());
     }
 
-    private function copyFiles($manifest, $files, $to)
+    private function copyFiles(array $manifest, string $files, string $to)
     {
         foreach ($manifest as $source => $target) {
             $target = $this->options->expandTargetDir($target);
@@ -42,7 +42,7 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
         }
     }
 
-    private function copyDir($source, $target, $files)
+    private function copyDir(string $source, string $target, array $files)
     {
         foreach ($files as $file => $data) {
             if (0 === strpos($file, $source)) {
@@ -55,7 +55,7 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
         }
     }
 
-    private function copyFile($to, $contents)
+    private function copyFile(string $to, string $contents)
     {
         if (!is_dir(dirname($to))) {
             mkdir(dirname($to), 0777, true);
@@ -66,7 +66,7 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
         }
     }
 
-    private function removeFiles($manifest, $files, $to)
+    private function removeFiles(array $manifest, array $files, string $to)
     {
         foreach ($manifest as $source => $target) {
             $target = $this->options->expandTargetDir($target);
@@ -82,7 +82,7 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
         }
     }
 
-    private function removeFile($to)
+    private function removeFile(string $to)
     {
         @unlink($to);
 

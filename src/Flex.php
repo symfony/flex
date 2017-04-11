@@ -252,7 +252,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         return $id;
     }
 
-    public static function getSubscribedEvents()
+    public static function getSubscribedEvents(): array
     {
         if (!self::$activated) {
             return [];

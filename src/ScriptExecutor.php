@@ -38,7 +38,7 @@ class ScriptExecutor
         $this->executor = $executor ?: new ProcessExecutor();
     }
 
-    public function execute($type, $cmd)
+    public function execute(string $type, string $cmd)
     {
         if (null === $expandedCmd = $this->expandCmd($type, $this->options->expandTargetDir($cmd))) {
             return;
@@ -75,7 +75,7 @@ class ScriptExecutor
         }
     }
 
-    private function expandCmd($type, $cmd)
+    private function expandCmd(string $type, string $cmd)
     {
         switch ($type) {
             case 'symfony-cmd':
@@ -89,7 +89,7 @@ class ScriptExecutor
         }
     }
 
-    private function expandSymfonyCmd($cmd)
+    private function expandSymfonyCmd(string $cmd)
     {
         $repo = $this->composer->getRepositoryManager()->getLocalRepository();
         if (!$repo->findPackage('symfony/console', new EmptyConstraint())) {
@@ -106,7 +106,7 @@ class ScriptExecutor
         return $this->expandPhpScript($console.' '.$cmd);
     }
 
-    private function expandPhpScript($cmd)
+    private function expandPhpScript(string $cmd): string
     {
         $phpFinder = new PhpExecutableFinder();
         if (!$php = $phpFinder->find(false)) {
