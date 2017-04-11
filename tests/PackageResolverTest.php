@@ -19,30 +19,30 @@ class PackageResolverTest extends TestCase
     /**
      * @dataProvider getPackages
      */
-    public function testResolve($packages, $resolved)
+    public function testResolve($packages, $resolved, $versionShouldBeResolved)
     {
-        static $downloader;
-
-        if (null === $downloader) {
-            $downloader = $this->getMockBuilder('Symfony\Flex\Downloader')->disableOriginalConstructor()->getMock();
-            $downloader->expects($this->at(0))->method('getContents')->with('/aliases.json')->will($this->returnValue([
-                'cli' => 'console',
-                'console' => 'symfony/console',
-                'translation' => 'symfony/translation',
-                'validator' => 'symfony/validator',
-            ]));
-            $downloader->expects($this->at(1))->method('getContents')->with('/versions.json')->will($this->returnValue([
-                'lts' => '3.4',
-                'next' => '4.0',
-                'splits' => [
-                    'symfony/console' => ['3.4'],
-                    'symfony/translation' => ['3.4'],
-                    'symfony/validator' => ['3.4'],
-                ],
-            ]));
-        }
+        $downloader = $this->getMockBuilder('Symfony\Flex\Downloader')->disableOriginalConstructor()->getMock();
 
         $resolver = new PackageResolver($downloader);
+        $p = new \ReflectionProperty($resolver, 'aliases');
+        $p->setAccessible(true);
+        $p->setValue($resolver, [
+            'cli' => 'symfony/console',
+            'console' => 'symfony/console',
+            'translation' => 'symfony/translation',
+            'validator' => 'symfony/validator',
+        ]);
+        $p = new \ReflectionProperty($resolver, 'versions');
+        $p->setAccessible(true);
+        $p->setValue($resolver, [
+            'lts' => '3.4',
+            'next' => '4.0',
+            'splits' => [
+                'symfony/console' => ['3.4'],
+                'symfony/translation' => ['3.4'],
+                'symfony/validator' => ['3.4'],
+            ],
+        ]);
         $this->assertEquals($resolved, $resolver->resolve($packages));
     }
 
@@ -52,18 +52,22 @@ class PackageResolverTest extends TestCase
             [
                 ['cli'],
                 ['symfony/console'],
+                false,
             ],
             [
-                ['cli', 'validator', 'translation'],
+                ['console', 'validator', 'translation'],
                 ['symfony/console', 'symfony/validator', 'symfony/translation'],
+                true,
             ],
             [
                 ['cli', 'lts', 'validator', '3.2', 'translation'],
                 ['symfony/console:^3.4', 'symfony/validator:3.2', 'symfony/translation'],
+                true,
             ],
             [
                 ['cli:lts', 'validator=3.2', 'translation', 'next'],
                 ['symfony/console:^3.4', 'symfony/validator:3.2', 'symfony/translation:^4.0@dev'],
+                true,
             ],
         ];
     }

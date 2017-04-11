@@ -18,6 +18,8 @@ use Composer\Package\Version\VersionParser;
  */
 class PackageResolver
 {
+    private const SYMFONY_VERSIONS = ['lts', 'previous', 'stable', 'next'];
+
     private static $aliases;
     private static $versions;
 
@@ -58,7 +60,10 @@ class PackageResolver
                     try {
                         $versionParser->parseConstraints($argument);
                     } catch (\UnexpectedValueException $e) {
-                        $this->throwAlternatives($argument);
+                        // is it a special Symfony version?
+                        if (!in_array($argument, self::SYMFONY_VERSIONS)) {
+                            $this->throwAlternatives($argument);
+                        }
                     }
                 }
             }
@@ -91,7 +96,7 @@ class PackageResolver
 
         if ('next' === $version) {
             $version = '^'.self::$versions[$version].'@dev';
-        } elseif (in_array($version, ['lts', 'previous', 'stable'])) {
+        } elseif (in_array($version, self::SYMFONY_VERSIONS)) {
             $version = '^'.self::$versions[$version];
         }
 
