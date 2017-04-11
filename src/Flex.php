@@ -113,9 +113,9 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
 
         $package = $event->getOperation()->getPackage();
-        foreach ($this->filterPackageNames($package, 'install') as $name => $data) {
+        foreach ($this->filterPackageNames($package, 'install') as $name => $response) {
             $this->io->write(sprintf('    Detected auto-configuration settings for "%s"', $name));
-            $recipe = new Recipe($package, $name, $data);
+            $recipe = new Recipe($package, $name, $response->getBody());
             $this->configurator->install($recipe);
 
             $manifest = $recipe->getManifest();
@@ -130,6 +130,10 @@ class Flex implements PluginInterface, EventSubscriberInterface
         if ($this->isInstall) {
             return;
         }
+
+        $package = $event->getOperation()->getPackage();
+        // called for the side effect of checking security issues
+        $this->filterPackageNames($package, 'update');
     }
 
     public function unconfigurePackage(PackageEvent $event): void
@@ -139,9 +143,9 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
 
         $package = $event->getOperation()->getPackage();
-        foreach ($this->filterPackageNames($package, 'uninstall') as $name => $data) {
+        foreach ($this->filterPackageNames($package, 'uninstall') as $name => $response) {
             $this->io->write(sprintf('    Auto-unconfiguring "%s"', $name));
-            $this->configurator->unconfigure(new Recipe($package, $name, $data));
+            $this->configurator->unconfigure(new Recipe($package, $name, $response->getBody()));
         }
     }
 
@@ -192,8 +196,17 @@ class Flex implements PluginInterface, EventSubscriberInterface
     {
         // FIXME: getNames() can return n names
         $name = $package->getNames()[0];
-        if ($body = $this->getPackageRecipe($package, $name, $operation)) {
-            yield $name => $body;
+        $response = $this->getPackageRecipe($package, $name, $operation);
+
+        if (('install' === $operation || 'update' === $operation) && $values = $response->getHeaders('Security-Adv')) {
+            $this->io->writeError('    <error>  Package has known vulnerabilities  </>');
+            foreach ($values as $value) {
+                $this->io->writeError(sprintf('      %s', $value));
+            }
+        }
+
+        if (200 === $response->getStatusCode()) {
+            yield $name => $response;
         }
     }
 
@@ -210,7 +223,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         return new Options($options);
     }
 
-    private function getPackageRecipe(PackageInterface $package, string $name, string $operation): ?array
+    private function getPackageRecipe(PackageInterface $package, string $name, string $operation): Response
     {
         $headers = ['Package-Operation: '.$operation];
         if ($date = $package->getReleaseDate()) {
@@ -223,9 +236,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             $version = $package->getPrettyVersion();
         }
 
-        $response = $this->downloader->get(sprintf('/recipes/%s/%s', $name, $version), $headers);
-
-        return $response ? $response->getBody() : null;
+        return $this->downloader->get(sprintf('/recipes/%s/%s', $name, $version), $headers);
     }
 
     private function getFlexId(): ?string
