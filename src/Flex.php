@@ -223,7 +223,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             $version = $package->getPrettyVersion();
         }
 
-        return $this->downloader->getContents(sprintf('/recipes/%s/%s', $name, $version), $headers);
+        return $this->downloader->get(sprintf('/recipes/%s/%s', $name, $version), $headers)->getBody();
     }
 
     private function getFlexId()
@@ -241,7 +241,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
 
         // get a new ID
-        $id = $this->downloader->getContents('/ulid')['ulid'];
+        $id = $this->downloader->get('/ulid')->getBody()['ulid'];
 
         // update composer.json
         $json = new JsonFile(Factory::getComposerFile());

@@ -54,7 +54,7 @@ class Downloader
      * @param string $path    The path to get on the Flex server
      * @param array  $headers An array of HTTP headers
      */
-    public function getContents($path, array $headers = [])
+    public function get($path, array $headers = []): ?Response
     {
         $headers[] = 'Package-Session: '.$this->sess;
         $url = $this->endpoint.'/'.ltrim($path, '/');
@@ -62,25 +62,25 @@ class Downloader
 
         try {
             if ($contents = $this->cache->read($cacheKey)) {
-                $contents = json_decode($contents, true);
-                if (isset($contents['last-modified'])) {
-                    $response = $this->fetchFileIfLastModified($url, $cacheKey, $contents['last-modified'], $headers);
+                $cachedResponse = Response::fromJson(json_decode($contents, true));
+                if ($lastModified = $cachedResponse->getHeader('last-modified')) {
+                    $response = $this->fetchFileIfLastModified($url, $cacheKey, $lastModified, $headers);
 
-                    return true === $response ? $contents : $response;
+                    return null === $response ? $cachedResponse : $response;
                 }
             }
 
             return $this->fetchFile($url, $cacheKey, $headers);
         } catch (TransportException $e) {
             if (404 === $e->getStatusCode()) {
-                return;
+                return null;
             }
 
             throw $e;
         }
     }
 
-    private function fetchFile($url, $cacheKey, $headers)
+    private function fetchFile($url, $cacheKey, $headers): Response
     {
         $options = $this->getOptions($headers);
         $retries = 3;
@@ -102,7 +102,7 @@ class Downloader
                 if ($contents = $this->cache->read($cacheKey)) {
                     $this->switchToDegradedMode($e, $url);
 
-                    return JsonFile::parseJson($contents, $this->cache->getRoot().$cacheKey);
+                    return Response::fromJson(JsonFile::parseJson($contents, $this->cache->getRoot().$cacheKey));
                 }
 
                 throw $e;
@@ -110,7 +110,7 @@ class Downloader
         }
     }
 
-    private function fetchFileIfLastModified($url, $cacheKey, $lastModifiedTime, $headers)
+    private function fetchFileIfLastModified($url, $cacheKey, $lastModifiedTime, $headers): ?Response
     {
         $headers[] = 'If-Modified-Since: '.$lastModifiedTime;
         $options = $this->getOptions($headers);
@@ -119,7 +119,7 @@ class Downloader
             try {
                 $json = $this->rfs->getContents($this->endpoint, $url, false, $options);
                 if (304 === $this->rfs->findStatusCode($this->rfs->getLastHeaders())) {
-                    return true;
+                    return null;
                 }
 
                 return $this->parseJson($json, $url, $cacheKey);
@@ -135,12 +135,12 @@ class Downloader
 
                 $this->switchToDegradedMode($e, $url);
 
-                return true;
+                return null;
             }
         }
     }
 
-    private function parseJson($json, $url, $cacheKey)
+    private function parseJson($json, $url, $cacheKey): Response
     {
         $data = JsonFile::parseJson($json, $url);
         if (!empty($data['warning'])) {
@@ -150,12 +150,12 @@ class Downloader
             $this->io->writeError('<info>Info from '.$url.': '.$data['info'].'</info>');
         }
 
-        if ($lastModifiedDate = $this->rfs->findHeaderValue($this->rfs->getLastHeaders(), 'last-modified')) {
-            $data['last-modified'] = $lastModifiedDate;
-            $this->cache->write($cacheKey, json_encode($data));
+        $response = new Response($data, $this->rfs->getLastHeaders());
+        if (null !== $response->getHeader('last-modified')) {
+            $this->cache->write($cacheKey, json_encode($response));
         }
 
-        return $data;
+        return $response;
     }
 
     private function switchToDegradedMode(\Exception $e, $url)
