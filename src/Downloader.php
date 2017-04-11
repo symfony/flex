@@ -43,7 +43,7 @@ class Downloader
         $this->sess = bin2hex(random_bytes(16));
     }
 
-    public function setFlexId($id = null)
+    public function setFlexId(?string $id): void
     {
         $this->flexId = $id;
     }
@@ -54,7 +54,7 @@ class Downloader
      * @param string $path    The path to get on the Flex server
      * @param array  $headers An array of HTTP headers
      */
-    public function get($path, array $headers = []): ?Response
+    public function get(string $path, array $headers = []): ?Response
     {
         $headers[] = 'Package-Session: '.$this->sess;
         $url = $this->endpoint.'/'.ltrim($path, '/');
@@ -80,7 +80,7 @@ class Downloader
         }
     }
 
-    private function fetchFile($url, $cacheKey, $headers): Response
+    private function fetchFile(string $url, string $cacheKey, iterable $headers): Response
     {
         $options = $this->getOptions($headers);
         $retries = 3;
@@ -110,7 +110,7 @@ class Downloader
         }
     }
 
-    private function fetchFileIfLastModified($url, $cacheKey, $lastModifiedTime, $headers): ?Response
+    private function fetchFileIfLastModified(string $url, string $cacheKey, string $lastModifiedTime, iterable $headers): ?Response
     {
         $headers[] = 'If-Modified-Since: '.$lastModifiedTime;
         $options = $this->getOptions($headers);
@@ -140,7 +140,7 @@ class Downloader
         }
     }
 
-    private function parseJson($json, $url, $cacheKey): Response
+    private function parseJson(string $json, string $url, string $cacheKey): Response
     {
         $data = JsonFile::parseJson($json, $url);
         if (!empty($data['warning'])) {
@@ -158,7 +158,7 @@ class Downloader
         return $response;
     }
 
-    private function switchToDegradedMode(\Exception $e, $url)
+    private function switchToDegradedMode(\Exception $e, string $url): void
     {
         if (!$this->degradedMode) {
             $this->io->writeError('<warning>'.$e->getMessage().'</warning>');
@@ -167,7 +167,7 @@ class Downloader
         $this->degradedMode = true;
     }
 
-    private function getOptions(array $headers)
+    private function getOptions(array $headers): array 
     {
         $options = ['http' => ['header' => $headers]];
 

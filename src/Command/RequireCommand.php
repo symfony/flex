@@ -27,7 +27,7 @@ class RequireCommand extends BaseRequireCommand
         parent::__construct();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): ?int
     {
         $input->setArgument('packages', $this->resolver->resolve($input->getArgument('packages')));
         $input->setOption('no-suggest', true);

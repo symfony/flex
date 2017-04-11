@@ -92,7 +92,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
     }
 
-    public function configureProject(Event $event)
+    public function configureProject(Event $event): void
     {
         if ($this->isInstall) {
             return;
@@ -106,7 +106,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         file_put_contents($json->getPath(), $manipulator->getContents());
     }
 
-    public function configurePackage(PackageEvent $event)
+    public function configurePackage(PackageEvent $event): void
     {
         if ($this->isInstall) {
             return;
@@ -125,14 +125,14 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
     }
 
-    public function reconfigurePackage(PackageEvent $event)
+    public function reconfigurePackage(PackageEvent $event): void
     {
         if ($this->isInstall) {
             return;
         }
     }
 
-    public function unconfigurePackage(PackageEvent $event)
+    public function unconfigurePackage(PackageEvent $event): void
     {
         if ($this->isInstall) {
             return;
@@ -145,7 +145,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
     }
 
-    public function postInstall(Event $event)
+    public function postInstall(Event $event): void
     {
         if ($this->isInstall) {
             return;
@@ -154,7 +154,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $this->postUpdate($event);
     }
 
-    public function postUpdate(Event $event)
+    public function postUpdate(Event $event): void
     {
         if ($this->isInstall) {
             return;
@@ -165,7 +165,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
     }
 
-    public function executeAutoScripts(Event $event)
+    public function executeAutoScripts(Event $event): void
     {
         $event->stopPropagation();
 
@@ -181,14 +181,14 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $this->io->write($this->postInstallOutput);
     }
 
-    public function disableFlexOnInstall(CommandEvent $event)
+    public function disableFlexOnInstall(CommandEvent $event): void
     {
         if ('install' === $event->getCommandName()) {
             $this->isInstall = true;
         }
     }
 
-    private function filterPackageNames(PackageInterface $package, $operation)
+    private function filterPackageNames(PackageInterface $package, string $operation)
     {
         // FIXME: getNames() can return n names
         $name = $package->getNames()[0];
@@ -197,7 +197,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
     }
 
-    private function initOptions()
+    private function initOptions(): Options
     {
         $options = array_merge([
             'bin-dir' => 'bin',
@@ -210,7 +210,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         return new Options($options);
     }
 
-    private function getPackageRecipe(PackageInterface $package, $name, $operation)
+    private function getPackageRecipe(PackageInterface $package, string $name, string $operation): array
     {
         $headers = ['Package-Operation: '.$operation];
         if ($date = $package->getReleaseDate()) {
@@ -226,13 +226,13 @@ class Flex implements PluginInterface, EventSubscriberInterface
         return $this->downloader->get(sprintf('/recipes/%s/%s', $name, $version), $headers)->getBody();
     }
 
-    private function getFlexId()
+    private function getFlexId(): ?string
     {
         $extra = $this->composer->getPackage()->getExtra();
 
         // don't want to be registered
         if (getenv('FLEX_SKIP_REGISTRATION') || !isset($extra['flex-id'])) {
-            return;
+            return null;
         }
 
         // already registered
@@ -252,7 +252,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         return $id;
     }
 
-    public static function getSubscribedEvents()
+    public static function getSubscribedEvents(): iterable
     {
         if (!self::$activated) {
             return [];
