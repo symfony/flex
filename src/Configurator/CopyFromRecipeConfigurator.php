@@ -37,7 +37,7 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
             if ('/' === $source[-1]) {
                 $this->copyDir($source, $to.'/'.$target, $files);
             } else {
-                $this->copyFile($to.'/'.$target, $files[$source]);
+                $this->copyFile($to.'/'.$target, $files[$source]['contents'], $files[$source]['executable']);
             }
         }
     }
@@ -47,15 +47,12 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
         foreach ($files as $file => $data) {
             if (0 === strpos($file, $source)) {
                 $file = $target.'/'.substr($file, strlen($source));
-                $this->copyFile($file, $data['contents']);
-                if ($data['executable']) {
-                    @chmod($file, fileperms($file) | 0111);
-                }
+                $this->copyFile($file, $data['contents'], $data['executable']);
             }
         }
     }
 
-    private function copyFile(string $to, string $contents): void
+    private function copyFile(string $to, string $contents, bool $executable): void
     {
         if (!is_dir(dirname($to))) {
             mkdir(dirname($to), 0777, true);
@@ -63,6 +60,9 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
 
         if (!file_exists($to)) {
             file_put_contents($to, $contents);
+            if ($executable) {
+                @chmod($to, fileperms($to) | 0111);
+            }
         }
     }
 
