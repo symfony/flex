@@ -19,7 +19,67 @@ class PackageResolverTest extends TestCase
     /**
      * @dataProvider getPackages
      */
-    public function testResolve($packages, $resolved, $versionShouldBeResolved)
+    public function testResolve($packages, $resolved)
+    {
+        $this->assertEquals($resolved, $this->getResolver()->resolve($packages));
+    }
+
+    public function getPackages()
+    {
+        return [
+            [
+                ['cli'],
+                ['symfony/console']
+            ],
+            [
+                ['console', 'validator', 'translation'],
+                ['symfony/console', 'symfony/validator', 'symfony/translation']
+            ],
+            [
+                ['cli', 'lts', 'validator', '3.2', 'translation'],
+                ['symfony/console:^3.4', 'symfony/validator:3.2', 'symfony/translation']
+            ],
+            [
+                ['cli:lts', 'validator=3.2', 'translation', 'next'],
+                ['symfony/console:^3.4', 'symfony/validator:3.2', 'symfony/translation:^4.0@dev']
+            ],
+        ];
+    }
+
+    /**
+     * @dataProvider getWrongPackages
+     */
+    public function testResolveWithErrors($packages, $error)
+    {
+        $this->expectException(\UnexpectedValueException::class);
+        $this->expectExceptionMessage($error);
+        $this->getResolver()->resolve($packages);
+    }
+
+    public function getWrongPackages()
+    {
+        return [
+            [
+                ['consale'],
+                "\"consale\" is not a valid alias. Did you mean this:\n  \"symfony/console\", supported aliases: \"console\"",
+            ],
+            [
+                ['cli', 'consale'],
+                "\"consale\" is not a valid alias. Did you mean this:\n  \"symfony/console\", supported aliases: \"console\"",
+            ],
+            [
+                ['cli', '2.3', 'consale'],
+                "\"consale\" is not a valid alias. Did you mean this:\n  \"symfony/console\", supported aliases: \"console\"",
+            ],
+
+            [
+                ['qwerty'],
+                "\"qwerty\" is not a valid alias.",
+            ],
+        ];
+    }
+
+    private function getResolver()
     {
         $downloader = $this->getMockBuilder('Symfony\Flex\Downloader')->disableOriginalConstructor()->getMock();
 
@@ -43,32 +103,7 @@ class PackageResolverTest extends TestCase
                 'symfony/validator' => ['3.4'],
             ],
         ]);
-        $this->assertEquals($resolved, $resolver->resolve($packages));
-    }
 
-    public function getPackages()
-    {
-        return [
-            [
-                ['cli'],
-                ['symfony/console'],
-                false,
-            ],
-            [
-                ['console', 'validator', 'translation'],
-                ['symfony/console', 'symfony/validator', 'symfony/translation'],
-                true,
-            ],
-            [
-                ['cli', 'lts', 'validator', '3.2', 'translation'],
-                ['symfony/console:^3.4', 'symfony/validator:3.2', 'symfony/translation'],
-                true,
-            ],
-            [
-                ['cli:lts', 'validator=3.2', 'translation', 'next'],
-                ['symfony/console:^3.4', 'symfony/validator:3.2', 'symfony/translation:^4.0@dev'],
-                true,
-            ],
-        ];
+        return $resolver;
     }
 }

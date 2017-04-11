@@ -47,7 +47,7 @@ class PackageResolver
 
         // second pass to resolve package names
         $packages = [];
-        foreach ($explodedArguments as $argument) {
+        foreach ($explodedArguments as $i => $argument) {
             if (false === strpos($argument, '/')) {
                 if (null === self::$aliases) {
                     self::$aliases = $this->downloader->get('/aliases.json')->getBody();
@@ -62,7 +62,7 @@ class PackageResolver
                     } catch (\UnexpectedValueException $e) {
                         // is it a special Symfony version?
                         if (!in_array($argument, self::SYMFONY_VERSIONS)) {
-                            $this->throwAlternatives($argument);
+                            $this->throwAlternatives($argument, $i);
                         }
                     }
                 }
@@ -106,7 +106,7 @@ class PackageResolver
     /**
      * @throws \UnexpectedValueException
      */
-    private function throwAlternatives(string $argument): void
+    private function throwAlternatives(string $argument, int $position): void
     {
         $alternatives = [];
         foreach (self::$aliases as $alias => $package) {
@@ -116,15 +116,18 @@ class PackageResolver
             }
         }
 
-        if ($alternatives) {
-            $message = sprintf('"%s" is not a valid alias. ', $argument);
-            if (1 == count($alternatives)) {
-                $message .= "Did you mean this:\n";
-            } else {
-                $message .= "Did you mean one of these:\n";
-            }
-            foreach ($alternatives as $package => $aliases) {
-                $message .= sprintf("  \"%s\", supported aliases: \"%s\"\n", $package, implode('", "', $aliases));
+        // First position can only be a package name, not a version
+        if ($alternatives || 0 === $position) {
+            $message = sprintf('"%s" is not a valid alias.', $argument);
+            if ($alternatives) {
+                if (1 == count($alternatives)) {
+                    $message .= " Did you mean this:\n";
+                } else {
+                    $message .= " Did you mean one of these:\n";
+                }
+                foreach ($alternatives as $package => $aliases) {
+                    $message .= sprintf("  \"%s\", supported aliases: \"%s\"\n", $package, implode('", "', $aliases));
+                }
             }
         } else {
             $message = sprintf('Could not parse version constraint "%s".', $argument);
