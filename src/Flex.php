@@ -210,7 +210,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         return new Options($options);
     }
 
-    private function getPackageRecipe(PackageInterface $package, string $name, string $operation): array
+    private function getPackageRecipe(PackageInterface $package, string $name, string $operation): ?array
     {
         $headers = ['Package-Operation: '.$operation];
         if ($date = $package->getReleaseDate()) {
