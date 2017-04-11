@@ -223,7 +223,9 @@ class Flex implements PluginInterface, EventSubscriberInterface
             $version = $package->getPrettyVersion();
         }
 
-        return $this->downloader->get(sprintf('/recipes/%s/%s', $name, $version), $headers)->getBody();
+        $response = $this->downloader->get(sprintf('/recipes/%s/%s', $name, $version), $headers);
+
+        return $response ? $response->getBody() : null;
     }
 
     private function getFlexId(): ?string
