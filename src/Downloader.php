@@ -32,6 +32,7 @@ class Downloader
     private $degradedMode = false;
     private $endpoint;
     private $flexId;
+    private $allowContrib = false;
 
     public function __construct(Composer $composer, IoInterface $io)
     {
@@ -46,6 +47,11 @@ class Downloader
     public function setFlexId(?string $id): void
     {
         $this->flexId = $id;
+    }
+
+    public function allowContrib(bool $allow): void
+    {
+        $this->allowContrib = $allow;
     }
 
     /**
@@ -176,6 +182,10 @@ class Downloader
 
         if ($this->flexId) {
             $options['http']['header'][] = 'Project: '.$this->flexId;
+        }
+
+        if ($this->allowContrib) {
+            $options['http']['header'][] = 'Allow-Contrib: 1';
         }
 
         return $options;
