@@ -230,10 +230,9 @@ class Flex implements PluginInterface, EventSubscriberInterface
             $headers[] = 'Package-Release: '.$date->format(\DateTime::RFC3339);
         }
 
-        if ($alias = $package->getExtra()['branch-alias']['dev-master'] ?? null) {
+        $version = $package->getPrettyVersion();
+        if ('dev-master' === $version && $alias = $package->getExtra()['branch-alias']['dev-master'] ?? null) {
             $version = $alias;
-        } else {
-            $version = $package->getPrettyVersion();
         }
 
         return $this->downloader->get(sprintf('/recipes/%s/%s', $name, $version), $headers);
