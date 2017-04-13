@@ -131,7 +131,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             return;
         }
 
-        $package = $event->getOperation()->getPackage();
+        $package = $event->getOperation()->getTargetPackage();
         // called for the side effect of checking security issues
         $this->filterPackageNames($package, 'update');
     }
