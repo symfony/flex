@@ -144,7 +144,7 @@ class Downloader
 
                 $this->switchToDegradedMode($e, $url);
 
-                return new Response('', [], 304);;
+                return new Response('', [], 304);
             }
         }
     }

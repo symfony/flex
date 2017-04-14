@@ -206,7 +206,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             }
         }
 
-        if (200 === $response->getStatusCode()) {
+        if (200 === $response->getStatusCode() || 304 === $response->getStatusCode()) {
             yield $name => $response;
         }
     }
