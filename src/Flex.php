@@ -232,8 +232,11 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
 
         $version = $package->getPrettyVersion();
-        if ('dev-master' === $version && $alias = $package->getExtra()['branch-alias']['dev-master'] ?? null) {
-            $version = $alias;
+        if (0 === strpos($version, 'dev-') && isset($package->getExtra()['branch-alias'])) {
+            $branchAliases = $package->getExtra()['branch-alias'];
+            if (($alias = $branchAliases[$version]) || ($alias = $branchAliases['dev-master'])) {
+                $version = $alias;
+            }
         }
 
         return $this->downloader->get(sprintf('/recipes/%s/%s', $name, $version), $headers);
