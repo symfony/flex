@@ -61,7 +61,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $this->configurator = new Configurator($composer, $io, $this->options);
         $this->downloader = new Downloader($composer, $io);
         $this->downloader->setFlexId($this->getFlexId());
-        $this->downloader->allowContrib($composer->getPackage()->getExtra()['flex']['allow-contrib'] ?? false);
+        $this->downloader->allowContrib($composer->getPackage()->getExtra()['symfony']['allow-contrib'] ?? false);
 
         $search = 3;
         foreach (debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT) as $trace) {
@@ -247,13 +247,13 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $extra = $this->composer->getPackage()->getExtra();
 
         // don't want to be registered
-        if (getenv('FLEX_SKIP_REGISTRATION') || !isset($extra['flex']['id'])) {
+        if (getenv('SYMFONY_SKIP_REGISTRATION') || !isset($extra['symfony']['id'])) {
             return null;
         }
 
         // already registered
-        if ($extra['flex']['id']) {
-            return $extra['flex']['id'];
+        if ($extra['symfony']['id']) {
+            return $extra['symfony']['id'];
         }
 
         // get a new ID

@@ -38,7 +38,7 @@ class Downloader
     {
         $this->io = $io;
         $config = $composer->getConfig();
-        $this->endpoint = rtrim(getenv('FLEX_ENDPOINT') ?: self::ENDPOINT, '/');
+        $this->endpoint = rtrim(getenv('SYMFONY_ENDPOINT') ?: self::ENDPOINT, '/');
         $this->rfs = Factory::createRemoteFilesystem($io, $config);
         $this->cache = new Cache($io, $config->get('cache-repo-dir').'/'.preg_replace('{[^a-z0-9.]}i', '-', $this->endpoint));
         $this->sess = bin2hex(random_bytes(16));
@@ -57,7 +57,7 @@ class Downloader
     /**
      * Decodes a JSON HTTP response body.
      *
-     * @param string $path    The path to get on the Flex server
+     * @param string $path    The path to get on the server
      * @param array  $headers An array of HTTP headers
      */
     public function get(string $path, array $headers = []): Response
