@@ -61,7 +61,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $this->configurator = new Configurator($composer, $io, $this->options);
         $this->downloader = new Downloader($composer, $io);
         $this->downloader->setFlexId($this->getFlexId());
-        $this->downloader->allowContrib($composer->getPackage()->getExtra()['flex-allow-contrib'] ?? false);
+        $this->downloader->allowContrib($composer->getPackage()->getExtra()['flex']['allow-contrib'] ?? false);
 
         $search = 3;
         foreach (debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT) as $trace) {
@@ -247,13 +247,13 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $extra = $this->composer->getPackage()->getExtra();
 
         // don't want to be registered
-        if (getenv('FLEX_SKIP_REGISTRATION') || !isset($extra['flex-id'])) {
+        if (getenv('FLEX_SKIP_REGISTRATION') || !isset($extra['flex']['id'])) {
             return null;
         }
 
         // already registered
-        if ($extra['flex-id']) {
-            return $extra['flex-id'];
+        if ($extra['flex']['id']) {
+            return $extra['flex']['id'];
         }
 
         // get a new ID
@@ -262,7 +262,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         // update composer.json
         $json = new JsonFile(Factory::getComposerFile());
         $manipulator = new JsonManipulator(file_get_contents($json->getPath()));
-        $manipulator->addProperty('extra.flex-id', $id);
+        $manipulator->addProperty('extra.flex.id', $id);
         file_put_contents($json->getPath(), $manipulator->getContents());
 
         return $id;
