@@ -23,7 +23,7 @@ use Composer\Json\JsonFile;
  */
 class Downloader
 {
-    private const ENDPOINT = 'https://symfony.sh';
+    private const DEFAULT_ENDPOINT = 'https://symfony.sh';
 
     private $io;
     private $sess;
@@ -36,9 +36,14 @@ class Downloader
 
     public function __construct(Composer $composer, IoInterface $io)
     {
+        if (getenv('SYMFONY_ENDPOINT')) {
+            $endpoint = getenv('SYMFONY_ENDPOINT');
+        } else {
+            $endpoint = $composer->getPackage()->getExtra()['symfony']['endpoint'] ?? self::DEFAULT_ENDPOINT;
+        }
+        $this->endpoint = rtrim($endpoint, '/');
         $this->io = $io;
         $config = $composer->getConfig();
-        $this->endpoint = rtrim(getenv('SYMFONY_ENDPOINT') ?: self::ENDPOINT, '/');
         $this->rfs = Factory::createRemoteFilesystem($io, $config);
         $this->cache = new Cache($io, $config->get('cache-repo-dir').'/'.preg_replace('{[^a-z0-9.]}i', '-', $this->endpoint));
         $this->sess = bin2hex(random_bytes(16));
