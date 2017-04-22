@@ -60,7 +60,7 @@ class Response implements \JsonSerializable
     public static function fromJson(array $json): Response
     {
         if (!isset($json['body']) || !isset($json['headers'])) {
-            throw new \LogicException('Old Symfony Flex cache detected. Clear the Composer cache under "~/.composer/cache/repo/https---flex.symfony.com/".');
+            throw new \LogicException('Old cache detected. Clear the Composer cache under "~/.composer/cache/repo/https---symfony.sh/".');
         }
 
         $response = new Response($json['body']);
