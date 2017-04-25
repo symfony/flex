@@ -218,6 +218,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             'conf-dir' => 'conf',
             'etc-dir' => 'etc',
             'src-dir' => 'src',
+            'var-dir' => 'var',
             'web-dir' => 'web',
         ], $this->composer->getPackage()->getExtra());
 
