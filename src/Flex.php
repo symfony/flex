@@ -114,9 +114,8 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
 
         $package = $event->getOperation()->getPackage();
-        foreach ($this->filterPackageNames($package, 'install') as $name => $response) {
+        foreach ($this->filterPackageNames($package, 'install') as $name => $recipe) {
             $this->io->write(sprintf('    Detected auto-configuration settings for "%s"', $name));
-            $recipe = new Recipe($package, $name, $response->getBody());
             $this->configurator->install($recipe);
 
             $manifest = $recipe->getManifest();
@@ -144,9 +143,9 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
 
         $package = $event->getOperation()->getPackage();
-        foreach ($this->filterPackageNames($package, 'uninstall') as $name => $response) {
+        foreach ($this->filterPackageNames($package, 'uninstall') as $name => $recipe) {
             $this->io->write(sprintf('    Auto-unconfiguring "%s"', $name));
-            $this->configurator->unconfigure(new Recipe($package, $name, $response->getBody()));
+            $this->configurator->unconfigure($recipe);
         }
     }
 
@@ -207,7 +206,16 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
 
         if (200 === $response->getStatusCode() || 304 === $response->getStatusCode()) {
-            yield $name => $response;
+            yield $name => new Recipe($package, $name, $response->getBody());
+        } elseif ('symfony-bundle' === $package->getType()) {
+            $manifest = [];
+            $bundle = new SymfonyBundle($this->composer, $package, $operation);
+            foreach ($bundle->getClassNames() as $class) {
+                $manifest['manifest']['bundles'][$class] = ['all'];
+            }
+            if ($manifest) {
+                yield $name => new Recipe($package, $name, $manifest);
+            }
         }
     }
 
