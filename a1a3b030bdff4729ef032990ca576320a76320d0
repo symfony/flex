@@ -1,0 +1,6 @@
+---------------------------------------------------------------------------
+
+by dunglas at 2017-04-27T16:29:57Z
+
+Wouldn't it be possible to pack detect recipes (without alias) included in the downloaded package?
+It will allow bundles and libraries maintainers to create and update their own recipes without having to wait for a merge in the `symfony/recipes-contrib` repository.
