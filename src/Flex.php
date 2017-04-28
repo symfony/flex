@@ -12,6 +12,7 @@
 namespace Symfony\Flex;
 
 use Composer\Command\CreateProjectCommand;
+use Composer\Command\InstallCommand;
 use Composer\Composer;
 use Composer\Console\Application;
 use Composer\Factory;
@@ -31,6 +32,7 @@ use Composer\Plugin\PluginInterface;
 use Composer\Plugin\PluginEvents;
 use Composer\Script\Event;
 use Composer\Script\ScriptEvents;
+use Symfony\Component\Console\Application as ConsoleApplication;
 
 /**
  * @author Fabien Potencier <fabien@symfony.com>
@@ -43,7 +45,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
     private $configurator;
     private $downloader;
     private $postInstallOutput = [''];
-    private $isInstall = false;
+    private $runningCommand;
     private static $activated = true;
 
     public function activate(Composer $composer, IOInterface $io)
@@ -62,6 +64,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $this->downloader = new Downloader($composer, $io);
         $this->downloader->setFlexId($this->getFlexId());
         $this->downloader->allowContrib($composer->getPackage()->getExtra()['symfony']['allow-contrib'] ?? false);
+        $this->runningCommand = function () { return; };
 
         $search = 3;
         foreach (debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT) as $trace) {
@@ -71,10 +74,17 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
             if ($trace['object'] instanceof Application) {
                 --$search;
+                $app = $trace['object'];
                 $resolver = new PackageResolver($this->downloader);
-                $trace['object']->add(new Command\RequireCommand($resolver));
-                $trace['object']->add(new Command\UpdateCommand($resolver));
-                $trace['object']->add(new Command\RemoveCommand($resolver));
+                $app->add(new Command\RequireCommand($resolver));
+                $app->add(new Command\UpdateCommand($resolver));
+                $app->add(new Command\RemoveCommand($resolver));
+
+                $r = new \ReflectionProperty(ConsoleApplication::class, 'runningCommand');
+                $r->setAccessible(true);
+                $this->runningCommand = function () use ($app, $r) {
+                    return $r->getValue($app);
+                };
             } elseif ($trace['object'] instanceof Installer) {
                 --$search;
                 $trace['object']->setSuggestedPackagesReporter(new SuggestedPackagesReporter(new NullIO()));
@@ -95,7 +105,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
     public function configureProject(Event $event): void
     {
-        if ($this->isInstall) {
+        if (($this->runningCommand)() instanceof InstallCommand) {
             return;
         }
 
@@ -109,7 +119,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
     public function configurePackage(PackageEvent $event): void
     {
-        if ($this->isInstall) {
+        if (($this->runningCommand)() instanceof InstallCommand) {
             return;
         }
 
@@ -127,7 +137,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
     public function reconfigurePackage(PackageEvent $event): void
     {
-        if ($this->isInstall) {
+        if (($this->runningCommand)() instanceof InstallCommand) {
             return;
         }
 
@@ -138,7 +148,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
     public function unconfigurePackage(PackageEvent $event): void
     {
-        if ($this->isInstall) {
+        if (($this->runningCommand)() instanceof InstallCommand) {
             return;
         }
 
@@ -151,7 +161,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
     public function postInstall(Event $event): void
     {
-        if ($this->isInstall) {
+        if (($this->runningCommand)() instanceof InstallCommand) {
             return;
         }
 
@@ -160,7 +170,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
     public function postUpdate(Event $event): void
     {
-        if ($this->isInstall) {
+        if (($this->runningCommand)() instanceof InstallCommand) {
             return;
         }
 
@@ -183,13 +193,6 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
 
         $this->io->write($this->postInstallOutput);
-    }
-
-    public function disableFlexOnInstall(CommandEvent $event): void
-    {
-        if ('install' === $event->getCommandName()) {
-            $this->isInstall = true;
-        }
     }
 
     private function filterPackageNames(PackageInterface $package, string $operation)
@@ -287,7 +290,6 @@ class Flex implements PluginInterface, EventSubscriberInterface
             PackageEvents::POST_PACKAGE_INSTALL => 'configurePackage',
             PackageEvents::POST_PACKAGE_UPDATE => 'reconfigurePackage',
             PackageEvents::POST_PACKAGE_UNINSTALL => 'unconfigurePackage',
-            PluginEvents::COMMAND => 'disableFlexOnInstall',
             ScriptEvents::POST_CREATE_PROJECT_CMD => 'configureProject',
             ScriptEvents::POST_INSTALL_CMD => 'postInstall',
             ScriptEvents::POST_UPDATE_CMD => 'postUpdate',
