@@ -42,6 +42,10 @@ class SymfonyBundleTest extends TestCase
                 ['psr-4' => ['Foo\\BarBundle\\' => 'src/']],
                 ['Foo\\BarBundle\\FooBarBundle'],
             ],
+            [
+                ['psr-4' => ['Doctrine\\Bundle\\DoctrineCacheBundle\\' => '']],
+                ['Doctrine\\Bundle\\DoctrineCacheBundle\\DoctrineCacheBundle'],
+            ],
         ];
     }
 }

@@ -61,7 +61,7 @@ class SymfonyBundle
         $namespace = trim($namespace, '\\');
         $class = $namespace.'\\';
         $parts = explode('\\', $namespace);
-        if ('Symfony' !== $parts[0]) {
+        if ('Symfony' !== $parts[0] && 0 !== strpos($parts[count($parts) - 1], $parts[0])) {
             $class .= $parts[0];
         }
 
