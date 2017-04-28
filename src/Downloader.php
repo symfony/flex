@@ -31,11 +31,15 @@ class Downloader
     private $rfs;
     private $degradedMode = false;
     private $endpoint;
+    private $caFile;
     private $flexId;
     private $allowContrib = false;
 
     public function __construct(Composer $composer, IoInterface $io)
     {
+        if (getenv('SYMFONY_CAFILE')) {
+            $this->caFile = getenv('SYMFONY_CAFILE');
+        }
         if (getenv('SYMFONY_ENDPOINT')) {
             $endpoint = getenv('SYMFONY_ENDPOINT');
         } else {
@@ -191,6 +195,10 @@ class Downloader
 
         if ($this->allowContrib) {
             $options['http']['header'][] = 'Allow-Contrib: 1';
+        }
+
+        if (null !== $this->caFile) {
+            $options['ssl']['cafile'] = $this->caFile;
         }
 
         return $options;
