@@ -25,6 +25,8 @@ class EnvConfigurator extends AbstractConfigurator
         foreach ($vars as $key => $value) {
             if ('%generate(secret)%' === $value) {
                 $value = bin2hex(random_bytes(16));
+            } else {
+                $value = $this->options->expandTargetDir($value);
             }
             if ('#' === $key[0]) {
                 $data .= "# ".$value.PHP_EOL;
