@@ -8,8 +8,6 @@ matrix:
     - php: 7.1
       env: COMPOSER_FLAGS='--prefer-lowest'
     - php: nightly
-  allow_failures:
-    - php: nightly
   fast_finish: true
 
 cache:
@@ -20,6 +18,7 @@ cache:
 env:
   global:
     - SYMFONY_PHPUNIT_DIR="$HOME/symfony-bridge/.phpunit"
+    - SYMFONY_PHPUNIT_VERSION="6.1"
     - COMPOSER_FLAGS=''
 
 install:
