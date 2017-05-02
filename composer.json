@@ -13,7 +13,8 @@
         "composer-plugin-api": "^1.1"
     },
     "require-dev": {
-        "composer/composer": "^1.4"
+        "composer/composer": "^1.4",
+        "symfony/phpunit-bridge": "^3.2.8"
     },
     "autoload": {
         "classmap": [
