@@ -1,0 +1,17 @@
+---------------------------------------------------------------------------
+
+by fabpot at 2017-05-02T15:48:48Z
+
+What about moving PHP nighly to the regular section?
+
+---------------------------------------------------------------------------
+
+by Sam-Burns at 2017-05-02T15:54:06Z
+
+Happy to do that as well, if you would like that in the same PR
+
+---------------------------------------------------------------------------
+
+by fabpot at 2017-05-02T15:54:30Z
+
+Same PR is fine
