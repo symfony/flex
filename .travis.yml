@@ -6,7 +6,7 @@ matrix:
   include:
     - php: 7.1
     - php: 7.1
-      env: DEPENDENCIES='low'
+      env: COMPOSER_FLAGS='--prefer-lowest'
     - php: nightly
   allow_failures:
     - php: nightly
@@ -20,10 +20,10 @@ cache:
 env:
   global:
     - SYMFONY_PHPUNIT_DIR="$HOME/symfony-bridge/.phpunit"
+    - COMPOSER_FLAGS=''
 
 install:
-  - if [ "$DEPENDENCIES" != "low" ]; then composer update; fi;
-  - if [ "$DEPENDENCIES" == "low" ]; then composer update --prefer-lowest; fi;
+  - composer update $COMPOSER_FLAGS
 
 script:
   - ./vendor/bin/simple-phpunit
