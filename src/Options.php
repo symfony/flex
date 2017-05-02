@@ -33,7 +33,7 @@ class Options
         return preg_replace_callback('{%(.+?)%}', function ($matches) {
             $option = str_replace('_', '-', strtolower($matches[1]));
             if (!isset($this->options[$option])) {
-                throw new \InvalidArgumentException(sprintf('Placeholder "%s" does not exist.', $matches[1]));
+                return $matches[0];
             }
 
             return rtrim($this->options[$option], '/');
