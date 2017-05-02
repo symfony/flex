@@ -1,0 +1,29 @@
+language: php
+
+sudo: false
+
+matrix:
+  include:
+    - php: 7.1
+    - php: 7.1
+      env: COMPOSER_FLAGS='--prefer-lowest'
+    - php: nightly
+  allow_failures:
+    - php: nightly
+  fast_finish: true
+
+cache:
+  directories:
+    - $HOME/.composer/cache/files
+    - $HOME/symfony-bridge/.phpunit
+
+env:
+  global:
+    - SYMFONY_PHPUNIT_DIR="$HOME/symfony-bridge/.phpunit"
+    - COMPOSER_FLAGS=''
+
+install:
+  - composer update $COMPOSER_FLAGS
+
+script:
+  - ./vendor/bin/simple-phpunit
