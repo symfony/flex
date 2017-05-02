@@ -1,0 +1,21 @@
+language: php
+
+sudo: false
+
+matrix:
+  include:
+    - php: 7.1
+    - php: 7.1
+      env: DEPENDENCIES='low'
+    - php: nightly
+  allow_failures:
+    - php: nightly
+  fast_finish: true
+
+install:
+  - composer self-update
+  - if [ "$DEPENDENCIES" != "low" ]; then composer update; fi;
+  - if [ "$DEPENDENCIES" == "low" ]; then composer update --prefer-lowest; fi;
+
+script:
+  - ./vendor/bin/simple-phpunit
