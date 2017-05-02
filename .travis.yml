@@ -8,8 +8,6 @@ matrix:
     - php: 7.1
       env: COMPOSER_FLAGS='--prefer-lowest'
     - php: nightly
-  allow_failures:
-    - php: nightly
   fast_finish: true
 
 cache:
