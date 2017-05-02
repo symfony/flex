@@ -9,4 +9,7 @@ your code with a source code management tool.
 simple micro-style projects to the more complex ones with dozens of
 dependencies.
 
+[Read more][2] about using it for your own project.
+
 [1]: https://symfony.com
+[2]: https://medium.com/@fabpot/symfony-4-a-quick-demo-da7d32be323
