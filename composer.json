@@ -17,9 +17,6 @@
         "symfony/phpunit-bridge": "^3.2.8"
     },
     "autoload": {
-        "classmap": [
-            "src/Flex.php"
-        ],
         "psr-4": {
             "Symfony\\Flex\\": "src"
         }
