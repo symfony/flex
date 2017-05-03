@@ -1,0 +1,17 @@
+---------------------------------------------------------------------------
+
+by stof at 2017-05-03T12:38:43Z
+
+btw, it means this code is untested (or the test is wrong)
+
+---------------------------------------------------------------------------
+
+by sstok at 2017-05-03T13:35:16Z
+
+It seems to be untested.
+
+---------------------------------------------------------------------------
+
+by chalasr at 2017-05-03T14:07:32Z
+
+The whole Flex class is untested, added a first test and addressed @stof comments
