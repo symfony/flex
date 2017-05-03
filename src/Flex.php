@@ -130,7 +130,10 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
             $manifest = $recipe->getManifest();
             if (isset($manifest['post-install-output'])) {
-                $this->postInstallOutput = array_merge($this->postInstallOutput, $manifest['post-install-output'], ['']);
+                foreach ($manifest['post-install-output'] as $line) {
+                    $this->postInstallOutput[] = $this->options->expandTargetDir($line);
+                }
+                $this->postInstallOutput[] = '';
             }
         }
     }
