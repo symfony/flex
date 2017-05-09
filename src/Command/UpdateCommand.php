@@ -30,7 +30,10 @@ class UpdateCommand extends BaseUpdateCommand
     protected function execute(InputInterface $input, OutputInterface $output): ?int
     {
         $input->setArgument('packages', $this->resolver->resolve($input->getArgument('packages')));
-        $input->setOption('no-suggest', true);
+
+        if ($input->hasOption('no-suggest')) {
+            $input->setOption('no-suggest', true);
+        }
 
         return parent::execute($input, $output);
     }
