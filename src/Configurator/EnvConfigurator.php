@@ -21,19 +21,19 @@ class EnvConfigurator extends AbstractConfigurator
     public function configure(Recipe $recipe, $vars): void
     {
         $this->io->write('    Adding environment variable defaults');
-        $data = sprintf("%s###> %s ###%s", PHP_EOL, $recipe->getName(), PHP_EOL);
+        $data = sprintf('%s###> %s ###%s', PHP_EOL, $recipe->getName(), PHP_EOL);
         foreach ($vars as $key => $value) {
             if ('%generate(secret)%' === $value) {
                 $value = bin2hex(random_bytes(16));
             }
             if ('#' === $key[0]) {
-                $data .= "# ".$value.PHP_EOL;
+                $data .= '# '.$value.PHP_EOL;
             } else {
                 $value = $this->options->expandTargetDir($value);
                 $data .= "$key=$value".PHP_EOL;
             }
         }
-        $data .= sprintf("###< %s ###%s", $recipe->getName(), PHP_EOL);
+        $data .= sprintf('###< %s ###%s', $recipe->getName(), PHP_EOL);
         if (!file_exists(getcwd().'/.env')) {
             copy(getcwd().'/.env.dist', getcwd().'/.env');
         }

@@ -39,9 +39,9 @@ class ScriptExecutor
     }
 
     /**
-     * @throw ScriptExecutionException if the executed command returns a non-0 exit code
+     * @throws ScriptExecutionException if the executed command returns a non-0 exit code
      */
-    public function execute($type, $cmd): void
+    public function execute(string $type, string $cmd): void
     {
         if (null === $expandedCmd = $this->expandCmd($type, $this->options->expandTargetDir($cmd))) {
             return;
@@ -54,11 +54,8 @@ class ScriptExecutor
 
         $this->io->writeError(sprintf('Executing script %s', $cmd), $this->io->isVerbose());
         $exitCode = $this->executor->execute($expandedCmd, $outputHandler);
-        if (0 === $exitCode) {
-            $code = ' <info>[OK]</info>';
-        } else {
-            $code = ' <error>[KO]</error>';
-        }
+
+        $code = 0 === $exitCode ? ' <info>[OK]</info>' : ' <error>[KO]</error>';
 
         if ($this->io->isVerbose()) {
             $this->io->writeError(sprintf('Executed script %s %s', $cmd, $code));
@@ -78,7 +75,7 @@ class ScriptExecutor
         }
     }
 
-    private function expandCmd($type, $cmd): ?string
+    private function expandCmd(string $type, string $cmd): ?string
     {
         switch ($type) {
             case 'symfony-cmd':

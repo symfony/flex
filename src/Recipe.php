@@ -11,7 +11,7 @@
 
 namespace Symfony\Flex;
 
-use Composer\Package\Package;
+use Composer\Package\PackageInterface;
 
 /**
  * @author Fabien Potencier <fabien@symfony.com>
@@ -22,14 +22,14 @@ class Recipe
     private $name;
     private $data;
 
-    public function __construct(Package $package, $name, $data)
+    public function __construct(PackageInterface $package, $name, $data)
     {
         $this->package = $package;
         $this->name = $name;
         $this->data = $data;
     }
 
-    public function getPackage(): Package
+    public function getPackage(): PackageInterface
     {
         return $this->package;
     }

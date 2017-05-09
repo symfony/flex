@@ -19,10 +19,8 @@ use Composer\Package\Version\VersionParser;
 class PackageResolver
 {
     private const SYMFONY_VERSIONS = ['lts', 'previous', 'stable', 'next'];
-
     private static $aliases;
     private static $versions;
-
     private $downloader;
 
     public function __construct(Downloader $downloader)
@@ -61,7 +59,7 @@ class PackageResolver
                         $versionParser->parseConstraints($argument);
                     } catch (\UnexpectedValueException $e) {
                         // is it a special Symfony version?
-                        if (!in_array($argument, self::SYMFONY_VERSIONS)) {
+                        if (!in_array($argument, self::SYMFONY_VERSIONS, true)) {
                             $this->throwAlternatives($argument, $i);
                         }
                     }
@@ -72,7 +70,7 @@ class PackageResolver
         }
 
         // third pass to resolve versions
-        $requires= [];
+        $requires = [];
         foreach ($versionParser->parseNameVersionPairs($packages) as $package) {
             $requires[] = $package['name'].$this->parseVersion($package['name'], $package['version'] ?? '');
         }
@@ -96,7 +94,7 @@ class PackageResolver
 
         if ('next' === $version) {
             $version = '^'.self::$versions[$version].'@dev';
-        } elseif (in_array($version, self::SYMFONY_VERSIONS)) {
+        } elseif (in_array($version, self::SYMFONY_VERSIONS, true)) {
             $version = '^'.self::$versions[$version];
         }
 
@@ -120,7 +118,7 @@ class PackageResolver
         if ($alternatives || 0 === $position) {
             $message = sprintf('"%s" is not a valid alias.', $argument);
             if ($alternatives) {
-                if (1 == count($alternatives)) {
+                if (1 === count($alternatives)) {
                     $message .= " Did you mean this:\n";
                 } else {
                     $message .= " Did you mean one of these:\n";
