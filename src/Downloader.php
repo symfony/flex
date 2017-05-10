@@ -185,7 +185,7 @@ class Downloader
         $this->degradedMode = true;
     }
 
-    private function getOptions(array $headers): array 
+    private function getOptions(array $headers): array
     {
         $options = ['http' => ['header' => $headers]];
 

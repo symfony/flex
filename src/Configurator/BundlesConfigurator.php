@@ -75,15 +75,15 @@ class BundlesConfigurator extends AbstractConfigurator
 
     private function dump(string $file, iterable $bundles): void
     {
-        $contents = "<?php".PHP_EOL.PHP_EOL."return [".PHP_EOL;
+        $contents = '<?php'.PHP_EOL.PHP_EOL.'return ['.PHP_EOL;
         foreach ($bundles as $class => $envs) {
             $contents .= "    '$class' => [";
             foreach (array_keys($envs) as $env) {
                 $contents .= "'$env' => true, ";
             }
-            $contents = substr($contents, 0, -2)."],".PHP_EOL;
+            $contents = substr($contents, 0, -2).'],'.PHP_EOL;
         }
-        $contents .= "];".PHP_EOL;
+        $contents .= '];'.PHP_EOL;
 
         if (!is_dir(dirname($file))) {
             mkdir(dirname($file), 0777, true);

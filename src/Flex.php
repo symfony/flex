@@ -27,9 +27,7 @@ use Composer\IO\NullIO;
 use Composer\Json\JsonFile;
 use Composer\Json\JsonManipulator;
 use Composer\Package\PackageInterface;
-use Composer\Plugin\CommandEvent;
 use Composer\Plugin\PluginInterface;
-use Composer\Plugin\PluginEvents;
 use Composer\Script\Event;
 use Composer\Script\ScriptEvents;
 use Symfony\Component\Console\Application as ConsoleApplication;
@@ -198,7 +196,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $this->io->write($this->postInstallOutput);
     }
 
-    private function filterPackageNames(PackageInterface $package, string $operation)
+    private function filterPackageNames(PackageInterface $package, string $operation): \Generator
     {
         // FIXME: getNames() can return n names
         $name = $package->getNames()[0];
@@ -211,7 +209,9 @@ class Flex implements PluginInterface, EventSubscriberInterface
             }
         }
 
-        if (200 === $response->getStatusCode() || 304 === $response->getStatusCode()) {
+        $statusCode = $response->getStatusCode();
+
+        if (200 === $statusCode || 304 === $statusCode) {
             yield $name => new Recipe($package, $name, $response->getBody());
         } elseif ('symfony-bundle' === $package->getType()) {
             $manifest = [];

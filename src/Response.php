@@ -63,7 +63,7 @@ class Response implements \JsonSerializable
             throw new \LogicException('Old cache detected. Clear the Composer cache under "~/.composer/cache/repo/https---symfony.sh/".');
         }
 
-        $response = new Response($json['body']);
+        $response = new self($json['body']);
         $response->headers = $json['headers'];
 
         return $response;
