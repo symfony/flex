@@ -1,0 +1,11 @@
+---------------------------------------------------------------------------
+
+by javiereguiluz at 2017-05-10T06:38:05Z
+
+@Pierstoval this is great ... but if you use PHPStorm (72% of Symfony devs do) there's no need to add PHPdoc for method arguments, method response types and properties initialized in the constructor. So you can safely remove some of these changes. Thanks!
+
+---------------------------------------------------------------------------
+
+by Pierstoval at 2017-05-10T08:00:14Z
+
+I did remove all redundant comments, an ran php-cs-fixer too, to fix some very minor stuff (mostly quotes), thanks everyone for reviewing
