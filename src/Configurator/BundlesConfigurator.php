@@ -90,6 +90,10 @@ class BundlesConfigurator extends AbstractConfigurator
         }
 
         file_put_contents($file, $contents);
+
+        if (function_exists('opcache_invalidate')) {
+            opcache_invalidate($file);
+        }
     }
 
     private function getConfFile(): string
