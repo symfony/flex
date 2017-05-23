@@ -114,9 +114,18 @@ class ScriptExecutor
         }
 
         $arguments = $phpFinder->findArguments();
-        if (false !== $ini = php_ini_loaded_file()) {
+
+        if ($env = strval(getenv('COMPOSER_ORIGINAL_INIS'))) {
+            $paths = explode(PATH_SEPARATOR, $env);
+            $ini = array_shift($paths);
+        } else {
+            $ini = php_ini_loaded_file();
+        }
+
+        if ($ini) {
             $arguments[] = '--php-ini='.$ini;
         }
+
         $phpArgs = implode(' ', array_map('escapeshellarg', $arguments));
 
         return $php.($phpArgs ? ' '.$phpArgs : '').' '.$cmd;
