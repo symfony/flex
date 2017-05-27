@@ -13,34 +13,45 @@ namespace Symfony\Flex\Tests\Configurator;
 
 require_once __DIR__.'/TmpDirMock.php';
 
-use Symfony\Flex\Configurator\BundlesConfigurator;
+use Symfony\Flex\Configurator\ContainerConfigurator;
 use PHPUnit\Framework\TestCase;
 
-class BundlesConfiguratorTest extends TestCase
+class ContainerConfiguratorTest extends TestCase
 {
     public function testConfigure()
     {
-        $configurator = new BundlesConfigurator(
+        $recipe = $this->getMockBuilder('Symfony\Flex\Recipe')->disableOriginalConstructor()->getMock();
+        $config = sys_get_temp_dir().'/etc/container.yaml';
+        file_put_contents($config, <<<EOF
+# comment
+parameters:
+
+services:
+
+EOF
+        );
+        $configurator = new ContainerConfigurator(
             $this->getMockBuilder('Composer\Composer')->getMock(),
             $this->getMockBuilder('Composer\IO\IOInterface')->getMock(),
             $this->getMockBuilder('Symfony\Flex\Options')->getMock()
         );
-
-        $recipe = $this->getMockBuilder('Symfony\Flex\Recipe')->disableOriginalConstructor()->getMock();
-
-        $config = sys_get_temp_dir().'/etc/bundles.php';
-        @unlink($config);
-        $configurator->configure($recipe, [
-            'FooBundle' => ['dev', 'test'],
-            'Symfony\Bundle\FrameworkBundle\FrameworkBundle' => ['all'],
-        ]);
+        $configurator->configure($recipe, ['locale' => 'en']);
         $this->assertEquals(<<<EOF
-<?php
+# comment
+parameters:
+    locale: 'en'
 
-return [
-    'Symfony\Bundle\FrameworkBundle\FrameworkBundle' => ['all' => true],
-    'FooBundle' => ['dev' => true, 'test' => true],
-];
+services:
+
+EOF
+        , file_get_contents($config));
+
+        $configurator->unconfigure($recipe, ['locale' => 'en']);
+        $this->assertEquals(<<<EOF
+# comment
+parameters:
+
+services:
 
 EOF
         , file_get_contents($config));
