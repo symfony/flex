@@ -37,9 +37,9 @@ class Response implements \JsonSerializable
         return $this->code;
     }
 
-    public function getHeader(string $name): ?string
+    public function getHeader(string $name): string
     {
-        return $this->headers[strtolower($name)][0] ?? null;
+        return $this->headers[strtolower($name)][0] ?? '';
     }
 
     public function getHeaders(string $name): ?array

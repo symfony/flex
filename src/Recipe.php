@@ -21,12 +21,14 @@ class Recipe
     private $package;
     private $name;
     private $data;
+    private $origin;
 
-    public function __construct(PackageInterface $package, $name, $data)
+    public function __construct(PackageInterface $package, string $name, array $data, string $origin)
     {
         $this->package = $package;
         $this->name = $name;
         $this->data = $data;
+        $this->origin = $origin;
     }
 
     public function getPackage(): PackageInterface
@@ -51,5 +53,10 @@ class Recipe
     public function getFiles(): iterable
     {
         return $this->data['files'] ?? [];
+    }
+
+    public function getOrigin(): string
+    {
+        return $this->origin;
     }
 }

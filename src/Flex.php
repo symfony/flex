@@ -122,8 +122,8 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
 
         $package = $event->getOperation()->getPackage();
-        foreach ($this->filterPackageNames($package, 'install') as $name => $recipe) {
-            $this->io->write(sprintf('    Detected auto-configuration settings for "%s"', $name));
+        foreach ($this->filterPackageNames($package, 'install') as $recipe) {
+            $this->io->write(sprintf('    Auto-configuring from %s', $recipe->getOrigin()));
             $this->configurator->install($recipe);
 
             $manifest = $recipe->getManifest();
@@ -154,8 +154,8 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
 
         $package = $event->getOperation()->getPackage();
-        foreach ($this->filterPackageNames($package, 'uninstall') as $name => $recipe) {
-            $this->io->write(sprintf('    Auto-unconfiguring "%s"', $name));
+        foreach ($this->filterPackageNames($package, 'uninstall') as $recipe) {
+            $this->io->write(sprintf('    Auto-unconfiguring from %s', $recipe->getOrigin()));
             $this->configurator->unconfigure($recipe);
         }
     }
@@ -210,17 +210,24 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
 
         $statusCode = $response->getStatusCode();
+        $origin = $response->getHeader('Symfony-Recipe');
 
         if (200 === $statusCode || 304 === $statusCode) {
-            yield $name => new Recipe($package, $name, $response->getBody());
-        } elseif ('symfony-bundle' === $package->getType()) {
-            $manifest = [];
-            $bundle = new SymfonyBundle($this->composer, $package, $operation);
-            foreach ($bundle->getClassNames() as $class) {
-                $manifest['manifest']['bundles'][$class] = ['all'];
+            yield $name => new Recipe($package, $name, $response->getBody(), $origin);
+        } else {
+            if ($origin) {
+                $this->io->write(sprintf('    <warning>Ignored auto-configuration from %s</>', $origin));
+                $this->io->write('    <warning>Enable via composer config extra.symfony.allow-contrib true</>');
             }
-            if ($manifest) {
-                yield $name => new Recipe($package, $name, $manifest);
+            if ('symfony-bundle' === $package->getType()) {
+                $manifest = [];
+                $bundle = new SymfonyBundle($this->composer, $package, $operation);
+                foreach ($bundle->getClassNames() as $class) {
+                    $manifest['manifest']['bundles'][$class] = ['all'];
+                }
+                if ($manifest) {
+                    yield $name => new Recipe($package, $name, $manifest, 'auto-generated recipe');
+                }
             }
         }
     }
