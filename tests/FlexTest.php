@@ -47,7 +47,7 @@ class FlexTest extends TestCase
         $configurator
             ->expects($this->once())
             ->method('install')
-            ->with($this->equalTo(new Recipe($package, 'dummy/dummy', $data = ['manifest' => ['post-install-output' => ['line 1 %ETC_DIR%', 'line 2 %VAR_DIR%']]])));
+            ->with($this->equalTo(new Recipe($package, 'dummy/dummy', $data = ['manifest' => ['post-install-output' => ['line 1 %ETC_DIR%', 'line 2 %VAR_DIR%']]], '')));
 
         $downloader = $this
             ->getMockBuilder(Downloader::class)

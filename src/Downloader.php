@@ -169,7 +169,7 @@ class Downloader
         }
 
         $response = new Response($data, $this->rfs->getLastHeaders());
-        if (null !== $response->getHeader('last-modified')) {
+        if ($response->getHeader('last-modified')) {
             $this->cache->write($cacheKey, json_encode($response));
         }
 
