@@ -20,14 +20,14 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
 {
     public function configure(Recipe $recipe, $config): void
     {
-        $this->io->write('    Setting configuration and copying files');
+        $this->write('Setting configuration and copying files');
         $packageDir = $this->composer->getInstallationManager()->getInstallPath($recipe->getPackage());
         $this->copyFiles($config, $packageDir, getcwd());
     }
 
     public function unconfigure(Recipe $recipe, $config): void
     {
-        $this->io->write('    Removing configuration and files');
+        $this->write('Removing configuration and files');
         $packageDir = $this->composer->getInstallationManager()->getInstallPath($recipe->getPackage());
         $this->removeFiles($config, $packageDir, getcwd());
     }

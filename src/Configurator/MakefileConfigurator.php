@@ -20,7 +20,7 @@ class MakefileConfigurator extends AbstractConfigurator
 {
     public function configure(Recipe $recipe, $definitions): void
     {
-        $this->io->write('    Adding Makefile entries');
+        $this->write('Adding Makefile entries');
         $data = sprintf('%s###> %s ###%s%s%s###< %s ###%s', PHP_EOL, $recipe->getName(), PHP_EOL, implode(PHP_EOL, $definitions), PHP_EOL, $recipe->getName(), PHP_EOL);
 
         if (!file_exists($makefile = getcwd().'/Makefile')) {
@@ -47,7 +47,7 @@ EOF
             return;
         }
 
-        $this->io->write(sprintf('    Removing Makefile entries from %s', $makefile));
+        $this->write(sprintf('Removing Makefile entries from %s', $makefile));
         if (!trim($contents)) {
             @unlink($makefile);
         } else {

@@ -35,4 +35,15 @@ abstract class AbstractConfigurator
     abstract public function configure(Recipe $recipe, $config): void;
 
     abstract public function unconfigure(Recipe $recipe, $config): void;
+
+    protected function write($messages): void
+    {
+        if (!is_array($messages)) {
+            $messages = [$messages];
+        }
+        foreach ($messages as $i => $message) {
+            $messages[$i] = '    '.$message;
+        }
+        $this->io->write($messages, true, IOInterface::VERBOSE);
+    }
 }

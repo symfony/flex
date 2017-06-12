@@ -20,7 +20,7 @@ class GitignoreConfigurator extends AbstractConfigurator
 {
     public function configure(Recipe $recipe, $vars): void
     {
-        $this->io->write('    Adding entries to .gitignore');
+        $this->write('Adding entries to .gitignore');
         $data = sprintf('%s###> %s ###%s', PHP_EOL, $recipe->getName(), PHP_EOL);
         foreach ($vars as $value) {
             $data .= "$value".PHP_EOL;
@@ -41,7 +41,7 @@ class GitignoreConfigurator extends AbstractConfigurator
             return;
         }
 
-        $this->io->write('    Removing entries in .gitignore');
+        $this->write('Removing entries in .gitignore');
         file_put_contents($file, ltrim($contents, PHP_EOL));
     }
 }
