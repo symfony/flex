@@ -20,15 +20,15 @@ class Recipe
 {
     private $package;
     private $name;
+    private $job;
     private $data;
-    private $origin;
 
-    public function __construct(PackageInterface $package, string $name, array $data, string $origin)
+    public function __construct(PackageInterface $package, string $name, string $job, array $data)
     {
         $this->package = $package;
         $this->name = $name;
+        $this->job = $job;
         $this->data = $data;
-        $this->origin = $origin;
     }
 
     public function getPackage(): PackageInterface
@@ -39,6 +39,11 @@ class Recipe
     public function getName(): string
     {
         return $this->name;
+    }
+
+    public function getJob(): string
+    {
+        return $this->job;
     }
 
     public function getManifest(): array
@@ -57,6 +62,16 @@ class Recipe
 
     public function getOrigin(): string
     {
-        return $this->origin;
+        return $this->data['origin'] ?? '';
+    }
+
+    public function isNotInstallable()
+    {
+        return $this->data['not_installable'] ?? false;
+    }
+
+    public function isEmpty()
+    {
+        return count($this->data) > 0;
     }
 }
