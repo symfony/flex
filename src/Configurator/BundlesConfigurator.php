@@ -20,7 +20,7 @@ class BundlesConfigurator extends AbstractConfigurator
 {
     public function configure(Recipe $recipe, $bundles): void
     {
-        $this->io->write('    Enabling the package as a Symfony bundle');
+        $this->write('Enabling the package as a Symfony bundle');
         $file = $this->getConfFile();
         $registered = $this->load($file);
         $classes = $this->parse($bundles);
@@ -40,7 +40,7 @@ class BundlesConfigurator extends AbstractConfigurator
 
     public function unconfigure(Recipe $recipe, $bundles): void
     {
-        $this->io->write('    Disabling the Symfony bundle');
+        $this->write('Disabling the Symfony bundle');
         $file = $this->getConfFile();
         if (!file_exists($file)) {
             return;

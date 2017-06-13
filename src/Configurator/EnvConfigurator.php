@@ -20,7 +20,7 @@ class EnvConfigurator extends AbstractConfigurator
 {
     public function configure(Recipe $recipe, $vars): void
     {
-        $this->io->write('    Adding environment variable defaults');
+        $this->write('Adding environment variable defaults');
         $data = sprintf('%s###> %s ###%s', PHP_EOL, $recipe->getName(), PHP_EOL);
         foreach ($vars as $key => $value) {
             if ('%generate(secret)%' === $value) {
@@ -54,7 +54,7 @@ class EnvConfigurator extends AbstractConfigurator
                 continue;
             }
 
-            $this->io->write(sprintf('    Removing environment variables from %s', $file));
+            $this->write(sprintf('Removing environment variables from %s', $file));
             file_put_contents($env, $contents);
         }
     }

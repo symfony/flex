@@ -20,12 +20,13 @@ class ContainerConfigurator extends AbstractConfigurator
 {
     public function configure(Recipe $recipe, $parameters): void
     {
-        $this->io->write('    Setting parameters');
+        $this->write('Setting parameters');
         $this->addParameters($parameters);
     }
 
     public function unconfigure(Recipe $recipe, $parameters): void
     {
+        $this->write('Unsetting parameters');
         $target = getcwd().'/etc/container.yaml';
         $lines = [];
         foreach (file($target) as $line) {
