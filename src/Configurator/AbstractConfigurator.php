@@ -44,6 +44,6 @@ abstract class AbstractConfigurator
         foreach ($messages as $i => $message) {
             $messages[$i] = '    '.$message;
         }
-        $this->io->write($messages, true, IOInterface::VERBOSE);
+        $this->io->writeError($messages, true, IOInterface::VERBOSE);
     }
 }
