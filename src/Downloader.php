@@ -114,7 +114,6 @@ class Downloader
         if ($chunk) {
             $paths[] = '/p/'.$chunk;
         }
-
         $data = [];
         foreach ($paths as $path) {
             $response = $this->get($path, ['Package-Session: '.$this->sess], false);

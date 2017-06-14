@@ -203,6 +203,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
     private function fetchRecipes(): array
     {
+        $devPackages = null;
         $data = $this->downloader->getRecipes($this->operations);
         $manifests = $data['manifests'] ?? [];
         $recipes = [];
@@ -225,8 +226,12 @@ class Flex implements PluginInterface, EventSubscriberInterface
             if ($noRecipe && 'symfony-bundle' === $package->getType()) {
                 $manifest = [];
                 $bundle = new SymfonyBundle($this->composer, $package, $job);
+                if (null === $devPackages) {
+                    $devPackages = array_map(function ($package) { return $package['name']; }, $this->composer->getLocker()->getLockData()['packages-dev']);
+                }
+                $envs = in_array($name, $devPackages) ? ['dev', 'test'] : ['all'];
                 foreach ($bundle->getClassNames() as $class) {
-                    $manifest['manifest']['bundles'][$class] = ['all'];
+                    $manifest['manifest']['bundles'][$class] = $envs;
                 }
                 if ($manifest) {
                     $manifest['origin'] = sprintf('%s:%s@auto-generated recipe', $name, $package->getPrettyVersion());
