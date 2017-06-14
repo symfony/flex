@@ -13,6 +13,9 @@ namespace Symfony\Flex;
 
 use Composer\Cache;
 use Composer\Composer;
+use Composer\DependencyResolver\Operation\OperationInterface;
+use Composer\DependencyResolver\Operation\UpdateOperation;
+use Composer\DependencyResolver\Operation\UninstallOperation;
 use Composer\Downloader\TransportException;
 use Composer\Factory;
 use Composer\IO\IOInterface;
@@ -64,19 +67,78 @@ class Downloader
     }
 
     /**
+     * Downloads recipes.
+     *
+     * @param OperationInterface[] $operations
+     */
+    public function getRecipes(array $operations): array
+    {
+        $max = 1000;
+        $paths = [];
+        $chunk = '';
+        foreach ($operations as $i => $operation) {
+            $o = 'i';
+            if ($operation instanceof UpdateOperation) {
+                $package = $operation->getTargetPackage();
+                $o = 'u';
+            } else {
+                $package = $operation->getPackage();
+                if ($operation instanceof UninstallOperation) {
+                    $o = 'r';
+                }
+            }
+
+            $version = $package->getPrettyVersion();
+            if (0 === strpos($version, 'dev-') && isset($package->getExtra()['branch-alias'])) {
+                $branchAliases = $package->getExtra()['branch-alias'];
+                if (($alias = $branchAliases[$version]) || ($alias = $branchAliases['dev-master'])) {
+                    $version = $alias;
+                }
+            }
+
+            // FIXME: getNames() can return n names
+            $name = str_replace('/', ',', $package->getNames()[0]);
+            $path = sprintf('%s,%s%s', $name, $o, $version);
+            if ($date = $package->getReleaseDate()) {
+                $path .= ','.$date->format('U');
+            }
+            if (strlen($chunk) + strlen($path) > 1000) {
+                $paths[] = '/p/'.$chunk;
+                $chunk = '';
+            } elseif ($chunk) {
+                $chunk .= ';'.$path;
+            } else {
+                $chunk = $path;
+            }
+        }
+        if ($chunk) {
+            $paths[] = '/p/'.$chunk;
+        }
+        $data = [];
+        foreach ($paths as $path) {
+            $response = $this->get($path, ['Package-Session: '.$this->sess], false);
+            foreach ($response->getBody() as $name => $body) {
+                $data[$name] = $body;
+            }
+        }
+
+        return $data;
+    }
+
+    /**
      * Decodes a JSON HTTP response body.
      *
      * @param string $path    The path to get on the server
      * @param array  $headers An array of HTTP headers
      */
-    public function get(string $path, array $headers = []): Response
+    public function get(string $path, array $headers = [], $cache = true): Response
     {
         $headers[] = 'Package-Session: '.$this->sess;
         $url = $this->endpoint.'/'.ltrim($path, '/');
-        $cacheKey = ltrim($path, '/');
+        $cacheKey = $cache ? ltrim($path, '/') : '';
 
         try {
-            if ($contents = $this->cache->read($cacheKey)) {
+            if ($cacheKey && $contents = $this->cache->read($cacheKey)) {
                 $cachedResponse = Response::fromJson(json_decode($contents, true));
                 if ($lastModified = $cachedResponse->getHeader('last-modified')) {
                     $response = $this->fetchFileIfLastModified($url, $cacheKey, $lastModified, $headers);
@@ -117,7 +179,7 @@ class Downloader
                     continue;
                 }
 
-                if ($contents = $this->cache->read($cacheKey)) {
+                if ($cacheKey && $contents = $this->cache->read($cacheKey)) {
                     $this->switchToDegradedMode($e, $url);
 
                     return Response::fromJson(JsonFile::parseJson($contents, $this->cache->getRoot().$cacheKey));
