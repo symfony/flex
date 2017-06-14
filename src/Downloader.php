@@ -117,7 +117,9 @@ class Downloader
 
         $data = [];
         foreach ($paths as $path) {
-            $body = $this->get($path, ['Package-Session: '.$this->sess], false)->getBody();
+            if (!$body = $this->get($path, ['Package-Session: '.$this->sess], false)->getBody()) {
+                continue;
+            }
             foreach ($body['manifests'] as $name => $manifest) {
                 $data['manifests'][$name] = $manifest;
             }
