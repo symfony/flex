@@ -104,7 +104,7 @@ class Downloader
             }
             if (strlen($chunk) + strlen($path) > 1000) {
                 $paths[] = '/p/'.$chunk;
-                $chunk = '';
+                $chunk = $path;
             } elseif ($chunk) {
                 $chunk .= ';'.$path;
             } else {
@@ -114,14 +114,17 @@ class Downloader
         if ($chunk) {
             $paths[] = '/p/'.$chunk;
         }
+
         $data = [];
         foreach ($paths as $path) {
-            $response = $this->get($path, ['Package-Session: '.$this->sess], false);
-            foreach ($response->getBody() as $name => $body) {
-                $data[$name] = $body;
+            $body = $this->get($path, ['Package-Session: '.$this->sess], false)->getBody();
+            foreach ($body['manifests'] as $name => $manifest) {
+                $data['manifests'][$name] = $manifest;
+            }
+            foreach ($body['vulnerabilities'] as $name => $vulns) {
+                $data['vulnerabilities'][$name] = $vulns;
             }
         }
-
         return $data;
     }
 
