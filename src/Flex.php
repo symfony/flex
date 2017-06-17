@@ -63,7 +63,9 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $this->configurator = new Configurator($composer, $io, $this->options);
         $this->downloader = new Downloader($composer, $io);
         $this->downloader->setFlexId($this->getFlexId());
-        $this->downloader->allowContrib($composer->getPackage()->getExtra()['symfony']['allow-contrib'] ?? false);
+        $extra = $composer->getPackage()->getExtra();
+        $this->downloader->allowContrib($extra['symfony']['allow-contrib'] ?? false);
+        $this->downloader->setRepositories($extra['symfony']['repositories'] ?? []);
         $this->runningCommand = function () { return; };
 
         $search = 3;
