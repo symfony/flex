@@ -34,7 +34,7 @@ class EnvConfigurator extends AbstractConfigurator
             }
         }
         $data .= sprintf('###< %s ###%s', $recipe->getName(), PHP_EOL);
-        if (!file_exists(getcwd().'/.env')) {
+        if (!file_exists(getcwd().'/.env') && file_exists(getcwd().'/.env.dist')) {
             copy(getcwd().'/.env.dist', getcwd().'/.env');
         }
         file_put_contents(getcwd().'/.env.dist', $data, FILE_APPEND);
