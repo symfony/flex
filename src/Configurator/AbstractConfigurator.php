@@ -46,4 +46,14 @@ abstract class AbstractConfigurator
         }
         $this->io->writeError($messages, true, IOInterface::VERBOSE);
     }
+
+    protected function isFileMarked(Recipe $recipe, $file)
+    {
+        return is_file($file) && false !== strpos(file_get_contents($file), sprintf('###> %s ###', $recipe->getName()));
+    }
+
+    protected function markData(Recipe $recipe, $data)
+    {
+        return PHP_EOL.sprintf('###> %s ###%s%s%s###< %s ###%s', $recipe->getName(), PHP_EOL, $data, PHP_EOL, $recipe->getName(), PHP_EOL);
+    }
 }

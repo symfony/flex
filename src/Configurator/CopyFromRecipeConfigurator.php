@@ -54,15 +54,17 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
 
     private function copyFile(string $to, string $contents, bool $executable): void
     {
+        if (file_exists($to)) {
+            return;
+        }
+
         if (!is_dir(dirname($to))) {
             mkdir(dirname($to), 0777, true);
         }
 
-        if (!file_exists($to)) {
-            file_put_contents($to, $contents);
-            if ($executable) {
-                @chmod($to, fileperms($to) | 0111);
-            }
+        file_put_contents($to, $contents);
+        if ($executable) {
+            @chmod($to, fileperms($to) | 0111);
         }
     }
 

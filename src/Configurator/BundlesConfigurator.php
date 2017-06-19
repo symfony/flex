@@ -23,7 +23,7 @@ class BundlesConfigurator extends AbstractConfigurator
         $this->write('Enabling the package as a Symfony bundle');
         $file = $this->getConfFile();
         $registered = $this->load($file);
-        $classes = $this->parse($bundles);
+        $classes = $this->parse($bundles, $registered);
         if (isset($classes[$fwb = 'Symfony\Bundle\FrameworkBundle\FrameworkBundle'])) {
             foreach ($classes[$fwb] as $env) {
                 $registered[$fwb][$env] = true;
@@ -53,11 +53,13 @@ class BundlesConfigurator extends AbstractConfigurator
         $this->dump($file, $registered);
     }
 
-    private function parse(iterable $manifest): iterable
+    private function parse(iterable $manifest, iterable $registered): iterable
     {
         $bundles = [];
         foreach ($manifest as $class => $envs) {
-            $bundles[ltrim($class, '\\')] = $envs;
+            if (!isset($registered[$class])) {
+                $bundles[ltrim($class, '\\')] = $envs;
+            }
         }
 
         return $bundles;
