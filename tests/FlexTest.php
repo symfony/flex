@@ -14,6 +14,7 @@ namespace Symfony\Flex\Tests\Configurator;
 use Composer\Composer;
 use Composer\DependencyResolver\Operation\InstallOperation;
 use Composer\Installer\PackageEvent;
+use Composer\Package\Locker;
 use Composer\Script\Event;
 use Composer\IO\BufferIO;
 use Composer\Package\Package;
@@ -57,10 +58,13 @@ class FlexTest extends TestCase
         $downloader->expects($this->once())->method('getRecipes')->willReturn($data);
 
         $io = new BufferIO('', OutputInterface::VERBOSITY_VERBOSE);
+        $locker = $this->getMockBuilder(Locker::class)->disableOriginalConstructor()->getMock();
+        $locker->expects($this->any())->method('getLockData')->will($this->returnValue(['content-hash' => 'random']));
 
-        $flex = \Closure::bind(function () use ($configurator, $downloader, $io) {
+        $flex = \Closure::bind(function () use ($configurator, $downloader, $io, $locker) {
             $flex = new Flex();
             $flex->composer = new Composer();
+            $flex->composer->setLocker($locker);
             $flex->io = $io;
             $flex->configurator = $configurator;
             $flex->downloader = $downloader;
