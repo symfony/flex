@@ -107,10 +107,6 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
     public function configureProject(Event $event): void
     {
-        if (($this->runningCommand)() instanceof InstallCommand) {
-            return;
-        }
-
         $json = new JsonFile(Factory::getComposerFile());
         $manipulator = new JsonManipulator(file_get_contents($json->getPath()));
         // 'name' and 'description' are only required for public packages
