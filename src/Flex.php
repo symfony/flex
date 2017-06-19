@@ -44,7 +44,6 @@ class Flex implements PluginInterface, EventSubscriberInterface
     private $configurator;
     private $downloader;
     private $postInstallOutput = [''];
-    private $runningCommand;
     private $operations = [];
     private $originalLockHash;
     private static $activated = true;
@@ -67,7 +66,6 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $extra = $composer->getPackage()->getExtra();
         $this->downloader->allowContrib($extra['symfony']['allow-contrib'] ?? false);
         $this->downloader->setRepositories($extra['symfony']['repositories'] ?? []);
-        $this->runningCommand = function () { return; };
 
         // useful when symfony/flex is not yet installed (composer install without vendor/ for instance)
         $this->updateOriginalLockHash();
@@ -85,12 +83,6 @@ class Flex implements PluginInterface, EventSubscriberInterface
                 $app->add(new Command\RequireCommand($resolver));
                 $app->add(new Command\UpdateCommand($resolver));
                 $app->add(new Command\RemoveCommand($resolver));
-
-                $r = new \ReflectionProperty(ConsoleApplication::class, 'runningCommand');
-                $r->setAccessible(true);
-                $this->runningCommand = function () use ($app, $r) {
-                    return $r->getValue($app);
-                };
             } elseif ($trace['object'] instanceof Installer) {
                 --$search;
                 $trace['object']->setSuggestedPackagesReporter(new SuggestedPackagesReporter(new NullIO()));
