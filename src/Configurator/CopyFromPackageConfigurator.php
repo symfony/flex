@@ -82,6 +82,9 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
 
     public function copyFile(string $source, string $target): void
     {
+        if (file_exists($target)) {
+            return;
+        }
         copy($source, $target);
         @chmod($target, fileperms($target) | (fileperms($source) & 0111));
     }

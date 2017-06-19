@@ -21,9 +21,15 @@ class MakefileConfigurator extends AbstractConfigurator
     public function configure(Recipe $recipe, $definitions): void
     {
         $this->write('Adding Makefile entries');
-        $data = sprintf('%s###> %s ###%s%s%s###< %s ###%s', PHP_EOL, $recipe->getName(), PHP_EOL, implode(PHP_EOL, $definitions), PHP_EOL, $recipe->getName(), PHP_EOL);
 
-        if (!file_exists($makefile = getcwd().'/Makefile')) {
+        $makefile = getcwd().'/Makefile';
+        if ($this->isFileMarked($recipe, $makefile)) {
+            return;
+        }
+
+        $data = $this->markData($recipe, implode(PHP_EOL, $definitions));
+
+        if (!file_exists($makefile)) {
             file_put_contents(getcwd().'/Makefile', str_replace("\n", PHP_EOL, <<<EOF
 ifndef APP_ENV
 	include .env

@@ -21,7 +21,13 @@ class EnvConfigurator extends AbstractConfigurator
     public function configure(Recipe $recipe, $vars): void
     {
         $this->write('Adding environment variable defaults');
-        $data = sprintf('%s###> %s ###%s', PHP_EOL, $recipe->getName(), PHP_EOL);
+
+        $distenv = getcwd().'/.env.dist';
+        if ($this->isFileMarked($recipe, $distenv)) {
+            return;
+        }
+
+        $data = '';
         foreach ($vars as $key => $value) {
             if ('%generate(secret)%' === $value) {
                 $value = bin2hex(random_bytes(16));
@@ -33,11 +39,11 @@ class EnvConfigurator extends AbstractConfigurator
                 $data .= "$key=$value".PHP_EOL;
             }
         }
-        $data .= sprintf('###< %s ###%s', $recipe->getName(), PHP_EOL);
         if (!file_exists(getcwd().'/.env')) {
-            copy(getcwd().'/.env.dist', getcwd().'/.env');
+            copy($distenv, getcwd().'/.env');
         }
-        file_put_contents(getcwd().'/.env.dist', $data, FILE_APPEND);
+        $data = $this->markData($recipe, $data);
+        file_put_contents($distenv, $data, FILE_APPEND);
         file_put_contents(getcwd().'/.env', $data, FILE_APPEND);
     }
 
