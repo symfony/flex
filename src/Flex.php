@@ -131,10 +131,6 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
     public function update(Event $event): void
     {
-        if (($this->runningCommand)() instanceof InstallCommand) {
-            return;
-        }
-
         if (!file_exists(getcwd().'/.env') && file_exists(getcwd().'/.env.dist')) {
             copy(getcwd().'/.env.dist', getcwd().'/.env');
         }
