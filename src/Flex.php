@@ -46,6 +46,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
     private $postInstallOutput = [''];
     private $runningCommand;
     private $operations = [];
+    private $originalLockHash;
     private static $activated = true;
 
     public function activate(Composer $composer, IOInterface $io)
@@ -67,6 +68,9 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $this->downloader->allowContrib($extra['symfony']['allow-contrib'] ?? false);
         $this->downloader->setRepositories($extra['symfony']['repositories'] ?? []);
         $this->runningCommand = function () { return; };
+
+        // useful when symfony/flex is not yet installed (composer install without vendor/ for instance)
+        $this->updateOriginalLockHash();
 
         $search = 3;
         foreach (debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT) as $trace) {
@@ -120,17 +124,34 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $this->operations[] = $event->getOperation();
     }
 
+    public function prepare(Event $event): void
+    {
+        // be careful: the logic in this method won't be run when Flex is not installed yet
+        if (!$this->originalLockHash) {
+            $this->updateOriginalLockHash();
+        }
+    }
+
+    private function updateOriginalLockHash()
+    {
+        $locker = $this->composer->getLocker();
+        if ($locker && $locker->isLocked()) {
+            $this->originalLockHash = $locker->getLockData()['content-hash'];
+        }
+    }
+
     public function install(Event $event): void
     {
-        if (($this->runningCommand)() instanceof InstallCommand) {
-            return;
-        }
-
         $this->update($event);
     }
 
     public function update(Event $event): void
     {
+        // not supported edge case: composer.lock AND vendor/ are removed by hand
+        if ($this->originalLockHash === $this->composer->getLocker()->getLockData()['content-hash']) {
+            return;
+        }
+
         if (!file_exists(getcwd().'/.env') && file_exists(getcwd().'/.env.dist')) {
             copy(getcwd().'/.env.dist', getcwd().'/.env');
         }
@@ -317,6 +338,8 @@ class Flex implements PluginInterface, EventSubscriberInterface
             PackageEvents::POST_PACKAGE_UPDATE => 'record',
             PackageEvents::POST_PACKAGE_UNINSTALL => 'record',
             ScriptEvents::POST_CREATE_PROJECT_CMD => 'configureProject',
+            ScriptEvents::PRE_INSTALL_CMD => 'prepare',
+            ScriptEvents::PRE_UPDATE_CMD => 'prepare',
             ScriptEvents::POST_INSTALL_CMD => 'install',
             ScriptEvents::POST_UPDATE_CMD => 'update',
             'auto-scripts' => 'executeAutoScripts',
