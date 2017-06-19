@@ -97,7 +97,10 @@ class Downloader
             $version = $package->getPrettyVersion();
             if (0 === strpos($version, 'dev-') && isset($package->getExtra()['branch-alias'])) {
                 $branchAliases = $package->getExtra()['branch-alias'];
-                if (($alias = $branchAliases[$version]) || ($alias = $branchAliases['dev-master'])) {
+                if (
+                    (isset($branchAliases[$version]) && $alias = $branchAliases[$version]) ||
+                    (isset($branchAliases['dev-master']) && $alias = $branchAliases['dev-master'])
+                ) {
                     $version = $alias;
                 }
             }
