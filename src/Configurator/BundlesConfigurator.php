@@ -47,7 +47,7 @@ class BundlesConfigurator extends AbstractConfigurator
         }
 
         $registered = $this->load($file);
-        foreach (array_keys($this->parse($bundles)) as $class) {
+        foreach (array_keys($this->parse($bundles, [])) as $class) {
             unset($registered[$class]);
         }
         $this->dump($file, $registered);
