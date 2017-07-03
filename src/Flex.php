@@ -256,10 +256,10 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $options = array_merge([
             'bin-dir' => 'bin',
             'conf-dir' => 'conf',
-            'etc-dir' => 'etc',
+            'config-dir' => 'config',
             'src-dir' => 'src',
             'var-dir' => 'var',
-            'web-dir' => 'web',
+            'public-dir' => 'public',
         ], $this->composer->getPackage()->getExtra());
 
         return new Options($options);

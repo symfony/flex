@@ -40,7 +40,7 @@ class FlexTest extends TestCase
             'manifests' => [
                 'dummy/dummy' => [
                     'manifest' => [
-                        'post-install-output' => ['line 1 %ETC_DIR%', 'line 2 %VAR_DIR%'],
+                        'post-install-output' => ['line 1 %CONFIG_DIR%', 'line 2 %VAR_DIR%'],
                         'bundles' => [
                             'Symfony\\Bundle\\FrameworkBundle\\FrameworkBundle' => ['all'],
                         ],
@@ -69,7 +69,7 @@ class FlexTest extends TestCase
             $flex->configurator = $configurator;
             $flex->downloader = $downloader;
             $flex->runningCommand = function() {};
-            $flex->options = new Options(['etc-dir' => 'etc', 'var-dir' => 'var']);
+            $flex->options = new Options(['config-dir' => 'config', 'var-dir' => 'var']);
 
             return $flex;
         }, null, Flex::class)->__invoke();
@@ -77,7 +77,7 @@ class FlexTest extends TestCase
         $flex->install($this->getMockBuilder(Event::class)->disableOriginalConstructor()->getMock());
 
         $postInstallOutput = \Closure::bind(function () { return $this->postInstallOutput; }, $flex, Flex::class)->__invoke();
-        $this->assertSame(['', 'line 1 etc', 'line 2 var', ''], $postInstallOutput);
+        $this->assertSame(['', 'line 1 config', 'line 2 var', ''], $postInstallOutput);
 
         $this->assertSame(<<<EOF
 Symfony operations: 1 recipe
