@@ -28,7 +28,7 @@ class BundlesConfiguratorTest extends TestCase
 
         $recipe = $this->getMockBuilder('Symfony\Flex\Recipe')->disableOriginalConstructor()->getMock();
 
-        $config = sys_get_temp_dir().'/etc/bundles.php';
+        $config = sys_get_temp_dir().'/config/bundles.php';
         @unlink($config);
         $configurator->configure($recipe, [
             'FooBundle' => ['dev', 'test'],
