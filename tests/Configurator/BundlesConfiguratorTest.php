@@ -33,13 +33,15 @@ class BundlesConfiguratorTest extends TestCase
         $configurator->configure($recipe, [
             'FooBundle' => ['dev', 'test'],
             'Symfony\Bundle\FrameworkBundle\FrameworkBundle' => ['all'],
+            'Symfony\Bundle\DebugBundle\DebugBundle' => ['all'],
         ]);
         $this->assertEquals(<<<EOF
 <?php
 
 return [
-    'Symfony\Bundle\FrameworkBundle\FrameworkBundle' => ['all' => true],
     'FooBundle' => ['dev' => true, 'test' => true],
+    'Symfony\Bundle\DebugBundle\DebugBundle' => ['all' => true],
+    'Symfony\Bundle\FrameworkBundle\FrameworkBundle' => ['all' => true],
 ];
 
 EOF
