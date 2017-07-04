@@ -77,6 +77,7 @@ class BundlesConfigurator extends AbstractConfigurator
 
     private function dump(string $file, iterable $bundles): void
     {
+        ksort($bundles);
         $contents = '<?php'.PHP_EOL.PHP_EOL.'return ['.PHP_EOL;
         foreach ($bundles as $class => $envs) {
             $contents .= "    '$class' => [";
