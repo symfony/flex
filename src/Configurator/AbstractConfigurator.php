@@ -54,6 +54,6 @@ abstract class AbstractConfigurator
 
     protected function markData(Recipe $recipe, $data)
     {
-        return PHP_EOL.sprintf('###> %s ###%s%s%s###< %s ###%s', $recipe->getName(), PHP_EOL, rtrim($data, PHP_EOL), PHP_EOL, $recipe->getName(), PHP_EOL);
+        return "\n".sprintf('###> %s ###%s%s%s###< %s ###%s', $recipe->getName(), "\n", rtrim($data, "\r\n"), "\n", $recipe->getName(), "\n");
     }
 }

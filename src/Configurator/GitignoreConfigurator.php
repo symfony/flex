@@ -29,9 +29,9 @@ class GitignoreConfigurator extends AbstractConfigurator
 
         $data = '';
         foreach ($vars as $value) {
-            $data .= "$value".PHP_EOL;
+            $data .= "$value\n";
         }
-        file_put_contents($gitignore, ltrim($this->markData($recipe, $data), PHP_EOL), FILE_APPEND);
+        file_put_contents($gitignore, ltrim($this->markData($recipe, $data), "\r\n"), FILE_APPEND);
     }
 
     public function unconfigure(Recipe $recipe, $vars): void
@@ -41,12 +41,12 @@ class GitignoreConfigurator extends AbstractConfigurator
             return;
         }
 
-        $contents = preg_replace(sprintf('{%s+###> %s ###.*###< %s ###%s+}s', PHP_EOL, $recipe->getName(), $recipe->getName(), PHP_EOL), PHP_EOL, file_get_contents($file), -1, $count);
+        $contents = preg_replace(sprintf('{%s+###> %s ###.*###< %s ###%s+}s', "\n", $recipe->getName(), $recipe->getName(), "\n"), "\n", file_get_contents($file), -1, $count);
         if (!$count) {
             return;
         }
 
         $this->write('Removing entries in .gitignore');
-        file_put_contents($file, ltrim($contents, PHP_EOL));
+        file_put_contents($file, ltrim($contents, "\r\n"));
     }
 }

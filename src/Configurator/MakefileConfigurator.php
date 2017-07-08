@@ -27,19 +27,19 @@ class MakefileConfigurator extends AbstractConfigurator
             return;
         }
 
-        $data = $this->markData($recipe, implode(PHP_EOL, $definitions));
+        $data = $this->markData($recipe, implode("\n", $definitions));
 
         if (!file_exists($makefile)) {
-            file_put_contents(getcwd().'/Makefile', str_replace("\n", PHP_EOL, <<<EOF
+            file_put_contents(getcwd().'/Makefile', <<<EOF
 ifndef APP_ENV
 	include .env
 endif
 
 
 EOF
-            ));
+            );
         }
-        file_put_contents(getcwd().'/Makefile', ltrim($data, PHP_EOL), FILE_APPEND);
+        file_put_contents(getcwd().'/Makefile', ltrim($data, "\r\n"), FILE_APPEND);
     }
 
     public function unconfigure(Recipe $recipe, $vars): void
@@ -48,7 +48,7 @@ EOF
             return;
         }
 
-        $contents = preg_replace(sprintf('{%s+###> %s ###.*###< %s ###%s+}s', PHP_EOL, $recipe->getName(), $recipe->getName(), PHP_EOL), PHP_EOL, file_get_contents($makefile), -1, $count);
+        $contents = preg_replace(sprintf('{%s+###> %s ###.*###< %s ###%s+}s', "\n", $recipe->getName(), $recipe->getName(), "\n"), "\n", file_get_contents($makefile), -1, $count);
         if (!$count) {
             return;
         }
@@ -57,7 +57,7 @@ EOF
         if (!trim($contents)) {
             @unlink($makefile);
         } else {
-            file_put_contents($makefile, ltrim($contents, PHP_EOL));
+            file_put_contents($makefile, ltrim($contents, "\r\n"));
         }
     }
 }
