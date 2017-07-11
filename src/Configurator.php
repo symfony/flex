@@ -41,6 +41,8 @@ class Configurator
             'makefile' => Configurator\MakefileConfigurator::class,
             'composer-scripts' => Configurator\ComposerScriptsConfigurator::class,
             'gitignore' => Configurator\GitignoreConfigurator::class,
+            'dockerfile' => Configurator\DockerfileConfigurator::class,
+            'docker-compose' => Configurator\DockerComposeConfigurator::class,
         ];
     }
 
