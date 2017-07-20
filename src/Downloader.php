@@ -27,6 +27,7 @@ use Composer\Json\JsonFile;
 class Downloader
 {
     private const DEFAULT_ENDPOINT = 'https://symfony.sh';
+    private const MAX_LENGTH = 1000;
 
     private $io;
     private $sess;
@@ -79,7 +80,6 @@ class Downloader
      */
     public function getRecipes(array $operations): array
     {
-        $max = 1000;
         $paths = [];
         $chunk = '';
         foreach ($operations as $i => $operation) {
@@ -111,7 +111,7 @@ class Downloader
             if ($date = $package->getReleaseDate()) {
                 $path .= ','.$date->format('U');
             }
-            if (strlen($chunk) + strlen($path) > 1000) {
+            if (strlen($chunk) + strlen($path) > self::MAX_LENGTH) {
                 $paths[] = '/p/'.$chunk;
                 $chunk = $path;
             } elseif ($chunk) {
