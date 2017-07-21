@@ -27,7 +27,7 @@ class ContainerConfigurator extends AbstractConfigurator
     public function unconfigure(Recipe $recipe, $parameters): void
     {
         $this->write('Unsetting parameters');
-        $target = getcwd().'/config/container.yaml';
+        $target = getcwd().'/config/services.yaml';
         $lines = [];
         foreach (file($target) as $line) {
             foreach (array_keys($parameters) as $key) {
@@ -42,7 +42,7 @@ class ContainerConfigurator extends AbstractConfigurator
 
     private function addParameters(iterable $parameters): void
     {
-        $target = getcwd().'/config/container.yaml';
+        $target = getcwd().'/config/services.yaml';
         $lines = [];
         foreach (file($target) as $line) {
             $lines[] = $line;

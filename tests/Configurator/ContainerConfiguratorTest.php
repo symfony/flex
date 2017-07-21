@@ -21,7 +21,7 @@ class ContainerConfiguratorTest extends TestCase
     public function testConfigure()
     {
         $recipe = $this->getMockBuilder('Symfony\Flex\Recipe')->disableOriginalConstructor()->getMock();
-        $config = sys_get_temp_dir().'/config/container.yaml';
+        $config = sys_get_temp_dir().'/config/services.yaml';
         file_put_contents($config, <<<EOF
 # comment
 parameters:
