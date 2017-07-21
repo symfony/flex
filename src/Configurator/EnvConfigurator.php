@@ -33,10 +33,10 @@ class EnvConfigurator extends AbstractConfigurator
                 $value = bin2hex(random_bytes(16));
             }
             if ('#' === $key[0]) {
-                $data .= '# '.$value.PHP_EOL;
+                $data .= '# '.$value."\n";
             } else {
                 $value = $this->options->expandTargetDir($value);
-                $data .= "$key=$value".PHP_EOL;
+                $data .= "$key=$value\n";
             }
         }
         if (!file_exists(getcwd().'/.env')) {
@@ -55,7 +55,7 @@ class EnvConfigurator extends AbstractConfigurator
                 continue;
             }
 
-            $contents = preg_replace(sprintf('{%s+###> %s ###.*###< %s ###%s+}s', PHP_EOL, $recipe->getName(), $recipe->getName(), PHP_EOL), PHP_EOL, file_get_contents($env), -1, $count);
+            $contents = preg_replace(sprintf('{+###> %s ###.*###< %s ###%s+}s', "\n", $recipe->getName(), $recipe->getName(), "\n"), "\n", file_get_contents($env), -1, $count);
             if (!$count) {
                 continue;
             }
