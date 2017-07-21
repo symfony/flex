@@ -1,0 +1,50 @@
+---------------------------------------------------------------------------
+
+by javiereguiluz at 2017-07-08T08:01:51Z
+
+In my opinion this proposal is technically wrong. `PHP_EOL` is the only correct value for every user (Windows, Linux, macOS). The case you mentioned (a team where some people use Windows and others use Linux/macOS) is an edge-case that I don't think we should solve ourselves (that team should be careful when configuring their editors ... not only for Flex, but for Symfony, PHP and any other file types).
+
+---------------------------------------------------------------------------
+
+by dunglas at 2017-07-08T21:37:17Z
+
+> that team should be careful when configuring their editors
+
+It's exactly what this PR fixes. The generated files are not created through editors but created by Flex.
+IMO, it makes no sense to insert `\r\n` in a Makefile or in a `.env` file.
+
+---------------------------------------------------------------------------
+
+by lyrixx at 2017-07-10T08:26:41Z
+
+I agree with @dunglas here.
+More over, in [my git config](https://github.com/lyrixx/dotfiles/blob/master/.gitconfig#L41), git automatically transform all `\r\n` to `\n`.
+So using only `\n` will avoid useless commit ;)
+
+---------------------------------------------------------------------------
+
+by javiereguiluz at 2017-07-10T08:51:02Z
+
+@lyrixx your Git configuration is correct ... but we cannot assume the same for other developers.
+
+In any case, to me this PR is obviously wrong ... but for you is obviously right ... so someone must be incredibly wrong ... and I guess it's me 😞
+
+---------------------------------------------------------------------------
+
+by stof at 2017-07-10T09:40:23Z
+
+👍 about using Unix line ending when generating files, as these files are meant to be committed.
+
+---------------------------------------------------------------------------
+
+by stof at 2017-07-10T09:41:32Z
+
+Btw, a .env file with Windows line endings cannot be sourced anymore when using bash, as bash supports only LF line-endings in bash files (even when compiling bash for windows)
+
+---------------------------------------------------------------------------
+
+by Pierstoval at 2017-07-10T10:03:17Z
+
+For the makefile, I could not make it work on Windows with `\n` nor `\r\n`, because it uses unix-based commands (like `test` for example), so needs Linux (WSL or at least unix commands in Path) or windows-based refactoring (but then the prod env should be on windows or not use the makefile, and, seriously, Symfony on a windows production server?).
+
+I'm 👍 for this change for consistency anyway, especially for `.env` file
