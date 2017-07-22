@@ -43,7 +43,8 @@ class ScriptExecutor
      */
     public function execute(string $type, string $cmd): void
     {
-        if (null === $expandedCmd = $this->expandCmd($type, $this->options->expandTargetDir($cmd))) {
+        $translatedCmd = $this->options->expandTargetDir($cmd);
+        if (null === $expandedCmd = $this->expandCmd($type, $translatedCmd)) {
             return;
         }
 
@@ -52,7 +53,7 @@ class ScriptExecutor
             $cmdOutput->write($buffer, OutputInterface::OUTPUT_RAW);
         };
 
-        $this->io->writeError(sprintf('Executing script %s', $cmd), $this->io->isVerbose());
+        $this->io->writeError(sprintf('Executing script %s', $translatedCmd), $this->io->isVerbose());
         $exitCode = $this->executor->execute($expandedCmd, $outputHandler);
 
         $code = 0 === $exitCode ? ' <info>[OK]</info>' : ' <error>[KO]</error>';
