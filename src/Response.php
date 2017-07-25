@@ -52,7 +52,7 @@ class Response implements \JsonSerializable
         return $this->body;
     }
 
-    public function getOrigHeaders()
+    public function getOrigHeaders(): iterable
     {
         return $this->origHeaders;
     }

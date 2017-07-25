@@ -47,12 +47,12 @@ abstract class AbstractConfigurator
         $this->io->writeError($messages, true, IOInterface::VERBOSE);
     }
 
-    protected function isFileMarked(Recipe $recipe, $file)
+    protected function isFileMarked(Recipe $recipe, string $file): bool
     {
         return is_file($file) && false !== strpos(file_get_contents($file), sprintf('###> %s ###', $recipe->getName()));
     }
 
-    protected function markData(Recipe $recipe, $data)
+    protected function markData(Recipe $recipe, string $data): string
     {
         return "\n".sprintf('###> %s ###%s%s%s###< %s ###%s', $recipe->getName(), "\n", rtrim($data, "\r\n"), "\n", $recipe->getName(), "\n");
     }
