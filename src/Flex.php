@@ -122,7 +122,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
     }
 
-    private function updateOriginalLockHash()
+    private function updateOriginalLockHash(): void
     {
         $locker = $this->composer->getLocker();
         if ($locker && $locker->isLocked()) {

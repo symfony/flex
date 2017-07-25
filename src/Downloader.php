@@ -68,7 +68,7 @@ class Downloader
         $this->allowContrib = $allow;
     }
 
-    public function setRepositories(array $repos)
+    public function setRepositories(array $repos): void
     {
         $this->repos = $repos;
     }
