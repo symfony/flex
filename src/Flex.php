@@ -12,7 +12,6 @@
 namespace Symfony\Flex;
 
 use Composer\Command\CreateProjectCommand;
-use Composer\Command\InstallCommand;
 use Composer\Composer;
 use Composer\Console\Application;
 use Composer\DependencyResolver\Operation\UpdateOperation;
@@ -31,7 +30,6 @@ use Composer\Package\PackageInterface;
 use Composer\Plugin\PluginInterface;
 use Composer\Script\Event;
 use Composer\Script\ScriptEvents;
-use Symfony\Component\Console\Application as ConsoleApplication;
 
 /**
  * @author Fabien Potencier <fabien@symfony.com>
@@ -263,24 +261,6 @@ class Flex implements PluginInterface, EventSubscriberInterface
         ], $this->composer->getPackage()->getExtra());
 
         return new Options($options);
-    }
-
-    private function getPackageRecipe(PackageInterface $package, string $name, string $operation): Response
-    {
-        $headers = ['Package-Operation: '.$operation];
-        if ($date = $package->getReleaseDate()) {
-            $headers[] = 'Package-Release: '.$date->format(\DateTime::RFC3339);
-        }
-
-        $version = $package->getPrettyVersion();
-        if (0 === strpos($version, 'dev-') && isset($package->getExtra()['branch-alias'])) {
-            $branchAliases = $package->getExtra()['branch-alias'];
-            if (($alias = $branchAliases[$version]) || ($alias = $branchAliases['dev-master'])) {
-                $version = $alias;
-            }
-        }
-
-        return $this->downloader->get(sprintf('/m/%s/%s', $name, $version), $headers);
     }
 
     private function getFlexId(): ?string
