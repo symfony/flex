@@ -1,0 +1,63 @@
+---------------------------------------------------------------------------
+
+by fabpot at 2017-07-25T12:40:35Z
+
+Have you tried on a project? I would like to be sure that we are not breaking anything, which we did in the past with such changes.
+
+---------------------------------------------------------------------------
+
+by hhamon at 2017-07-25T12:44:17Z
+
+@fabpot I'm about to start a new project right now so I can give it a try.
+
+---------------------------------------------------------------------------
+
+by hhamon at 2017-07-25T12:57:09Z
+
+@fabpot just tried to build a project on my machine with Flex set on this branch and it works (see console output below)!
+
+```
+composer install
+Loading composer repositories with package information
+Updating dependencies (including require-dev)
+Package operations: 22 installs, 0 updates, 0 removals
+  - Installing symfony/flex (dev-missing-return-type f73c05e): Downloading (100%)
+  - Installing symfony/stopwatch (v3.3.5): Loading from cache
+  - Installing symfony/routing (v3.3.5): Loading from cache
+  - Installing symfony/polyfill-mbstring (v1.4.0): Loading from cache
+  - Installing psr/log (1.0.2): Loading from cache
+  - Installing symfony/debug (v3.3.5): Loading from cache
+  - Installing symfony/http-foundation (v3.3.5): Loading from cache
+  - Installing symfony/event-dispatcher (v3.3.5): Loading from cache
+  - Installing symfony/http-kernel (v3.3.5): Loading from cache
+  - Installing symfony/finder (v3.3.5): Loading from cache
+  - Installing symfony/filesystem (v3.3.5): Loading from cache
+  - Installing psr/container (1.0.0): Loading from cache
+  - Installing symfony/dependency-injection (v3.3.5): Loading from cache
+  - Installing symfony/config (v3.3.5): Loading from cache
+  - Installing symfony/class-loader (v3.3.5): Loading from cache
+  - Installing psr/simple-cache (1.0.0): Loading from cache
+  - Installing psr/cache (1.0.1): Loading from cache
+  - Installing symfony/cache (v3.3.5): Loading from cache
+  - Installing doctrine/cache (v1.7.0): Loading from cache
+  - Installing symfony/framework-bundle (v3.3.5): Loading from cache
+  - Installing symfony/yaml (v3.3.5): Loading from cache
+  - Installing symfony/dotenv (v3.3.5): Loading from cache
+Writing lock file
+Generating autoload files
+Symfony operations: 3 recipes
+  - Configuring symfony/flex (1.0): From github.com/symfony/recipes:master
+  - Configuring symfony/routing (3.3): From github.com/symfony/recipes:master
+  - Configuring symfony/framework-bundle (3.3): From github.com/symfony/recipes:master
+Executing script make cache-warmup [OK]
+Skipping "assets:install --symlink --relative public" (needs symfony/console to run).
+
+ What's next?
+
+  * Run your application:
+    1. Change to the project directory
+    2. Execute the make serve command;
+    3. Browse to the http://localhost:8000/ URL.
+
+  * Read the documentation at https://symfony.com/doc
+```
