@@ -20,7 +20,7 @@ class SymfonyBundleTest extends TestCase
     /**
      * @dataProvider getNamespaces
      */
-    public function testGetClassNamesForInstall($autoload, $classes)
+    public function testGetClassNamesForInstall($autoload, $class)
     {
         $installationManager = $this->getMockBuilder('Composer\Installer\InstallationManager')->getMock();
         $composer = $this->getMockBuilder('Composer\Composer')->getMock();
@@ -28,7 +28,7 @@ class SymfonyBundleTest extends TestCase
         $package = new Package('foo/bar-bundle', '1.0', '1.0');
         $package->setAutoload($autoload);
         $bundle = new SymfonyBundle($composer, $package, 'install');
-        $this->assertEquals($classes, $bundle->getClassNames());
+        $this->assertContains($class, $bundle->getClassNames());
     }
 
     public function getNamespaces()
@@ -36,15 +36,31 @@ class SymfonyBundleTest extends TestCase
         return [
             [
                 ['psr-4' => ['Symfony\\Bundle\\DebugBundle\\' => 'src/']],
-                ['Symfony\\Bundle\\DebugBundle\\DebugBundle'],
+                'Symfony\\Bundle\\DebugBundle\\DebugBundle',
             ],
             [
                 ['psr-4' => ['Foo\\BarBundle\\' => 'src/']],
-                ['Foo\\BarBundle\\FooBarBundle'],
+                'Foo\\BarBundle\\FooBarBundle',
             ],
             [
                 ['psr-4' => ['Doctrine\\Bundle\\DoctrineCacheBundle\\' => '']],
-                ['Doctrine\\Bundle\\DoctrineCacheBundle\\DoctrineCacheBundle'],
+                'Doctrine\\Bundle\\DoctrineCacheBundle\\DoctrineCacheBundle',
+            ],
+            [
+                ['psr-0' => ['EightPoints\\Bundle\\GuzzleBundle' => '']],
+                'EightPoints\\Bundle\\GuzzleBundle\\GuzzleBundle',
+            ],
+            [
+                ['psr-4' => ['EasyCorp\\Bundle\\EasySecurityBundle\\' => '']],
+                'EasyCorp\\Bundle\\EasySecurityBundle\\EasySecurityBundle',
+            ],
+            [
+                ['psr-4' => ['Symfony\\Cmf\\Bundle\\RoutingBundle\\' => '']],
+                'Symfony\\Cmf\\Bundle\\RoutingBundle\\CmfRoutingBundle',
+            ],
+            [
+                ['psr-4' => ['EasyCorp\\Bundle\\EasyDeployBundle\\' => 'src/']],
+                'EasyCorp\\Bundle\\EasyDeployBundle\\EasyDeployBundle',
             ],
         ];
     }

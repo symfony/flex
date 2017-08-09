@@ -41,31 +41,37 @@ class SymfonyBundle
             }
 
             foreach ($autoload[$psr] as $namespace => $path) {
-                if (!$class = $this->extractClassName($namespace)) {
-                    continue;
-                }
+                foreach ($this->extractClassNames($namespace) as $class) {
+                    if (!$all && $this->checkClassExists($class, $path, $isPsr4)) {
+                        return [$class];
+                    }
 
-                if (!$all && $this->checkClassExists($class, $path, $isPsr4)) {
-                    return [$class];
+                    $classes[] = $class;
                 }
-
-                $classes[] = $class;
             }
         }
 
         return $classes;
     }
 
-    private function extractClassName(string $namespace): string
+    private function extractClassNames(string $namespace): array
     {
         $namespace = trim($namespace, '\\');
         $class = $namespace.'\\';
         $parts = explode('\\', $namespace);
-        if ('Symfony' !== $parts[0] && 0 !== strpos($parts[count($parts) - 1], $parts[0])) {
-            $class .= $parts[0];
+        $suffix = $parts[count($parts) - 1];
+        $classes = array($class.$suffix);
+        $acc = '';
+        foreach (array_slice($parts, 0, -1) as $part) {
+            if ('Bundle' === $part) {
+                continue;
+            }
+            $classes[] = $class.$part.$suffix;
+            $acc .= $part;
+            $classes[] = $class.$acc.$suffix;
         }
 
-        return $class.$parts[count($parts) - 1];
+        return $classes;
     }
 
     private function checkClassExists(string $class, string $path, bool $isPsr4): bool
