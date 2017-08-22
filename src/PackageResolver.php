@@ -46,7 +46,7 @@ class PackageResolver
         // second pass to resolve package names
         $packages = [];
         foreach ($explodedArguments as $i => $argument) {
-            if (false === strpos($argument, '/')) {
+            if ('php' !== $argument && 0 !== strpos($argument, 'ext-') && false === strpos($argument, '/')) {
                 if (null === self::$aliases) {
                     self::$aliases = $this->downloader->get('/aliases.json')->getBody();
                 }
