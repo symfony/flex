@@ -12,6 +12,7 @@
 namespace Symfony\Flex;
 
 use Composer\Package\Version\VersionParser;
+use Composer\Repository\PlatformRepository;
 
 /**
  * @author Fabien Potencier <fabien@symfony.com>
@@ -46,7 +47,7 @@ class PackageResolver
         // second pass to resolve package names
         $packages = [];
         foreach ($explodedArguments as $i => $argument) {
-            if (false === strpos($argument, '/')) {
+            if (false === strpos($argument, '/') && !preg_match(PlatformRepository::PLATFORM_PACKAGE_REGEX, $argument)) {
                 if (null === self::$aliases) {
                     self::$aliases = $this->downloader->get('/aliases.json')->getBody();
                 }

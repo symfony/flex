@@ -43,6 +43,14 @@ class PackageResolverTest extends TestCase
                 ['cli:lts', 'validator=3.2', 'translation', 'next'],
                 ['symfony/console:^3.4', 'symfony/validator:3.2', 'symfony/translation:^4.0@dev']
             ],
+            [
+                ['php'],
+                ['php']
+            ],
+            [
+                ['ext-mongodb'],
+                ['ext-mongodb']
+            ],
         ];
     }
 
