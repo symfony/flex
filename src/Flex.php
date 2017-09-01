@@ -137,13 +137,13 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
     public function update(Event $event): void
     {
+        if (!file_exists(getcwd().'/.env') && file_exists(getcwd().'/.env.dist')) {
+            copy(getcwd().'/.env.dist', getcwd().'/.env');
+        }
+
         // not supported edge case: composer.lock AND vendor/ are removed by hand
         if ($this->originalLockHash === $this->composer->getLocker()->getLockData()['content-hash']) {
             return;
-        }
-
-        if (!file_exists(getcwd().'/.env') && file_exists(getcwd().'/.env.dist')) {
-            copy(getcwd().'/.env.dist', getcwd().'/.env');
         }
 
         list($recipes, $vulnerabilities) = $this->fetchRecipes();
