@@ -20,6 +20,7 @@ use Composer\Repository\PlatformRepository;
 class PackageResolver
 {
     private const SYMFONY_VERSIONS = ['lts', 'previous', 'stable', 'next'];
+    private const COMPOSER_NOTHING = 'nothing';
     private static $aliases;
     private static $versions;
     private $downloader;
@@ -47,27 +48,29 @@ class PackageResolver
         // second pass to resolve package names
         $packages = [];
         foreach ($explodedArguments as $i => $argument) {
-            if (false === strpos($argument, '/') && !preg_match(PlatformRepository::PLATFORM_PACKAGE_REGEX, $argument)) {
-                if (null === self::$aliases) {
-                    self::$aliases = $this->downloader->get('/aliases.json')->getBody();
-                }
+            if ($argument !== self::COMPOSER_NOTHING) {
+                if (false === strpos($argument, '/') && !preg_match(PlatformRepository::PLATFORM_PACKAGE_REGEX, $argument)) {
+                    if (null === self::$aliases) {
+                        self::$aliases = $this->downloader->get('/aliases.json')->getBody();
+                    }
 
-                if (isset(self::$aliases[$argument])) {
-                    $argument = self::$aliases[$argument];
-                } else {
-                    // is it a version or an alias that does not exist?
-                    try {
-                        $versionParser->parseConstraints($argument);
-                    } catch (\UnexpectedValueException $e) {
-                        // is it a special Symfony version?
-                        if (!in_array($argument, self::SYMFONY_VERSIONS, true)) {
-                            $this->throwAlternatives($argument, $i);
+                    if (isset(self::$aliases[$argument])) {
+                        $argument = self::$aliases[$argument];
+                    } else {
+                        // is it a version or an alias that does not exist?
+                        try {
+                            $versionParser->parseConstraints($argument);
+                        } catch (\UnexpectedValueException $e) {
+                            // is it a special Symfony version?
+                            if (!in_array($argument, self::SYMFONY_VERSIONS, true)) {
+                                $this->throwAlternatives($argument, $i);
+                            }
                         }
                     }
                 }
-            }
 
-            $packages[] = $argument;
+                $packages[] = $argument;
+            }
         }
 
         // third pass to resolve versions
