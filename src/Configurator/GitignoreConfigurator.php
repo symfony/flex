@@ -31,7 +31,7 @@ class GitignoreConfigurator extends AbstractConfigurator
         foreach ($vars as $value) {
             $data .= "$value\n";
         }
-        file_put_contents($gitignore, ltrim($this->markData($recipe, $data), "\r\n"), FILE_APPEND);
+        file_put_contents($gitignore, "\n".ltrim($this->markData($recipe, $data), "\r\n"), FILE_APPEND);
     }
 
     public function unconfigure(Recipe $recipe, $vars): void
@@ -41,7 +41,7 @@ class GitignoreConfigurator extends AbstractConfigurator
             return;
         }
 
-        $contents = preg_replace(sprintf('{%s+###> %s ###.*###< %s ###%s+}s', "\n", $recipe->getName(), $recipe->getName(), "\n"), "\n", file_get_contents($file), -1, $count);
+        $contents = preg_replace(sprintf('{%s*###> %s ###.*###< %s ###%s+}s', "\n", $recipe->getName(), $recipe->getName(), "\n"), "\n", file_get_contents($file), -1, $count);
         if (!$count) {
             return;
         }

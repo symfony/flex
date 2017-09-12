@@ -39,7 +39,7 @@ endif
 EOF
             );
         }
-        file_put_contents(getcwd().'/Makefile', ltrim($data, "\r\n"), FILE_APPEND);
+        file_put_contents(getcwd().'/Makefile', "\n".ltrim($data, "\r\n"), FILE_APPEND);
     }
 
     public function unconfigure(Recipe $recipe, $vars): void
@@ -48,7 +48,7 @@ EOF
             return;
         }
 
-        $contents = preg_replace(sprintf('{%s+###> %s ###.*###< %s ###%s+}s', "\n", $recipe->getName(), $recipe->getName(), "\n"), "\n", file_get_contents($makefile), -1, $count);
+        $contents = preg_replace(sprintf('{%s*###> %s ###.*###< %s ###%s+}s', "\n", $recipe->getName(), $recipe->getName(), "\n"), "\n", file_get_contents($makefile), -1, $count);
         if (!$count) {
             return;
         }
