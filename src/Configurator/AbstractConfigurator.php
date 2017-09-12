@@ -56,4 +56,14 @@ abstract class AbstractConfigurator
     {
         return "\n".sprintf('###> %s ###%s%s%s###< %s ###%s', $recipe->getName(), "\n", rtrim($data, "\r\n"), "\n", $recipe->getName(), "\n");
     }
+
+    protected function isFileXmlMarked(Recipe $recipe, string $file): bool
+    {
+        return is_file($file) && false !== strpos(file_get_contents($file), sprintf('###+ %s ###', $recipe->getName()));
+    }
+
+    protected function markXmlData(Recipe $recipe, string $data): string
+    {
+        return "\n".sprintf('        <!-- ###+ %s ### -->%s%s%s        <!-- ###- %s ### -->%s', $recipe->getName(), "\n", rtrim($data, "\r\n"), "\n", $recipe->getName(), "\n");
+    }
 }
