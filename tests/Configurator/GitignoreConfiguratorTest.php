@@ -1,0 +1,80 @@
+<?php
+
+/*
+ * This file is part of the Symfony package.
+ *
+ * (c) Fabien Potencier <fabien@symfony.com>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
+namespace Symfony\Flex\Tests\Configurator;
+
+require_once __DIR__.'/TmpDirMock.php';
+
+use Symfony\Flex\Configurator\GitignoreConfigurator;
+use Symfony\Flex\Options;
+use PHPUnit\Framework\TestCase;
+
+class GitIgnoreConfiguratorTest extends TestCase
+{
+    public function testConfigure()
+    {
+        $configurator = new GitignoreConfigurator(
+            $this->getMockBuilder('Composer\Composer')->getMock(),
+            $this->getMockBuilder('Composer\IO\IOInterface')->getMock(),
+            new Options()
+        );
+
+        $recipe1 = $this->getMockBuilder('Symfony\Flex\Recipe')->disableOriginalConstructor()->getMock();
+        $recipe1->expects($this->any())->method('getName')->will($this->returnValue('FooBundle'));
+
+        $recipe2 = $this->getMockBuilder('Symfony\Flex\Recipe')->disableOriginalConstructor()->getMock();
+        $recipe2->expects($this->any())->method('getName')->will($this->returnValue('BarBundle'));
+
+        $gitignore = sys_get_temp_dir().'/.gitignore';
+        @unlink($gitignore);
+        touch($gitignore);
+
+        $vars1 = [
+            '.env',
+            '/public/bundles/',
+        ];
+        $vars2 = [
+            '/var/',
+            '/vendor/',
+        ];
+
+        $gitignoreContents1 = <<<EOF
+###> FooBundle ###
+.env
+/public/bundles/
+###< FooBundle ###
+EOF;
+        $gitignoreContents2 = <<<EOF
+###> BarBundle ###
+/var/
+/vendor/
+###< BarBundle ###
+EOF;
+
+        $configurator->configure($recipe1, $vars1);
+        $this->assertEquals("\n".$gitignoreContents1."\n", file_get_contents($gitignore));
+
+        $configurator->configure($recipe2, $vars2);
+        $this->assertEquals("\n".$gitignoreContents1."\n\n".$gitignoreContents2."\n", file_get_contents($gitignore));
+
+        $configurator->configure($recipe1, $vars1);
+        $configurator->configure($recipe2, $vars2);
+        $this->assertEquals("\n".$gitignoreContents1."\n\n".$gitignoreContents2."\n", file_get_contents($gitignore));
+
+        $configurator->unconfigure($recipe1, $vars1);
+        $this->assertEquals($gitignoreContents2."\n", file_get_contents($gitignore));
+
+        $configurator->unconfigure($recipe2, $vars2);
+        $this->assertEquals('', file_get_contents($gitignore));
+
+        @unlink($gitignore);
+    }
+}
