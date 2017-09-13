@@ -65,13 +65,8 @@ class Recipe
         return $this->data['origin'] ?? '';
     }
 
-    public function isNotInstallable(): bool
+    public function isContrib(): bool
     {
-        return $this->data['not_installable'] ?? false;
-    }
-
-    public function isEmpty(): bool
-    {
-        return count($this->data) > 0;
+        return $this->data['is_contrib'] ?? false;
     }
 }

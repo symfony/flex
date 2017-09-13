@@ -62,7 +62,6 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $this->downloader = new Downloader($composer, $io);
         $this->downloader->setFlexId($this->getFlexId());
         $extra = $composer->getPackage()->getExtra();
-        $this->downloader->allowContrib($extra['symfony']['allow-contrib'] ?? false);
         $this->downloader->setRepositories($extra['symfony']['repositories'] ?? []);
 
         // useful when symfony/flex is not yet installed (composer install without vendor/ for instance)
@@ -161,11 +160,45 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
 
         $this->io->writeError(sprintf('<info>Symfony operations: %d recipe%s</>', count($recipes), count($recipes) > 1 ? 's' : ''));
+        $installContribs = $this->composer->getPackage()->getExtra()['symfony-contrib'] ?? false;
         foreach ($recipes as $recipe) {
-            if ($recipe->isNotInstallable() && $recipe->isEmpty()) {
-                $this->io->writeError(sprintf('  - <warning>Ignoring</> recipe %s', $this->formatOrigin($recipe->getOrigin())));
-                $this->io->writeError('    Enable via composer config extra.symfony.allow-contrib true');
-                continue;
+            if ('install' === $recipe->getJob() && !$installContribs && $recipe->isContrib()) {
+                $warning = $this->io->isInteractive() ? 'WARNING' : 'IGNORING';
+                $this->io->writeError(sprintf('  - <warning> %s </> %s', $warning, $this->formatOrigin($recipe->getOrigin())));
+                $question = '    The recipe for this package comes from the "contrib" repository, which is open to community contributions.
+    Do you want to execute this recipe?
+    [<comment>y</>] Yes
+    [<comment>n</>] No
+    [<comment>a</>] Yes for all packages, only for the current installation session
+    [<comment>p</>] Yes permanently, never ask again for this project
+    (defaults to <comment>n</>): ';
+                $answer = $this->io->askAndValidate($question,
+                    function ($value) {
+                        if (null === $value) {
+                            return 'n';
+                        }
+                        $value = strtolower($value[0]);
+                        if (!in_array($value, ['y', 'n', 'a', 'p'])) {
+                            throw new \InvalidArgumentException('Invalid choice');
+                        }
+                        return $value;
+                    },
+                    null,
+                    'n'
+                );
+                if ('n' === $answer) {
+                    continue;
+                }
+                if ('a' === $answer) {
+                    $installContribs = true;
+                }
+                if ('p' === $answer) {
+                    $installContribs = true;
+                    $json = new JsonFile(Factory::getComposerFile());
+                    $manipulator = new JsonManipulator(file_get_contents($json->getPath()));
+                    $manipulator->addProperty('extra.symfony.allow-contrib', true);
+                    file_put_contents($json->getPath(), $manipulator->getContents());
+                }
             }
 
             switch ($recipe->getJob()) {
