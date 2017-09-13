@@ -70,14 +70,14 @@ EOF;
 >
     <php>
         <ini name="error_reporting" value="-1" />
-        <server name="KERNEL_CLASS" value="App\Kernel" />
+        <env name="KERNEL_CLASS" value="App\Kernel" />
 
         <!-- ###+ FooBundle ### -->
-        <server name="APP_ENV" value="test" />
-        <server name="APP_DEBUG" value="0" />
+        <env name="APP_ENV" value="test" />
+        <env name="APP_DEBUG" value="0" />
         <!-- Comment 1 -->
         <!-- Comment 3 -->
-        <server name="APP_SECRET" value="s3cretf0rt3st" />
+        <env name="APP_SECRET" value="s3cretf0rt3st" />
         <!-- ###- FooBundle ### -->
     </php>
 

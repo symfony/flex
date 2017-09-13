@@ -80,7 +80,7 @@ class EnvConfigurator extends AbstractConfigurator
                     $data .= '        <!-- '.$value." -->\n";
                 } else {
                     $value = $this->options->expandTargetDir($value);
-                    $data .= "        <server name=\"$key\" value=\"$value\" />\n";
+                    $data .= "        <env name=\"$key\" value=\"$value\" />\n";
                 }
             }
             $data = $this->markXmlData($recipe, $data);
