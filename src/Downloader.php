@@ -37,7 +37,6 @@ class Downloader
     private $endpoint;
     private $caFile;
     private $flexId;
-    private $allowContrib = false;
     private $repos = [];
 
     public function __construct(Composer $composer, IoInterface $io)
@@ -61,11 +60,6 @@ class Downloader
     public function setFlexId(?string $id): void
     {
         $this->flexId = $id;
-    }
-
-    public function allowContrib(bool $allow): void
-    {
-        $this->allowContrib = $allow;
     }
 
     public function setRepositories(array $repos): void
@@ -267,10 +261,6 @@ class Downloader
 
         if ($this->flexId) {
             $options['http']['header'][] = 'Project: '.$this->flexId;
-        }
-
-        if ($this->allowContrib) {
-            $options['http']['header'][] = 'Allow-Contrib: 1';
         }
 
         if ($this->repos) {

@@ -15,6 +15,7 @@ use Composer\Composer;
 use Composer\DependencyResolver\Operation\InstallOperation;
 use Composer\Installer\PackageEvent;
 use Composer\Package\Locker;
+use Composer\Package\RootPackageInterface;
 use Composer\Script\Event;
 use Composer\IO\BufferIO;
 use Composer\Package\Package;
@@ -61,10 +62,14 @@ class FlexTest extends TestCase
         $locker = $this->getMockBuilder(Locker::class)->disableOriginalConstructor()->getMock();
         $locker->expects($this->any())->method('getLockData')->will($this->returnValue(['content-hash' => 'random']));
 
-        $flex = \Closure::bind(function () use ($configurator, $downloader, $io, $locker) {
+        $package = $this->getMockBuilder(RootPackageInterface::class)->disableOriginalConstructor()->getMock();
+        $package->expects($this->any())->method('getExtra')->will($this->returnValue(['symfony' => ['allow-contrib' => true]]));
+
+        $flex = \Closure::bind(function () use ($configurator, $downloader, $io, $locker, $package) {
             $flex = new Flex();
             $flex->composer = new Composer();
             $flex->composer->setLocker($locker);
+            $flex->composer->setPackage($package);
             $flex->io = $io;
             $flex->configurator = $configurator;
             $flex->downloader = $downloader;
