@@ -1,0 +1,19 @@
+---------------------------------------------------------------------------
+
+by Koc at 2017-09-13T21:19:51Z
+
+Finally! Very useful, thanx.
+
+Ref https://github.com/symfony/recipes-contrib/issues/67
+
+---------------------------------------------------------------------------
+
+by weaverryan at 2017-09-13T22:00:41Z
+
+I like this approach. And we would still have several months to try it out. This is the first time that Flex is interactive, correct? That's the only weird part... but I still think it's best.
+
+---------------------------------------------------------------------------
+
+by fabpot at 2017-09-14T18:40:56Z
+
+This PR is ready
