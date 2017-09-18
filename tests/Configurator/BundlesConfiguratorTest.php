@@ -15,20 +15,22 @@ require_once __DIR__.'/TmpDirMock.php';
 
 use Symfony\Flex\Configurator\BundlesConfigurator;
 use PHPUnit\Framework\TestCase;
+use Symfony\Flex\Options;
 
 class BundlesConfiguratorTest extends TestCase
 {
     public function testConfigure()
     {
+        $config = sys_get_temp_dir().'/config/bundles.php';
+
         $configurator = new BundlesConfigurator(
             $this->getMockBuilder('Composer\Composer')->getMock(),
             $this->getMockBuilder('Composer\IO\IOInterface')->getMock(),
-            $this->getMockBuilder('Symfony\Flex\Options')->getMock()
+            new Options(['config-dir' => dirname($config)])
         );
 
         $recipe = $this->getMockBuilder('Symfony\Flex\Recipe')->disableOriginalConstructor()->getMock();
 
-        $config = sys_get_temp_dir().'/config/bundles.php';
         @unlink($config);
         $configurator->configure($recipe, [
             'FooBundle' => ['dev', 'test'],
