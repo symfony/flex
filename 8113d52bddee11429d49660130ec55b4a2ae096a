@@ -1,0 +1,19 @@
+---------------------------------------------------------------------------
+
+by jrobeson at 2017-09-21T07:33:14Z
+
+I did the same in my bundles.php file
+
+---------------------------------------------------------------------------
+
+by ro0NL at 2017-09-22T09:53:34Z
+
+What about alpha order :) would be nice.
+
+---------------------------------------------------------------------------
+
+by gharlan at 2017-09-22T09:55:36Z
+
+> What about alpha order :) would be nice.
+
+-> https://github.com/symfony/flex/pull/123
