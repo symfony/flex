@@ -40,8 +40,8 @@ class BundlesConfiguratorTest extends TestCase
 <?php
 
 return [
-    'Symfony\Bundle\FrameworkBundle\FrameworkBundle' => ['all' => true],
-    'FooBundle' => ['dev' => true, 'test' => true],
+    Symfony\Bundle\FrameworkBundle\FrameworkBundle::class => ['all' => true],
+    FooBundle::class => ['dev' => true, 'test' => true],
 ];
 
 EOF
