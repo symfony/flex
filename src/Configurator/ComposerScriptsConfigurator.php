@@ -21,7 +21,7 @@ use Symfony\Flex\Recipe;
  */
 class ComposerScriptsConfigurator extends AbstractConfigurator
 {
-    public function configure(Recipe $recipe, $scripts): void
+    public function configure(Recipe $recipe, $scripts)
     {
         $json = new JsonFile(Factory::getComposerFile());
 
@@ -35,7 +35,7 @@ class ComposerScriptsConfigurator extends AbstractConfigurator
         file_put_contents($json->getPath(), $manipulator->getContents());
     }
 
-    public function unconfigure(Recipe $recipe, $scripts): void
+    public function unconfigure(Recipe $recipe, $scripts)
     {
         $json = new JsonFile(Factory::getComposerFile());
 

@@ -98,7 +98,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
     }
 
-    public function configureProject(Event $event): void
+    public function configureProject(Event $event)
     {
         $json = new JsonFile(Factory::getComposerFile());
         $manipulator = new JsonManipulator(file_get_contents($json->getPath()));
@@ -108,12 +108,12 @@ class Flex implements PluginInterface, EventSubscriberInterface
         file_put_contents($json->getPath(), $manipulator->getContents());
     }
 
-    public function record(PackageEvent $event): void
+    public function record(PackageEvent $event)
     {
         $this->operations[] = $event->getOperation();
     }
 
-    public function prepare(Event $event): void
+    public function prepare(Event $event)
     {
         // be careful: the logic in this method won't be run when Flex is not installed yet
         if (!$this->originalLockHash) {
@@ -121,7 +121,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
     }
 
-    private function updateOriginalLockHash(): void
+    private function updateOriginalLockHash()
     {
         $locker = $this->composer->getLocker();
         if ($locker && $locker->isLocked()) {
@@ -129,12 +129,12 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
     }
 
-    public function install(Event $event): void
+    public function install(Event $event)
     {
         $this->update($event);
     }
 
-    public function update(Event $event): void
+    public function update(Event $event)
     {
         if (!file_exists(getcwd().'/.env') && file_exists(getcwd().'/.env.dist')) {
             copy(getcwd().'/.env.dist', getcwd().'/.env');
@@ -223,7 +223,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
     }
 
-    public function executeAutoScripts(Event $event): void
+    public function executeAutoScripts(Event $event)
     {
         $event->stopPropagation();
 
@@ -296,7 +296,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         return new Options($options);
     }
 
-    private function getFlexId(): ?string
+    private function getFlexId()
     {
         $extra = $this->composer->getPackage()->getExtra();
 
@@ -332,7 +332,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         return sprintf('<info>%s</> (<comment>%s</>): From %s', $matches[1], $matches[2], 'auto-generated recipe' === $matches[3] ? '<comment>'.$matches[3].'</>' : $matches[3]);
     }
 
-    public static function getSubscribedEvents(): iterable
+    public static function getSubscribedEvents(): array
     {
         if (!self::$activated) {
             return [];

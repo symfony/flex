@@ -18,7 +18,7 @@ use Symfony\Flex\Recipe;
  */
 class EnvConfigurator extends AbstractConfigurator
 {
-    public function configure(Recipe $recipe, $vars): void
+    public function configure(Recipe $recipe, $vars)
     {
         $this->write('Adding environment variable defaults');
 
@@ -26,13 +26,13 @@ class EnvConfigurator extends AbstractConfigurator
         $this->configurePhpUnit($recipe, $vars);
     }
 
-    public function unconfigure(Recipe $recipe, $vars): void
+    public function unconfigure(Recipe $recipe, $vars)
     {
         $this->unconfigureEnvFiles($recipe, $vars);
         $this->unconfigurePhpUnit($recipe, $vars);
     }
 
-    private function configureEnvDist(Recipe $recipe, $vars): void
+    private function configureEnvDist(Recipe $recipe, $vars)
     {
         $distenv = getcwd().'/.env.dist';
         if ($this->isFileMarked($recipe, $distenv)) {
@@ -59,7 +59,7 @@ class EnvConfigurator extends AbstractConfigurator
         file_put_contents(getcwd().'/.env', $data, FILE_APPEND);
     }
 
-    private function configurePhpUnit(Recipe $recipe, $vars): void
+    private function configurePhpUnit(Recipe $recipe, $vars)
     {
         foreach (['phpunit.xml.dist', 'phpunit.xml'] as $file) {
             $phpunit = getcwd().'/'.$file;
@@ -88,7 +88,7 @@ class EnvConfigurator extends AbstractConfigurator
         }
     }
 
-    private function unconfigureEnvFiles(Recipe $recipe, $vars): void
+    private function unconfigureEnvFiles(Recipe $recipe, $vars)
     {
         foreach (['.env', '.env.dist'] as $file) {
             $env = getcwd().'/'.$file;
@@ -106,7 +106,7 @@ class EnvConfigurator extends AbstractConfigurator
         }
     }
 
-    private function unconfigurePhpUnit(Recipe $recipe, $vars): void
+    private function unconfigurePhpUnit(Recipe $recipe, $vars)
     {
         foreach (['phpunit.xml.dist', 'phpunit.xml'] as $file) {
             $phpunit = getcwd().'/'.$file;

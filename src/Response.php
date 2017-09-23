@@ -24,7 +24,7 @@ class Response implements \JsonSerializable
     /**
      * @param mixed $body The response as JSON
      */
-    public function __construct($body, iterable $headers = [], int $code = 200)
+    public function __construct($body, array $headers = [], int $code = 200)
     {
         $this->body = $body;
         $this->origHeaders = $headers;
@@ -42,9 +42,9 @@ class Response implements \JsonSerializable
         return $this->headers[strtolower($name)][0] ?? '';
     }
 
-    public function getHeaders(string $name): ?array
+    public function getHeaders(string $name): array
     {
-        return $this->headers[strtolower($name)] ?? null;
+        return $this->headers[strtolower($name)] ?? [];
     }
 
     public function getBody()
@@ -52,7 +52,7 @@ class Response implements \JsonSerializable
         return $this->body;
     }
 
-    public function getOrigHeaders(): iterable
+    public function getOrigHeaders(): array
     {
         return $this->origHeaders;
     }
@@ -74,7 +74,7 @@ class Response implements \JsonSerializable
         return ['body' => $this->body, 'headers' => $this->headers];
     }
 
-    private function parseHeaders(iterable $headers): array
+    private function parseHeaders(array $headers): array
     {
         $values = [];
         foreach (array_reverse($headers) as $header) {

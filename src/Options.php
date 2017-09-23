@@ -23,7 +23,7 @@ class Options
         $this->options = $options;
     }
 
-    public function get(string $name): ?string
+    public function get(string $name)
     {
         return $this->options[$name] ?? null;
     }

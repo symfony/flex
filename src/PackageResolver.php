@@ -19,7 +19,7 @@ use Composer\Repository\PlatformRepository;
  */
 class PackageResolver
 {
-    private const SYMFONY_VERSIONS = ['lts', 'previous', 'stable', 'next'];
+    private static $SYMFONY_VERSIONS = ['lts', 'previous', 'stable', 'next'];
     private static $aliases;
     private static $versions;
     private $downloader;
@@ -29,7 +29,7 @@ class PackageResolver
         $this->downloader = $downloader;
     }
 
-    public function resolve(iterable $arguments = []): iterable
+    public function resolve(array $arguments = []): array
     {
         $versionParser = new VersionParser();
 
@@ -60,7 +60,7 @@ class PackageResolver
                         $versionParser->parseConstraints($argument);
                     } catch (\UnexpectedValueException $e) {
                         // is it a special Symfony version?
-                        if (!in_array($argument, self::SYMFONY_VERSIONS, true)) {
+                        if (!in_array($argument, self::$SYMFONY_VERSIONS, true)) {
                             $this->throwAlternatives($argument, $i);
                         }
                     }
@@ -95,7 +95,7 @@ class PackageResolver
 
         if ('next' === $version) {
             $version = '^'.self::$versions[$version].'@dev';
-        } elseif (in_array($version, self::SYMFONY_VERSIONS, true)) {
+        } elseif (in_array($version, self::$SYMFONY_VERSIONS, true)) {
             $version = '^'.self::$versions[$version];
         }
 
@@ -105,7 +105,7 @@ class PackageResolver
     /**
      * @throws \UnexpectedValueException
      */
-    private function throwAlternatives(string $argument, int $position): void
+    private function throwAlternatives(string $argument, int $position)
     {
         $alternatives = [];
         foreach (self::$aliases as $alias => $package) {

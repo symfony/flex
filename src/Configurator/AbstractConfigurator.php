@@ -32,11 +32,11 @@ abstract class AbstractConfigurator
         $this->options = $options;
     }
 
-    abstract public function configure(Recipe $recipe, $config): void;
+    abstract public function configure(Recipe $recipe, $config);
 
-    abstract public function unconfigure(Recipe $recipe, $config): void;
+    abstract public function unconfigure(Recipe $recipe, $config);
 
-    protected function write($messages): void
+    protected function write($messages)
     {
         if (!is_array($messages)) {
             $messages = [$messages];

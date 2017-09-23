@@ -18,21 +18,21 @@ use Symfony\Flex\Recipe;
  */
 class CopyFromPackageConfigurator extends AbstractConfigurator
 {
-    public function configure(Recipe $recipe, $config): void
+    public function configure(Recipe $recipe, $config)
     {
         $this->write('Setting configuration and copying files');
         $packageDir = $this->composer->getInstallationManager()->getInstallPath($recipe->getPackage());
         $this->copyFiles($config, $packageDir, getcwd());
     }
 
-    public function unconfigure(Recipe $recipe, $config): void
+    public function unconfigure(Recipe $recipe, $config)
     {
         $this->write('Removing configuration and files');
         $packageDir = $this->composer->getInstallationManager()->getInstallPath($recipe->getPackage());
         $this->removeFiles($config, $packageDir, getcwd());
     }
 
-    private function copyFiles(iterable $manifest, string $from, string $to): void
+    private function copyFiles(array $manifest, string $from, string $to)
     {
         foreach ($manifest as $source => $target) {
             $target = $this->options->expandTargetDir($target);
@@ -50,7 +50,7 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
         }
     }
 
-    private function removeFiles(iterable $manifest, string $from, string $to): void
+    private function removeFiles(array $manifest, string $from, string $to)
     {
         foreach ($manifest as $source => $target) {
             $target = $this->options->expandTargetDir($target);
@@ -62,7 +62,7 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
         }
     }
 
-    private function copyDir(string $source, string $target): void
+    private function copyDir(string $source, string $target)
     {
         if (!is_dir($target)) {
             mkdir($target, 0777, true);
@@ -80,7 +80,7 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
         }
     }
 
-    public function copyFile(string $source, string $target): void
+    public function copyFile(string $source, string $target)
     {
         if (file_exists($target)) {
             return;
@@ -89,7 +89,7 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
         @chmod($target, fileperms($target) | (fileperms($source) & 0111));
     }
 
-    private function removeFilesFromDir(string $source, string $target): void
+    private function removeFilesFromDir(string $source, string $target)
     {
         $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($source, \RecursiveDirectoryIterator::SKIP_DOTS), \RecursiveIteratorIterator::CHILD_FIRST);
         foreach ($iterator as $item) {
