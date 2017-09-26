@@ -18,13 +18,13 @@ use Symfony\Flex\Recipe;
  */
 class ContainerConfigurator extends AbstractConfigurator
 {
-    public function configure(Recipe $recipe, $parameters): void
+    public function configure(Recipe $recipe, $parameters)
     {
         $this->write('Setting parameters');
         $this->addParameters($parameters);
     }
 
-    public function unconfigure(Recipe $recipe, $parameters): void
+    public function unconfigure(Recipe $recipe, $parameters)
     {
         $this->write('Unsetting parameters');
         $target = getcwd().'/config/services.yaml';
@@ -40,7 +40,7 @@ class ContainerConfigurator extends AbstractConfigurator
         file_put_contents($target, implode('', $lines));
     }
 
-    private function addParameters(iterable $parameters): void
+    private function addParameters(array $parameters)
     {
         $target = getcwd().'/config/services.yaml';
         $lines = [];

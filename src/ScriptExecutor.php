@@ -41,7 +41,7 @@ class ScriptExecutor
     /**
      * @throws ScriptExecutionException if the executed command returns a non-0 exit code
      */
-    public function execute(string $type, string $cmd): void
+    public function execute(string $type, string $cmd)
     {
         $parsedCmd = $this->options->expandTargetDir($cmd);
         if (null === $expandedCmd = $this->expandCmd($type, $parsedCmd)) {
@@ -76,7 +76,7 @@ class ScriptExecutor
         }
     }
 
-    private function expandCmd(string $type, string $cmd): ?string
+    private function expandCmd(string $type, string $cmd)
     {
         switch ($type) {
             case 'symfony-cmd':
@@ -90,7 +90,7 @@ class ScriptExecutor
         }
     }
 
-    private function expandSymfonyCmd(string $cmd): ?string
+    private function expandSymfonyCmd(string $cmd)
     {
         $repo = $this->composer->getRepositoryManager()->getLocalRepository();
         if (!$repo->findPackage('symfony/console', new EmptyConstraint())) {

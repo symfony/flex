@@ -18,7 +18,7 @@ use Symfony\Flex\Recipe;
  */
 class BundlesConfigurator extends AbstractConfigurator
 {
-    public function configure(Recipe $recipe, $bundles): void
+    public function configure(Recipe $recipe, $bundles)
     {
         $this->write('Enabling the package as a Symfony bundle');
         $file = $this->getConfFile();
@@ -38,7 +38,7 @@ class BundlesConfigurator extends AbstractConfigurator
         $this->dump($file, $registered);
     }
 
-    public function unconfigure(Recipe $recipe, $bundles): void
+    public function unconfigure(Recipe $recipe, $bundles)
     {
         $this->write('Disabling the Symfony bundle');
         $file = $this->getConfFile();
@@ -53,7 +53,7 @@ class BundlesConfigurator extends AbstractConfigurator
         $this->dump($file, $registered);
     }
 
-    private function parse(iterable $manifest, iterable $registered): iterable
+    private function parse(array $manifest, array $registered): array
     {
         $bundles = [];
         foreach ($manifest as $class => $envs) {
@@ -65,7 +65,7 @@ class BundlesConfigurator extends AbstractConfigurator
         return $bundles;
     }
 
-    private function load(string $file): iterable
+    private function load(string $file): array
     {
         $bundles = file_exists($file) ? (require $file) : [];
         if (!is_array($bundles)) {
@@ -75,7 +75,7 @@ class BundlesConfigurator extends AbstractConfigurator
         return $bundles;
     }
 
-    private function dump(string $file, iterable $bundles): void
+    private function dump(string $file, array $bundles)
     {
         $contents = "<?php\n\nreturn [\n";
         foreach ($bundles as $class => $envs) {

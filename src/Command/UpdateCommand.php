@@ -27,7 +27,7 @@ class UpdateCommand extends BaseUpdateCommand
         parent::__construct();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output): ?int
+    protected function execute(InputInterface $input, OutputInterface $output)
     {
         $input->setArgument('packages', $this->resolver->resolve($input->getArgument('packages')));
 

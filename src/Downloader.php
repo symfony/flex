@@ -26,8 +26,8 @@ use Composer\Json\JsonFile;
  */
 class Downloader
 {
-    private const DEFAULT_ENDPOINT = 'https://symfony.sh';
-    private const MAX_LENGTH = 1000;
+    private static $DEFAULT_ENDPOINT = 'https://symfony.sh';
+    private static $MAX_LENGTH = 1000;
 
     private $io;
     private $sess;
@@ -47,7 +47,7 @@ class Downloader
         if (getenv('SYMFONY_ENDPOINT')) {
             $endpoint = getenv('SYMFONY_ENDPOINT');
         } else {
-            $endpoint = $composer->getPackage()->getExtra()['symfony']['endpoint'] ?? self::DEFAULT_ENDPOINT;
+            $endpoint = $composer->getPackage()->getExtra()['symfony']['endpoint'] ?? self::$DEFAULT_ENDPOINT;
         }
         $this->endpoint = rtrim($endpoint, '/');
         $this->io = $io;
@@ -57,12 +57,12 @@ class Downloader
         $this->sess = bin2hex(random_bytes(16));
     }
 
-    public function setFlexId(?string $id): void
+    public function setFlexId(string $id = null)
     {
         $this->flexId = $id;
     }
 
-    public function setRepositories(array $repos): void
+    public function setRepositories(array $repos)
     {
         $this->repos = $repos;
     }
@@ -105,7 +105,7 @@ class Downloader
             if ($date = $package->getReleaseDate()) {
                 $path .= ','.$date->format('U');
             }
-            if (strlen($chunk) + strlen($path) > self::MAX_LENGTH) {
+            if (strlen($chunk) + strlen($path) > self::$MAX_LENGTH) {
                 $paths[] = '/p/'.$chunk;
                 $chunk = $path;
             } elseif ($chunk) {
@@ -168,7 +168,7 @@ class Downloader
         }
     }
 
-    private function fetchFile(string $url, string $cacheKey, iterable $headers): Response
+    private function fetchFile(string $url, string $cacheKey, array $headers): Response
     {
         $options = $this->getOptions($headers);
         $retries = 3;
@@ -198,7 +198,7 @@ class Downloader
         }
     }
 
-    private function fetchFileIfLastModified(string $url, string $cacheKey, string $lastModifiedTime, iterable $headers): Response
+    private function fetchFileIfLastModified(string $url, string $cacheKey, string $lastModifiedTime, array $headers): Response
     {
         $headers[] = 'If-Modified-Since: '.$lastModifiedTime;
         $options = $this->getOptions($headers);
@@ -246,7 +246,7 @@ class Downloader
         return $response;
     }
 
-    private function switchToDegradedMode(\Exception $e, string $url): void
+    private function switchToDegradedMode(\Exception $e, string $url)
     {
         if (!$this->degradedMode) {
             $this->io->writeError('<warning>'.$e->getMessage().'</warning>');

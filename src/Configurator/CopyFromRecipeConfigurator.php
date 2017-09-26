@@ -18,19 +18,19 @@ use Symfony\Flex\Recipe;
  */
 class CopyFromRecipeConfigurator extends AbstractConfigurator
 {
-    public function configure(Recipe $recipe, $config): void
+    public function configure(Recipe $recipe, $config)
     {
         $this->write('Setting configuration and copying files');
         $this->copyFiles($config, $recipe->getFiles(), getcwd());
     }
 
-    public function unconfigure(Recipe $recipe, $config): void
+    public function unconfigure(Recipe $recipe, $config)
     {
         $this->write('Removing configuration and files');
         $this->removeFiles($config, $recipe->getFiles(), getcwd());
     }
 
-    private function copyFiles(iterable $manifest, iterable $files, string $to): void
+    private function copyFiles(array $manifest, array $files, string $to)
     {
         foreach ($manifest as $source => $target) {
             $target = $this->options->expandTargetDir($target);
@@ -42,7 +42,7 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
         }
     }
 
-    private function copyDir(string $source, string $target, iterable $files): void
+    private function copyDir(string $source, string $target, array $files)
     {
         foreach ($files as $file => $data) {
             if (0 === strpos($file, $source)) {
@@ -52,7 +52,7 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
         }
     }
 
-    private function copyFile(string $to, string $contents, bool $executable): void
+    private function copyFile(string $to, string $contents, bool $executable)
     {
         if (file_exists($to)) {
             return;
@@ -68,7 +68,7 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
         }
     }
 
-    private function removeFiles(iterable $manifest, iterable $files, string $to): void
+    private function removeFiles(array $manifest, array $files, string $to)
     {
         foreach ($manifest as $source => $target) {
             $target = $this->options->expandTargetDir($target);
@@ -84,7 +84,7 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
         }
     }
 
-    private function removeFile(string $to): void
+    private function removeFile(string $to)
     {
         @unlink($to);
 
