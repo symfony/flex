@@ -1,0 +1,105 @@
+---------------------------------------------------------------------------
+
+by B-Galati at 2017-09-23T20:47:51Z
+
+I think it's a good idea but @fabpot did a poll on Twitter on this and 7.1 won. So perhaps this change is not gonna be welcome by the community.
+Here is the tweet -> https://twitter.com/fabpot/status/851558576770252800
+Also, the active support of php 7.0 ends in December.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2017-09-23T20:50:36Z
+
+@B-Galati the pool was about Symfony 4, it doesn't apply to Flex IMHO. I see no reasons why it should.
+
+---------------------------------------------------------------------------
+
+by B-Galati at 2017-09-24T08:11:05Z
+
+Good point ! You are entirely right 👍
+
+---------------------------------------------------------------------------
+
+by stof at 2017-09-25T13:41:35Z
+
+Well, PHP 7.0 will reach end of active support on December 3rd.
+
+Flex is expected to be released syable at the same time than Symfony 3.4 and 4.0, which means on November 30th.
+
+Do we actually need to reintroduce support for PHP 7.0 for 3 days of active support ?
+
+---------------------------------------------------------------------------
+
+by stof at 2017-09-25T13:42:51Z
+
+btw, if you want to add PHP 7.0 support, it does not only involves changing Flex itself, but also reviewing all recipes to ensure they are compatible with PHP 7.0 (hint: currently, they are not)
+
+---------------------------------------------------------------------------
+
+by stof at 2017-09-25T13:45:18Z
+
+And currently, we don't have a way to make Flex select an older version of a recipe based on the targeted PHP version, so we would never be able to use PHP 7.1 features in recipe codes unless the targeted version of the composer package requires PHP 7.1+, meaning we would have to start a new version of the recipe for Symfony 4.0 packages.
+
+And the first package recipe I know of requiring PHP 7.1 is `symfony/framework-bundle`
+
+---------------------------------------------------------------------------
+
+by fabpot at 2017-09-25T13:46:21Z
+
+@nicolas-grekas That's for you :)
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2017-09-25T13:49:50Z
+
+Where in FrameworkBundle? I parses all PHP files, they all are ok with 7.0 now.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2017-09-25T13:51:16Z
+
+Ok got.it, void and iterable...
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2017-09-25T13:52:56Z
+
+We don't have a way to select a recipe based in a PHP version, but I'd expect a recipe to match the min version of the package version they configure. So that's not a real issue to me.
+
+---------------------------------------------------------------------------
+
+by stof at 2017-09-25T13:55:58Z
+
+@nicolas-grekas whihc is not the case currently, as they were written with the assumption that Flex itself targets PHP 7.1, and so `max(PHP 7.1, min-package-target)` was used as recipe supported version. So **all** recipes must be reviewed.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2017-09-25T13:57:45Z
+
+No pb, there are only very few PHP files in the repos, I'll take care of it.
+
+---------------------------------------------------------------------------
+
+by stof at 2017-09-25T14:00:57Z
+
+@nicolas-grekas don't forget the contrib ones
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2017-09-25T14:58:48Z
+
+See https://github.com/symfony/recipes/pull/195
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2017-09-25T15:02:34Z
+
+> PHP 7.0 will reach end of active support on December 3rd
+
+PHP 7.0 will reach end of life on 3 Dec 2018, and even later if we consider Ubuntu Xenial, which will maintain it until April 2021. So definitely yes, we want to support 7.0.
+
+---------------------------------------------------------------------------
+
+by fabpot at 2017-09-26T02:44:42Z
+
+@nicolas-grekas You should probably change the min version in symfony/skeleton as well, right?
