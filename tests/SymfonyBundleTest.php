@@ -20,12 +20,13 @@ class SymfonyBundleTest extends TestCase
     /**
      * @dataProvider getNamespaces
      */
-    public function testGetClassNamesForInstall($autoload, $class)
+    public function testGetClassNamesForInstall($package, $autoload, $class)
     {
-        $installationManager = $this->getMockBuilder('Composer\Installer\InstallationManager')->getMock();
+        $config = $this->getMockBuilder('Composer\Config')->getMock();
+        $config->expects($this->any())->method('get')->will($this->returnValue(__DIR__.'/Fixtures/vendor'));
         $composer = $this->getMockBuilder('Composer\Composer')->getMock();
-        $composer->expects($this->once())->method('getInstallationManager')->will($this->returnValue($installationManager));
-        $package = new Package('foo/bar-bundle', '1.0', '1.0');
+        $composer->expects($this->once())->method('getConfig')->will($this->returnValue($config));
+        $package = new Package($package, '1.0', '1.0');
         $package->setAutoload($autoload);
         $bundle = new SymfonyBundle($composer, $package, 'install');
         $this->assertContains($class, $bundle->getClassNames());
@@ -35,30 +36,32 @@ class SymfonyBundleTest extends TestCase
     {
         return [
             [
-                ['psr-4' => ['Symfony\\Bundle\\DebugBundle\\' => 'src/']],
+                'symfony/debug-bundle',
+                ['psr-4' => ['Symfony\\Bundle\\DebugBundle\\' => '']],
                 'Symfony\\Bundle\\DebugBundle\\DebugBundle',
             ],
             [
-                ['psr-4' => ['Foo\\BarBundle\\' => 'src/']],
-                'Foo\\BarBundle\\FooBarBundle',
-            ],
-            [
+                'doctrine/doctrine-cache-bundle',
                 ['psr-4' => ['Doctrine\\Bundle\\DoctrineCacheBundle\\' => '']],
                 'Doctrine\\Bundle\\DoctrineCacheBundle\\DoctrineCacheBundle',
             ],
             [
+                'eightpoints/guzzle-bundle',
                 ['psr-0' => ['EightPoints\\Bundle\\GuzzleBundle' => '']],
                 'EightPoints\\Bundle\\GuzzleBundle\\GuzzleBundle',
             ],
             [
+                'easycorp/easy-security-bundle',
                 ['psr-4' => ['EasyCorp\\Bundle\\EasySecurityBundle\\' => '']],
                 'EasyCorp\\Bundle\\EasySecurityBundle\\EasySecurityBundle',
             ],
             [
+                'symfony-cmf/routing-bundle',
                 ['psr-4' => ['Symfony\\Cmf\\Bundle\\RoutingBundle\\' => '']],
                 'Symfony\\Cmf\\Bundle\\RoutingBundle\\CmfRoutingBundle',
             ],
             [
+                'easycorp/easy-deploy-bundle',
                 ['psr-4' => ['EasyCorp\\Bundle\\EasyDeployBundle\\' => 'src/']],
                 'EasyCorp\\Bundle\\EasyDeployBundle\\EasyDeployBundle',
             ],

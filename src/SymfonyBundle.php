@@ -21,13 +21,13 @@ class SymfonyBundle
 {
     private $package;
     private $operation;
-    private $installationManager;
+    private $vendorDir;
 
     public function __construct(Composer $composer, PackageInterface $package, string $operation)
     {
         $this->package = $package;
         $this->operation = $operation;
-        $this->installationManager = $composer->getInstallationManager();
+        $this->vendorDir = rtrim($composer->getConfig()->get('vendor-dir'), '/');
     }
 
     public function getClassNames(): array
@@ -42,7 +42,11 @@ class SymfonyBundle
 
             foreach ($autoload[$psr] as $namespace => $path) {
                 foreach ($this->extractClassNames($namespace) as $class) {
-                    if (!$all && $this->checkClassExists($class, $path, $isPsr4)) {
+                    if (!$this->checkClassExists($class, $path, $isPsr4)) {
+                        continue;
+                    }
+
+                    if (!$all) {
                         return [$class];
                     }
 
@@ -76,7 +80,7 @@ class SymfonyBundle
 
     private function checkClassExists(string $class, string $path, bool $isPsr4): bool
     {
-        $classPath = $this->installationManager->getInstallPath($this->package).'/'.$path.'/';
+        $classPath = ($this->vendorDir ? $this->vendorDir.'/' : '').$this->package->getPrettyName().'/'.$path.'/';
         $parts = explode('\\', $class);
         $class = $parts[count($parts) - 1];
         if (!$isPsr4) {
