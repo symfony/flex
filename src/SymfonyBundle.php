@@ -42,14 +42,17 @@ class SymfonyBundle
 
             foreach ($autoload[$psr] as $namespace => $path) {
                 foreach ($this->extractClassNames($namespace) as $class) {
-                    if (!$this->checkClassExists($class, $path, $isPsr4)) {
-                        continue;
-                    }
-
                     if (!$all) {
+                        // we only check class existence on install as we do have the code available
+                        if (!$this->checkClassExists($class, $path, $isPsr4)) {
+                            continue;
+                        }
+
                         return [$class];
                     }
 
+                    // on uninstall, we gather all possible values (as we don't have access to the code anymore)
+                    // and try to remove them all from bundles.php
                     $classes[] = $class;
                 }
             }
