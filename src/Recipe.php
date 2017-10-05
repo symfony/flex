@@ -69,4 +69,16 @@ class Recipe
     {
         return $this->data['is_contrib'] ?? false;
     }
+
+    // for BC, to be removed on 11/31/20177
+    public function isNotInstallable(): bool
+    {
+        return $this->data['not_installable'] ?? false;
+    }
+
+    // for BC, to be removed on 11/31/20177
+    public function isEmpty(): bool
+    {
+        return count($this->data) > 0;
+    }
 }
