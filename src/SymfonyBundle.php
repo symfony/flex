@@ -40,20 +40,25 @@ class SymfonyBundle
                 continue;
             }
 
-            foreach ($autoload[$psr] as $namespace => $path) {
-                foreach ($this->extractClassNames($namespace) as $class) {
-                    if (!$all) {
-                        // we only check class existence on install as we do have the code available
-                        if (!$this->checkClassExists($class, $path, $isPsr4)) {
-                            continue;
+            foreach ($autoload[$psr] as $namespace => $paths) {
+                if (!is_array($paths)) {
+                    $paths = [$paths];
+                }
+                foreach ($paths as $path) {
+                    foreach ($this->extractClassNames($namespace) as $class) {
+                        if (!$all) {
+                            // we only check class existence on install as we do have the code available
+                            if (!$this->checkClassExists($class, $path, $isPsr4)) {
+                                continue;
+                            }
+
+                            return [$class];
                         }
 
-                        return [$class];
+                        // on uninstall, we gather all possible values (as we don't have access to the code anymore)
+                        // and try to remove them all from bundles.php
+                        $classes[] = $class;
                     }
-
-                    // on uninstall, we gather all possible values (as we don't have access to the code anymore)
-                    // and try to remove them all from bundles.php
-                    $classes[] = $class;
                 }
             }
         }
