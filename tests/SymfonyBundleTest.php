@@ -65,6 +65,11 @@ class SymfonyBundleTest extends TestCase
                 ['psr-4' => ['EasyCorp\\Bundle\\EasyDeployBundle\\' => 'src/']],
                 'EasyCorp\\Bundle\\EasyDeployBundle\\EasyDeployBundle',
             ],
+            [
+                'easycorp/easy-deploy-bundle',
+                ['psr-4' => ['EasyCorp\\Bundle\\EasyDeployBundle\\' => ['src', 'tests']]],
+                'EasyCorp\\Bundle\\EasyDeployBundle\\EasyDeployBundle',
+            ],
         ];
     }
 }
