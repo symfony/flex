@@ -64,6 +64,23 @@ class Configurator
         }
     }
 
+    public function add(string $name, string $class)
+    {
+        if (false === strpos($name, '/')) {
+            throw new \InvalidArgumentException(sprintf('Flex configurator name "%s" must be prefixed with the vendor name, ex. "foo/custom-configurator".', $name));
+        }
+
+        if (isset($this->configurators[$name])) {
+            throw new \InvalidArgumentException(sprintf('Flex configurator with the name "%s" already exists.', $name));
+        }
+
+        if (!is_subclass_of($class, AbstractConfigurator::class)) {
+            throw new \InvalidArgumentException(sprintf('Flex configurator class "%s" must extend the class "%s".', $class, AbstractConfigurator::class));
+        }
+
+        $this->configurators[$name] = $class;
+    }
+
     private function get($key): AbstractConfigurator
     {
         if (!isset($this->configurators[$key])) {

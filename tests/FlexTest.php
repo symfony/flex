@@ -13,6 +13,7 @@ namespace Symfony\Flex\Tests\Configurator;
 
 use Composer\Composer;
 use Composer\DependencyResolver\Operation\InstallOperation;
+use Composer\EventDispatcher\EventDispatcher;
 use Composer\Installer\PackageEvent;
 use Composer\Package\Locker;
 use Composer\Package\RootPackageInterface;
@@ -24,6 +25,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Flex\Command\RequireCommand;
 use Symfony\Flex\Configurator;
 use Symfony\Flex\Downloader;
+use Symfony\Flex\FetchRecipesEvent;
 use Symfony\Flex\Flex;
 use Symfony\Flex\Options;
 use Symfony\Flex\Recipe;
@@ -58,6 +60,9 @@ class FlexTest extends TestCase
         $downloader = $this->getMockBuilder(Downloader::class)->disableOriginalConstructor()->getMock();
         $downloader->expects($this->once())->method('getRecipes')->willReturn($data);
 
+        $eventDispatcher = $this->getMockBuilder(EventDispatcher::class)->disableOriginalConstructor()->getMock();
+        $eventDispatcher->expects($this->once())->method('dispatch')->with('flex.fetch_recipes', $this->equalTo(new FetchRecipesEvent('flex.fetch_recipes', [new InstallOperation($package)], $data['manifests'])));
+
         $io = new BufferIO('', OutputInterface::VERBOSITY_VERBOSE);
         $locker = $this->getMockBuilder(Locker::class)->disableOriginalConstructor()->getMock();
         $locker->expects($this->any())->method('getLockData')->will($this->returnValue(['content-hash' => 'random']));
@@ -65,11 +70,12 @@ class FlexTest extends TestCase
         $package = $this->getMockBuilder(RootPackageInterface::class)->disableOriginalConstructor()->getMock();
         $package->expects($this->any())->method('getExtra')->will($this->returnValue(['symfony' => ['allow-contrib' => true]]));
 
-        $flex = \Closure::bind(function () use ($configurator, $downloader, $io, $locker, $package) {
+        $flex = \Closure::bind(function () use ($configurator, $downloader, $eventDispatcher, $io, $locker, $package) {
             $flex = new Flex();
             $flex->composer = new Composer();
             $flex->composer->setLocker($locker);
             $flex->composer->setPackage($package);
+            $flex->composer->setEventDispatcher($eventDispatcher);
             $flex->io = $io;
             $flex->configurator = $configurator;
             $flex->downloader = $downloader;
@@ -83,13 +89,12 @@ class FlexTest extends TestCase
 
         $postInstallOutput = \Closure::bind(function () { return $this->postInstallOutput; }, $flex, Flex::class)->__invoke();
         $this->assertSame(['', 'line 1 config', 'line 2 var', ''], $postInstallOutput);
-
         $this->assertSame(<<<EOF
 Symfony operations: 1 recipe
   - Configuring dummy/dummy (1.0): From github.com/symfony/recipes:master
 
 EOF
-            , $io->getOutput()
+            , str_replace("\r\n", "\n", $io->getOutput())
         );
     }
 }

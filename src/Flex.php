@@ -97,6 +97,11 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
     }
 
+    public function getConfigurator(): Configurator
+    {
+        return $this->configurator;
+    }
+
     public function configureProject(Event $event)
     {
         $json = new JsonFile(Factory::getComposerFile());
@@ -242,7 +247,9 @@ class Flex implements PluginInterface, EventSubscriberInterface
     {
         $devPackages = null;
         $data = $this->downloader->getRecipes($this->operations);
-        $manifests = $data['manifests'] ?? [];
+        $event = new FetchRecipesEvent(FlexEvents::FETCH_RECIPES, $this->operations, $data['manifests'] ?? []);
+        $this->composer->getEventDispatcher()->dispatch($event->getName(), $event);
+        $manifests = $event->getManifests();
         $recipes = [];
         foreach ($this->operations as $i => $operation) {
             if ($operation instanceof UpdateOperation) {
@@ -251,8 +258,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
                 $package = $operation->getPackage();
             }
 
-            // FIXME: getNames() can return n names
-            $name = $package->getNames()[0];
+            $name = $package->getName();
             $job = $operation->getJobType();
 
             if (isset($manifests[$name])) {
