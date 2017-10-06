@@ -1,0 +1,33 @@
+---------------------------------------------------------------------------
+
+by sstok at 2017-09-16T07:26:30Z
+
+Target's with underscores should be ignored as these are considered internal.
+
+---------------------------------------------------------------------------
+
+by Grafikart at 2017-09-16T12:05:04Z
+
+If you don't comment the target it won't appear, but I fixed the regexp to ignore _
+
+---------------------------------------------------------------------------
+
+by Nicofuma at 2017-09-19T12:15:16Z
+
+With `@grep -E '(^[a-zA-Z_-]+:.*?##.*$$)|(^##)' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[32m%-30s\033[0m %s\n", $$1, $$2}' | sed -e 's/\[32m##/[33m/'` you can add sections and you will also have colors close to the bin/console ones.
+
+Ex with sections:
+```
+#
+## Section 1
+##---------------------------------------------------------------------------
+
+target1:          ## target one
+
+#
+## Section 2
+##---------------------------------------------------------------------------
+
+target2:          ## target two
+target2: target1
+```
