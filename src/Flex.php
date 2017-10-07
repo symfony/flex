@@ -167,7 +167,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
 
         $this->io->writeError(sprintf('<info>Symfony operations: %d recipe%s</>', count($recipes), count($recipes) > 1 ? 's' : ''));
-        $installContribs = $this->composer->getPackage()->getExtra()['symfony-contrib'] ?? false;
+        $installContribs = $this->composer->getPackage()->getExtra()['allow-contrib'] ?? false;
         foreach ($recipes as $recipe) {
             if ('install' === $recipe->getJob() && !$installContribs && $recipe->isContrib()) {
                 $warning = $this->io->isInteractive() ? 'WARNING' : 'IGNORING';
