@@ -45,6 +45,7 @@ class EnvConfiguratorTest extends TestCase
             '#1' => 'Comment 1',
             '#2' => 'Comment 3',
             'APP_SECRET' => 's3cretf0rt3st',
+            'APP_URL' => '"https://domain.tld/path?foo=bar&baz=quz"'
         ]);
 
         $envContents = <<<EOF
@@ -55,6 +56,7 @@ APP_DEBUG=0
 # Comment 1
 # Comment 3
 APP_SECRET=s3cretf0rt3st
+APP_URL="https://domain.tld/path?foo=bar&baz=quz"
 ###< FooBundle ###
 
 EOF;
@@ -78,6 +80,7 @@ EOF;
         <!-- Comment 1 -->
         <!-- Comment 3 -->
         <env name="APP_SECRET" value="s3cretf0rt3st" />
+        <env name="APP_URL" value="&quot;https://domain.tld/path?foo=bar&amp;baz=quz&quot;" />
         <!-- ###- FooBundle ### -->
     </php>
 
@@ -100,6 +103,7 @@ EOF;
             '#1' => 'Comment 1',
             '#2' => 'Comment 3',
             'APP_SECRET' => 's3cretf0rt3st',
+            'APP_URL' => '"https://domain.tld/path?foo=bar&baz=quz"'
         ]);
 
         $this->assertEquals($envContents, file_get_contents($env));
@@ -112,6 +116,7 @@ EOF;
             '#1' => 'Comment 1',
             '#2' => 'Comment 3',
             'APP_SECRET' => 's3cretf0rt3st',
+            'APP_URL' => '"https://domain.tld/path?foo=bar&baz=quz"'
         ]);
 
         $this->assertEquals(<<<EOF
