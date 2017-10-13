@@ -80,6 +80,7 @@ class EnvConfigurator extends AbstractConfigurator
                     $data .= '        <!-- '.$value." -->\n";
                 } else {
                     $value = $this->options->expandTargetDir($value);
+                    $value = htmlspecialchars($value);
                     $data .= "        <env name=\"$key\" value=\"$value\" />\n";
                 }
             }
