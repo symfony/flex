@@ -37,7 +37,6 @@ class Downloader
     private $endpoint;
     private $caFile;
     private $flexId;
-    private $repos = [];
 
     public function __construct(Composer $composer, IoInterface $io)
     {
@@ -60,11 +59,6 @@ class Downloader
     public function setFlexId(string $id = null)
     {
         $this->flexId = $id;
-    }
-
-    public function setRepositories(array $repos)
-    {
-        $this->repos = $repos;
     }
 
     /**
@@ -261,10 +255,6 @@ class Downloader
 
         if ($this->flexId) {
             $options['http']['header'][] = 'Project: '.$this->flexId;
-        }
-
-        if ($this->repos) {
-            $options['http']['header'][] = 'Repositories: '.implode($this->repos, ';');
         }
 
         if (null !== $this->caFile) {

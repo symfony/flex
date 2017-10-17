@@ -68,8 +68,6 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $this->configurator = new Configurator($composer, $io, $this->options);
         $this->downloader = new Downloader($composer, $io);
         $this->downloader->setFlexId($this->getFlexId());
-        $extra = $composer->getPackage()->getExtra();
-        $this->downloader->setRepositories($extra['symfony']['repositories'] ?? []);
 
         // useful when symfony/flex is not yet installed (composer install without vendor/ for instance)
         $this->updateOriginalLockHash();
