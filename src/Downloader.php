@@ -56,6 +56,11 @@ class Downloader
         $this->sess = bin2hex(random_bytes(16));
     }
 
+    public function getSessionId(): string
+    {
+        return $this->sess;
+    }
+
     public function setFlexId(string $id = null)
     {
         $this->flexId = $id;
