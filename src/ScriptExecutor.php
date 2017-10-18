@@ -129,6 +129,6 @@ class ScriptExecutor
 
         $phpArgs = implode(' ', array_map('escapeshellarg', $arguments));
 
-        return $php.($phpArgs ? ' '.$phpArgs : '').' '.$cmd;
+        return escapeshellarg($php).($phpArgs ? ' '.$phpArgs : '').' '.$cmd;
     }
 }
