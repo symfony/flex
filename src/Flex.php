@@ -42,7 +42,6 @@ class Flex implements PluginInterface, EventSubscriberInterface
     private $downloader;
     private $postInstallOutput = [''];
     private $operations = [];
-    private $originalLockHash;
     private static $activated = true;
 
     public function activate(Composer $composer, IOInterface $io)
@@ -68,9 +67,6 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $this->configurator = new Configurator($composer, $io, $this->options);
         $this->downloader = new Downloader($composer, $io);
         $this->downloader->setFlexId($this->getFlexId());
-
-        // useful when symfony/flex is not yet installed (composer install without vendor/ for instance)
-        $this->updateOriginalLockHash();
 
         $search = 3;
         foreach (debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT) as $trace) {
@@ -118,22 +114,6 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $this->operations[] = $event->getOperation();
     }
 
-    public function prepare(Event $event)
-    {
-        // be careful: the logic in this method won't be run when Flex is not installed yet
-        if (!$this->originalLockHash) {
-            $this->updateOriginalLockHash();
-        }
-    }
-
-    private function updateOriginalLockHash()
-    {
-        $locker = $this->composer->getLocker();
-        if ($locker && $locker->isLocked()) {
-            $this->originalLockHash = $locker->getLockData()['content-hash'];
-        }
-    }
-
     public function install(Event $event)
     {
         $this->update($event);
@@ -143,11 +123,6 @@ class Flex implements PluginInterface, EventSubscriberInterface
     {
         if (!file_exists(getcwd().'/.env') && file_exists(getcwd().'/.env.dist')) {
             copy(getcwd().'/.env.dist', getcwd().'/.env');
-        }
-
-        // not supported edge case: composer.lock AND vendor/ are removed by hand
-        if ($this->originalLockHash === $this->composer->getLocker()->getLockData()['content-hash']) {
-            return;
         }
 
         list($recipes, $vulnerabilities) = $this->fetchRecipes();
@@ -348,8 +323,6 @@ class Flex implements PluginInterface, EventSubscriberInterface
             PackageEvents::POST_PACKAGE_UPDATE => 'record',
             PackageEvents::POST_PACKAGE_UNINSTALL => 'record',
             ScriptEvents::POST_CREATE_PROJECT_CMD => 'configureProject',
-            ScriptEvents::PRE_INSTALL_CMD => 'prepare',
-            ScriptEvents::PRE_UPDATE_CMD => 'prepare',
             ScriptEvents::POST_INSTALL_CMD => 'install',
             ScriptEvents::POST_UPDATE_CMD => 'update',
             'auto-scripts' => 'executeAutoScripts',
