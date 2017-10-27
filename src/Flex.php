@@ -125,7 +125,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             copy(getcwd().'/.env.dist', getcwd().'/.env');
         }
 
-        list($recipes, $vulnerabilities) = $this->fetchRecipes();
+        list($recipes, $locks, $vulnerabilities) = $this->fetchRecipes();
         if ($vulnerabilities) {
             $this->io->writeError(sprintf('<info>Vulnerabilities: %d package%s</>', count($vulnerabilities), count($recipes) > 1 ? 's' : ''));
         }
@@ -137,6 +137,12 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
         if (!$recipes) {
             return;
+        }
+
+        $json = new JsonFile(str_replace(Factory::getComposerFile(), 'composer.json', 'symfony.lock'));
+        $lock = [];
+        if ($json->exists()) {
+            $lock = $json->read();
         }
 
         $this->io->writeError(sprintf('<info>Symfony operations: %d recipe%s (%s)</>', count($recipes), count($recipes) > 1 ? 's' : '', $this->downloader->getSessionId()));
@@ -181,8 +187,15 @@ class Flex implements PluginInterface, EventSubscriberInterface
                 }
             }
 
+            $name = $recipe->getName();
             switch ($recipe->getJob()) {
                 case 'install':
+                    if (isset($lock[$name])) {
+                        continue;
+                    }
+                    if (isset($locks[$name])) {
+                        $lock[$name] = $locks[$name];
+                    }
                     $this->io->writeError(sprintf('  - Configuring %s', $this->formatOrigin($recipe->getOrigin())));
                     $this->configurator->install($recipe);
                     $manifest = $recipe->getManifest();
@@ -198,9 +211,12 @@ class Flex implements PluginInterface, EventSubscriberInterface
                 case 'uninstall':
                     $this->io->writeError(sprintf('  - Unconfiguring %s', $this->formatOrigin($recipe->getOrigin())));
                     $this->configurator->unconfigure($recipe);
+                    unset($lock[$name]);
                     break;
             }
         }
+
+        $json->write($lock);
     }
 
     public function executeAutoScripts(Event $event)
@@ -259,7 +275,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
         $this->operations = [];
 
-        return [$recipes, $data['vulnerabilities'] ?? []];
+        return [$recipes, $data['locks'] ?? [], $data['vulnerabilities'] ?? []];
     }
 
     private function initOptions(): Options
