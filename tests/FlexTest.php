@@ -25,6 +25,7 @@ use Symfony\Flex\Command\RequireCommand;
 use Symfony\Flex\Configurator;
 use Symfony\Flex\Downloader;
 use Symfony\Flex\Flex;
+use Symfony\Flex\Lock;
 use Symfony\Flex\Options;
 use Symfony\Flex\Recipe;
 use Symfony\Flex\Response;
@@ -65,7 +66,10 @@ class FlexTest extends TestCase
         $package = $this->getMockBuilder(RootPackageInterface::class)->disableOriginalConstructor()->getMock();
         $package->expects($this->any())->method('getExtra')->will($this->returnValue(['symfony' => ['allow-contrib' => true]]));
 
-        $flex = \Closure::bind(function () use ($configurator, $downloader, $io, $locker, $package) {
+        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
+        $lock->expects($this->any())->method('has')->will($this->returnValue(false));
+
+        $flex = \Closure::bind(function () use ($configurator, $downloader, $io, $locker, $package, $lock) {
             $flex = new Flex();
             $flex->composer = new Composer();
             $flex->composer->setLocker($locker);
@@ -75,6 +79,7 @@ class FlexTest extends TestCase
             $flex->downloader = $downloader;
             $flex->runningCommand = function() {};
             $flex->options = new Options(['config-dir' => 'config', 'var-dir' => 'var']);
+            $flex->lock = $lock;
 
             return $flex;
         }, null, Flex::class)->__invoke();
@@ -85,7 +90,7 @@ class FlexTest extends TestCase
         $this->assertSame(['', 'line 1 config', 'line 2 var', ''], $postInstallOutput);
 
         $this->assertSame(<<<EOF
-Symfony operations: 1 recipe
+Symfony operations: 1 recipe ()
   - Configuring dummy/dummy (1.0): From github.com/symfony/recipes:master
 
 EOF

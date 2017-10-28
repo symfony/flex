@@ -14,7 +14,10 @@ namespace Symfony\Flex;
 use Composer\Command\CreateProjectCommand;
 use Composer\Composer;
 use Composer\Console\Application;
+use Composer\DependencyResolver\Operation\InstallOperation;
+use Composer\DependencyResolver\Operation\OperationInterface;
 use Composer\DependencyResolver\Operation\UpdateOperation;
+use Composer\DependencyResolver\Operation\UninstallOperation;
 use Composer\Factory;
 use Composer\EventDispatcher\EventSubscriberInterface;
 use Composer\Installer;
@@ -42,6 +45,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
     private $downloader;
     private $postInstallOutput = [''];
     private $operations = [];
+    private $lock;
     private static $activated = true;
 
     public function activate(Composer $composer, IOInterface $io)
@@ -67,6 +71,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $this->configurator = new Configurator($composer, $io, $this->options);
         $this->downloader = new Downloader($composer, $io);
         $this->downloader->setFlexId($this->getFlexId());
+        $this->lock = new Lock(str_replace(Factory::getComposerFile(), 'composer.json', 'symfony.lock'));
 
         $search = 3;
         foreach (debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT) as $trace) {
@@ -111,7 +116,10 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
     public function record(PackageEvent $event)
     {
-        $this->operations[] = $event->getOperation();
+        $operation = $event->getOperation();
+        if ($this->shouldRecordOperation($operation)) {
+            $this->operations[] = $operation;
+        }
     }
 
     public function install(Event $event)
@@ -125,7 +133,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             copy(getcwd().'/.env.dist', getcwd().'/.env');
         }
 
-        list($recipes, $locks, $vulnerabilities) = $this->fetchRecipes();
+        list($recipes, $vulnerabilities) = $this->fetchRecipes();
         if ($vulnerabilities) {
             $this->io->writeError(sprintf('<info>Vulnerabilities: %d package%s</>', count($vulnerabilities), count($recipes) > 1 ? 's' : ''));
         }
@@ -136,13 +144,9 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
 
         if (!$recipes) {
-            return;
-        }
+            $this->lock->write();
 
-        $json = new JsonFile(str_replace(Factory::getComposerFile(), 'composer.json', 'symfony.lock'));
-        $lock = [];
-        if ($json->exists()) {
-            $lock = $json->read();
+            return;
         }
 
         $this->io->writeError(sprintf('<info>Symfony operations: %d recipe%s (%s)</>', count($recipes), count($recipes) > 1 ? 's' : '', $this->downloader->getSessionId()));
@@ -187,15 +191,8 @@ class Flex implements PluginInterface, EventSubscriberInterface
                 }
             }
 
-            $name = $recipe->getName();
             switch ($recipe->getJob()) {
                 case 'install':
-                    if (isset($lock[$name])) {
-                        continue;
-                    }
-                    if (isset($locks[$name])) {
-                        $lock[$name] = $locks[$name];
-                    }
                     $this->io->writeError(sprintf('  - Configuring %s', $this->formatOrigin($recipe->getOrigin())));
                     $this->configurator->install($recipe);
                     $manifest = $recipe->getManifest();
@@ -211,12 +208,11 @@ class Flex implements PluginInterface, EventSubscriberInterface
                 case 'uninstall':
                     $this->io->writeError(sprintf('  - Unconfiguring %s', $this->formatOrigin($recipe->getOrigin())));
                     $this->configurator->unconfigure($recipe);
-                    unset($lock[$name]);
                     break;
             }
         }
 
-        $json->write($lock);
+        $this->lock->write();
     }
 
     public function executeAutoScripts(Event $event)
@@ -240,6 +236,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $devPackages = null;
         $data = $this->downloader->getRecipes($this->operations);
         $manifests = $data['manifests'] ?? [];
+        $locks = $data['locks'] ?? [];
         $recipes = [];
         foreach ($this->operations as $i => $operation) {
             if ($operation instanceof UpdateOperation) {
@@ -251,6 +248,12 @@ class Flex implements PluginInterface, EventSubscriberInterface
             // FIXME: getNames() can return n names
             $name = $package->getNames()[0];
             $job = $operation->getJobType();
+
+            if ($operation instanceof InstallOperation && isset($locks[$name])) {
+                $this->lock->add($name, $locks[$name]);
+            } elseif ($operation instanceof UninstallOperation) {
+                $this->lock->remove($name);
+            }
 
             if (isset($manifests[$name])) {
                 $recipes[] = new Recipe($package, $name, $job, $manifests[$name]);
@@ -275,7 +278,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
         $this->operations = [];
 
-        return [$recipes, $data['locks'] ?? [], $data['vulnerabilities'] ?? []];
+        return [$recipes, $data['vulnerabilities'] ?? []];
     }
 
     private function initOptions(): Options
@@ -326,6 +329,27 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
 
         return sprintf('<info>%s</> (<comment>%s</>): From %s', $matches[1], $matches[2], 'auto-generated recipe' === $matches[3] ? '<comment>'.$matches[3].'</>' : $matches[3]);
+    }
+
+    private function shouldRecordOperation(OperationInterface $operation): bool
+    {
+        if ($operation instanceof UpdateOperation) {
+            $package = $operation->getTargetPackage();
+        } else {
+            $package = $operation->getPackage();
+        }
+
+        // FIXME: getNames() can return n names
+        $name = $package->getNames()[0];
+        if ($operation instanceof InstallOperation) {
+            if (!$this->lock->has($name)) {
+                return true;
+            }
+        } elseif ($operation instanceof UninstallOperation) {
+            return true;
+        }
+
+        return false;
     }
 
     public static function getSubscribedEvents(): array
