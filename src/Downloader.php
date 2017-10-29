@@ -128,6 +128,9 @@ class Downloader
             foreach ($body['vulnerabilities'] as $name => $vulns) {
                 $data['vulnerabilities'][$name] = $vulns;
             }
+            foreach ($body['locks'] ?? [] as $name => $lock) {
+                $data['locks'][$name] = $lock;
+            }
         }
         return $data;
     }
