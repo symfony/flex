@@ -54,6 +54,10 @@ class Downloader
         $this->rfs = Factory::createRemoteFilesystem($io, $config);
         $this->cache = new Cache($io, $config->get('cache-repo-dir').'/'.preg_replace('{[^a-z0-9.]}i', '-', $this->endpoint));
         $this->sess = bin2hex(random_bytes(16));
+
+        if (self::$DEFAULT_ENDPOINT !== $endpoint) {
+            $this->io->writeError('<warning>Warning, using '.$endpoint.' as the Symfony endpoint</warning>');
+        }
     }
 
     public function getSessionId(): string
