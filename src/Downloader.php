@@ -162,10 +162,6 @@ class Downloader
 
             return $this->fetchFile($url, $cacheKey, $headers);
         } catch (TransportException $e) {
-            if (404 === $e->getStatusCode()) {
-                return new Response($e->getResponse(), $e->getHeaders(), 404);
-            }
-
             throw $e;
         }
     }
