@@ -12,6 +12,7 @@
 namespace Symfony\Flex\Tests\Configurator;
 
 use Composer\Composer;
+use Composer\Config;
 use Composer\DependencyResolver\Operation\InstallOperation;
 use Composer\Installer\PackageEvent;
 use Composer\Package\Locker;
@@ -21,7 +22,6 @@ use Composer\IO\BufferIO;
 use Composer\Package\Package;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Flex\Command\RequireCommand;
 use Symfony\Flex\Configurator;
 use Symfony\Flex\Downloader;
 use Symfony\Flex\Flex;
@@ -96,5 +96,20 @@ Symfony operations: 1 recipe ()
 EOF
             , $io->getOutput()
         );
+    }
+
+    public function testActivateLoadsClasses()
+    {
+        $composer = new Composer();
+        $composer->setConfig($this->getMockBuilder(Config::class)->disableOriginalConstructor()->getMock());
+        $package = $this->getMockBuilder(RootPackageInterface::class)->disableOriginalConstructor()->getMock();
+        $package->method('getExtra')->will($this->returnValue(['symfony' => ['allow-contrib' => true]]));
+        $composer->setPackage($package);
+        $io = new BufferIO('', OutputInterface::VERBOSITY_VERBOSE);
+
+        $flex = new Flex();
+        $flex->activate($composer, $io);
+
+        $this->assertTrue(class_exists(Response::class, false));
     }
 }
