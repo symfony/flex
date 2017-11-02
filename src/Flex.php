@@ -60,7 +60,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         // to avoid issues when Flex is upgraded, we load all PHP classes now
         // that way, we are sure to use all files from the same version
         foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator(__DIR__, \FilesystemIterator::SKIP_DOTS)) as $file) {
-            if ('.php' === substr($file, strlen($file) -4)) {
+            if ('.php' === substr($file, -4)) {
                 require_once $file;
             }
         }
