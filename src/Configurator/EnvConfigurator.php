@@ -48,6 +48,9 @@ class EnvConfigurator extends AbstractConfigurator
                 $data .= '# '.$value."\n";
             } else {
                 $value = $this->options->expandTargetDir($value);
+                if (false !== strpbrk($value, " \t\n&!\"")) {
+                    $value = '"'.str_replace(array('\\', '"', "\t", "\n"), array('\\\\', '\\"', '\t', '\n'), $value).'"';
+                }
                 $data .= "$key=$value\n";
             }
         }
@@ -77,10 +80,15 @@ class EnvConfigurator extends AbstractConfigurator
                     $value = bin2hex(random_bytes(16));
                 }
                 if ('#' === $key[0]) {
-                    $data .= '        <!-- '.$value." -->\n";
+                    $doc = new \DOMDocument();
+                    $data .= '        '.$doc->saveXML($doc->createComment(' '.$value.' '))."\n";
                 } else {
                     $value = $this->options->expandTargetDir($value);
-                    $data .= "        <env name=\"$key\" value=\"$value\" />\n";
+                    $doc = new \DOMDocument();
+                    $fragment = $doc->createElement('env');
+                    $fragment->setAttribute('name', $key);
+                    $fragment->setAttribute('value', $value);
+                    $data .= '        '.$doc->saveXML($fragment)."\n";
                 }
             }
             $data = $this->markXmlData($recipe, $data);

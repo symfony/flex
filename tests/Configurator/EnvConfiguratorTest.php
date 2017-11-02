@@ -40,21 +40,29 @@ class EnvConfiguratorTest extends TestCase
         copy(__DIR__.'/../Fixtures/phpunit.xml.dist', $phpunitDist);
         copy(__DIR__.'/../Fixtures/phpunit.xml.dist', $phpunit);
         $configurator->configure($recipe, [
-            'APP_ENV' => 'test',
+            'APP_ENV' => 'test bar',
             'APP_DEBUG' => '0',
+            'APP_PARAGRAPH' => "foo\n\"bar\"\\t",
+            'DATABASE_URL' => 'mysql://root@127.0.0.1:3306/symfony?charset=utf8mb4&serverVersion=5.7',
+            'MAILER_URL' => 'null://localhost',
+            'MAILER_USER' => 'fabien',
             '#1' => 'Comment 1',
             '#2' => 'Comment 3',
-            'APP_SECRET' => 's3cretf0rt3st',
+            'APP_SECRET' => 's3cretf0rt3st"<>',
         ]);
 
         $envContents = <<<EOF
 
 ###> FooBundle ###
-APP_ENV=test
+APP_ENV="test bar"
 APP_DEBUG=0
+APP_PARAGRAPH="foo\\n\\"bar\\"\\\\t"
+DATABASE_URL="mysql://root@127.0.0.1:3306/symfony?charset=utf8mb4&serverVersion=5.7"
+MAILER_URL=null://localhost
+MAILER_USER=fabien
 # Comment 1
 # Comment 3
-APP_SECRET=s3cretf0rt3st
+APP_SECRET="s3cretf0rt3st\"<>"
 ###< FooBundle ###
 
 EOF;
@@ -73,11 +81,15 @@ EOF;
         <env name="KERNEL_CLASS" value="App\Kernel" />
 
         <!-- ###+ FooBundle ### -->
-        <env name="APP_ENV" value="test" />
-        <env name="APP_DEBUG" value="0" />
+        <env name="APP_ENV" value="test bar"/>
+        <env name="APP_DEBUG" value="0"/>
+        <env name="APP_PARAGRAPH" value="foo&#10;&quot;bar&quot;\\t"/>
+        <env name="DATABASE_URL" value="mysql://root@127.0.0.1:3306/symfony?charset=utf8mb4&amp;serverVersion=5.7"/>
+        <env name="MAILER_URL" value="null://localhost"/>
+        <env name="MAILER_USER" value="fabien"/>
         <!-- Comment 1 -->
         <!-- Comment 3 -->
-        <env name="APP_SECRET" value="s3cretf0rt3st" />
+        <env name="APP_SECRET" value="s3cretf0rt3st&quot;&lt;&gt;"/>
         <!-- ###- FooBundle ### -->
     </php>
 
