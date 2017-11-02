@@ -1,0 +1,5 @@
+---------------------------------------------------------------------------
+
+by fabpot at 2017-11-02T23:25:14Z
+
+symfony/recipes#234 must be merged as well to fix the Doctrine issue.
