@@ -44,7 +44,7 @@ class EnvConfiguratorTest extends TestCase
             'APP_DEBUG' => '0',
             '#1' => 'Comment 1',
             '#2' => 'Comment 3',
-            'APP_SECRET' => 's3cretf0rt3st',
+            'APP_SECRET' => 's3cretf0rt3st"<>',
         ]);
 
         $envContents = <<<EOF
@@ -54,7 +54,7 @@ APP_ENV=test
 APP_DEBUG=0
 # Comment 1
 # Comment 3
-APP_SECRET=s3cretf0rt3st
+APP_SECRET=s3cretf0rt3st"<>
 ###< FooBundle ###
 
 EOF;
@@ -73,11 +73,11 @@ EOF;
         <env name="KERNEL_CLASS" value="App\Kernel" />
 
         <!-- ###+ FooBundle ### -->
-        <env name="APP_ENV" value="test" />
-        <env name="APP_DEBUG" value="0" />
+        <env name="APP_ENV" value="test"/>
+        <env name="APP_DEBUG" value="0"/>
         <!-- Comment 1 -->
         <!-- Comment 3 -->
-        <env name="APP_SECRET" value="s3cretf0rt3st" />
+        <env name="APP_SECRET" value="s3cretf0rt3st&quot;&lt;&gt;"/>
         <!-- ###- FooBundle ### -->
     </php>
 
