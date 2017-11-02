@@ -45,6 +45,7 @@ class EnvConfiguratorTest extends TestCase
             '#1' => 'Comment 1',
             '#2' => 'Comment 3',
             'APP_SECRET' => 's3cretf0rt3st',
+            'DATABASE_URL' => '"mysql://test"',
         ]);
 
         $envContents = <<<EOF
@@ -55,6 +56,7 @@ APP_DEBUG=0
 # Comment 1
 # Comment 3
 APP_SECRET=s3cretf0rt3st
+DATABASE_URL="mysql://test"
 ###< FooBundle ###
 
 EOF;
@@ -78,6 +80,7 @@ EOF;
         <!-- Comment 1 -->
         <!-- Comment 3 -->
         <env name="APP_SECRET" value="s3cretf0rt3st" />
+        <env name="DATABASE_URL" value="&quot;mysql://test&quot;" />
         <!-- ###- FooBundle ### -->
     </php>
 
