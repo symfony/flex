@@ -56,7 +56,7 @@ class Downloader
         $this->sess = bin2hex(random_bytes(16));
 
         if (self::$DEFAULT_ENDPOINT !== $endpoint) {
-            $this->io->writeError('<warning>Warning, using '.$endpoint.' as the Symfony endpoint</warning>');
+            $this->io->writeError('<warning>Warning: Using '.$endpoint.' as the Symfony endpoint</warning>');
         }
     }
 
