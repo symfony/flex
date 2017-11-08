@@ -50,7 +50,7 @@ class ScriptExecutor
 
         $cmdOutput = new StreamOutput(fopen('php://memory', 'rw'), OutputInterface::VERBOSITY_VERBOSE, $this->io->isDecorated());
         $outputHandler = function ($type, $buffer) use ($cmdOutput) {
-            $cmdOutput->write($buffer, OutputInterface::OUTPUT_RAW);
+            $cmdOutput->write($buffer, false, OutputInterface::OUTPUT_RAW);
         };
 
         $this->io->writeError(sprintf('Executing script %s', $parsedCmd), $this->io->isVerbose());
