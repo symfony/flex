@@ -43,17 +43,45 @@ class ContainerConfigurator extends AbstractConfigurator
     private function addParameters(array $parameters)
     {
         $target = getcwd().'/config/services.yaml';
+        $endAt = 0;
+        $isParameters = false;
         $lines = [];
-        foreach (file($target) as $line) {
+        foreach (file($target) as $i => $line) {
             $lines[] = $line;
-            if (!preg_match('/^parameters\:/', $line)) {
+            if (!$isParameters && !preg_match('/^parameters\:/', $line)) {
+                continue;
+            }
+            if (!$isParameters) {
+                $isParameters = true;
+                continue;
+            }
+            if (!preg_match('/^\s+.*/', $line) && '' !== trim($line)) {
+                $endAt = $i - 1;
+                $isParameters = false;
                 continue;
             }
             foreach ($parameters as $key => $value) {
-                // FIXME: var_export() only works for basics types, but we don't have access to the Symfony YAML component here
-                $lines[] = sprintf("    %s: %s%s", $key, var_export($value, true), "\n");
+                if (preg_match("/^\s+$key\:/", $line)) {
+                    unset($parameters[$key]);
+                }
             }
         }
+        if (!$parameters) {
+            return;
+        }
+
+        $parametersLines = [];
+        if (!$endAt) {
+            $parametersLines[] = "parameters:\n";
+        }
+        foreach ($parameters as $key => $value) {
+            // FIXME: var_export() only works for basics types, but we don't have access to the Symfony YAML component here
+            $parametersLines[] = sprintf("    %s: %s%s", $key, var_export($value, true), "\n");
+        }
+        if (!$endAt) {
+            $parametersLines[] = "\n";
+        }
+        array_splice($lines, $endAt, 0, $parametersLines);
         file_put_contents($target, implode('', $lines));
     }
 }
