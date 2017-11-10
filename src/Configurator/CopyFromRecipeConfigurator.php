@@ -62,7 +62,14 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
             mkdir(dirname($to), 0777, true);
         }
 
-        file_put_contents($to, $contents);
+        $dirVars = ['%BIN_DIR%', '%CONF_DIR%', '%CONFIG_DIR%', '%SRC_DIR%', '%VAR_DIR%', '%PUBLIC_DIR%'];
+
+        file_put_contents($to, str_replace(
+            $dirVars,
+            array_map(function ($dirVar) { return $this->options->expandTargetDir($dirVar); }, $dirVars),
+            $contents
+        ));
+
         if ($executable) {
             @chmod($to, fileperms($to) | 0111);
         }
