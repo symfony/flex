@@ -35,7 +35,7 @@ class EnvConfigurator extends AbstractConfigurator
     private function configureEnvDist(Recipe $recipe, $vars)
     {
         $distenv = getcwd().'/.env.dist';
-        if ($this->isFileMarked($recipe, $distenv)) {
+        if (!is_file($distenv) || $this->isFileMarked($recipe, $distenv)) {
             return;
         }
 
