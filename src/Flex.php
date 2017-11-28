@@ -18,9 +18,11 @@ use Composer\DependencyResolver\Operation\InstallOperation;
 use Composer\DependencyResolver\Operation\OperationInterface;
 use Composer\DependencyResolver\Operation\UpdateOperation;
 use Composer\DependencyResolver\Operation\UninstallOperation;
+use Composer\EventDispatcher\ScriptExecutionException;
 use Composer\Factory;
 use Composer\EventDispatcher\EventSubscriberInterface;
 use Composer\Installer;
+use Composer\Installer\InstallerErrorEvent;
 use Composer\Installer\PackageEvent;
 use Composer\Installer\PackageEvents;
 use Composer\Installer\SuggestedPackagesReporter;
@@ -46,6 +48,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
     private $postInstallOutput = [''];
     private $operations = [];
     private $lock;
+    private $updateCalled = false;
     private static $activated = true;
 
     public function activate(Composer $composer, IOInterface $io)
@@ -129,6 +132,8 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
     public function update(Event $event)
     {
+        $this->updateCalled = true;
+
         if (!file_exists(getcwd().'/.env') && file_exists(getcwd().'/.env.dist')) {
             copy(getcwd().'/.env.dist', getcwd().'/.env');
         }
@@ -229,6 +234,22 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
 
         $this->io->write($this->postInstallOutput);
+    }
+
+    public function onInstallerError(InstallerErrorEvent $event)
+    {
+        if ($event->getError() instanceof ScriptExecutionException) {
+            // if update() has not been called, this may be a pre-*-command failure
+            if (!$this->updateCalled) {
+                return;
+            }
+
+            $event->setStatusCode(0);
+
+            $event->getIo()->write('');
+            $event->getIo()->write('   An error occurred during a post-install-cmd.');
+            $event->getIo()->write('   But don\'t worry: Composer *did* finish successfully.');
+        }
     }
 
     private function fetchRecipes(): array
@@ -358,7 +379,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             return [];
         }
 
-        return [
+        $events = [
             PackageEvents::POST_PACKAGE_INSTALL => 'record',
             PackageEvents::POST_PACKAGE_UPDATE => 'record',
             PackageEvents::POST_PACKAGE_UNINSTALL => 'record',
@@ -367,5 +388,12 @@ class Flex implements PluginInterface, EventSubscriberInterface
             ScriptEvents::POST_UPDATE_CMD => 'update',
             'auto-scripts' => 'executeAutoScripts',
         ];
+
+        // added in Composer 1.6
+        if (defined(Installer\InstallerEvents::class.'::INSTALLER_ERROR')) {
+            $events[Installer\InstallerEvents::INSTALLER_ERROR] = 'onInstallerError';
+        }
+
+        return $events;
     }
 }
