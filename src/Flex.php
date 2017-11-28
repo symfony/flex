@@ -247,8 +247,8 @@ class Flex implements PluginInterface, EventSubscriberInterface
             $event->setStatusCode(0);
 
             $event->getIo()->write('');
-            $event->getIo()->write('!! An error occurred during a post-install-cmd.');
-            $event->getIo()->write('!! But don\'t worry: Composer *did* finish successfully.');
+            $event->getIo()->write('   An error occurred during a post-install-cmd.');
+            $event->getIo()->write('   But don\'t worry: Composer *did* finish successfully.');
         }
     }
 
