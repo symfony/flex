@@ -91,7 +91,7 @@ class FlexTest extends TestCase
 
         $this->assertSame(<<<EOF
 Symfony operations: 1 recipe ()
-  - Configuring dummy/dummy (1.0): From github.com/symfony/recipes:master
+  - Configuring dummy/dummy (>=1.0): From github.com/symfony/recipes:master
 
 EOF
             , $io->getOutput()
