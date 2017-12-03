@@ -46,6 +46,7 @@ class Lock
 
     public function write()
     {
+        ksort($this->lock);
         $this->json->write($this->lock);
     }
 }
