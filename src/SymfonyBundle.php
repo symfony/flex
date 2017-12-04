@@ -72,6 +72,9 @@ class SymfonyBundle
         $class = $namespace.'\\';
         $parts = explode('\\', $namespace);
         $suffix = $parts[count($parts) - 1];
+        if ('Bundle' !== substr($suffix, -6)) {
+            $suffix .= 'Bundle';
+        }
         $classes = [$class.$suffix];
         $acc = '';
         foreach (array_slice($parts, 0, -1) as $part) {

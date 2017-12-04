@@ -70,6 +70,11 @@ class SymfonyBundleTest extends TestCase
                 ['psr-4' => ['EasyCorp\\Bundle\\EasyDeployBundle\\' => ['src', 'tests']]],
                 'EasyCorp\\Bundle\\EasyDeployBundle\\EasyDeployBundle',
             ],
+            [
+                'web-token/jwt-bundle',
+                ['psr-4' => ['Jose\\Bundle\\JoseFramework\\' => ['']]],
+                'Jose\\Bundle\\JoseFramework\\JoseFrameworkBundle',
+            ],
         ];
     }
 }
