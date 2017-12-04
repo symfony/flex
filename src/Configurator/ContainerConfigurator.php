@@ -29,15 +29,17 @@ class ContainerConfigurator extends AbstractConfigurator
         $this->write('Unsetting parameters');
         $target = getcwd().'/config/services.yaml';
         $lines = [];
-        foreach (file($target) as $line) {
-            foreach (array_keys($parameters) as $key) {
-                if (preg_match("/^\s+$key\:/", $line)) {
-                    continue 2;
+        if (file_exists($target)) {
+            foreach (file($target) as $line) {
+                foreach (array_keys($parameters) as $key) {
+                    if (preg_match("/^\s+$key\:/", $line)) {
+                        continue 2;
+                    }
                 }
+                $lines[] = $line;
             }
-            $lines[] = $line;
+            file_put_contents($target, implode('', $lines));
         }
-        file_put_contents($target, implode('', $lines));
     }
 
     private function addParameters(array $parameters)
@@ -46,23 +48,25 @@ class ContainerConfigurator extends AbstractConfigurator
         $endAt = 0;
         $isParameters = false;
         $lines = [];
-        foreach (file($target) as $i => $line) {
-            $lines[] = $line;
-            if (!$isParameters && !preg_match('/^parameters\:/', $line)) {
-                continue;
-            }
-            if (!$isParameters) {
-                $isParameters = true;
-                continue;
-            }
-            if (!preg_match('/^\s+.*/', $line) && '' !== trim($line)) {
-                $endAt = $i - 1;
-                $isParameters = false;
-                continue;
-            }
-            foreach ($parameters as $key => $value) {
-                if (preg_match("/^\s+$key\:/", $line)) {
-                    unset($parameters[$key]);
+        if (file_exists($target)) {
+            foreach (file($target) as $i => $line) {
+                $lines[] = $line;
+                if (!$isParameters && !preg_match('/^parameters\:/', $line)) {
+                    continue;
+                }
+                if (!$isParameters) {
+                    $isParameters = true;
+                    continue;
+                }
+                if (!preg_match('/^\s+.*/', $line) && '' !== trim($line)) {
+                    $endAt = $i - 1;
+                    $isParameters = false;
+                    continue;
+                }
+                foreach ($parameters as $key => $value) {
+                    if (preg_match("/^\s+$key\:/", $line)) {
+                        unset($parameters[$key]);
+                    }
                 }
             }
         }
