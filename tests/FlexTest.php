@@ -9,7 +9,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\Flex\Tests\Configurator;
+namespace Symfony\Flex\Tests;
 
 use Composer\Composer;
 use Composer\Config;
@@ -32,6 +32,33 @@ use Symfony\Flex\Response;
 
 class FlexTest extends TestCase
 {
+    public function testFrameworkBundleRecord()
+    {
+        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
+        $lock->expects($this->any())->method('has')->will($this->returnValue(false));
+
+        $flex = \Closure::bind(function () use ($lock) {
+            $flex = new Flex();
+            $flex->lock = $lock;
+
+            return $flex;
+        }, null, Flex::class)->__invoke();
+        /** @var InstallOperation[] $list */
+        $list = [
+            $operationFlex = new InstallOperation(new Package('symfony/flex', '1.0.0', '1.0.0')),
+            $operationFB = new InstallOperation(new Package('symfony/framework-bundle', '1.0.0', '1.0.0')),
+            $operationFoo = new InstallOperation(new Package('vendor/foo', '1.0.0', '1.0.0')),
+        ];
+        foreach ($list as $operation) {
+            $event = $this->getMockBuilder(PackageEvent::class)->disableOriginalConstructor()->getMock();
+            $event->expects($this->once())->method('getOperation')->willReturn($operation);
+
+            $flex->record($event);
+        }
+
+        $this->assertAttributeEquals([$operationFB, $operationFlex, $operationFoo], 'operations', $flex);
+    }
+
     public function testPostInstall()
     {
         $package = new Package('dummy/dummy', '1.0.0', '1.0.0');
