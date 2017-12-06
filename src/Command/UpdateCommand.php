@@ -31,7 +31,7 @@ class UpdateCommand extends BaseUpdateCommand
     {
         $input->setArgument('packages', $this->resolver->resolve($input->getArgument('packages')));
 
-        if ($input->hasOption('no-suggest')) {
+        if (!$input->hasOption('no-suggest')) {
             $input->setOption('no-suggest', true);
         }
 
