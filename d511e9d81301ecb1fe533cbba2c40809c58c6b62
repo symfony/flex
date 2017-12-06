@@ -1,0 +1,11 @@
+---------------------------------------------------------------------------
+
+by covex-nn at 2017-12-06T20:39:11Z
+
+@nicolas-grekas i have updated PR, now it is waiting for merge flex recipe with framework-bundle one
+
+---------------------------------------------------------------------------
+
+by fabpot at 2017-12-06T20:47:44Z
+
+@covex-nn You can probably remove the `WIP` in the PR title.
