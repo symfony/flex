@@ -48,6 +48,7 @@ class EnvConfiguratorTest extends TestCase
             'MAILER_USER' => 'fabien',
             '#1' => 'Comment 1',
             '#2' => 'Comment 3',
+            '#TRUSTED_SECRET' => 's3cretf0rt3st"<>',
             'APP_SECRET' => 's3cretf0rt3st"<>',
         ]);
 
@@ -62,6 +63,7 @@ MAILER_URL=null://localhost
 MAILER_USER=fabien
 # Comment 1
 # Comment 3
+#TRUSTED_SECRET="s3cretf0rt3st\"<>"
 APP_SECRET="s3cretf0rt3st\"<>"
 ###< FooBundle ###
 
@@ -89,6 +91,7 @@ EOF;
         <env name="MAILER_USER" value="fabien"/>
         <!-- Comment 1 -->
         <!-- Comment 3 -->
+        <!-- env name="TRUSTED_SECRET" value="s3cretf0rt3st&quot;&lt;&gt;" -->
         <env name="APP_SECRET" value="s3cretf0rt3st&quot;&lt;&gt;"/>
         <!-- ###- FooBundle ### -->
     </php>
@@ -111,6 +114,7 @@ EOF;
             'APP_DEBUG' => '0',
             '#1' => 'Comment 1',
             '#2' => 'Comment 3',
+            '#TRUSTED_SECRET' => 's3cretf0rt3st',
             'APP_SECRET' => 's3cretf0rt3st',
         ]);
 
@@ -123,6 +127,7 @@ EOF;
             'APP_DEBUG' => '0',
             '#1' => 'Comment 1',
             '#2' => 'Comment 3',
+            '#TRUSTED_SECRET' => 's3cretf0rt3st',
             'APP_SECRET' => 's3cretf0rt3st',
         ]);
 
