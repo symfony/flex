@@ -44,15 +44,17 @@ class EnvConfigurator extends AbstractConfigurator
             if ('%generate(secret)%' === $value) {
                 $value = bin2hex(random_bytes(16));
             }
-            if ('#' === $key[0]) {
+            if ('#' === $key[0] && ctype_digit(substr($key, 1))) {
                 $data .= '# '.$value."\n";
-            } else {
-                $value = $this->options->expandTargetDir($value);
-                if (false !== strpbrk($value, " \t\n&!\"")) {
-                    $value = '"'.str_replace(['\\', '"', "\t", "\n"], ['\\\\', '\\"', '\t', '\n'], $value).'"';
-                }
-                $data .= "$key=$value\n";
+
+                continue;
             }
+
+            $value = $this->options->expandTargetDir($value);
+            if (false !== strpbrk($value, " \t\n&!\"")) {
+                $value = '"'.str_replace(['\\', '"', "\t", "\n"], ['\\\\', '\\"', '\t', '\n'], $value).'"';
+            }
+            $data .= "$key=$value\n";
         }
         if (!file_exists(getcwd().'/.env')) {
             copy($distenv, getcwd().'/.env');
@@ -80,8 +82,17 @@ class EnvConfigurator extends AbstractConfigurator
                     $value = bin2hex(random_bytes(16));
                 }
                 if ('#' === $key[0]) {
-                    $doc = new \DOMDocument();
-                    $data .= '        '.$doc->saveXML($doc->createComment(' '.$value.' '))."\n";
+                    if (ctype_digit(substr($key, 1))) {
+                        $doc = new \DOMDocument();
+                        $data .= '        '.$doc->saveXML($doc->createComment(' '.$value.' '))."\n";
+                    } else {
+                        $value = $this->options->expandTargetDir($value);
+                        $doc = new \DOMDocument();
+                        $fragment = $doc->createElement('env');
+                        $fragment->setAttribute('name', substr($key, 1));
+                        $fragment->setAttribute('value', $value);
+                        $data .= '        '.str_replace(['<', '/>'], ['<!-- ', ' -->'], $doc->saveXML($fragment))."\n";
+                    }
                 } else {
                     $value = $this->options->expandTargetDir($value);
                     $doc = new \DOMDocument();
