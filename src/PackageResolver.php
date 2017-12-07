@@ -11,6 +11,7 @@
 
 namespace Symfony\Flex;
 
+use Composer\Factory;
 use Composer\Package\Version\VersionParser;
 use Composer\Repository\PlatformRepository;
 
@@ -29,7 +30,7 @@ class PackageResolver
         $this->downloader = $downloader;
     }
 
-    public function resolve(array $arguments = []): array
+    public function resolve(array $arguments = [], bool $isRequire = false): array
     {
         $versionParser = new VersionParser();
 
@@ -73,16 +74,16 @@ class PackageResolver
         // third pass to resolve versions
         $requires = [];
         foreach ($versionParser->parseNameVersionPairs($packages) as $package) {
-            $requires[] = $package['name'].$this->parseVersion($package['name'], $package['version'] ?? '');
+            $requires[] = $package['name'].$this->parseVersion($package['name'], $package['version'] ?? '', $isRequire);
         }
 
         return array_unique($requires);
     }
 
-    private function parseVersion(string $package, string $version): string
+    private function parseVersion(string $package, string $version, bool $isRequire): string
     {
-        if (!$version) {
-            return '';
+        if (0 !== strpos($package, 'symfony/')) {
+            return $version ? ':'.$version : '';
         }
 
         if (null === self::$versions) {
@@ -90,10 +91,19 @@ class PackageResolver
         }
 
         if (!isset(self::$versions['splits'][$package])) {
-            return ':'.$version;
+            return $version ? ':'.$version : '';
         }
 
-        if ('next' === $version) {
+        if (!$version) {
+            try {
+                $config = @json_decode(file_get_contents(Factory::getComposerFile()), true);
+            } finally {
+                if (!$isRequire || !isset($config['require']['symfony/framework-bundle'])) {
+                    return '';
+                }
+            }
+            $version = $config['require']['symfony/framework-bundle'];
+        } elseif ('next' === $version) {
             $version = '^'.self::$versions[$version].'@dev';
         } elseif (in_array($version, self::$SYMFONY_VERSIONS, true)) {
             $version = '^'.self::$versions[$version];

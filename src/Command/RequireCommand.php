@@ -29,7 +29,7 @@ class RequireCommand extends BaseRequireCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $input->setArgument('packages', $this->resolver->resolve($input->getArgument('packages')));
+        $input->setArgument('packages', $this->resolver->resolve($input->getArgument('packages'), true));
 
         if ($input->hasOption('no-suggest')) {
             $input->setOption('no-suggest', true);
