@@ -118,8 +118,20 @@ class Flex implements PluginInterface, EventSubscriberInterface
     {
         $operation = $event->getOperation();
         if ($this->shouldRecordOperation($operation)) {
-            if ($operation instanceof InstallOperation && 'symfony/framework-bundle' === $operation->getPackage()->getName()) {
-                array_unshift($this->operations, $operation);
+            if ($operation instanceof InstallOperation && in_array($packageName = $operation->getPackage()->getName(), ['symfony/framework-bundle', 'symfony/flex'])) {
+                if ('symfony/flex' === $packageName) {
+                    array_unshift($this->operations, $operation);
+                } else {
+                    if ($this->operations && $this->operations[0] instanceof InstallOperation && 'symfony/flex' === $this->operations[0]->getPackage()->getName()) {
+                        // framework-bundle should be *after* flex
+                        $flexOperation = $this->operations[0];
+                        unset($this->operations[0]);
+                        array_unshift($this->operations, $operation);
+                        array_unshift($this->operations, $flexOperation);
+                    } else {
+                        array_unshift($this->operations, $operation);
+                    }
+                }
             } else {
                 $this->operations[] = $operation;
             }
