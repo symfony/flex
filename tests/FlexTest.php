@@ -32,7 +32,10 @@ use Symfony\Flex\Response;
 
 class FlexTest extends TestCase
 {
-    public function testFrameworkBundleRecord()
+    /**
+     * @dataProvider getRecordTests
+     */
+    public function testFrameworkBundleRecord(array $actualInstallOperations, $expectedFinalOperators)
     {
         $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
         $lock->expects($this->any())->method('has')->will($this->returnValue(false));
@@ -43,20 +46,36 @@ class FlexTest extends TestCase
 
             return $flex;
         }, null, Flex::class)->__invoke();
-        /** @var InstallOperation[] $list */
-        $list = [
-            $operationFlex = new InstallOperation(new Package('symfony/flex', '1.0.0', '1.0.0')),
-            $operationFB = new InstallOperation(new Package('symfony/framework-bundle', '1.0.0', '1.0.0')),
-            $operationFoo = new InstallOperation(new Package('vendor/foo', '1.0.0', '1.0.0')),
-        ];
-        foreach ($list as $operation) {
+
+        /** @var InstallOperation[] $actualInstallOperations */
+        foreach ($actualInstallOperations as $operation) {
             $event = $this->getMockBuilder(PackageEvent::class)->disableOriginalConstructor()->getMock();
             $event->expects($this->once())->method('getOperation')->willReturn($operation);
 
             $flex->record($event);
         }
 
-        $this->assertAttributeEquals([$operationFB, $operationFlex, $operationFoo], 'operations', $flex);
+        $this->assertAttributeEquals($expectedFinalOperators, 'operations', $flex);
+    }
+
+    public function getRecordTests()
+    {
+        $operationFoo = new InstallOperation(new Package('vendor/foo', '1.0.0', '1.0.0'));
+        $operationFB = new InstallOperation(new Package('symfony/framework-bundle', '1.0.0', '1.0.0'));
+        $operationFlex = new InstallOperation(new Package('symfony/flex', '1.0.0', '1.0.0'));
+
+        return [
+            [
+                // install order
+                [$operationFoo, $operationFB, $operationFlex],
+                // expected final order
+                [$operationFlex, $operationFB, $operationFoo],
+            ],
+            [
+                [$operationFoo, $operationFlex, $operationFB],
+                [$operationFlex, $operationFB, $operationFoo],
+            ],
+        ];
     }
 
     public function testPostInstall()
