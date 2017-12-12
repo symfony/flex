@@ -15,6 +15,7 @@ require_once __DIR__.'/TmpDirMock.php';
 
 use Symfony\Flex\Configurator\ContainerConfigurator;
 use PHPUnit\Framework\TestCase;
+use Symfony\Flex\Options;
 
 class ContainerConfiguratorTest extends TestCase
 {
@@ -33,7 +34,7 @@ EOF
         $configurator = new ContainerConfigurator(
             $this->getMockBuilder('Composer\Composer')->getMock(),
             $this->getMockBuilder('Composer\IO\IOInterface')->getMock(),
-            $this->getMockBuilder('Symfony\Flex\Options')->getMock()
+            new Options(['config-dir' => dirname($config)])
         );
         $configurator->configure($recipe, ['locale' => 'en']);
         $this->assertEquals(<<<EOF
@@ -69,7 +70,7 @@ EOF
         $configurator = new ContainerConfigurator(
             $this->getMockBuilder('Composer\Composer')->getMock(),
             $this->getMockBuilder('Composer\IO\IOInterface')->getMock(),
-            $this->getMockBuilder('Symfony\Flex\Options')->getMock()
+            new Options(['config-dir' => dirname($config)])
         );
         $configurator->configure($recipe, ['locale' => 'en']);
         $this->assertEquals(<<<EOF
@@ -106,7 +107,7 @@ EOF
         $configurator = new ContainerConfigurator(
             $this->getMockBuilder('Composer\Composer')->getMock(),
             $this->getMockBuilder('Composer\IO\IOInterface')->getMock(),
-            $this->getMockBuilder('Symfony\Flex\Options')->getMock()
+            new Options(['config-dir' => dirname($config)])
         );
         $configurator->configure($recipe, ['locale' => 'en']);
         $this->assertEquals(<<<EOF
@@ -147,7 +148,7 @@ EOF
         $configurator = new ContainerConfigurator(
             $this->getMockBuilder('Composer\Composer')->getMock(),
             $this->getMockBuilder('Composer\IO\IOInterface')->getMock(),
-            $this->getMockBuilder('Symfony\Flex\Options')->getMock()
+            new Options(['config-dir' => dirname($config)])
         );
         $configurator->configure($recipe, ['locale' => 'en', 'foobar' => 'baz']);
         $this->assertEquals(<<<EOF
