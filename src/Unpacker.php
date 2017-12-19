@@ -38,19 +38,12 @@ class Unpacker
         foreach ($op->getPackages() as $package) {
             $pkg = $this->composer->getRepositoryManager()->findPackage($package['name'], $package['version'] ?: '*');
 
-            // force unpack on profiles + add dev deps
-            if ('symfony-profile' === $pkg->getType()) {
-                foreach ($pkg->getDevRequires() as $link) {
-                    if (!$manipulator->addLink('require-dev', $link->getTarget(), $link->getPrettyConstraint(), $op->shouldSort())) {
-                        throw new \RuntimeException(sprintf('Unable to unpack package "%s".', $link->getTarget()));
-                    }
-                }
-            } elseif (
+            // not unpackable or no --unpack flag or empty packs (markers)
+            if (
                 'symfony-pack' !== $pkg->getType() ||
                 !$op->shouldUnpack() ||
                 0 === count($pkg->getRequires()) + count($pkg->getDevRequires())
             ) {
-                // not unpackable or no --unpack flag or empty packs (markers)
                 $result->addRequired($package['name'].($package['version'] ? ':'.$package['version'] : ''));
 
                 continue;

@@ -17,6 +17,7 @@ use Composer\Factory;
 use Composer\Installer;
 use Composer\Json\JsonFile;
 use Composer\Package\Locker;
+use Composer\Package\Version\VersionParser;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -39,7 +40,7 @@ class UnpackCommand extends BaseCommand
         $this->setName('unpack')
             ->setDescription('Unpack a Symfony pack.')
             ->setDefinition(array(
-                new InputArgument('packages', InputArgument::IS_ARRAY | InputArgument::OPTIONAL, 'Installed packages to unpack"'),
+                new InputArgument('packages', InputArgument::IS_ARRAY | InputArgument::OPTIONAL, 'Installed packages to unpack.'),
                 new InputOption('sort-packages', null, InputOption::VALUE_NONE, 'Sorts packages'),
             ))
         ;
@@ -55,35 +56,39 @@ class UnpackCommand extends BaseCommand
         $locker = $composer->getLocker();
         $lockData = $locker->getLockData();
         $installedRepo = $composer->getRepositoryManager()->getLocalRepository();
+        $versionParser = new VersionParser();
 
         $op = new Operation(true, $input->getOption('sort-packages') || $composer->getConfig()->get('sort-packages'));
-        foreach ($packages as $name) {
-            if (null === $pkg = $installedRepo->findPackage($name, '*')) {
-                $io->writeError(sprintf('<error>Package %s is not installed</>', $name));
+        foreach ($versionParser->parseNameVersionPairs($packages) as $package) {
+            if (null === $pkg = $installedRepo->findPackage($package['name'], '*')) {
+                $io->writeError(sprintf('<error>Package %s is not installed</>', $package['name']));
+
                 return 1;
             }
 
             $dev = false;
             foreach ($lockData['packages-dev'] as $p) {
-                if ($name === $p['name']) {
+                if ($package['name'] === $p['name']) {
                     $dev = true;
 
                     break;
                 }
             }
 
-            $op->addPackage($name, '*', $dev);
+            $op->addPackage($package['name'], '*', $dev);
         }
 
         $unpacker = new Unpacker($composer);
         $result = $unpacker->unpack($op);
-        foreach ($result->getUnpacked() as $pkg) {
-            $io->writeError(sprintf('<info>Unpacked %s dependencies</>', $pkg->getName()));
-        }
 
         // remove the packages themselves
         if (!$result->getUnpacked()) {
+            $io->writeError('<info>Nothing to unpack</>');
             return;
+        }
+
+        foreach ($result->getUnpacked() as $pkg) {
+            $io->writeError(sprintf('<info>Unpacked %s dependencies</>', $pkg->getName()));
         }
 
         foreach ($result->getUnpacked() as $package) {
