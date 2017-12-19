@@ -86,6 +86,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
                 $app->add(new Command\RequireCommand($resolver));
                 $app->add(new Command\UpdateCommand($resolver));
                 $app->add(new Command\RemoveCommand($resolver));
+                $app->add(new Command\UnpackCommand($resolver));
             } elseif ($trace['object'] instanceof Installer) {
                 --$search;
                 $trace['object']->setSuggestedPackagesReporter(new SuggestedPackagesReporter(new NullIO()));
