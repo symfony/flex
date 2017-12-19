@@ -108,6 +108,8 @@ class Flex implements PluginInterface, EventSubscriberInterface
     {
         $json = new JsonFile(Factory::getComposerFile());
         $manipulator = new JsonManipulator(file_get_contents($json->getPath()));
+        // new projects are most of the time proprietary
+        $manipulator->addProperty('license', 'proprietary');
         // 'name' and 'description' are only required for public packages
         $manipulator->removeProperty('name');
         $manipulator->removeProperty('description');
