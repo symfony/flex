@@ -105,9 +105,9 @@ EOF;
 
 EOF;
 
-        $this->assertEquals($envContents, file_get_contents($env));
-        $this->assertEquals($xmlContents, file_get_contents($phpunitDist));
-        $this->assertEquals($xmlContents, file_get_contents($phpunit));
+        $this->assertStringEqualsFile($env, $envContents);
+        $this->assertStringEqualsFile($phpunitDist, $xmlContents);
+        $this->assertStringEqualsFile($phpunit, $xmlContents);
 
         $configurator->configure($recipe, [
             'APP_ENV' => 'test',
@@ -118,9 +118,9 @@ EOF;
             'APP_SECRET' => 's3cretf0rt3st',
         ]);
 
-        $this->assertEquals($envContents, file_get_contents($env));
-        $this->assertEquals($xmlContents, file_get_contents($phpunitDist));
-        $this->assertEquals($xmlContents, file_get_contents($phpunit));
+        $this->assertStringEqualsFile($env, $envContents);
+        $this->assertStringEqualsFile($phpunitDist, $xmlContents);
+        $this->assertStringEqualsFile($phpunit, $xmlContents);
 
         $configurator->unconfigure($recipe, [
             'APP_ENV' => 'test',
@@ -131,14 +131,14 @@ EOF;
             'APP_SECRET' => 's3cretf0rt3st',
         ]);
 
-        $this->assertEquals(<<<EOF
+        $this->assertStringEqualsFile($env, <<<EOF
 
 
 EOF
-        , file_get_contents($env));
+        );
 
-        $this->assertEquals(file_get_contents(__DIR__.'/../Fixtures/phpunit.xml.dist'), file_get_contents($phpunitDist));
-        $this->assertEquals(file_get_contents(__DIR__.'/../Fixtures/phpunit.xml.dist'), file_get_contents($phpunit));
+        $this->assertFileEquals(__DIR__.'/../Fixtures/phpunit.xml.dist', $phpunitDist);
+        $this->assertFileEquals(__DIR__.'/../Fixtures/phpunit.xml.dist', $phpunit);
 
         @unlink($phpunit, $env);
     }
