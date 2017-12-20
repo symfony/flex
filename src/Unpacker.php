@@ -40,6 +40,7 @@ class Unpacker
 
             // not unpackable or no --unpack flag or empty packs (markers)
             if (
+                null === $pkg ||
                 'symfony-pack' !== $pkg->getType() ||
                 !$op->shouldUnpack() ||
                 0 === count($pkg->getRequires()) + count($pkg->getDevRequires())
