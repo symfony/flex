@@ -1,0 +1,48 @@
+---------------------------------------------------------------------------
+
+by Pierstoval at 2017-12-12T10:35:23Z
+
+About the post && unpack feature, I wonder why it's only reserved to the `symfony-pack` type? Why can't it be associated with the already existing `metapackage`, which is, by the way, [documented](https://getcomposer.org/doc/04-schema.md#type)?
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2017-12-12T10:36:53Z
+
+The reason is that when you require several packages at once, only some of them should be unpacked.
+`composer require a/b a/c b/a b/c --unpack`
+only those that were designed to be unpacked should be unpacked.
+
+---------------------------------------------------------------------------
+
+by Pierstoval at 2017-12-12T10:39:48Z
+
+Yeah, but a metapackage is precisely the kind of package that _can_ be unpacked: if a `metapackage` contains requirements, they should be unpackable. If the `metapackage` is only here to create conflicts (like `symfony/lts` or `roave/security-advisories`), even if you set `--unpack`, it will not unpack anything, so it can be considered safe.
+
+I'm just commenting on this because `symfony-pack` will reinforce the idea for some people that Flex is only for Symfony packages, which is not the case. Anyone willing to create a pack should be able to unpack it with Flex even if it's not a Symfony-related package.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2017-12-12T10:43:55Z
+
+can != should - that's the point.
+
+> it will reinforce the idea for some people that Flex is only for Symfony packages
+
+Flex is only for Symfony apps yes, framework bundle is an implicit requirement of all recipes.
+Let's first try improving the Symfony-based experience, and if some ideas are more broad then fine, that's OSS, ppl can contribute to Composer. We cannot fix the world (who are we to even think we could).
+
+> Anyone willing to create a pack should be able to unpack it with Flex even if it's not a Symfony-related package
+
+sure, that's the case - the false-ideas are false-ideas, only technical behavior has value here.
+
+---------------------------------------------------------------------------
+
+by fabpot at 2017-12-12T14:55:22Z
+
+Symfony Flex is currently definitely for Symfony, no questions about it.
+
+---------------------------------------------------------------------------
+
+by fabpot at 2017-12-19T05:40:24Z
+
+Based on the feedback, unpack never happens recursively. It gives more control. There is now also a new `unpack` command that allows to unpack already installed packs.
