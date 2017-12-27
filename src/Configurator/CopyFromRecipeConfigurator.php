@@ -72,6 +72,12 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
     {
         foreach ($manifest as $source => $target) {
             $target = $this->options->expandTargetDir($target);
+
+            if ('.git' === $target) {
+                // never remove the main Git directory, even if it was created by a recipe
+                continue;
+            }
+
             if ('/' === substr($source, -1)) {
                 foreach (array_keys($files) as $file) {
                     if (0 === strpos($file, $source)) {
