@@ -13,7 +13,7 @@ namespace Symfony\Flex\Unpack;
 
 class Operation
 {
-    private $packages;
+    private $packages = [];
     private $unpack;
     private $sort;
 
