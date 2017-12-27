@@ -40,14 +40,13 @@ class RequireCommand extends BaseRequireCommand
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $packages = $this->resolver->resolve($input->getArgument('packages'), true);
-
-        $versionParser = new VersionParser();
-        $op = new Operation($input->getOption('unpack'), $input->getOption('sort-packages') || $this->getComposer()->getConfig()->get('sort-packages'));
-        foreach ($versionParser->parseNameVersionPairs($packages) as $package) {
-            $op->addPackage($package['name'], $package['version'] ?? '', $input->getOption('dev'));
-        }
-
         if ($packages) {
+            $versionParser = new VersionParser();
+            $op = new Operation($input->getOption('unpack'), $input->getOption('sort-packages') || $this->getComposer()->getConfig()->get('sort-packages'));
+            foreach ($versionParser->parseNameVersionPairs($packages) as $package) {
+                $op->addPackage($package['name'], $package['version'] ?? '', $input->getOption('dev'));
+            }
+
             $unpacker = new Unpacker($this->getComposer());
             $result = $unpacker->unpack($op);
             $io = $this->getIo();
@@ -56,6 +55,10 @@ class RequireCommand extends BaseRequireCommand
             }
 
             $input->setArgument('packages', $result->getRequired());
+        } elseif ($input->getOption('unpack')) {
+            $this->getIo()->writeError('<error>--unpack is incompatible with the interactive mode.</error>');
+
+            return 1;
         }
 
         if ($input->hasOption('no-suggest')) {
