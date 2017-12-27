@@ -1,0 +1,25 @@
+---------------------------------------------------------------------------
+
+by xabbuh at 2017-12-26T20:30:36Z
+
+What about doing this one level higher by just not allowing to remove the recipe applied for `symfony/flex`?
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2017-12-26T21:43:32Z
+
+LGTM for @xabbuh's proposal.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2017-12-26T21:46:03Z
+
+But then some of FrameworkBundle's gitignore should be moved to the flex recipe (.env and vendor), isn't it?
+
+---------------------------------------------------------------------------
+
+by weaverryan at 2017-12-27T02:43:48Z
+
+I prefer the *current* patch over @xabbuh's proposal, actually. It makes more sense to me to day "`.git` is special, don't remove it" versus "the entire symfony/flex recipe is special, don't remove it".
+
+👍 for the PR as it is currently
