@@ -47,14 +47,16 @@ class RequireCommand extends BaseRequireCommand
             $op->addPackage($package['name'], $package['version'] ?? '', $input->getOption('dev'));
         }
 
-        $unpacker = new Unpacker($this->getComposer());
-        $result = $unpacker->unpack($op);
-        $io = $this->getIo();
-        foreach ($result->getUnpacked() as $pkg) {
-            $io->writeError(sprintf('<info>Unpacked %s dependencies</>', $pkg->getName()));
-        }
+        if ($packages) {
+            $unpacker = new Unpacker($this->getComposer());
+            $result = $unpacker->unpack($op);
+            $io = $this->getIo();
+            foreach ($result->getUnpacked() as $pkg) {
+                $io->writeError(sprintf('<info>Unpacked %s dependencies</>', $pkg->getName()));
+            }
 
-        $input->setArgument('packages', $result->getRequired());
+            $input->setArgument('packages', $result->getRequired());
+        }
 
         if ($input->hasOption('no-suggest')) {
             $input->setOption('no-suggest', true);
