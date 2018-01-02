@@ -31,10 +31,12 @@ use Composer\IO\ConsoleIO;
 use Composer\IO\NullIO;
 use Composer\Json\JsonFile;
 use Composer\Json\JsonManipulator;
+use Composer\Plugin\CommandEvent;
 use Composer\Plugin\PluginInterface;
 use Composer\Script\Event;
 use Composer\Script\ScriptEvents;
 use Hirak\Prestissimo\Plugin as Prestissimo;
+use Symfony\Thanks\Thanks;
 
 /**
  * @author Fabien Potencier <fabien@symfony.com>
@@ -50,6 +52,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
     private $operations = [];
     private $lock;
     private $cacheDirPopulated = false;
+    private $displayThanksReminder = false;
     private static $activated = true;
 
     public function activate(Composer $composer, IOInterface $io)
@@ -245,7 +248,24 @@ class Flex implements PluginInterface, EventSubscriberInterface
             );
         }
 
+        if ($this->displayThanksReminder) {
+            $love = '\\' === DIRECTORY_SEPARATOR ? 'love' : '💖 ';
+            $star = '\\' === DIRECTORY_SEPARATOR ? 'star' : '⭐ ';
+
+            $this->io->writeError('');
+            $this->io->writeError('What about running <comment>composer global require symfony/thanks && composer thanks</> now?');
+            $this->io->writeError(sprintf('This will spread some %s by sending a %s to the GitHub repositories of your fellow package maintainers.', $love, $star));
+            $this->io->writeError('');
+        }
+
         $this->lock->write();
+    }
+
+    public function inspectCommand(CommandEvent $event)
+    {
+        if ('update' === $event->getCommandName() && !class_exists(Thanks::class, false)) {
+            $this->displayThanksReminder = true;
+        }
     }
 
     public function executeAutoScripts(Event $event)
@@ -416,6 +436,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             ScriptEvents::POST_CREATE_PROJECT_CMD => 'configureProject',
             ScriptEvents::POST_INSTALL_CMD => 'install',
             ScriptEvents::POST_UPDATE_CMD => 'update',
+            PluginEvents::COMMAND => 'inspectCommand',
             'auto-scripts' => 'executeAutoScripts',
         ];
     }
