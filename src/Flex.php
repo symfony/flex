@@ -21,6 +21,8 @@ use Composer\DependencyResolver\Operation\UninstallOperation;
 use Composer\Factory;
 use Composer\EventDispatcher\EventSubscriberInterface;
 use Composer\Installer;
+use Composer\Installer\InstallerEvent;
+use Composer\Installer\InstallerEvents;
 use Composer\Installer\PackageEvent;
 use Composer\Installer\PackageEvents;
 use Composer\Installer\SuggestedPackagesReporter;
@@ -32,6 +34,7 @@ use Composer\Json\JsonManipulator;
 use Composer\Plugin\PluginInterface;
 use Composer\Script\Event;
 use Composer\Script\ScriptEvents;
+use Hirak\Prestissimo\Plugin as Prestissimo;
 
 /**
  * @author Fabien Potencier <fabien@symfony.com>
@@ -46,6 +49,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
     private $postInstallOutput = [''];
     private $operations = [];
     private $lock;
+    private $cacheDirPopulated = false;
     private static $activated = true;
 
     public function activate(Composer $composer, IOInterface $io)
@@ -250,6 +254,21 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $this->io->write($this->postInstallOutput);
     }
 
+    public function populateCacheDir(InstallerEvent $event)
+    {
+        if (extension_loaded('curl') && class_exists(Prestissimo::class, false)) {
+            // let hirak/prestissimo handle downloads when the curl extension is installed
+            return;
+        }
+        if ($this->cacheDirPopulated) {
+            return;
+        }
+        $this->cacheDirPopulated = true;
+
+        $downloader = new ParallelDownloader($this->io, $this->composer->getConfig());
+        $downloader->populateCacheDir($event->getOperations());
+    }
+
     private function fetchRecipes(): array
     {
         $devPackages = null;
@@ -378,6 +397,9 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
 
         return [
+            InstallerEvents::POST_DEPENDENCIES_SOLVING => [['populateCacheDir', PHP_INT_MAX]],
+            PackageEvents::PRE_PACKAGE_INSTALL => [['populateCacheDir', ~PHP_INT_MAX]],
+            PackageEvents::PRE_PACKAGE_UPDATE => [['populateCacheDir', ~PHP_INT_MAX]],
             PackageEvents::POST_PACKAGE_INSTALL => 'record',
             PackageEvents::POST_PACKAGE_UPDATE => 'record',
             PackageEvents::POST_PACKAGE_UNINSTALL => 'record',
