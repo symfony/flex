@@ -170,6 +170,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
         $this->io->writeError(sprintf('<info>Symfony operations: %d recipe%s (%s)</>', count($recipes), count($recipes) > 1 ? 's' : '', $this->downloader->getSessionId()));
         $installContribs = $this->composer->getPackage()->getExtra()['symfony']['allow-contrib'] ?? false;
+        $manifest = null;
         foreach ($recipes as $recipe) {
             if ('install' === $recipe->getJob() && !$installContribs && $recipe->isContrib()) {
                 $warning = $this->io->isInteractive() ? 'WARNING' : 'IGNORING';
@@ -229,6 +230,15 @@ class Flex implements PluginInterface, EventSubscriberInterface
                     $this->configurator->unconfigure($recipe);
                     break;
             }
+        }
+
+        if (null !== $manifest) {
+            array_unshift(
+                $this->postInstallOutput,
+                '',
+                '<info>Some files may have been created or updated to configure your new packages.</>',
+                'Don\'t hesitate to <comment>review</>, <comment>edit</> and <comment>commit</> them: these files are <comment>yours</>.'
+            );
         }
 
         $this->lock->write();
