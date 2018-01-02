@@ -2,11 +2,11 @@
     <img src="https://symfony.com/logos/symfony_black_02.svg">
 </a></p>
 
-[Symfony][1] Flex helps developers create Symfony applications, from the most
+[Symfony Flex][1] helps developers create Symfony applications, from the most
 simple micro-style projects to the more complex ones with dozens of
 dependencies.
 
-[Read more][2] about using it for your own project.
+[Discover][2] the available recipes.
 
-[1]: https://symfony.com
-[2]: https://medium.com/@fabpot/symfony-4-a-quick-demo-da7d32be323
+[2]: https://symfony.com/doc/current/setup/flex.html
+[2]: https://symfony.sh/
