@@ -170,6 +170,16 @@ class Flex implements PluginInterface, EventSubscriberInterface
             }
         }
 
+        if ($this->displayThanksReminder) {
+            $love = '\\' === DIRECTORY_SEPARATOR ? 'love' : '💖 ';
+            $star = '\\' === DIRECTORY_SEPARATOR ? 'star' : '⭐ ';
+
+            $this->io->writeError('');
+            $this->io->writeError('What about running <comment>composer global require symfony/thanks && composer thanks</> now?');
+            $this->io->writeError(sprintf('This will spread some %s by sending a %s to the GitHub repositories of your fellow package maintainers.', $love, $star));
+            $this->io->writeError('');
+        }
+
         if (!$recipes) {
             $this->lock->write();
 
@@ -247,16 +257,6 @@ class Flex implements PluginInterface, EventSubscriberInterface
                 '<info>Some files may have been created or updated to configure your new packages.</>',
                 'Don\'t hesitate to <comment>review</>, <comment>edit</> and <comment>commit</> them: these files are <comment>yours</>.'
             );
-        }
-
-        if ($this->displayThanksReminder) {
-            $love = '\\' === DIRECTORY_SEPARATOR ? 'love' : '💖 ';
-            $star = '\\' === DIRECTORY_SEPARATOR ? 'star' : '⭐ ';
-
-            $this->io->writeError('');
-            $this->io->writeError('What about running <comment>composer global require symfony/thanks && composer thanks</> now?');
-            $this->io->writeError(sprintf('This will spread some %s by sending a %s to the GitHub repositories of your fellow package maintainers.', $love, $star));
-            $this->io->writeError('');
         }
 
         $this->lock->write();
