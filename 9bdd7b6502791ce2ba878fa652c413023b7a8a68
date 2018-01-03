@@ -1,0 +1,80 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2018-01-02T19:00:08Z
+
+> composer create-project symfony/skeleton demo
+
+- 30s native, 16s with this PR, 9s with prestissimo - that's the curl advantage we cannot rely on
+
+> installing 134 packages on Blackfire
+
+- 3m45s native, 2min with this PR, prestissimo 35s (but needs cURL)
+
+---------------------------------------------------------------------------
+
+by bitgandtter at 2018-01-02T19:06:17Z
+
+Can we include a validation for the cURL ext and if its enabled use that approach to gain the full speed?
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2018-01-02T19:07:37Z
+
+@bitgandtter not sure what you mean, but using cURL is far from trivial - basically, that's what https://github.com/hirak/prestissimo provides, so just use it if you have curl.
+
+---------------------------------------------------------------------------
+
+by bitgandtter at 2018-01-02T19:11:43Z
+
+yes my bad @nicolas-grekas i miss the above check https://github.com/symfony/flex/pull/261#discussion-diff-159292888R258 that in fact was the intent of my comment
+
+---------------------------------------------------------------------------
+
+by GromNaN at 2018-01-02T22:00:12Z
+
+Thank you for your work on making symfony faster. This is a great plugin for composer totally decoupled from flex.
+
+But Flex should be installed only as dev environments and this plugin will be useful for deployments, without dev requirements.
+
+Making a separate package would be more powerful. Allowing non-flex developers to profit from this optimisation.
+Or the package hirak/prestissimo could be updated to support this failsoft solution.
+
+---------------------------------------------------------------------------
+
+by fabpot at 2018-01-02T22:01:31Z
+
+Flex is part of the `require` section, so always available. It's then the responsibility of Flex to do nothing in case of an install (for deployment), which is exactly what it does.
+
+---------------------------------------------------------------------------
+
+by LKDevelopment at 2018-01-02T22:13:37Z
+
+@nicolas-grekas why you doesn`t contribute this to Composer so every PHP Developer would profit from IT Not only Symfony Devs.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2018-01-02T22:18:53Z
+
+@GromNaN @LKDevelopment I'm focusing on improving the Symfony + Flex based experience that's correct. That's already enough work for one (even passionate) person.
+The good news is that this is going to be released under a very permissive license so that anyone else could take over.
+For myself, it serves my current motivation and goals (and available time for a balanced life.)
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2018-01-02T22:29:08Z
+
+The technical answer is that things cannot be "just" added to Composer, nor released standalone: projects have policies, stability to ensure, maintenance to accept, etc. It could happen, but that's a significant effort. Better start with some pragmatic first step.
+
+---------------------------------------------------------------------------
+
+by fabpot at 2018-01-02T22:32:46Z
+
+For the record, I think @nicolas-grekas even submitted a pull request on Composer to add such parallelization a long time ago... yep, 2.5 years ago, still open: composer/composer#3951
+
+---------------------------------------------------------------------------
+
+by staabm at 2018-01-03T08:18:59Z
+
+with https://github.com/amphp/artax you can get a zero dependency (php-ext wise) http parallel (non-blocking) client, maybe this is an alternative to what you have right now (and I could provide better performance).
+
+counter argument: I really like how simple this PR atm looks like.
