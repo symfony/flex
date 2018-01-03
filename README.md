@@ -10,4 +10,4 @@ dependencies.
 
 [1]: https://symfony.com/doc/current/setup/flex.html
 [2]: https://symfony.com
-[2]: https://symfony.sh
+[3]: https://symfony.sh
