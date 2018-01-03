@@ -437,7 +437,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             ScriptEvents::POST_CREATE_PROJECT_CMD => 'configureProject',
             ScriptEvents::POST_INSTALL_CMD => 'install',
             ScriptEvents::POST_UPDATE_CMD => 'update',
-            PluginEvents::COMMAND => 'inspectCommand',
+            CommandEvent::COMMAND => 'inspectCommand',
             'auto-scripts' => 'executeAutoScripts',
         ];
     }
