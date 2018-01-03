@@ -90,7 +90,7 @@ class ParallelDownloader extends RemoteFilesystem
             $this->fileUrls[] = [$originUrl, $fileUrl, $file];
         }
 
-        if (!$this->urlsCount = count($this->fileUrls)) {
+        if (1 >= $this->urlsCount = count($this->fileUrls)) {
             return;
         }
 
