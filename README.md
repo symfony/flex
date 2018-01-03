@@ -8,5 +8,5 @@ dependencies.
 
 [Discover][2] the available recipes.
 
-[2]: https://symfony.com/doc/current/setup/flex.html
+[1]: https://symfony.com/doc/current/setup/flex.html
 [2]: https://symfony.sh/
