@@ -35,9 +35,9 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
         foreach ($manifest as $source => $target) {
             $target = $this->options->expandTargetDir($target);
             if ('/' === substr($source, -1)) {
-                $this->copyDir($source, $to.'/'.$target, $files);
+                $this->copyDir($source, $this->path->concatenate([$to, $target]), $files);
             } else {
-                $this->copyFile($to.'/'.$target, $files[$source]['contents'], $files[$source]['executable']);
+                $this->copyFile($this->path->concatenate([$to, $target]), $files[$source]['contents'], $files[$source]['executable']);
             }
         }
     }
@@ -46,7 +46,7 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
     {
         foreach ($files as $file => $data) {
             if (0 === strpos($file, $source)) {
-                $file = $target.'/'.substr($file, strlen($source));
+                $file = $this->path->concatenate([$target, substr($file, strlen($source))]);
                 $this->copyFile($file, $data['contents'], $data['executable']);
             }
         }
@@ -66,6 +66,8 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
         if ($executable) {
             @chmod($to, fileperms($to) | 0111);
         }
+
+        $this->write(sprintf('Created <fg=green>"%s"</>', $this->path->relativize($to)));
     }
 
     private function removeFiles(array $manifest, array $files, string $to)
@@ -81,18 +83,23 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
             if ('/' === substr($source, -1)) {
                 foreach (array_keys($files) as $file) {
                     if (0 === strpos($file, $source)) {
-                        $this->removeFile($to.'/'.$target.'/'.substr($file, strlen($source)));
+                        $this->removeFile($this->path->concatenate([$to, $target, substr($file, strlen($source))]));
                     }
                 }
             } else {
-                $this->removeFile($to.'/'.$target);
+                $this->removeFile($this->path->concatenate([$to, $target]));
             }
         }
     }
 
     private function removeFile(string $to)
     {
+        if (!file_exists($to)) {
+            return;
+        }
+
         @unlink($to);
+        $this->write(sprintf('Removed <fg=green>"%s"</>', $this->path->relativize($to)));
 
         if (0 === count(glob(dirname($to).'/*', GLOB_NOSORT))) {
             @rmdir(dirname($to));

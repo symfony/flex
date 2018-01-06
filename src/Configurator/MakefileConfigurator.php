@@ -20,7 +20,7 @@ class MakefileConfigurator extends AbstractConfigurator
 {
     public function configure(Recipe $recipe, $definitions)
     {
-        $this->write('Adding Makefile entries');
+        $this->write('Added Makefile entries');
 
         $makefile = getcwd().'/Makefile';
         if ($this->isFileMarked($recipe, $makefile)) {
@@ -57,7 +57,7 @@ EOF
             return;
         }
 
-        $this->write(sprintf('Removing Makefile entries from %s', $makefile));
+        $this->write(sprintf('Removed Makefile entries from %s', $makefile));
         if (!trim($contents)) {
             @unlink($makefile);
         } else {
