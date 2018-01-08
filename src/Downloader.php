@@ -20,6 +20,8 @@ use Composer\Downloader\TransportException;
 use Composer\Factory;
 use Composer\IO\IOInterface;
 use Composer\Json\JsonFile;
+use Composer\Plugin\PluginEvents;
+use Composer\Plugin\PreFileDownloadEvent;
 
 /**
  * @author Fabien Potencier <fabien@symfony.com>
@@ -37,6 +39,7 @@ class Downloader
     private $endpoint;
     private $caFile;
     private $flexId;
+    private $eventDispatcher;
 
     public function __construct(Composer $composer, IoInterface $io)
     {
@@ -51,6 +54,7 @@ class Downloader
         $this->endpoint = rtrim($endpoint, '/');
         $this->io = $io;
         $config = $composer->getConfig();
+        $this->eventDispatcher = $composer->getEventDispatcher();
         $this->rfs = Factory::createRemoteFilesystem($io, $config);
         $this->cache = new Cache($io, $config->get('cache-repo-dir').'/'.preg_replace('{[^a-z0-9.]}i', '-', $this->endpoint));
         $this->sess = bin2hex(random_bytes(16));
@@ -168,11 +172,18 @@ class Downloader
 
     private function fetchFile(string $url, string $cacheKey, array $headers): Response
     {
+        $rfs = $this->rfs;
+        if ($this->eventDispatcher) {
+            $preFileDownloadEvent = new PreFileDownloadEvent(PluginEvents::PRE_FILE_DOWNLOAD, $rfs, $url);
+            $this->eventDispatcher->dispatch($preFileDownloadEvent->getName(), $preFileDownloadEvent);
+            $rfs = $preFileDownloadEvent->getRemoteFilesystem();
+        }
+
         $options = $this->getOptions($headers);
         $retries = 3;
         while ($retries--) {
             try {
-                $json = $this->rfs->getContents($this->endpoint, $url, false, $options);
+                $json = $rfs->getContents($this->endpoint, $url, false, $options);
 
                 return $this->parseJson($json, $url, $cacheKey);
             } catch (\Exception $e) {
