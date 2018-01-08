@@ -37,14 +37,25 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
         foreach ($manifest as $source => $target) {
             $target = $this->options->expandTargetDir($target);
             if ('/' === substr($source, -1)) {
-                $this->copyDir($from.'/'.$source, $to.'/'.$target);
+                $this->copyDir(
+                    $this->concatenatePathParts([$from, $source]),
+                    $this->concatenatePathParts([$to, $target])
+                );
             } else {
-                if (!is_dir(dirname($to.'/'.$target))) {
-                    mkdir(dirname($to.'/'.$target), 0777, true);
+                $targetPath = $this->concatenatePathParts([$to, $target]);
+                if (!is_dir(dirname($targetPath))) {
+                    mkdir(dirname($targetPath), 0777, true);
+                    $this->write(sprintf(
+                        'Created directory <fg=green>"%s"</>',
+                        $this->relativizePath($targetPath)
+                    ));
                 }
 
-                if (!file_exists($to.'/'.$target)) {
-                    $this->copyFile($from.'/'.$source, $to.'/'.$target);
+                if (!file_exists($targetPath)) {
+                    $this->copyFile(
+                        $this->concatenatePathParts([$from, $source]),
+                        $targetPath
+                    );
                 }
             }
         }
@@ -53,52 +64,98 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
     private function removeFiles(array $manifest, string $from, string $to)
     {
         foreach ($manifest as $source => $target) {
-            $target = $this->options->expandTargetDir($target);
+            $targetPath = $this->concatenatePathParts([$to, $target]);
             if ('/' === substr($source, -1)) {
-                $this->removeFilesFromDir($from.'/'.$source, $to.'/'.$target);
+                $this->removeFilesFromDir(
+                    $this->concatenatePathParts([$from, $source]),
+                    $this->concatenatePathParts([$to, $target])
+                );
             } else {
-                @unlink($to.'/'.$target);
+                @unlink($targetPath);
+                $this->write(sprintf(
+                    'Removed file <fg=green>"%s"</>',
+                    $this->relativizePath($targetPath)
+                ));
             }
         }
     }
 
-    private function copyDir(string $source, string $target)
+    private function copyDir(string $source, string $target): void
     {
         if (!is_dir($target)) {
             mkdir($target, 0777, true);
         }
 
-        $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($source, \RecursiveDirectoryIterator::SKIP_DOTS), \RecursiveIteratorIterator::SELF_FIRST);
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($source, \RecursiveDirectoryIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::SELF_FIRST
+        );
         foreach ($iterator as $item) {
+            $targetPath = $this->concatenatePathParts([$target, $iterator->getSubPathName()]);
             if ($item->isDir()) {
-                if (!is_dir($new = $target.'/'.$iterator->getSubPathName())) {
-                    mkdir($new);
+                if (!is_dir($targetPath)) {
+                    mkdir($targetPath);
+                    $this->write(sprintf(
+                        'Created directory <fg=green>"%s"</>',
+                        $this->relativizePath($targetPath)
+                    ));
                 }
-            } elseif (!file_exists($target.'/'.$iterator->getSubPathName())) {
-                $this->copyFile($item, $target.'/'.$iterator->getSubPathName());
+            } elseif (!file_exists($targetPath)) {
+                $this->copyFile($item, $targetPath);
             }
         }
     }
 
-    public function copyFile(string $source, string $target)
+    public function copyFile(string $source, string $target): void
     {
         if (file_exists($target)) {
             return;
         }
+
         copy($source, $target);
         @chmod($target, fileperms($target) | (fileperms($source) & 0111));
+        $this->write(sprintf(
+            'Created file <fg=green>"%s"</>',
+            $this->relativizePath($target)
+        ));
     }
 
-    private function removeFilesFromDir(string $source, string $target)
+    private function removeFilesFromDir(string $source, string $target): void
     {
-        $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($source, \RecursiveDirectoryIterator::SKIP_DOTS), \RecursiveIteratorIterator::CHILD_FIRST);
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($source, \RecursiveDirectoryIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::CHILD_FIRST
+        );
         foreach ($iterator as $item) {
+            $targetPath = $this->concatenatePathParts([$target, $iterator->getSubPathName()]);
             if ($item->isDir()) {
                 // that removes the dir only if it is empty
-                @rmdir($target.'/'.$iterator->getSubPathName());
+                @rmdir($targetPath);
+                $this->write(sprintf(
+                    'Removed directory <fg=green>"%s"</>',
+                    $this->relativizePath($targetPath)
+                ));
             } else {
-                @unlink($target.'/'.$iterator->getSubPathName());
+                @unlink($targetPath);
+                $this->write(sprintf(
+                    'Removed file <fg=green>"%s"</>',
+                    $this->relativizePath($targetPath)
+                ));
             }
         }
+    }
+
+    private function relativizePath(string $absolutePath): string
+    {
+        $relativePath = str_replace(getcwd(), '.', $absolutePath);
+
+        return is_dir($absolutePath) ? rtrim($relativePath, '/').'/' : $relativePath;
+    }
+
+    private function concatenatePathParts(array $parts): string
+    {
+        return array_reduce($parts, function (string $initial, string $next): string {
+            return rtrim($initial, '/').'/'.ltrim($next, '/');
+        }, '');
     }
 }
