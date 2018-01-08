@@ -71,7 +71,7 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
             @chmod($to, fileperms($to) | 0111);
         }
 
-        $this->write(sprintf('Created file <fg=green>"%s"</>', $this->relativizePath($to)));
+        $this->write(sprintf('Created <fg=green>"%s"</>', $this->relativizePath($to)));
     }
 
     private function removeFiles(array $manifest, array $files, string $to): void
@@ -105,7 +105,7 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
     private function removeFile(string $to): void
     {
         @unlink($to);
-        $this->write(sprintf('Removed file <fg=green>"%s"</>', $this->relativizePath($to)));
+        $this->write(sprintf('Removed <fg=green>"%s"</>', $this->relativizePath($to)));
 
         if (0 === count(glob(dirname($to).'/*', GLOB_NOSORT))) {
             @rmdir(dirname($to));

@@ -33,7 +33,7 @@ class CopyFromRecipeConfiguratorTest extends TestCase
         $this->io->expects($this->exactly(2))->method('writeError')->with(
             $this->logicalOr(
                 ['    Setting configuration and copying files'],
-                ['    Created file <fg=green>"./config/file"</>']
+                ['    Created <fg=green>"./config/file"</>']
             )
         );
 
@@ -50,7 +50,7 @@ class CopyFromRecipeConfiguratorTest extends TestCase
         $this->io->expects($this->exactly(2))->method('writeError')->with(
             $this->logicalOr(
                 ['    Removing configuration and files'],
-                ['    Removed file <fg=green>"./config/file"</>']
+                ['    Removed <fg=green>"./config/file"</>']
             )
         );
 
