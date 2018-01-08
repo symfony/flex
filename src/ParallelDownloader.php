@@ -59,19 +59,19 @@ class ParallelDownloader extends RemoteFilesystem
                 continue;
             }
 
-            if (!$originUrl = $package->getDistUrl()) {
+            if (!$fileUrl = $package->getDistUrl()) {
                 continue;
             }
 
             if ($package->getDistMirrors()) {
-                $originUrl = current($package->getDistUrls());
+                $fileUrl = current($package->getDistUrls());
             }
 
-            if (!preg_match('/^https?:/', $originUrl) || !parse_url($originUrl, PHP_URL_HOST)) {
+            if (!preg_match('/^https?:/', $fileUrl) || !$originUrl = parse_url($fileUrl, PHP_URL_HOST)) {
                 continue;
             }
 
-            if (file_exists($file = $cacheDir.$getCacheKey($package, $originUrl))) {
+            if (file_exists($file = $cacheDir.$getCacheKey($package, $fileUrl))) {
                 continue;
             }
 
@@ -81,10 +81,8 @@ class ParallelDownloader extends RemoteFilesystem
                 continue;
             }
 
-            if (preg_match('#^https://api\.github\.com/repos(/[^/]++/[^/]++/)zipball(.++)$#', $originUrl, $m)) {
+            if (preg_match('#^https://github\.com/#', $package->getSourceUrl()) && preg_match('#^https://api\.github\.com/repos(/[^/]++/[^/]++/)zipball(.++)$#', $fileUrl, $m)) {
                 $fileUrl = sprintf('https://codeload.github.com%slegacy.zip%s', $m[1], $m[2]);
-            } else {
-                $fileUrl = $originUrl;
             }
 
             $this->fileUrls[] = [$originUrl, $fileUrl, $file];
@@ -104,6 +102,7 @@ class ParallelDownloader extends RemoteFilesystem
             $this->io->overwriteError(' (<comment>100%</comment>)');
         } finally {
             $this->io->writeError('');
+            $this->lastProgress = null;
         }
     }
 
@@ -130,7 +129,7 @@ class ParallelDownloader extends RemoteFilesystem
             $this->bytesTransferred += $bytesMax;
         }
 
-        if ($progress - $this->lastProgress >= 5) {
+        if (null !== $this->lastProgress && $progress - $this->lastProgress >= 5) {
             $this->lastProgress = $progress;
             $this->io->overwriteError(sprintf(' (<comment>%d%%</comment>)', $progress), false);
         }
