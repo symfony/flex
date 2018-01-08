@@ -80,7 +80,7 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
         }
     }
 
-    private function copyDir(string $source, string $target): void
+    private function copyDir(string $source, string $target)
     {
         if (!is_dir($target)) {
             mkdir($target, 0777, true);
@@ -106,7 +106,7 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
         }
     }
 
-    public function copyFile(string $source, string $target): void
+    public function copyFile(string $source, string $target)
     {
         if (file_exists($target)) {
             return;
@@ -120,7 +120,7 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
         ));
     }
 
-    private function removeFilesFromDir(string $source, string $target): void
+    private function removeFilesFromDir(string $source, string $target)
     {
         $iterator = new \RecursiveIteratorIterator(
             new \RecursiveDirectoryIterator($source, \RecursiveDirectoryIterator::SKIP_DOTS),

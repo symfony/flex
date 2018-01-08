@@ -46,7 +46,7 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
         }
     }
 
-    private function copyDir(string $source, string $target, array $files): void
+    private function copyDir(string $source, string $target, array $files)
     {
         foreach ($files as $file => $data) {
             if (0 === strpos($file, $source)) {
@@ -56,7 +56,7 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
         }
     }
 
-    private function copyFile(string $to, string $contents, bool $executable): void
+    private function copyFile(string $to, string $contents, bool $executable)
     {
         if (file_exists($to)) {
             return;
@@ -74,7 +74,7 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
         $this->write(sprintf('Created <fg=green>"%s"</>', $this->relativizePath($to)));
     }
 
-    private function removeFiles(array $manifest, array $files, string $to): void
+    private function removeFiles(array $manifest, array $files, string $to)
     {
         foreach ($manifest as $source => $target) {
             $target = $this->options->expandTargetDir($target);
@@ -102,7 +102,7 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
         }
     }
 
-    private function removeFile(string $to): void
+    private function removeFile(string $to)
     {
         @unlink($to);
         $this->write(sprintf('Removed <fg=green>"%s"</>', $this->relativizePath($to)));
