@@ -171,12 +171,9 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
 
         if ($this->displayThanksReminder) {
-            $love = '\\' === DIRECTORY_SEPARATOR ? 'love' : '💖 ';
-            $star = '\\' === DIRECTORY_SEPARATOR ? 'star' : '⭐ ';
-
             $this->io->writeError('');
             $this->io->writeError('What about running <comment>composer global require symfony/thanks && composer thanks</> now?');
-            $this->io->writeError(sprintf('This will spread some %s by sending a %s to the GitHub repositories of your fellow package maintainers.', $love, $star));
+            $this->io->writeError('This will spread some love by sending a star to the GitHub repositories of your fellow package maintainers.');
             $this->io->writeError('');
         }
 
