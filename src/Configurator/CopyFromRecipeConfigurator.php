@@ -37,11 +37,7 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
             if ('/' === substr($source, -1)) {
                 $this->copyDir($source, $this->concatenatePathParts([$to, $target]), $files);
             } else {
-                $this->copyFile(
-                    $this->concatenatePathParts([$to, $target]),
-                    $files[$source]['contents'],
-                    $files[$source]['executable']
-                );
+                $this->copyFile($this->concatenatePathParts([$to, $target]), $files[$source]['contents'], $files[$source]['executable']);
             }
         }
     }
@@ -87,13 +83,7 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
             if ('/' === substr($source, -1)) {
                 foreach (array_keys($files) as $file) {
                     if (0 === strpos($file, $source)) {
-                        $this->removeFile(
-                            $this->concatenatePathParts([
-                                $to,
-                                $target,
-                                substr($file, strlen($source))
-                            ])
-                        );
+                        $this->removeFile($this->concatenatePathParts([$to, $target, substr($file, strlen($source))]));
                     }
                 }
             } else {

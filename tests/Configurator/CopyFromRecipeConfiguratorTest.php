@@ -92,10 +92,6 @@ class CopyFromRecipeConfiguratorTest extends TestCase
 
     private function createConfigurator(): CopyFromRecipeConfigurator
     {
-        return new CopyFromRecipeConfigurator(
-            $this->getMockBuilder(Composer::class)->getMock(),
-            $this->io,
-            new Options()
-        );
+        return new CopyFromRecipeConfigurator($this->getMockBuilder(Composer::class)->getMock(), $this->io, new Options());
     }
 }

@@ -35,6 +35,7 @@ class CopyFromPackageConfiguratorTest extends TestCase
         $this->io->expects($this->exactly(2))->method('writeError')->with(
             $this->logicalOr(
                 ['    Setting configuration and copying files'],
+                ['    Created directory <fg=green>"./public"</>'],
                 ['    Created file <fg=green>"./public/file"</>']
             )
         );
