@@ -37,16 +37,16 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
         foreach ($manifest as $source => $target) {
             $target = $this->options->expandTargetDir($target);
             if ('/' === substr($source, -1)) {
-                $this->copyDir($this->concatenatePathParts([$from, $source]), $this->concatenatePathParts([$to, $target]));
+                $this->copyDir($this->path->concatenate([$from, $source]), $this->path->concatenate([$to, $target]));
             } else {
-                $targetPath = $this->concatenatePathParts([$to, $target]);
+                $targetPath = $this->path->concatenate([$to, $target]);
                 if (!is_dir(dirname($targetPath))) {
                     mkdir(dirname($targetPath), 0777, true);
-                    $this->write(sprintf('Created directory <fg=green>"%s"</>', $this->relativizePath($targetPath)));
+                    $this->write(sprintf('Created <fg=green>"%s"</>', $this->path->relativize(dirname($targetPath))));
                 }
 
                 if (!file_exists($targetPath)) {
-                    $this->copyFile($this->concatenatePathParts([$from, $source]), $targetPath);
+                    $this->copyFile($this->path->concatenate([$from, $source]), $targetPath);
                 }
             }
         }
@@ -55,12 +55,12 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
     private function removeFiles(array $manifest, string $from, string $to)
     {
         foreach ($manifest as $source => $target) {
-            $targetPath = $this->concatenatePathParts([$to, $target]);
+            $targetPath = $this->path->concatenate([$to, $target]);
             if ('/' === substr($source, -1)) {
-                $this->removeFilesFromDir($this->concatenatePathParts([$from, $source]), $this->concatenatePathParts([$to, $target]));
+                $this->removeFilesFromDir($this->path->concatenate([$from, $source]), $this->path->concatenate([$to, $target]));
             } else {
                 @unlink($targetPath);
-                $this->write(sprintf('Removed file <fg=green>"%s"</>', $this->relativizePath($targetPath)));
+                $this->write(sprintf('Removed <fg=green>"%s"</>', $this->path->relativize($targetPath)));
             }
         }
     }
@@ -71,13 +71,13 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
             mkdir($target, 0777, true);
         }
 
-        $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($source, \RecursiveDirectoryIterator::SKIP_DOTS), \RecursiveIteratorIterator::SELF_FIRST);
+        $iterator = $this->createSourceIterator($source, \RecursiveIteratorIterator::SELF_FIRST);
         foreach ($iterator as $item) {
-            $targetPath = $this->concatenatePathParts([$target, $iterator->getSubPathName()]);
+            $targetPath = $this->path->concatenate([$target, $iterator->getSubPathName()]);
             if ($item->isDir()) {
                 if (!is_dir($targetPath)) {
                     mkdir($targetPath);
-                    $this->write(sprintf('Created directory <fg=green>"%s"</>', $this->relativizePath($targetPath)));
+                    $this->write(sprintf('Created <fg=green>"%s"</>', $this->path->relativize($targetPath)));
                 }
             } elseif (!file_exists($targetPath)) {
                 $this->copyFile($item, $targetPath);
@@ -93,36 +93,27 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
 
         copy($source, $target);
         @chmod($target, fileperms($target) | (fileperms($source) & 0111));
-        $this->write(sprintf('Created file <fg=green>"%s"</>', $this->relativizePath($target)));
+        $this->write(sprintf('Created <fg=green>"%s"</>', $this->path->relativize($target)));
     }
 
     private function removeFilesFromDir(string $source, string $target)
     {
-        $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($source, \RecursiveDirectoryIterator::SKIP_DOTS), \RecursiveIteratorIterator::CHILD_FIRST);
+        $iterator = $this->createSourceIterator($source, \RecursiveIteratorIterator::CHILD_FIRST);
         foreach ($iterator as $item) {
-            $targetPath = $this->concatenatePathParts([$target, $iterator->getSubPathName()]);
+            $targetPath = $this->path->concatenate([$target, $iterator->getSubPathName()]);
             if ($item->isDir()) {
                 // that removes the dir only if it is empty
                 @rmdir($targetPath);
-                $this->write(sprintf('Removed directory <fg=green>"%s"</>', $this->relativizePath($targetPath)));
+                $this->write(sprintf('Removed directory <fg=green>"%s"</>', $this->path->relativize($targetPath)));
             } else {
                 @unlink($targetPath);
-                $this->write(sprintf('Removed file <fg=green>"%s"</>', $this->relativizePath($targetPath)));
+                $this->write(sprintf('Removed <fg=green>"%s"</>', $this->path->relativize($targetPath)));
             }
         }
     }
 
-    private function relativizePath(string $absolutePath): string
+    private function createSourceIterator(string $source, int $mode): RecursiveIteratorIterator
     {
-        $relativePath = str_replace(getcwd(), '.', $absolutePath);
-
-        return is_dir($absolutePath) ? rtrim($relativePath, '/').'/' : $relativePath;
-    }
-
-    private function concatenatePathParts(array $parts): string
-    {
-        return array_reduce($parts, function (string $initial, string $next): string {
-            return rtrim($initial, '/').'/'.ltrim($next, '/');
-        }, '');
+        return new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($source, \RecursiveDirectoryIterator::SKIP_DOTS), $mode);
     }
 }

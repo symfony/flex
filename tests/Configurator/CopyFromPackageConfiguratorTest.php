@@ -32,40 +32,26 @@ class CopyFromPackageConfiguratorTest extends TestCase
 
     public function testConfigure()
     {
-        $this->io->expects($this->exactly(2))->method('writeError')->with(
-            $this->logicalOr(
-                ['    Setting configuration and copying files'],
-                ['    Created directory <fg=green>"./public"</>'],
-                ['    Created file <fg=green>"./public/file"</>']
-            )
-        );
+        $this->io->expects($this->at(0))->method('writeError')->with(['    Setting configuration and copying files']);
+        $this->io->expects($this->at(1))->method('writeError')->with(['    Created <fg=green>"./public/"</>']);
+        $this->io->expects($this->at(2))->method('writeError')->with(['    Created <fg=green>"./public/file"</>']);
 
         $this->assertFileNotExists($this->targetFile);
-        $this->createConfigurator()->configure(
-            $this->recipe,
-            [$this->sourceFile => $this->targetFileRelativePath]
-        );
+        $this->createConfigurator()->configure($this->recipe, [$this->sourceFile => $this->targetFileRelativePath]);
         $this->assertFileExists($this->targetFile);
     }
 
     public function testUnconfigure()
     {
-        $this->io->expects($this->exactly(2))->method('writeError')->with(
-            $this->logicalOr(
-                ['    Removing configuration and files'],
-                ['    Removed file <fg=green>"./public/file"</>']
-            )
-        );
+        $this->io->expects($this->at(0))->method('writeError')->with(['    Removing configuration and files']);
+        $this->io->expects($this->at(1))->method('writeError')->with(['    Removed <fg=green>"./public/file"</>']);
 
-        if (!file_exists(sys_get_temp_dir().'/public')) {
-            mkdir(sys_get_temp_dir().'/public');
+        if (!file_exists($this->targetDirectory)) {
+            mkdir($this->targetDirectory);
         }
         file_put_contents($this->targetFile, '');
         $this->assertFileExists($this->targetFile);
-        $this->createConfigurator()->unconfigure(
-            $this->recipe,
-            [$this->sourceFile => $this->targetFileRelativePath]
-        );
+        $this->createConfigurator()->unconfigure($this->recipe, [$this->sourceFile => $this->targetFileRelativePath]);
         $this->assertFileNotExists($this->targetFile);
     }
 
@@ -73,9 +59,12 @@ class CopyFromPackageConfiguratorTest extends TestCase
     {
         parent::setUp();
 
-        $this->sourceFile = 'package/file';
+        $this->sourceDirectory = sys_get_temp_dir().'/package';
+        $this->sourceFile = 'file';
+
+        $this->targetDirectory = sys_get_temp_dir().'/public';
         $this->targetFileRelativePath = 'public/file';
-        $this->targetFile = sys_get_temp_dir(). '/'.$this->targetFileRelativePath;
+        $this->targetFile = $this->targetDirectory.'/file';
 
         $this->io = $this->getMockBuilder(IOInterface::class)->getMock();
 
@@ -95,28 +84,33 @@ class CopyFromPackageConfiguratorTest extends TestCase
             ->willReturn($installationManager)
         ;
 
-        $tmpSourceDirectory = sys_get_temp_dir().'/package';
-        if (!is_dir($tmpSourceDirectory)) {
-            mkdir($tmpSourceDirectory);
+        if (!is_dir($this->sourceDirectory)) {
+            mkdir($this->sourceDirectory);
         }
         $tmpSourceFile = sys_get_temp_dir().'/'.$this->sourceFile;
         if (!file_exists($tmpSourceFile)) {
             file_put_contents($tmpSourceFile, '');
         }
-        @unlink($this->targetFile);
+        $this->cleanUpTargetFiles();
     }
 
     protected function tearDown()
     {
         parent::tearDown();
 
-        @unlink($this->targetFile);
         @unlink(sys_get_temp_dir().'/'.$this->sourceFile);
-        @rmdir(sys_get_temp_dir().'/package');
+        $this->cleanUpTargetFiles();
     }
 
     private function createConfigurator(): CopyFromPackageConfigurator
     {
         return new CopyFromPackageConfigurator($this->composer, $this->io, new Options());
+    }
+
+    private function cleanUpTargetFiles()
+    {
+        @unlink($this->targetFile);
+        @rmdir(sys_get_temp_dir().'/package');
+        @rmdir(sys_get_temp_dir(). '/public');
     }
 }

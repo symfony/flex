@@ -35,9 +35,9 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
         foreach ($manifest as $source => $target) {
             $target = $this->options->expandTargetDir($target);
             if ('/' === substr($source, -1)) {
-                $this->copyDir($source, $this->concatenatePathParts([$to, $target]), $files);
+                $this->copyDir($source, $this->path->concatenate([$to, $target]), $files);
             } else {
-                $this->copyFile($this->concatenatePathParts([$to, $target]), $files[$source]['contents'], $files[$source]['executable']);
+                $this->copyFile($this->path->concatenate([$to, $target]), $files[$source]['contents'], $files[$source]['executable']);
             }
         }
     }
@@ -46,7 +46,7 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
     {
         foreach ($files as $file => $data) {
             if (0 === strpos($file, $source)) {
-                $file = $this->concatenatePathParts([$target, substr($file, strlen($source))]);
+                $file = $this->path->concatenate([$target, substr($file, strlen($source))]);
                 $this->copyFile($file, $data['contents'], $data['executable']);
             }
         }
@@ -67,7 +67,7 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
             @chmod($to, fileperms($to) | 0111);
         }
 
-        $this->write(sprintf('Created <fg=green>"%s"</>', $this->relativizePath($to)));
+        $this->write(sprintf('Created <fg=green>"%s"</>', $this->path->relativize($to)));
     }
 
     private function removeFiles(array $manifest, array $files, string $to)
@@ -83,11 +83,11 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
             if ('/' === substr($source, -1)) {
                 foreach (array_keys($files) as $file) {
                     if (0 === strpos($file, $source)) {
-                        $this->removeFile($this->concatenatePathParts([$to, $target, substr($file, strlen($source))]));
+                        $this->removeFile($this->path->concatenate([$to, $target, substr($file, strlen($source))]));
                     }
                 }
             } else {
-                $this->removeFile($this->concatenatePathParts([$to, $target]));
+                $this->removeFile($this->path->concatenate([$to, $target]));
             }
         }
     }
@@ -95,24 +95,10 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
     private function removeFile(string $to)
     {
         @unlink($to);
-        $this->write(sprintf('Removed <fg=green>"%s"</>', $this->relativizePath($to)));
+        $this->write(sprintf('Removed <fg=green>"%s"</>', $this->path->relativize($to)));
 
         if (0 === count(glob(dirname($to).'/*', GLOB_NOSORT))) {
             @rmdir(dirname($to));
         }
-    }
-
-    private function relativizePath(string $absolutePath): string
-    {
-        $relativePath = str_replace(getcwd(), '.', $absolutePath);
-
-        return is_dir($absolutePath) ? rtrim($relativePath, '/').'/' : $relativePath;
-    }
-
-    private function concatenatePathParts(array $parts): string
-    {
-        return array_reduce($parts, function (string $initial, string $next): string {
-            return rtrim($initial, '/').'/'.ltrim($next, '/');
-        }, '');
     }
 }

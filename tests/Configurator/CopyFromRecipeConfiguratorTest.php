@@ -30,12 +30,8 @@ class CopyFromRecipeConfiguratorTest extends TestCase
 
     public function testConfigure()
     {
-        $this->io->expects($this->exactly(2))->method('writeError')->with(
-            $this->logicalOr(
-                ['    Setting configuration and copying files'],
-                ['    Created <fg=green>"./config/file"</>']
-            )
-        );
+        $this->io->expects($this->at(0))->method('writeError')->with(['    Setting configuration and copying files']);
+        $this->io->expects($this->at(1))->method('writeError')->with(['    Created <fg=green>"./config/file"</>']);
 
         $this->assertFileNotExists($this->targetFile);
         $this->createConfigurator()->configure(
@@ -47,12 +43,8 @@ class CopyFromRecipeConfiguratorTest extends TestCase
 
     public function testUnconfigure()
     {
-        $this->io->expects($this->exactly(2))->method('writeError')->with(
-            $this->logicalOr(
-                ['    Removing configuration and files'],
-                ['    Removed <fg=green>"./config/file"</>']
-            )
-        );
+        $this->io->expects($this->at(0))->method('writeError')->with(['    Removing configuration and files']);
+        $this->io->expects($this->at(1))->method('writeError')->with(['    Removed <fg=green>"./config/file"</>']);
 
         if (!file_exists(sys_get_temp_dir().'/config')) {
             mkdir(sys_get_temp_dir().'/config');
