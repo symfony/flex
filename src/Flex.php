@@ -27,7 +27,6 @@ use Composer\Installer\PackageEvent;
 use Composer\Installer\PackageEvents;
 use Composer\Installer\SuggestedPackagesReporter;
 use Composer\IO\IOInterface;
-use Composer\IO\ConsoleIO;
 use Composer\IO\NullIO;
 use Composer\Json\JsonFile;
 use Composer\Json\JsonManipulator;
@@ -37,6 +36,7 @@ use Composer\Plugin\PluginInterface;
 use Composer\Script\Event;
 use Composer\Script\ScriptEvents;
 use Hirak\Prestissimo\Plugin as Prestissimo;
+use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Thanks\Thanks;
 
 /**
@@ -81,35 +81,32 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $this->downloader->setFlexId($this->getFlexId());
         $this->lock = new Lock(str_replace(Factory::getComposerFile(), 'composer.json', 'symfony.lock'));
 
-        $search = 3;
-        foreach (debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT) as $trace) {
-            if (!isset($trace['object'])) {
+        $backtrace = debug_backtrace();
+        foreach ($backtrace as $trace) {
+            if (isset($trace['object']) && $trace['object'] instanceof Installer) {
+                $trace['object']->setSuggestedPackagesReporter(new SuggestedPackagesReporter(new NullIO()));
+                break;
+            }
+        }
+
+        foreach ($backtrace as $trace) {
+            if (!isset($trace['object']) || !isset($trace['args'][0])) {
                 continue;
             }
 
-            if ($trace['object'] instanceof Application) {
-                --$search;
-                $app = $trace['object'];
-                $resolver = new PackageResolver($this->downloader);
-                $app->add(new Command\RequireCommand($resolver));
-                $app->add(new Command\UpdateCommand($resolver));
-                $app->add(new Command\RemoveCommand($resolver));
-                $app->add(new Command\UnpackCommand($resolver));
-            } elseif ($trace['object'] instanceof Installer) {
-                --$search;
-                $trace['object']->setSuggestedPackagesReporter(new SuggestedPackagesReporter(new NullIO()));
-            } elseif ($trace['object'] instanceof CreateProjectCommand) {
-                --$search;
-                if ($io instanceof ConsoleIO) {
-                    $p = new \ReflectionProperty($io, 'input');
-                    $p->setAccessible(true);
-                    $p->getValue($io)->setInteractive(false);
-                }
+            if (!$trace['object'] instanceof Application || !$trace['args'][0] instanceof ArgvInput) {
+                continue;
             }
 
-            if (0 === $search) {
-                break;
-            }
+            $app = $trace['object'];
+            $resolver = new PackageResolver($this->downloader);
+            $app->add(new Command\RequireCommand($resolver));
+            $app->add(new Command\UpdateCommand($resolver));
+            $app->add(new Command\RemoveCommand($resolver));
+            $app->add(new Command\UnpackCommand($resolver));
+
+            $trace['args'][0]->setInteractive(false);
+            break;
         }
     }
 
@@ -200,7 +197,8 @@ class Flex implements PluginInterface, EventSubscriberInterface
     [<comment>a</>] Yes for all packages, only for the current installation session
     [<comment>p</>] Yes permanently, never ask again for this project
     (defaults to <comment>n</>): ';
-                $answer = $this->io->askAndValidate($question,
+                $answer = $this->io->askAndValidate(
+                    $question,
                     function ($value) {
                         if (null === $value) {
                             return 'n';
@@ -333,7 +331,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
                 $manifest = [];
                 $bundle = new SymfonyBundle($this->composer, $package, $job);
                 if (null === $devPackages) {
-                    $devPackages = array_map(function ($package) { return $package['name']; }, $this->composer->getLocker()->getLockData()['packages-dev']);
+                    $devPackages = array_column($this->composer->getLocker()->getLockData()['packages-dev'], 'name');
                 }
                 $envs = in_array($name, $devPackages) ? ['dev', 'test'] : ['all'];
                 foreach ($bundle->getClassNames() as $class) {
