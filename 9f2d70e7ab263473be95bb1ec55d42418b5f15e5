@@ -1,0 +1,53 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2018-01-10T08:02:36Z
+
+@DHager can you please check that the following script doesn't break badly your Docker terminal?
+
+```
+<?php
+
+    echo '💖'.rawurlencode('💖'), "\n";
+    echo '🎶'.rawurlencode('🎶'), "\n";
+    echo '🌟'.rawurlencode('🌟'), "\n";
+    echo '★'.rawurlencode('★'), "\n";
+```
+
+---------------------------------------------------------------------------
+
+by DHager at 2018-01-10T08:42:06Z
+
+@nicolas-grekas Thanks, that works. Or at least, it fails *far* more gracefully. 😆  Thanks.
+
+Here's the script I just tested with, placing the "old star" at the end:
+
+    <?php
+    echo "Heart1\t" . '💖' . "\n";
+    echo "Heart2\t" . rawurlencode('💖') . "\n";
+    echo "Music1\t" . '🎶' . "\n";
+    echo "Music2\t" . rawurlencode('🎶') . "\n";
+    echo "GlowStar1\t" . '🌟' . "\n";
+    echo "GlowStar2\t" . rawurlencode('🌟') . "\n";
+    echo "Blackstar1\t" . '★' . "\n";
+    echo "Blackstar2\t" . rawurlencode('★') . "\n";
+    echo "BuggyStar\t" . '⭐ ';
+
+And the console output showing it doesn't go awry (and trigger the Docker bug that ends the terminal) *until* the old star is output:
+
+    root@a971adedd704:/var/www/demo-site# php star.php
+    Heart1
+    Heart2  %F0%9F%92%96
+    Music1
+    Music2  %F0%9F%8E%B6
+    GlowStar1
+    GlowStar2       %F0%9F%8C%9F
+    Blackstar1
+    Blackstar2      %E2%98%85
+    BuggyStar       New state of 'nil' is invalid.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2018-01-10T09:06:26Z
+
+Cool! Thanks for the confirmation @DHager.
+PR ready :)
