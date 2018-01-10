@@ -23,7 +23,9 @@ class ContainerConfiguratorTest extends TestCase
     {
         $recipe = $this->getMockBuilder('Symfony\Flex\Recipe')->disableOriginalConstructor()->getMock();
         $config = sys_get_temp_dir().'/config/services.yaml';
-        file_put_contents($config, <<<EOF
+        file_put_contents(
+            $config,
+            <<<EOF
 # comment
 parameters:
 
@@ -62,7 +64,9 @@ EOF
     {
         $recipe = $this->getMockBuilder('Symfony\Flex\Recipe')->disableOriginalConstructor()->getMock();
         $config = sys_get_temp_dir().'/config/services.yaml';
-        file_put_contents($config, <<<EOF
+        file_put_contents(
+            $config,
+            <<<EOF
 services:
 
 EOF
@@ -96,7 +100,9 @@ EOF
     {
         $recipe = $this->getMockBuilder('Symfony\Flex\Recipe')->disableOriginalConstructor()->getMock();
         $config = sys_get_temp_dir().'/config/services.yaml';
-        file_put_contents($config, <<<EOF
+        file_put_contents(
+            $config,
+            <<<EOF
 parameters:
     locale: es
 
@@ -133,7 +139,9 @@ EOF
     {
         $recipe = $this->getMockBuilder('Symfony\Flex\Recipe')->disableOriginalConstructor()->getMock();
         $config = sys_get_temp_dir().'/config/services.yaml';
-        file_put_contents($config, <<<EOF
+        file_put_contents(
+            $config,
+            <<<EOF
 parameters:
     # comment 1
     locale: es

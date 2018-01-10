@@ -47,7 +47,9 @@ class ParallelDownloader extends RemoteFilesystem
         $this->bytesMax = $this->bytesTransferred = 0;
         $this->fileUrls = [];
         $cacheDir = rtrim($this->config->get('cache-files-dir'), '\/').DIRECTORY_SEPARATOR;
-        $getCacheKey = function (PackageInterface $package, $processedUrl) { return $this->getCacheKey($package, $processedUrl); };
+        $getCacheKey = function (PackageInterface $package, $processedUrl) {
+            return $this->getCacheKey($package, $processedUrl);
+        };
         $getCacheKey = \Closure::bind($getCacheKey, new FileDownloader($this->io, $this->config), FileDownloader::class);
 
         foreach ($operations as $op) {

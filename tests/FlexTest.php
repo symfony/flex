@@ -123,7 +123,8 @@ class FlexTest extends TestCase
             $flex->io = $io;
             $flex->configurator = $configurator;
             $flex->downloader = $downloader;
-            $flex->runningCommand = function() {};
+            $flex->runningCommand = function () {
+            };
             $flex->options = new Options(['config-dir' => 'config', 'var-dir' => 'var']);
             $flex->lock = $lock;
 
@@ -141,15 +142,19 @@ class FlexTest extends TestCase
             'line 2 var',
             '',
         ];
-        $postInstallOutput = \Closure::bind(function () { return $this->postInstallOutput; }, $flex, Flex::class)->__invoke();
+        $postInstallOutput = \Closure::bind(function () {
+            return $this->postInstallOutput;
+        }, $flex, Flex::class)->__invoke();
         $this->assertSame($expected, $postInstallOutput);
 
-        $this->assertSame(<<<EOF
+        $this->assertSame(
+            <<<EOF
 Symfony operations: 1 recipe ()
   - Configuring dummy/dummy (>=1.0): From github.com/symfony/recipes:master
 
 EOF
-            , $io->getOutput()
+            ,
+            $io->getOutput()
         );
     }
 

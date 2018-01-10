@@ -131,7 +131,9 @@ EOF;
             'APP_SECRET' => 's3cretf0rt3st',
         ]);
 
-        $this->assertStringEqualsFile($env, <<<EOF
+        $this->assertStringEqualsFile(
+            $env,
+            <<<EOF
 
 
 EOF

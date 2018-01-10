@@ -30,7 +30,9 @@ class MakefileConfigurator extends AbstractConfigurator
         $data = $this->markData($recipe, implode("\n", $definitions));
 
         if (!file_exists($makefile)) {
-            file_put_contents(getcwd().'/Makefile', <<<EOF
+            file_put_contents(
+                getcwd().'/Makefile',
+                <<<EOF
 ifndef APP_ENV
 	include .env
 endif

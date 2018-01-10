@@ -37,7 +37,9 @@ class MarkefileConfiguratorTest extends TestCase
         @unlink($makefile);
         touch($makefile);
 
-        $makefile1 = explode("\n", <<<EOF
+        $makefile1 = explode(
+            "\n",
+            <<<EOF
 CONSOLE := $(shell which bin/console)
 sf_console:
 ifndef CONSOLE
@@ -45,7 +47,9 @@ ifndef CONSOLE
 endif
 EOF
         );
-        $makefile2 = explode("\n", <<<EOF
+        $makefile2 = explode(
+            "\n",
+            <<<EOF
 cache-clear:
 ifdef CONSOLE
 	@$(CONSOLE) cache:clear --no-warmup
