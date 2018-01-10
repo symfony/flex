@@ -1,0 +1,42 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2018-01-09T09:54:28Z
+
+I would prefer not doing this. The world is enough boring to work harder to make it fun :)
+Can't we detect this case where we cannot use the emoji instead?
+
+---------------------------------------------------------------------------
+
+by javiereguiluz at 2018-01-09T10:07:58Z
+
+I agree with @DHager here. Why don't we remove the emojis and always display the same chars as on Windows? We can't break something as important as Docker with something that it's optional.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2018-01-09T10:17:26Z
+
+@javiereguiluz we already do this on Windows. This patch will remove the emoji on ALL platforms, just because Docker on Windows breaks (note that "Docker on Windows" is not detected as "on Windows" by the current logic.)
+
+---------------------------------------------------------------------------
+
+by DHager at 2018-01-09T10:50:07Z
+
+@nicolas-grekas In this scenario, the PHP code is running on a Linux container, sectioned off inside a Linux virtual machine, which in turn is running within a Windows physical host.
+
+Even if you could detect the situation, that's probably the kind of stuff which should exist in a separate library or utility.
+
+A possible compromise: ASCII art :)
+
+---------------------------------------------------------------------------
+
+by bitgandtter at 2018-01-09T12:04:22Z
+
+I agree with @nicolas-grekas on this one, the issue on this matter is on docker and they have the way to fix it, we should not make flex boring IMHO
+
+---------------------------------------------------------------------------
+
+by DHager at 2018-01-09T23:04:38Z
+
+@bitgandtter When I look at `composer update`, I see a scriptable command-line cross-plaform package-management tool... From my perspective, all of that stuff is *supposed* to be safely-boring, perhaps with stodgy phrases like "POSIX compliant."
+
+Ultimately, it means everybody has *more* time for fun, because they aren't debugging a mysterious crash or getting paged after-hours when something breaks.
