@@ -44,7 +44,7 @@ class EnvConfigurator extends AbstractConfigurator
             if ('%generate(secret)%' === $value) {
                 $value = bin2hex(random_bytes(16));
             }
-            if ('#' === $key[0] && ctype_digit(substr($key, 1))) {
+            if ('#' === $key[0] && is_numeric(substr($key, 1))) {
                 $data .= '# '.$value."\n";
 
                 continue;
@@ -82,7 +82,7 @@ class EnvConfigurator extends AbstractConfigurator
                     $value = bin2hex(random_bytes(16));
                 }
                 if ('#' === $key[0]) {
-                    if (ctype_digit(substr($key, 1))) {
+                    if (is_numeric(substr($key, 1))) {
                         $doc = new \DOMDocument();
                         $data .= '        '.$doc->saveXML($doc->createComment(' '.$value.' '))."\n";
                     } else {
