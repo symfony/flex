@@ -23,10 +23,23 @@ use Symfony\Flex\Recipe;
 class CopyFromRecipeConfiguratorTest extends TestCase
 {
     private $sourceFile;
+    private $sourceFileRelativePath;
+    private $sourceDirectory;
     private $targetFile;
     private $targetFileRelativePath;
+    private $targetDirectory;
     private $io;
     private $recipe;
+
+    public function testNoFilesCopied()
+    {
+        if (!file_exists($this->targetDirectory)) {
+            mkdir($this->targetDirectory);
+        }
+        file_put_contents($this->targetFile, '');
+        $this->io->expects($this->exactly(1))->method('writeError')->with(['    Setting configuration and copying files']);
+        $this->createConfigurator()->configure($this->recipe, [$this->sourceFileRelativePath => $this->targetFileRelativePath]);
+    }
 
     public function testConfigure()
     {
@@ -36,7 +49,7 @@ class CopyFromRecipeConfiguratorTest extends TestCase
         $this->assertFileNotExists($this->targetFile);
         $this->createConfigurator()->configure(
             $this->recipe,
-            [$this->sourceFile => $this->targetFileRelativePath]
+            [$this->sourceFileRelativePath => $this->targetFileRelativePath]
         );
         $this->assertFileExists($this->targetFile);
     }
@@ -46,8 +59,8 @@ class CopyFromRecipeConfiguratorTest extends TestCase
         $this->io->expects($this->at(0))->method('writeError')->with(['    Removing configuration and files']);
         $this->io->expects($this->at(1))->method('writeError')->with(['    Removed <fg=green>"./config/file"</>']);
 
-        if (!file_exists(sys_get_temp_dir().'/config')) {
-            mkdir(sys_get_temp_dir().'/config');
+        if (!file_exists($this->targetDirectory)) {
+            mkdir($this->targetDirectory);
         }
         file_put_contents($this->targetFile, '');
         $this->assertFileExists($this->targetFile);
@@ -55,35 +68,52 @@ class CopyFromRecipeConfiguratorTest extends TestCase
         $this->assertFileNotExists($this->targetFile);
     }
 
+    public function testNoFilesRemoved()
+    {
+        $this->assertFileNotExists($this->targetFile);
+        $this->io->expects($this->exactly(1))->method('writeError')->with(['    Removing configuration and files']);
+        $this->createConfigurator()->unconfigure($this->recipe, [$this->sourceFileRelativePath => $this->targetFileRelativePath]);
+    }
+
     protected function setUp()
     {
         parent::setUp();
 
-        $this->sourceFile = 'file';
+        $this->sourceDirectory = sys_get_temp_dir().'/source';
+        $this->sourceFileRelativePath = 'source/file';
+        $this->sourceFile = $this->targetDirectory.'/file';
+
+        $this->targetDirectory = sys_get_temp_dir().'/config';
         $this->targetFileRelativePath = 'config/file';
-        $this->targetFile = sys_get_temp_dir(). '/'.$this->targetFileRelativePath;
+        $this->targetFile = $this->targetDirectory. '/file';
 
         $this->io = $this->getMockBuilder(IOInterface::class)->getMock();
         $this->recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
         $this->recipe->expects($this->any())->method('getFiles')->willReturn([
-            $this->sourceFile => [
+            $this->sourceFileRelativePath => [
                 'contents' => 'somecontent',
                 'executable' => false
             ]
         ]);
 
-        @unlink($this->targetFile);
+        $this->cleanUpTargetFiles();
     }
 
     protected function tearDown()
     {
         parent::tearDown();
 
-        @unlink($this->targetFile);
+        $this->cleanUpTargetFiles();
     }
 
     private function createConfigurator(): CopyFromRecipeConfigurator
     {
         return new CopyFromRecipeConfigurator($this->getMockBuilder(Composer::class)->getMock(), $this->io, new Options());
+    }
+
+    private function cleanUpTargetFiles()
+    {
+        @unlink($this->targetFile);
+        @rmdir($this->targetDirectory);
     }
 }

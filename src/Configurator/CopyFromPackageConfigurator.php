@@ -11,6 +11,7 @@
 
 namespace Symfony\Flex\Configurator;
 
+use Exception;
 use Symfony\Flex\Recipe;
 
 /**
@@ -58,7 +59,7 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
             $targetPath = $this->path->concatenate([$to, $target]);
             if ('/' === substr($source, -1)) {
                 $this->removeFilesFromDir($this->path->concatenate([$from, $source]), $this->path->concatenate([$to, $target]));
-            } else {
+            } elseif (file_exists($targetPath)) {
                 @unlink($targetPath);
                 $this->write(sprintf('Removed <fg=green>"%s"</>', $this->path->relativize($targetPath)));
             }
@@ -89,6 +90,10 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
     {
         if (file_exists($target)) {
             return;
+        }
+
+        if (!file_exists($source)) {
+            throw new Exception(sprintf('File "%s" does not exist!', $source));
         }
 
         copy($source, $target);

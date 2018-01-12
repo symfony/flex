@@ -94,6 +94,10 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
 
     private function removeFile(string $to)
     {
+        if (!file_exists($to)) {
+            return;
+        }
+
         @unlink($to);
         $this->write(sprintf('Removed <fg=green>"%s"</>', $this->path->relativize($to)));
 

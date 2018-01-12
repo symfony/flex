@@ -21,23 +21,53 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Flex\Configurator\CopyFromPackageConfigurator;
 use Symfony\Flex\Options;
 use Symfony\Flex\Recipe;
+use Throwable;
 
 class CopyFromPackageConfiguratorTest extends TestCase
 {
     private $sourceFile;
+    private $sourceDirectory;
+    private $sourceFileRelativePath;
     private $targetFile;
     private $targetFileRelativePath;
+    private $targetDirectory;
     private $io;
     private $recipe;
 
+    public function testNoFilesCopied()
+    {
+        if (!file_exists($this->targetDirectory)) {
+            mkdir($this->targetDirectory);
+        }
+        file_put_contents($this->targetFile, '');
+        $this->io->expects($this->exactly(1))->method('writeError')->with(['    Setting configuration and copying files']);
+        $this->createConfigurator()->configure($this->recipe, [$this->sourceFileRelativePath => $this->targetFileRelativePath]);
+    }
+
+    public function testSourceFileNotExist()
+    {
+        $this->io->expects($this->at(0))->method('writeError')->with(['    Setting configuration and copying files']);
+        $this->io->expects($this->at(1))->method('writeError')->with(['    Created <fg=green>"./public/"</>']);
+        $this->expectException(Throwable::class);
+        $this->expectExceptionMessage(sprintf('File "%s" does not exist!', $this->sourceFile));
+        $this->createConfigurator()->configure($this->recipe, [$this->sourceFileRelativePath => $this->targetFileRelativePath]);
+    }
+
     public function testConfigure()
     {
+        if (!is_dir($this->sourceDirectory)) {
+            mkdir($this->sourceDirectory);
+        }
+        if (!file_exists($this->sourceFile)) {
+            file_put_contents($this->sourceFile, '');
+        }
+
         $this->io->expects($this->at(0))->method('writeError')->with(['    Setting configuration and copying files']);
         $this->io->expects($this->at(1))->method('writeError')->with(['    Created <fg=green>"./public/"</>']);
         $this->io->expects($this->at(2))->method('writeError')->with(['    Created <fg=green>"./public/file"</>']);
 
         $this->assertFileNotExists($this->targetFile);
-        $this->createConfigurator()->configure($this->recipe, [$this->sourceFile => $this->targetFileRelativePath]);
+        $this->createConfigurator()->configure($this->recipe, [$this->sourceFileRelativePath => $this->targetFileRelativePath]);
         $this->assertFileExists($this->targetFile);
     }
 
@@ -51,8 +81,15 @@ class CopyFromPackageConfiguratorTest extends TestCase
         }
         file_put_contents($this->targetFile, '');
         $this->assertFileExists($this->targetFile);
-        $this->createConfigurator()->unconfigure($this->recipe, [$this->sourceFile => $this->targetFileRelativePath]);
+        $this->createConfigurator()->unconfigure($this->recipe, [$this->sourceFileRelativePath => $this->targetFileRelativePath]);
         $this->assertFileNotExists($this->targetFile);
+    }
+
+    public function testNoFilesRemoved()
+    {
+        $this->assertFileNotExists($this->targetFile);
+        $this->io->expects($this->exactly(1))->method('writeError')->with(['    Removing configuration and files']);
+        $this->createConfigurator()->unconfigure($this->recipe, [$this->sourceFileRelativePath => $this->targetFileRelativePath]);
     }
 
     protected function setUp()
@@ -60,7 +97,8 @@ class CopyFromPackageConfiguratorTest extends TestCase
         parent::setUp();
 
         $this->sourceDirectory = sys_get_temp_dir().'/package';
-        $this->sourceFile = 'file';
+        $this->sourceFileRelativePath = 'package/file';
+        $this->sourceFile = $this->sourceDirectory.'/file';
 
         $this->targetDirectory = sys_get_temp_dir().'/public';
         $this->targetFileRelativePath = 'public/file';
@@ -84,13 +122,6 @@ class CopyFromPackageConfiguratorTest extends TestCase
             ->willReturn($installationManager)
         ;
 
-        if (!is_dir($this->sourceDirectory)) {
-            mkdir($this->sourceDirectory);
-        }
-        $tmpSourceFile = sys_get_temp_dir().'/'.$this->sourceFile;
-        if (!file_exists($tmpSourceFile)) {
-            file_put_contents($tmpSourceFile, '');
-        }
         $this->cleanUpTargetFiles();
     }
 
@@ -98,7 +129,7 @@ class CopyFromPackageConfiguratorTest extends TestCase
     {
         parent::tearDown();
 
-        @unlink(sys_get_temp_dir().'/'.$this->sourceFile);
+        @unlink($this->sourceFile);
         $this->cleanUpTargetFiles();
     }
 
