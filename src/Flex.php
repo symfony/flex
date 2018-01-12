@@ -253,7 +253,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
                 $this->postInstallOutput,
                 '',
                 '<info>Some files may have been created or updated to configure your new packages.</>',
-                'Don\'t hesitate to <comment>review</>, <comment>edit</> and <comment>commit</> them: these files are <comment>yours</>.'
+                'Please <comment>review</>, <comment>edit</> and <comment>commit</> them: these files are <comment>yours</>.'
             );
         }
 
