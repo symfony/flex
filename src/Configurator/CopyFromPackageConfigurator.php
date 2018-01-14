@@ -11,7 +11,7 @@
 
 namespace Symfony\Flex\Configurator;
 
-use Exception;
+use LogicException;
 use Symfony\Flex\Recipe;
 
 /**
@@ -93,7 +93,7 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
         }
 
         if (!file_exists($source)) {
-            throw new Exception(sprintf('File "%s" does not exist!', $source));
+            throw new LogicException(sprintf('File "%s" does not exist!', $source));
         }
 
         copy($source, $target);

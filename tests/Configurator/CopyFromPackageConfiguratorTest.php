@@ -17,11 +17,11 @@ use Composer\Composer;
 use Composer\Installer\InstallationManager;
 use Composer\IO\IOInterface;
 use Composer\Package\PackageInterface;
+use LogicException;
 use PHPUnit\Framework\TestCase;
 use Symfony\Flex\Configurator\CopyFromPackageConfigurator;
 use Symfony\Flex\Options;
 use Symfony\Flex\Recipe;
-use Throwable;
 
 class CopyFromPackageConfiguratorTest extends TestCase
 {
@@ -48,7 +48,7 @@ class CopyFromPackageConfiguratorTest extends TestCase
     {
         $this->io->expects($this->at(0))->method('writeError')->with(['    Setting configuration and copying files']);
         $this->io->expects($this->at(1))->method('writeError')->with(['    Created <fg=green>"./public/"</>']);
-        $this->expectException(Throwable::class);
+        $this->expectException(LogicException::class);
         $this->expectExceptionMessage(sprintf('File "%s" does not exist!', $this->sourceFile));
         $this->createConfigurator()->configure($this->recipe, [$this->sourceFileRelativePath => $this->targetFileRelativePath]);
     }
