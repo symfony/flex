@@ -78,6 +78,10 @@ class BundlesConfigurator extends AbstractConfigurator
     private function dump(string $file, array $bundles)
     {
         $contents = "<?php\n\nreturn [\n";
+
+        // sort bundles alphabetically to prevent unnecessary merge-conflicts
+        ksort($bundles);
+
         foreach ($bundles as $class => $envs) {
             $contents .= "    $class::class => [";
             foreach (array_keys($envs) as $env) {
