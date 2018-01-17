@@ -1,0 +1,80 @@
+---------------------------------------------------------------------------
+
+by szymach at 2018-01-06T21:56:51Z
+
+@fabpot let me know if this is OK or should I change something, I will still be working on this anyway.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2018-01-06T22:07:18Z
+
+Could you post a screenshot please?
+
+---------------------------------------------------------------------------
+
+by szymach at 2018-01-06T22:52:14Z
+
+EDIT crap, I mixed the colours on the removing files command, they should be inversed.
+EDIT 2 fixed the removal image
+EDIT 3 replaced the image with how it works now
+
+![install_remove](https://user-images.githubusercontent.com/2230556/34650530-f04ed8b6-f3c2-11e7-8e92-e6fc8f7ac561.jpeg)
+
+The double slash in some of the file paths is added due to a [lack of check](https://github.com/symfony/flex/blob/master/src/Configurator/CopyFromRecipeConfigurator.php#L49) of whether there is already one or not, I think. If it is due to my changes, I am unable to pinpoint the root cause.
+
+---------------------------------------------------------------------------
+
+by szymach at 2018-01-07T14:55:31Z
+
+@nicolas-grekas @fabpot I have performed the requested changes and posted a screenshot of two packages being added and removed (see above). Please tell me if this is OK and if it is, I will continue the work on this.
+
+---------------------------------------------------------------------------
+
+by fabpot at 2018-01-07T18:24:06Z
+
+Fixing the double-slash would be a nice bonus :)
+
+I cannot see the "Removing entries in ..." in your PR, should probably be "Removed entries in ..." to be consistent with the other messages.
+
+---------------------------------------------------------------------------
+
+by szymach at 2018-01-07T19:23:03Z
+
+You mean the [.gitignore](https://github.com/symfony/flex/blob/master/src/Configurator/GitignoreConfigurator.php#L49) messages? Was not added by me, but I can adjust my messages to say "Creating / Removing" if we are aiming for consistency. I will also fix that double slash.
+
+Anyways, I did the minimum set of changes to see if I am going in the right direction, so I have only added these two messages. I still have more to go, which is removing directory message and the whole `CopyFromPackageConfigurator`.
+
+EDIT also, I have noticed [some tests](https://github.com/symfony/flex/blob/master/tests/Configurator/BundlesConfiguratorTest.php#L27) are using string class names instead of the `::class` magic constant. Should I also change these?
+
+---------------------------------------------------------------------------
+
+by fabpot at 2018-01-07T19:31:38Z
+
+The removing message indeed already exists. It shows up in your screenshot. And indeed, I think changing it is required for more consistency.
+
+I think you are indeed in the right direction.
+
+---------------------------------------------------------------------------
+
+by szymach at 2018-01-11T22:19:44Z
+
+@stof @fabpot I have added requested changes. If you find it OK, I will add more tests and the verbosity check.
+
+---------------------------------------------------------------------------
+
+by szymach at 2018-01-14T11:32:11Z
+
+@stof [this bit here](https://github.com/symfony/flex/blob/master/src/Configurator/AbstractConfigurator.php#L47) only outputs the messages when the `verbose` flag is on, do you want me to check different levels of verbosity as well?
+@fabpot
+
+---------------------------------------------------------------------------
+
+by szymach at 2018-01-15T11:00:24Z
+
+ping @fabpot @stof
+
+---------------------------------------------------------------------------
+
+by szymach at 2018-01-16T17:43:21Z
+
+ping @fabpot @stof
