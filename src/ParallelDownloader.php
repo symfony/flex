@@ -12,11 +12,8 @@
 namespace Symfony\Flex;
 
 use Composer\Config;
-use Composer\Downloader\FileDownloader;
 use Composer\Downloader\TransportException;
-use Composer\Factory;
 use Composer\IO\IOInterface;
-use Composer\Package\PackageInterface;
 use Composer\Util\RemoteFilesystem;
 
 /**
@@ -27,135 +24,226 @@ use Composer\Util\RemoteFilesystem;
 class ParallelDownloader extends RemoteFilesystem
 {
     private $io;
-    private $config;
-    private $urlsCount;
-    private $bytesTransferred;
-    private $bytesMax;
-    private $lastProgress;
-    private $fileUrls;
+    private $downloader;
+    private $quiet = true;
+    private $nextCallback;
+    private $downloadCount;
+    private $nextOptions = [];
+    private $sharedState;
+    private $fileName;
+    private $lastHeaders;
 
-    public function __construct(IOInterface $io, Config $config)
+    public static $cacheNext = false;
+    protected static $cache = [];
+
+    public function __construct(IOInterface $io, Config $config, array $options = [], $disableTls = false)
     {
         $this->io = $io;
-        $this->config = $config;
-        $rfs = Factory::createRemoteFilesystem($io, $config);
-        parent::__construct($io, $config, $rfs->getOptions(), $rfs->isTlsDisabled());
+        if (!method_exists(parent::class, 'getRemoteContents')) {
+            $this->io->writeError('Composer >=1.7 not found, downloads will happen in sequence', true, IOInterface::DEBUG);
+        } elseif (!extension_loaded('curl')) {
+            $this->io->writeError('ext-curl not found, downloads will happen in sequence', true, IOInterface::DEBUG);
+        } else {
+            $this->downloader = new CurlDownloader();
+        }
+        parent::__construct($io, $config, $options, $disableTls);
     }
 
-    public function populateCacheDir(array $operations)
+    public function download(array &$nextArgs, callable $nextCallback, bool $quiet = true)
     {
-        $this->bytesMax = $this->bytesTransferred = 0;
-        $this->fileUrls = [];
-        $cacheDir = rtrim($this->config->get('cache-files-dir'), '\/').DIRECTORY_SEPARATOR;
-        $getCacheKey = function (PackageInterface $package, $processedUrl) {
-            return $this->getCacheKey($package, $processedUrl);
-        };
-        $getCacheKey = \Closure::bind($getCacheKey, new FileDownloader($this->io, $this->config), FileDownloader::class);
+        $this->quiet = $quiet;
+        $this->downloadCount = count($nextArgs);
+        $this->nextCallback = $nextCallback;
+        $this->sharedState = (object) [
+            'bytesMaxCount' => 0,
+            'bytesMax' => 0,
+            'bytesTransferred' => 0,
+            'nextArgs' => &$nextArgs,
+            'nestingLevel' => 0,
+            'maxNestingReached' => false,
+            'lastProgress' => 0,
+            'lastUpdate' => microtime(true),
+        ];
 
-        foreach ($operations as $op) {
-            if ('install' === $op->getJobType()) {
-                $package = $op->getPackage();
-            } elseif ('update' === $op->getJobType()) {
-                $package = $op->getTargetPackage();
-            } else {
-                continue;
+        if (!$this->quiet) {
+            if (!$this->downloader && method_exists(parent::class, 'getRemoteContents')) {
+                $this->io->writeError('<warning>Enable the "cURL" PHP extension for faster downloads</warning>');
             }
-
-            if (!$fileUrl = $package->getDistUrl()) {
-                continue;
+            $note = '\\' === DIRECTORY_SEPARATOR ? '' : (false !== stripos(PHP_OS, 'darwin') ? '🎵' : '🎶');
+            $note .= $this->downloader ? ('\\' !== DIRECTORY_SEPARATOR ? ' 💨' : '') : '';
+            $this->io->writeError('');
+            $this->io->writeError(sprintf('<info>Prefetching %d packages</info> %s', $this->downloadCount, $note));
+            $this->io->writeError('  - Downloading', false);
+            $this->io->writeError(' (<comment>0%</comment>)', false);
+        }
+        try {
+            $this->getNext();
+            if (!$this->quiet) {
+                $this->io->overwriteError(' (<comment>100%</comment>)');
             }
-
-            if ($package->getDistMirrors()) {
-                $fileUrl = current($package->getDistUrls());
+        } finally {
+            if (!$this->quiet) {
+                $this->io->writeError('');
             }
+            $this->nextCallback = null;
+            $this->sharedState = null;
+            $this->quiet = true;
+        }
+    }
 
-            if (!preg_match('/^https?:/', $fileUrl) || !$originUrl = parse_url($fileUrl, PHP_URL_HOST)) {
-                continue;
-            }
+    public function getOptions()
+    {
+        $options = array_replace_recursive(parent::getOptions(), $this->nextOptions);
+        $this->nextOptions = [];
 
-            if (file_exists($file = $cacheDir.$getCacheKey($package, $fileUrl))) {
-                continue;
-            }
+        return $options;
+    }
 
-            @mkdir(dirname($file), 0775, true);
+    public function setNextOptions(array $options)
+    {
+        $this->nextOptions = parent::getOptions() !== $options ? $options : [];
 
-            if (!is_dir(dirname($file))) {
-                continue;
-            }
+        return $this;
+    }
 
-            if (preg_match('#^https://github\.com/#', $package->getSourceUrl()) && preg_match('#^https://api\.github\.com/repos(/[^/]++/[^/]++/)zipball(.++)$#', $fileUrl, $m)) {
-                $fileUrl = sprintf('https://codeload.github.com%slegacy.zip%s', $m[1], $m[2]);
-            }
+    /**
+     * {@inheritdoc}
+     */
+    public function getLastHeaders()
+    {
+        return $this->lastHeaders ?? parent::getLastHeaders();
+    }
 
-            $this->fileUrls[] = [$originUrl, $fileUrl, $file];
+    /**
+     * {@inheritdoc}
+     */
+    public function copy($originUrl, $fileUrl, $fileName, $progress = true, $options = [])
+    {
+        $options = array_replace_recursive($this->nextOptions, $options);
+        $this->nextOptions = [];
+        $rfs = clone $this;
+        $rfs->fileName = $fileName;
+
+        try {
+            return $rfs->get($originUrl, $fileUrl, $options, $fileName, $progress);
+        } finally {
+            $rfs->lastHeaders = null;
+            $this->lastHeaders = $rfs->getLastHeaders();
+        }
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getContents($originUrl, $fileUrl, $progress = true, $options = [])
+    {
+        return $this->copy($originUrl, $fileUrl, null, $progress, $options);
+    }
+
+    /**
+     * @internal
+     */
+    public function callbackGet($notificationCode, $severity, $message, $messageCode, $bytesTransferred, $bytesMax, $nativeDownload = true)
+    {
+        if (!$nativeDownload && STREAM_NOTIFY_SEVERITY_ERR === $severity) {
+            throw new TransportException($message, $messageCode);
         }
 
-        if (1 >= $this->urlsCount = count($this->fileUrls)) {
+        parent::callbackGet($notificationCode, $severity, $message, $messageCode, $bytesTransferred, $bytesMax);
+
+        if (!$state = $this->sharedState) {
             return;
         }
 
-        $this->lastProgress = 0;
-        $this->io->writeError('');
-        $this->io->writeError(sprintf('<info>Prefetching %d packages 🎶</info>', $this->urlsCount));
-        $this->io->writeError('  - Connecting', false);
-        $this->io->writeError(' (<comment>0%</comment>)', false);
-        try {
-            $this->getNext();
-            $this->io->overwriteError(' (<comment>100%</comment>)');
-        } finally {
-            $this->io->writeError('');
-            $this->lastProgress = null;
-        }
-    }
-
-    protected function callbackGet($notificationCode, $severity, $message, $messageCode, $bytesTransferred, $bytesMax)
-    {
-        parent::callbackGet($notificationCode, $severity, $message, $messageCode, $bytesTransferred, $bytesMax);
-
         if (STREAM_NOTIFY_FILE_SIZE_IS === $notificationCode) {
-            $this->bytesMax += $bytesMax;
+            ++$state->bytesMaxCount;
+            $state->bytesMax += $bytesMax;
         }
 
         if (!$bytesMax || STREAM_NOTIFY_PROGRESS !== $notificationCode) {
+            if ($state->nextArgs && !$nativeDownload) {
+                $this->getNext();
+            }
+
             return;
         }
 
-        if ($this->fileUrls) {
-            $progress = $this->urlsCount ? intval(100 * ($this->urlsCount - count($this->fileUrls)) / $this->urlsCount) : 100;
+        if (0 < $state->bytesMax) {
+            $progress = $state->bytesMaxCount / $this->downloadCount;
+            $progress *= 100 * ($state->bytesTransferred + $bytesTransferred) / $state->bytesMax;
         } else {
-            $progress = $this->bytesTransferred + $bytesTransferred;
-            $progress = intval(100 * $progress / $this->bytesMax);
+            $progress = 0;
         }
 
         if ($bytesTransferred === $bytesMax) {
-            $this->bytesTransferred += $bytesMax;
+            $state->bytesTransferred += $bytesMax;
         }
 
-        if (null !== $this->lastProgress && $progress - $this->lastProgress >= 5) {
-            $this->lastProgress = $progress;
-            $this->io->overwriteError(sprintf(' (<comment>%d%%</comment>)', $progress), false);
+        if (null !== $state->nextArgs && !$this->quiet && 1 <= $progress - $state->lastProgress) {
+            $progressTime = microtime(true);
+
+            if (5 <= $progress - $state->lastProgress || 1 <= $progressTime - $state->lastUpdate) {
+                $state->lastProgress = $progress;
+                $this->io->overwriteError(sprintf(' (<comment>%d%%</comment>)', $progress), false);
+                $state->lastUpdate = microtime(true);
+            }
         }
 
-        if ($this->fileUrls) {
+        if (!$nativeDownload || !$state->nextArgs || $bytesTransferred === $bytesMax || $state->maxNestingReached) {
+            return;
+        }
+
+        if (5 < $state->nestingLevel) {
+            $state->maxNestingReached = true;
+        } else {
             $this->getNext();
+        }
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function getRemoteContents($originUrl, $fileUrl, $context)
+    {
+        if (isset(self::$cache[$fileUrl])) {
+            return self::$cache[$fileUrl];
+        }
+
+        if (self::$cacheNext) {
+            self::$cacheNext = false;
+
+            return self::$cache[$fileUrl] = $this->getRemoteContents($originUrl, $fileUrl, $context);
+        }
+
+        if (!$this->downloader) {
+            return parent::getRemoteContents($originUrl, $fileUrl, $context);
+        }
+
+        try {
+            return $this->downloader->get($originUrl, $fileUrl, $context, $this->fileName);
+        } catch (TransportException $e) {
+            $this->io->writeError('Retrying download: '.$e->getMessage(), true, IOInterface::DEBUG);
+
+            return parent::getRemoteContents($originUrl, $fileUrl, $context);
         }
     }
 
     private function getNext()
     {
-        while ($this->fileUrls) {
-            try {
-                list($originUrl, $fileUrl, $file) = array_pop($this->fileUrls);
-                if (!$this->fileUrls) {
-                    $this->lastProgress = 0;
-                    $this->io->overwriteError(' (<comment>100%</comment>)');
-                    $this->io->writeError('  - Downloading', false);
-                    $this->io->writeError(' (<comment>0%</comment>)', false);
+        $state = $this->sharedState;
+        ++$state->nestingLevel;
+
+        try {
+            while ($state->nextArgs && (!$state->maxNestingReached || 1 === $state->nestingLevel)) {
+                try {
+                    $state->maxNestingReached = false;
+                    ($this->nextCallback)(...array_shift($state->nextArgs));
+                } catch (TransportException $e) {
+                    $this->io->writeError('Skipping download: '.$e->getMessage(), true, IOInterface::DEBUG);
                 }
-                $this->get($originUrl, $fileUrl, [], $file, false);
-            } catch (TransportException $e) {
-                --$this->urlsCount;
             }
+        } finally {
+            --$state->nestingLevel;
         }
     }
 }
