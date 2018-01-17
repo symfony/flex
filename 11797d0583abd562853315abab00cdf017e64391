@@ -1,0 +1,11 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2018-01-11T20:01:22Z
+
+PR ready, works GREAT!
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2018-01-16T13:50:54Z
+
+PR ready for another try. All good on my side. Now able to do concurrent downloads on more files than prestissimo. As such, prestissimo is now disabled if found.
