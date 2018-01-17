@@ -18,7 +18,7 @@ class Path
 {
     private $workingDirectory;
 
-    public function __construct($workingDirectory)
+    public function __construct(string $workingDirectory)
     {
         $this->workingDirectory = $workingDirectory;
     }
@@ -27,13 +27,17 @@ class Path
     {
         $relativePath = str_replace($this->workingDirectory, '.', $absolutePath);
 
-        return is_dir($absolutePath) ? rtrim($relativePath, '/').'/' : $relativePath;
+        return is_dir($absolutePath) ? rtrim($relativePath, '/'.DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR : $relativePath;
     }
 
     public function concatenate(array $parts): string
     {
         return array_reduce($parts, function (string $initial, string $next): string {
-            return rtrim($initial, '/').'/'.ltrim($next, '/');
+            if ('' === $initial) {
+                return rtrim($next, '/'.DIRECTORY_SEPARATOR);
+            }
+
+            return rtrim($initial, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.ltrim($next, DIRECTORY_SEPARATOR);
         }, '');
     }
 }
