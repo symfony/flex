@@ -154,7 +154,7 @@ Symfony operations: 1 recipe ()
 
 EOF
             ,
-            $io->getOutput()
+            str_replace("\r\n", "\n", $io->getOutput())
         );
     }
 
