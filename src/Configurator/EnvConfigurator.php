@@ -20,7 +20,7 @@ class EnvConfigurator extends AbstractConfigurator
 {
     public function configure(Recipe $recipe, $vars)
     {
-        $this->write('Adding environment variable defaults');
+        $this->write('Added environment variable defaults');
 
         $this->configureEnvDist($recipe, $vars);
         $this->configurePhpUnit($recipe, $vars);
@@ -138,7 +138,7 @@ class EnvConfigurator extends AbstractConfigurator
                 continue;
             }
 
-            $this->write(sprintf('Removing environment variables from %s', $file));
+            $this->write(sprintf('Removed environment variables from %s', $file));
             file_put_contents($phpunit, $contents);
         }
     }

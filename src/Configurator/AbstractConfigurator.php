@@ -14,6 +14,7 @@ namespace Symfony\Flex\Configurator;
 use Composer\Composer;
 use Composer\IO\IOInterface;
 use Symfony\Flex\Options;
+use Symfony\Flex\Path;
 use Symfony\Flex\Recipe;
 
 /**
@@ -24,12 +25,14 @@ abstract class AbstractConfigurator
     protected $composer;
     protected $io;
     protected $options;
+    protected $path;
 
     public function __construct(Composer $composer, IOInterface $io, Options $options)
     {
         $this->composer = $composer;
         $this->io = $io;
         $this->options = $options;
+        $this->path = new Path(getcwd());
     }
 
     abstract public function configure(Recipe $recipe, $config);
