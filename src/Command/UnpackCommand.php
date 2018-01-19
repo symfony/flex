@@ -22,19 +22,11 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Flex\PackageResolver;
 use Symfony\Flex\Unpacker;
 use Symfony\Flex\Unpack\Operation;
 
 class UnpackCommand extends BaseCommand
 {
-    public function __construct(PackageResolver $resolver)
-    {
-        $this->resolver = $resolver;
-
-        parent::__construct();
-    }
-
     protected function configure()
     {
         $this->setName('unpack')
@@ -49,7 +41,7 @@ class UnpackCommand extends BaseCommand
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $composer = $this->getComposer();
-        $packages = $this->resolver->resolve($input->getArgument('packages'), true);
+        $packages = $input->getArgument('packages');
         $io = $this->getIo();
         $json = new JsonFile(Factory::getComposerFile());
         $manipulator = new JsonConfigSource($json);
