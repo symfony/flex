@@ -58,7 +58,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
     private $operations = [];
     private $lock;
     private $cacheDirPopulated = false;
-    private $displayThanksReminder = false;
+    private $displayThanksReminder = 0;
     private $rfs;
     private static $activated = true;
     private static $repoReadingCommands = [
@@ -138,8 +138,8 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
             $input = $trace['args'][0];
             $app = $trace['object'];
-            $app->add(new Command\RequireCommand());
-            $app->add(new Command\UnpackCommand());
+
+            $resolver = new PackageResolver($this->downloader);
 
             if (version_compare('1.1.0', PluginInterface::PLUGIN_API_VERSION, '>')) {
                 $note = $app->has('self-update') ? sprintf('`php %s self-update`', $_SERVER['argv'][0]) : 'https://getcomposer.org/';
@@ -155,10 +155,12 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
             if ('create-project' === $command) {
                 $input->setInteractive(false);
+            } elseif ('update' === $command) {
+                $this->displayThanksReminder = 1;
             }
 
             if (isset(self::$aliasResolveCommands[$command])) {
-                $resolver = new PackageResolver($this->downloader);
+                // early resolve for BC with Composer 1.0
                 $input->setArgument('packages', $resolver->resolve($input->getArgument('packages'), self::$aliasResolveCommands[$command]));
 
                 if ($input->hasOption('no-suggest')) {
@@ -170,6 +172,11 @@ class Flex implements PluginInterface, EventSubscriberInterface
                 $this->populateRepoCacheDir();
             }
 
+            $app->add(new Command\RequireCommand($resolver));
+            $app->add(new Command\UpdateCommand($resolver));
+            $app->add(new Command\RemoveCommand($resolver));
+            $app->add(new Command\UnpackCommand($resolver));
+
             break;
         }
     }
@@ -179,11 +186,11 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $json = new JsonFile(Factory::getComposerFile());
         $manipulator = new JsonManipulator(file_get_contents($json->getPath()));
         // new projects are most of the time proprietary
-        $manipulator->addProperty('license', 'proprietary');
+        $manipulator->addMainKey('license', 'proprietary');
         // 'name' and 'description' are only required for public packages
-        $manipulator->removeProperty('name');
-        $manipulator->removeProperty('description');
-        file_put_contents($json->getPath(), $manipulator->getContents());
+        // don't use $manipulator->removeProperty() for BC with Composer 1.0
+        $contents = preg_replace('{^\s*+"(?:name|description)":.*,$\n}m', '', $manipulator->getContents());
+        file_put_contents($json->getPath(), $contents);
     }
 
     public function record(PackageEvent $event)
@@ -231,7 +238,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             }
         }
 
-        if ($this->displayThanksReminder) {
+        if (2 === $this->displayThanksReminder) {
             $love = '\\' === DIRECTORY_SEPARATOR ? 'love' : '💖 ';
             $star = '\\' === DIRECTORY_SEPARATOR ? 'star' : '★ ';
 
@@ -326,7 +333,9 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
     public function enableThanksReminder()
     {
-        $this->displayThanksReminder = !class_exists(Thanks::class, false) && version_compare('1.1.0', PluginInterface::PLUGIN_API_VERSION, '<=');
+        if (1 === $this->displayThanksReminder) {
+            $this->displayThanksReminder = !class_exists(Thanks::class, false) && version_compare('1.1.0', PluginInterface::PLUGIN_API_VERSION, '<=') ? 2 : 0;
+        }
     }
 
     public function executeAutoScripts(Event $event)
