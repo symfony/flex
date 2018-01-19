@@ -68,6 +68,12 @@ class Flex implements PluginInterface, EventSubscriberInterface
         'update' => true,
         'install' =>true,
     ];
+    private static $aliasResolveCommands = [
+        'require' => true,
+        'update' => false,
+        'remove' => false,
+        'unpack' => true,
+    ];
 
     public function activate(Composer $composer, IOInterface $io)
     {
@@ -130,21 +136,34 @@ class Flex implements PluginInterface, EventSubscriberInterface
                 continue;
             }
 
+            $input = $trace['args'][0];
             $app = $trace['object'];
-            $resolver = new PackageResolver($this->downloader);
-            $app->add(new Command\RequireCommand($resolver));
-            $app->add(new Command\UpdateCommand($resolver));
-            $app->add(new Command\RemoveCommand($resolver));
-            $app->add(new Command\UnpackCommand($resolver));
+            $app->add(new Command\RequireCommand());
+            $app->add(new Command\UnpackCommand());
+
+            if (version_compare('1.1.0', PluginInterface::PLUGIN_API_VERSION, '>')) {
+                $note = $app->has('self-update') ? sprintf('`php %s self-update`', $_SERVER['argv'][0]) : 'https://getcomposer.org/';
+                $io->writeError('<warning>Some Symfony Flex features may not work as expected: your version of Composer is too old</>');
+                $io->writeError(sprintf('<warning>Please upgrade using %s</>', $note));
+            }
 
             try {
-                $command = $trace['args'][0]->getFirstArgument();
+                $command = $input->getFirstArgument();
                 $command = $command ? $app->find($command)->getName() : null;
             } catch (\InvalidArgumentException $e) {
             }
 
             if ('create-project' === $command) {
-                $trace['args'][0]->setInteractive(false);
+                $input->setInteractive(false);
+            }
+
+            if (isset(self::$aliasResolveCommands[$command])) {
+                $resolver = new PackageResolver($this->downloader);
+                $input->setArgument('packages', $resolver->resolve($input->getArgument('packages'), self::$aliasResolveCommands[$command]));
+
+                if ($input->hasOption('no-suggest')) {
+                    $input->setOption('no-suggest', true);
+                }
             }
 
             if ($populateRepoCacheDir && isset(self::$repoReadingCommands[$command]) && ('install' !== $command || (file_exists('composer.json') && !file_exists('composer.lock')))) {
