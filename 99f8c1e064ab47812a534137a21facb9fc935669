@@ -1,0 +1,23 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2018-01-19T12:18:37Z
+
+PR ready - all features except "unpack" work on 1.0. A warning is displayed when an old version of composer is used.
+
+![image](https://user-images.githubusercontent.com/243674/35150589-3cbeb868-fd1b-11e7-992b-2e82e903de88.png)
+
+or
+
+![image](https://user-images.githubusercontent.com/243674/35150553-1f777362-fd1b-11e7-91f4-3c596e12ce0c.png)
+
+---------------------------------------------------------------------------
+
+by javiereguiluz at 2018-01-19T12:28:57Z
+
+Could we display that warning message only when the user tries to execute an unsupported feature?
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2018-01-19T12:29:51Z
+
+We cannot : if we were able to hook there, we would be able to implement the unsupported features :)
