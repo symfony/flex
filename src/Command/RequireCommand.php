@@ -16,11 +16,21 @@ use Composer\Package\Version\VersionParser;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Flex\PackageResolver;
 use Symfony\Flex\Unpacker;
 use Symfony\Flex\Unpack\Operation;
 
 class RequireCommand extends BaseRequireCommand
 {
+    private $resolver;
+
+    public function __construct(PackageResolver $resolver)
+    {
+        $this->resolver = $resolver;
+
+        parent::__construct();
+    }
+
     protected function configure()
     {
         parent::configure();
@@ -29,7 +39,7 @@ class RequireCommand extends BaseRequireCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $packages = $input->getArgument('packages');
+        $packages = $this->resolver->resolve($input->getArgument('packages'), true);
         if ($packages) {
             $versionParser = new VersionParser();
             $op = new Operation($input->getOption('unpack'), $input->getOption('sort-packages') || $this->getComposer()->getConfig()->get('sort-packages'));
@@ -49,6 +59,10 @@ class RequireCommand extends BaseRequireCommand
             $this->getIo()->writeError('<error>--unpack is incompatible with the interactive mode.</error>');
 
             return 1;
+        }
+
+        if ($input->hasOption('no-suggest')) {
+            $input->setOption('no-suggest', true);
         }
 
         return parent::execute($input, $output);
