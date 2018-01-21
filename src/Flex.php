@@ -161,7 +161,9 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
             if (isset(self::$aliasResolveCommands[$command])) {
                 // early resolve for BC with Composer 1.0
-                $input->setArgument('packages', $resolver->resolve($input->getArgument('packages'), self::$aliasResolveCommands[$command]));
+                if ($input->hasArgument('packages')) {
+                    $input->setArgument('packages', $resolver->resolve($input->getArgument('packages'), self::$aliasResolveCommands[$command]));
+                }
 
                 if ($input->hasOption('no-suggest')) {
                     $input->setOption('no-suggest', true);
