@@ -295,7 +295,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
                     $installContribs = true;
                     $json = new JsonFile(Factory::getComposerFile());
                     $manipulator = new JsonManipulator(file_get_contents($json->getPath()));
-                    $manipulator->addProperty('extra.symfony.allow-contrib', true);
+                    $manipulator->addSubNode('extra', 'symfony.allow-contrib', true);
                     file_put_contents($json->getPath(), $manipulator->getContents());
                 }
             }
@@ -554,7 +554,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         // update composer.json
         $json = new JsonFile(Factory::getComposerFile());
         $manipulator = new JsonManipulator(file_get_contents($json->getPath()));
-        $manipulator->addProperty('extra.symfony.id', $id);
+        $manipulator->addSubNode('extra', 'symfony.id', $id);
         file_put_contents($json->getPath(), $manipulator->getContents());
 
         return $id;
