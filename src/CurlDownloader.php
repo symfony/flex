@@ -49,7 +49,9 @@ class CurlDownloader
     {
         $this->multiHandle = $mh = curl_multi_init();
         curl_multi_setopt($mh, CURLMOPT_PIPELINING, /*CURLPIPE_HTTP1 | CURLPIPE_MULTIPLEX*/ 3);
-        curl_multi_setopt($mh, CURLMOPT_MAX_HOST_CONNECTIONS, 8);
+        if (defined('CURLMOPT_MAX_HOST_CONNECTIONS')) {
+            curl_multi_setopt($mh, CURLMOPT_MAX_HOST_CONNECTIONS, 8);
+        }
 
         $this->shareHandle = $sh = curl_share_init();
         curl_share_setopt($sh, CURLSHOPT_SHARE, CURL_LOCK_DATA_COOKIE);
