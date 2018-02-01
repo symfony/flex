@@ -124,6 +124,9 @@ class CurlDownloader
                     try {
                         $this->onProgress($h, $job['callback'], $progress, $job['progress']);
 
+                        if ('' !== curl_error($h)) {
+                            throw new TransportException(curl_error($h));
+                        }
                         if ($job['file'] && CURLE_OK === curl_errno($h) && !isset($this->exceptions[$i])) {
                             fclose($job['fd']);
                             rename($job['file'].'~', $job['file']);
@@ -154,7 +157,7 @@ class CurlDownloader
                 }
             }
 
-            if (CURLE_OK !== curl_errno($ch)) {
+            if ('' !== curl_error($ch) || CURLE_OK !== curl_errno($ch)) {
                 $this->exceptions[(int) $ch] = new TransportException(curl_error($ch), curl_getinfo($ch, CURLINFO_HTTP_CODE) ?: 0);
             }
             if (isset($this->exceptions[(int) $ch])) {
