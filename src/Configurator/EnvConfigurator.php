@@ -23,13 +23,11 @@ class EnvConfigurator extends AbstractConfigurator
         $this->write('Added environment variable defaults');
 
         $this->configureEnvDist($recipe, $vars);
-        $this->configurePhpUnit($recipe, $vars);
     }
 
     public function unconfigure(Recipe $recipe, $vars)
     {
         $this->unconfigureEnvFiles($recipe, $vars);
-        $this->unconfigurePhpUnit($recipe, $vars);
     }
 
     private function configureEnvDist(Recipe $recipe, $vars)
@@ -64,49 +62,6 @@ class EnvConfigurator extends AbstractConfigurator
         file_put_contents(getcwd().'/.env', $data, FILE_APPEND);
     }
 
-    private function configurePhpUnit(Recipe $recipe, $vars)
-    {
-        foreach (['phpunit.xml.dist', 'phpunit.xml'] as $file) {
-            $phpunit = getcwd().'/'.$file;
-            if (!is_file($phpunit)) {
-                continue;
-            }
-
-            if ($this->isFileXmlMarked($recipe, $phpunit)) {
-                continue;
-            }
-
-            $data = '';
-            foreach ($vars as $key => $value) {
-                if ('%generate(secret)%' === $value) {
-                    $value = bin2hex(random_bytes(16));
-                }
-                if ('#' === $key[0]) {
-                    if (is_numeric(substr($key, 1))) {
-                        $doc = new \DOMDocument();
-                        $data .= '        '.$doc->saveXML($doc->createComment(' '.$value.' '))."\n";
-                    } else {
-                        $value = $this->options->expandTargetDir($value);
-                        $doc = new \DOMDocument();
-                        $fragment = $doc->createElement('env');
-                        $fragment->setAttribute('name', substr($key, 1));
-                        $fragment->setAttribute('value', $value);
-                        $data .= '        '.str_replace(['<', '/>'], ['<!-- ', ' -->'], $doc->saveXML($fragment))."\n";
-                    }
-                } else {
-                    $value = $this->options->expandTargetDir($value);
-                    $doc = new \DOMDocument();
-                    $fragment = $doc->createElement('env');
-                    $fragment->setAttribute('name', $key);
-                    $fragment->setAttribute('value', $value);
-                    $data .= '        '.$doc->saveXML($fragment)."\n";
-                }
-            }
-            $data = $this->markXmlData($recipe, $data);
-            file_put_contents($phpunit, preg_replace('{^(\s+</php>)}m', $data.'$1', file_get_contents($phpunit)));
-        }
-    }
-
     private function unconfigureEnvFiles(Recipe $recipe, $vars)
     {
         foreach (['.env', '.env.dist'] as $file) {
@@ -122,24 +77,6 @@ class EnvConfigurator extends AbstractConfigurator
 
             $this->write(sprintf('Removing environment variables from %s', $file));
             file_put_contents($env, $contents);
-        }
-    }
-
-    private function unconfigurePhpUnit(Recipe $recipe, $vars)
-    {
-        foreach (['phpunit.xml.dist', 'phpunit.xml'] as $file) {
-            $phpunit = getcwd().'/'.$file;
-            if (!is_file($phpunit)) {
-                continue;
-            }
-
-            $contents = preg_replace(sprintf('{%s*\s+<!-- ###\+ %s ### -->.*<!-- ###- %s ### -->%s+}s', "\n", $recipe->getName(), $recipe->getName(), "\n"), "\n", file_get_contents($phpunit), -1, $count);
-            if (!$count) {
-                continue;
-            }
-
-            $this->write(sprintf('Removed environment variables from %s', $file));
-            file_put_contents($phpunit, $contents);
         }
     }
 }
