@@ -75,7 +75,7 @@ class UnpackCommand extends BaseCommand
                 }
             }
 
-            $op->addPackage($package['name'], '*', $dev);
+            $op->addPackage($pkg->getName(), $pkg->getVersion(), $dev);
         }
 
         $unpacker = new Unpacker($composer);
