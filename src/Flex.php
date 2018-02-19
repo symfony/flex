@@ -263,13 +263,15 @@ class Flex implements PluginInterface, EventSubscriberInterface
             if ('install' === $recipe->getJob() && !$installContribs && $recipe->isContrib()) {
                 $warning = $this->io->isInteractive() ? 'WARNING' : 'IGNORING';
                 $this->io->writeError(sprintf('  - <warning> %s </> %s', $warning, $this->formatOrigin($recipe->getOrigin())));
-                $question = '    The recipe for this package comes from the "contrib" repository, which is open to community contributions.
+                $question = sprintf('    The recipe for this package comes from the "contrib" repository, which is open to community contributions.
+    Review the recipe at %s
+
     Do you want to execute this recipe?
     [<comment>y</>] Yes
     [<comment>n</>] No
     [<comment>a</>] Yes for all packages, only for the current installation session
     [<comment>p</>] Yes permanently, never ask again for this project
-    (defaults to <comment>n</>): ';
+    (defaults to <comment>n</>): ', $recipe->getURL());
                 $answer = $this->io->askAndValidate(
                     $question,
                     function ($value) {
