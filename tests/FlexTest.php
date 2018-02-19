@@ -50,7 +50,7 @@ class FlexTest extends TestCase
         /** @var InstallOperation[] $actualInstallOperations */
         foreach ($actualInstallOperations as $operation) {
             $event = $this->getMockBuilder(PackageEvent::class)->disableOriginalConstructor()->getMock();
-            $event->expects($this->once())->method('getOperation')->willReturn($operation);
+            $event->expects($this->any())->method('getOperation')->willReturn($operation);
 
             $flex->record($event);
         }
@@ -82,7 +82,7 @@ class FlexTest extends TestCase
     {
         $package = new Package('dummy/dummy', '1.0.0', '1.0.0');
         $event = $this->getMockBuilder(PackageEvent::class)->disableOriginalConstructor()->getMock();
-        $event->expects($this->once())->method('getOperation')->willReturn(new InstallOperation($package));
+        $event->expects($this->any())->method('getOperation')->willReturn(new InstallOperation($package));
 
         $data = [
             'manifests' => [
