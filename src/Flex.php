@@ -196,11 +196,11 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
     public function record(PackageEvent $event)
     {
-        $operation = $event->getOperation();
-        if (!$this->shouldRecordOperation($operation)) {
+        if (!$this->shouldRecordOperation($event)) {
             return;
         }
 
+        $operation = $event->getOperation();
         if ($operation instanceof InstallOperation && in_array($packageName = $operation->getPackage()->getName(), ['symfony/framework-bundle', 'symfony/flex'])) {
             if ('symfony/flex' === $packageName) {
                 array_unshift($this->operations, $operation);
@@ -576,12 +576,22 @@ class Flex implements PluginInterface, EventSubscriberInterface
         return sprintf('<info>%s</> (<comment>>=%s</>): From %s', $matches[1], $matches[2], 'auto-generated recipe' === $matches[3] ? '<comment>'.$matches[3].'</>' : $matches[3]);
     }
 
-    private function shouldRecordOperation(OperationInterface $operation): bool
+    private function shouldRecordOperation(PackageEvent $event): bool
     {
+        $operation = $event->getOperation();
         if ($operation instanceof UpdateOperation) {
             $package = $operation->getTargetPackage();
         } else {
             $package = $operation->getPackage();
+        }
+
+        // when Composer runs with --no-dev, ignore uninstall operations on packages from require-dev
+        if (!$event->isDevMode() && $operation instanceof UninstallOperation) {
+            foreach ($event->getComposer()->getLocker()->getLockData()['packages-dev'] as $p) {
+                if ($package->getName() === $p['name']) {
+                    return false;
+                }
+            }
         }
 
         // FIXME: getNames() can return n names
