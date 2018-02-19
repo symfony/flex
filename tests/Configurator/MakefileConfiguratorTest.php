@@ -17,7 +17,7 @@ use Symfony\Flex\Configurator\MakefileConfigurator;
 use Symfony\Flex\Options;
 use PHPUnit\Framework\TestCase;
 
-class MarkefileConfiguratorTest extends TestCase
+class MakefileConfiguratorTest extends TestCase
 {
     public function testConfigure()
     {

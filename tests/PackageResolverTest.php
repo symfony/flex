@@ -29,27 +29,27 @@ class PackageResolverTest extends TestCase
         return [
             [
                 ['cli'],
-                ['symfony/console']
+                ['symfony/console'],
             ],
             [
                 ['console', 'validator', 'translation'],
-                ['symfony/console', 'symfony/validator', 'symfony/translation']
+                ['symfony/console', 'symfony/validator', 'symfony/translation'],
             ],
             [
                 ['cli', 'lts', 'validator', '3.2', 'translation'],
-                ['symfony/console:^3.4', 'symfony/validator:3.2', 'symfony/translation']
+                ['symfony/console:^3.4', 'symfony/validator:3.2', 'symfony/translation'],
             ],
             [
                 ['cli:lts', 'validator=3.2', 'translation', 'next'],
-                ['symfony/console:^3.4', 'symfony/validator:3.2', 'symfony/translation:^4.0@dev']
+                ['symfony/console:^3.4', 'symfony/validator:3.2', 'symfony/translation:^4.0@dev'],
             ],
             [
                 ['php'],
-                ['php']
+                ['php'],
             ],
             [
                 ['ext-mongodb'],
-                ['ext-mongodb']
+                ['ext-mongodb'],
             ],
         ];
     }
@@ -82,7 +82,7 @@ class PackageResolverTest extends TestCase
 
             [
                 ['qwerty'],
-                "\"qwerty\" is not a valid alias.",
+                '"qwerty" is not a valid alias.',
             ],
         ];
     }

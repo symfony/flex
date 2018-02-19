@@ -85,15 +85,15 @@ class CopyFromRecipeConfiguratorTest extends TestCase
 
         $this->targetDirectory = sys_get_temp_dir().'/config';
         $this->targetFileRelativePath = 'config/file';
-        $this->targetFile = $this->targetDirectory. '/file';
+        $this->targetFile = $this->targetDirectory.'/file';
 
         $this->io = $this->getMockBuilder(IOInterface::class)->getMock();
         $this->recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
         $this->recipe->expects($this->any())->method('getFiles')->willReturn([
             $this->sourceFileRelativePath => [
                 'contents' => 'somecontent',
-                'executable' => false
-            ]
+                'executable' => false,
+            ],
         ]);
 
         $this->cleanUpTargetFiles();

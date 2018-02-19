@@ -76,7 +76,7 @@ class ContainerConfigurator extends AbstractConfigurator
         }
         foreach ($parameters as $key => $value) {
             // FIXME: var_export() only works for basics types, but we don't have access to the Symfony YAML component here
-            $parametersLines[] = sprintf("    %s: %s%s", $key, var_export($value, true), "\n");
+            $parametersLines[] = sprintf('    %s: %s%s', $key, var_export($value, true), "\n");
         }
         if (!$endAt) {
             $parametersLines[] = "\n";

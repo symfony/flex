@@ -143,7 +143,7 @@ class CurlDownloader
                     $h = $this->jobs[$i]['ch'];
                     $progress = array_diff_key(curl_getinfo($h), self::$timeInfo);
 
-                    if ($progress !== $this->jobs[$i]['progress']) {
+                    if ($this->jobs[$i]['progress'] !== $progress) {
                         $previousProgress = $this->jobs[$i]['progress'];
                         $this->jobs[$i]['progress'] = $progress;
                         try {

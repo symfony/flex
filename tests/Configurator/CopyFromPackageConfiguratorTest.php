@@ -142,6 +142,6 @@ class CopyFromPackageConfiguratorTest extends TestCase
     {
         @unlink($this->targetFile);
         @rmdir(sys_get_temp_dir().'/package');
-        @rmdir(sys_get_temp_dir(). '/public');
+        @rmdir(sys_get_temp_dir().'/public');
     }
 }

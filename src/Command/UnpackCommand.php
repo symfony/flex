@@ -39,10 +39,10 @@ class UnpackCommand extends BaseCommand
     {
         $this->setName('unpack')
             ->setDescription('Unpack a Symfony pack.')
-            ->setDefinition(array(
+            ->setDefinition([
                 new InputArgument('packages', InputArgument::IS_ARRAY | InputArgument::REQUIRED, 'Installed packages to unpack.'),
                 new InputOption('sort-packages', null, InputOption::VALUE_NONE, 'Sorts packages'),
-            ))
+            ])
         ;
     }
 
@@ -84,6 +84,7 @@ class UnpackCommand extends BaseCommand
         // remove the packages themselves
         if (!$result->getUnpacked()) {
             $io->writeError('<info>Nothing to unpack</>');
+
             return;
         }
 

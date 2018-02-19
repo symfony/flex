@@ -11,7 +11,6 @@
 
 namespace Symfony\Flex;
 
-use Composer\Command\CreateProjectCommand;
 use Composer\Composer;
 use Composer\Console\Application;
 use Composer\DependencyResolver\Operation\InstallOperation;
@@ -66,7 +65,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         'outdated' => true,
         'require' => true,
         'update' => true,
-        'install' =>true,
+        'install' => true,
     ];
     private static $aliasResolveCommands = [
         'require' => true,
@@ -282,6 +281,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
                         if (!in_array($value, ['y', 'n', 'a', 'p'])) {
                             throw new \InvalidArgumentException('Invalid choice');
                         }
+
                         return $value;
                     },
                     null,
@@ -419,7 +419,9 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
         $downloads = [];
         $cacheDir = rtrim($this->config->get('cache-files-dir'), '\/').DIRECTORY_SEPARATOR;
-        $getCacheKey = function (PackageInterface $package, $processedUrl) { return $this->getCacheKey($package, $processedUrl); };
+        $getCacheKey = function (PackageInterface $package, $processedUrl) {
+            return $this->getCacheKey($package, $processedUrl);
+        };
         $getCacheKey = \Closure::bind($getCacheKey, new FileDownloader($this->io, $this->config), FileDownloader::class);
 
         foreach ($event->getOperations() as $op) {
@@ -598,7 +600,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $repos = [];
 
         foreach ($this->composer->getPackage()->getRepositories() as $name => $repo) {
-            if (!isset($repo['type']) || 'composer' !==  $repo['type'] || !empty($repo['force-lazy-providers'])) {
+            if (!isset($repo['type']) || 'composer' !== $repo['type'] || !empty($repo['force-lazy-providers'])) {
                 continue;
             }
 

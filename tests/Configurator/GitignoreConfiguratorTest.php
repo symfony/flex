@@ -17,7 +17,7 @@ use Symfony\Flex\Configurator\GitignoreConfigurator;
 use Symfony\Flex\Options;
 use PHPUnit\Framework\TestCase;
 
-class GitIgnoreConfiguratorTest extends TestCase
+class GitignoreConfiguratorTest extends TestCase
 {
     public function testConfigure()
     {
