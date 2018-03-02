@@ -102,8 +102,8 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $this->downloader = new Downloader($composer, $io, $this->rfs);
         $this->downloader->setFlexId($this->getFlexId());
         $lock_file_path = str_replace(Factory::getComposerFile(), 'composer.json', 'symfony.lock');
-        if(getenv("SYMFONY_LOCKFILE_PATH")) {
-          $lock_file_path  = getenv("SYMFONY_LOCKFILE_PATH");
+        if (getenv("SYMFONY_LOCKFILE_PATH")) {
+            $lock_file_path  = getenv("SYMFONY_LOCKFILE_PATH");
         }
         $this->lock = new Lock($lock_file_path);
 
@@ -173,7 +173,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
                 }
             }
 
-            if ($populateRepoCacheDir && isset(self::$repoReadingCommands[$command]) && ('install' !== $command || (file_exists('composer.json') && !file_exists('composer.lock')))) {
+            if ($populateRepoCacheDir && isset(self::$repoReadingCommands[$command]) && ('install' !== $command || ($this->composerLockMissing()))) {
                 $this->populateRepoCacheDir();
             }
 
@@ -186,6 +186,15 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
     }
 
+    public function composerLockMissing()
+    {
+        if (getenv("COMPOSER")) {
+            $composer_file = getenv("COMPOSER");
+            $composer_lock = str_replace(".json", ".lock", $composer_file);
+            return file_exists($composer_file) && !file_exists($composer_lock);
+        }
+        return file_exists('composer.json') && !file_exists('composer.lock');
+    }
     public function configureProject(Event $event)
     {
         $json = new JsonFile(Factory::getComposerFile());
