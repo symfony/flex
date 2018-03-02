@@ -101,11 +101,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $this->configurator = new Configurator($composer, $io, $this->options);
         $this->downloader = new Downloader($composer, $io, $this->rfs);
         $this->downloader->setFlexId($this->getFlexId());
-        $lock_file_path = str_replace(Factory::getComposerFile(), 'composer.json', 'symfony.lock');
-        if (getenv("SYMFONY_LOCKFILE_PATH")) {
-            $lock_file_path  = getenv("SYMFONY_LOCKFILE_PATH");
-        }
-        $this->lock = new Lock($lock_file_path);
+        $this->lock = new Lock($this->getLockFilePath()->symfony);
 
         $populateRepoCacheDir = __CLASS__ === self::class;
         if ($composer->getPluginManager()) {
@@ -186,14 +182,24 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
     }
 
-    public function composerLockMissing()
+    public function getLockFilePath()
     {
-        if (getenv("COMPOSER")) {
-            $composer_file = getenv("COMPOSER");
-            $composer_lock = str_replace(".json", ".lock", $composer_file);
-            return file_exists($composer_file) && !file_exists($composer_lock);
+        $composerFile = Factory::getComposerFile();
+        $lockFilePath = "json" === pathinfo($composerFile, PATHINFO_EXTENSION)
+                ? substr($composerFile, 0, -4).'lock'
+                :  $composerFile .  '.lock';
+        $symfonyLock = str_replace("composer.", "symfony.", $lockFilePath);
+        if (getenv("SYMFONY_LOCKFILE_PATH")) {
+            $symfonyLock  = getenv("SYMFONY_LOCKFILE_PATH");
         }
-        return file_exists('composer.json') && !file_exists('composer.lock');
+        return (object)[
+            "composer" => $lockFilePath,
+            "symfony" => $symfonyLock
+        ];
+    }
+    public function isComposerLockMissing()
+    {
+        return file_exists(Factor::getComposerFile()) && !file_exists($this->getLockFilePath()->composer);
     }
     public function configureProject(Event $event)
     {
