@@ -96,6 +96,10 @@ class FlexTest extends TestCase
         $r = $flex->getLockFilePath();
         $this->assertEquals($expectedComposer, $r->composer);
         $this->assertEquals($expectedSymfony, $r->symfony);
+
+
+        putenv("COMPOSER=''");
+        putenv("SYMFONY_LOCKFILE_PATH=''");
     }
     public function testPostInstall()
     {
