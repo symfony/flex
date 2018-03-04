@@ -182,7 +182,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
     }
 
-    public function getLockFilePath()
+    private function getLockFilePath()
     {
         $composerFile = Factory::getComposerFile();
         $lockFilePath = "json" === pathinfo($composerFile, PATHINFO_EXTENSION)
@@ -197,7 +197,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             "symfony" => $symfonyLock
         ];
     }
-    public function isComposerLockMissing()
+    private function isComposerLockMissing()
     {
         return file_exists(Factor::getComposerFile()) && !file_exists($this->getLockFilePath()->composer);
     }

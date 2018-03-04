@@ -32,6 +32,26 @@ use Symfony\Flex\Response;
 
 class FlexTest extends TestCase
 {
+
+    /**
+    * Call protected/private method of a class.
+    * taken from Juan Tremino's fantastic tutorial
+    * https://jtreminio.com/2013/03/unit-testing-tutorial-part-3-testing-protected-private-methods-coverage-reports-and-crap/
+    *
+    * @param object &$object    Instantiated object that we will run method on.
+    * @param string $methodName Method name to call
+    * @param array  $parameters Array of parameters to pass into method.
+    *
+    * @return mixed Method return.
+    */
+    public function invokeMethod(&$object, $methodName, array $parameters = array())
+    {
+        $reflection = new \ReflectionClass(get_class($object));
+        $method = $reflection->getMethod($methodName);
+        $method->setAccessible(true);
+        return $method->invokeArgs($object, $parameters);
+    }
+
     /**
      * @dataProvider getRecordTests
      */
@@ -86,14 +106,15 @@ class FlexTest extends TestCase
      *           ["","", "./composer.lock", "./symfony.lock"]
      *           ["","symfony.beta.lock", "./composer.lock", "symfony.beta.lock"]
      */
-    public function testSymfonyLock($composerEnv, $symfonyEnv, $expectedComposer, $expectedSymfony ) {
+    public function testSymfonyLock($composerEnv, $symfonyEnv, $expectedComposer, $expectedSymfony)
+    {
 
 
         putenv("COMPOSER=" . $composerEnv);
         putenv("SYMFONY_LOCKFILE_PATH=" . $symfonyEnv);
 
         $flex = new Flex();
-        $r = $flex->getLockFilePath();
+        $r = $this->invokeMethod($flex, 'getLockFilePath', []);
         $this->assertEquals($expectedComposer, $r->composer);
         $this->assertEquals($expectedSymfony, $r->symfony);
 
