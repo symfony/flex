@@ -32,7 +32,6 @@ use Symfony\Flex\Response;
 
 class FlexTest extends TestCase
 {
-
     /**
     * Call protected/private method of a class.
     * taken from Juan Tremino's fantastic tutorial
@@ -108,8 +107,6 @@ class FlexTest extends TestCase
      */
     public function testSymfonyLock($composerEnv, $symfonyEnv, $expectedComposer, $expectedSymfony)
     {
-
-
         putenv("COMPOSER=" . $composerEnv);
         putenv("SYMFONY_LOCKFILE_PATH=" . $symfonyEnv);
 
@@ -117,7 +114,6 @@ class FlexTest extends TestCase
         $r = $this->invokeMethod($flex, 'getLockFilePath', []);
         $this->assertEquals($expectedComposer, $r->composer);
         $this->assertEquals($expectedSymfony, $r->symfony);
-
 
         putenv("COMPOSER=''");
         putenv("SYMFONY_LOCKFILE_PATH=''");

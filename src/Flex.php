@@ -197,10 +197,12 @@ class Flex implements PluginInterface, EventSubscriberInterface
             "symfony" => $symfonyLock
         ];
     }
+
     private function isComposerLockMissing()
     {
         return file_exists(Factor::getComposerFile()) && !file_exists($this->getLockFilePath()->composer);
     }
+
     public function configureProject(Event $event)
     {
         $json = new JsonFile(Factory::getComposerFile());
