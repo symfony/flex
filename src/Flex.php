@@ -200,7 +200,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
     private function isComposerLockMissing()
     {
-        return file_exists(Factor::getComposerFile()) && !file_exists($this->getLockFilePath()->composer);
+        return file_exists(Factory::getComposerFile()) && !file_exists($this->getLockFilePath()->composer);
     }
 
     public function configureProject(Event $event)

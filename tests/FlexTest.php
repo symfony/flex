@@ -98,12 +98,7 @@ class FlexTest extends TestCase
     }
 
     /**
-     * dataset0: custom COMPOSER env is set, generates correct symfony lock
-     * dataset1: nothing overriden, just verify default names
-     * dataset2: composer = default, custom symfony.lock path
-     * @testWith ["composer.beta.json","", "composer.beta.lock", "symfony.beta.lock"]
-     *           ["","", "./composer.lock", "./symfony.lock"]
-     *           ["","symfony.beta.lock", "./composer.lock", "symfony.beta.lock"]
+     * @dataProvider getLockFileTestCases
      */
     public function testSymfonyLock($composerEnv, $symfonyEnv, $expectedComposer, $expectedSymfony)
     {
@@ -117,6 +112,18 @@ class FlexTest extends TestCase
 
         putenv("COMPOSER=''");
         putenv("SYMFONY_LOCKFILE_PATH=''");
+    }
+
+    /**
+     * dataset0: custom COMPOSER env is set, generates correct symfony lock
+     * dataset1: nothing overriden, just verify default names
+     * dataset2: composer = default, custom symfony.lock path
+     */
+    public function getLockFileTestCases()
+    {
+        return  [["composer.beta.json","", "composer.beta.lock", "symfony.beta.lock"],
+                 ["","", "./composer.lock", "./symfony.lock"],
+                 ["","symfony.beta.lock", "./composer.lock", "symfony.beta.lock"]];
     }
 
     public function testPostInstall()
