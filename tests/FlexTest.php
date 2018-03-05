@@ -106,9 +106,10 @@ class FlexTest extends TestCase
         putenv("SYMFONY_LOCKFILE_PATH=" . $symfonyEnv);
 
         $flex = new Flex();
-        $r = $this->invokeMethod($flex, 'getLockFilePath', []);
-        $this->assertEquals($expectedComposer, $r->composer);
-        $this->assertEquals($expectedSymfony, $r->symfony);
+        $symfonyLockFile = $this->invokeMethod($flex, 'getSymfonyLockFilePath', []);
+        $composerLockFile = $this->invokeMethod($flex, 'getComposerLockFilePath', []);
+        $this->assertEquals($expectedComposer, $composerLockFile);
+        $this->assertEquals($expectedSymfony, $symfonyLockFile);
 
         putenv("COMPOSER=''");
         putenv("SYMFONY_LOCKFILE_PATH=''");

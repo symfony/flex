@@ -101,7 +101,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $this->configurator = new Configurator($composer, $io, $this->options);
         $this->downloader = new Downloader($composer, $io, $this->rfs);
         $this->downloader->setFlexId($this->getFlexId());
-        $this->lock = new Lock($this->getLockFilePath()->symfony);
+        $this->lock = new Lock($this->getSymfonyLockFilePath());
 
         $populateRepoCacheDir = __CLASS__ === self::class;
         if ($composer->getPluginManager()) {
@@ -182,25 +182,28 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
     }
 
-    private function getLockFilePath()
+    private function getComposerLockFilePath()
     {
         $composerFile = Factory::getComposerFile();
         $lockFilePath = "json" === pathinfo($composerFile, PATHINFO_EXTENSION)
                 ? substr($composerFile, 0, -4).'lock'
                 :  $composerFile .  '.lock';
+        return $lockFilePath;
+    }
+
+    private function getSymfonyLockFilePath()
+    {
+        $lockFilePath = $this->getComposerLockFilePath();
         $symfonyLock = str_replace("composer.", "symfony.", $lockFilePath);
         if (getenv("SYMFONY_LOCKFILE_PATH")) {
             $symfonyLock  = getenv("SYMFONY_LOCKFILE_PATH");
         }
-        return (object)[
-            "composer" => $lockFilePath,
-            "symfony" => $symfonyLock
-        ];
+        return $symfonyLock;
     }
 
     private function isComposerLockMissing()
     {
-        return file_exists(Factory::getComposerFile()) && !file_exists($this->getLockFilePath()->composer);
+        return file_exists(Factory::getComposerFile()) && !file_exists($this->getComposerLockFilePath());
     }
 
     public function configureProject(Event $event)
