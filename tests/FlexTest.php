@@ -118,6 +118,7 @@ class FlexTest extends TestCase
         putenv("COMPOSER=''");
         putenv("SYMFONY_LOCKFILE_PATH=''");
     }
+
     public function testPostInstall()
     {
         $package = new Package('dummy/dummy', '1.0.0', '1.0.0');
