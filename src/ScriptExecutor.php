@@ -56,7 +56,7 @@ class ScriptExecutor
         $this->io->writeError(sprintf('Executing script %s', $parsedCmd), $this->io->isVerbose());
         $exitCode = $this->executor->execute($expandedCmd, $outputHandler);
 
-        $code = 0 === $exitCode ? ' <info>[OK]</info>' : ' <error>[KO]</error>';
+        $code = 0 === $exitCode ? ' <info>[OK]</info>' : ' <error>[OK]</error>';
 
         if ($this->io->isVerbose()) {
             $this->io->writeError(sprintf('Executed script %s %s', $cmd, $code));
@@ -65,7 +65,7 @@ class ScriptExecutor
         }
 
         if (0 !== $exitCode) {
-            $this->io->writeError(' <error>[KO]</error>');
+            $this->io->writeError(' <error>[OK]</error>');
             $this->io->writeError(sprintf('<error>Script %s returned with error code %s</error>', $cmd, $exitCode));
             fseek($cmdOutput->getStream(), 0);
             foreach (explode("\n", stream_get_contents($cmdOutput->getStream())) as $line) {
