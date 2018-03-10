@@ -169,19 +169,22 @@ EOF
         copy(__DIR__.'/../Fixtures/phpunit.xml.dist', $phpunit);
 
         $configurator->configure($recipe, [
-            '#TRUSTED_SECRET' => '%generate(32)%',
+            '#TRUSTED_SECRET_1' => '%generate(secret,32)%',
+            '#TRUSTED_SECRET_2' => '%generate(secret, 32)%',
             'APP_SECRET' => '%generate(secret)%',
         ]);
 
         $envContents = file_get_contents($env);
-        $this->assertRegExp('/#TRUSTED_SECRET=[a-z0-9]{64}/', $envContents);
+        $this->assertRegExp('/#TRUSTED_SECRET_1=[a-z0-9]{64}/', $envContents);
+        $this->assertRegExp('/#TRUSTED_SECRET_2=[a-z0-9]{64}/', $envContents);
         $this->assertRegExp('/APP_SECRET=[a-z0-9]{32}/', $envContents);
         @unlink($env);
 
         foreach ([$phpunitDist, $phpunit] as $file) {
             $fileContents = file_get_contents($file);
 
-            $this->assertRegExp('/<!-- env name="TRUSTED_SECRET" value="[a-z0-9]{64}" -->/', $fileContents);
+            $this->assertRegExp('/<!-- env name="TRUSTED_SECRET_1" value="[a-z0-9]{64}" -->/', $fileContents);
+            $this->assertRegExp('/<!-- env name="TRUSTED_SECRET_2" value="[a-z0-9]{64}" -->/', $fileContents);
             $this->assertRegExp('/<env name="APP_SECRET" value="[a-z0-9]{32}"\/>/', $fileContents);
         }
     }
