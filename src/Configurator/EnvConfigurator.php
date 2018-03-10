@@ -41,7 +41,7 @@ class EnvConfigurator extends AbstractConfigurator
 
         $data = '';
         foreach ($vars as $key => $value) {
-            $value = $this->replaceGeneratedValue($value);
+            $value = $this->evaluateValue($value);
             if ('#' === $key[0] && is_numeric(substr($key, 1))) {
                 $data .= '# '.$value."\n";
 
@@ -76,7 +76,7 @@ class EnvConfigurator extends AbstractConfigurator
 
             $data = '';
             foreach ($vars as $key => $value) {
-                $value = $this->replaceGeneratedValue($value);
+                $value = $this->evaluateValue($value);
                 if ('#' === $key[0]) {
                     if (is_numeric(substr($key, 1))) {
                         $doc = new \DOMDocument();
@@ -139,7 +139,7 @@ class EnvConfigurator extends AbstractConfigurator
         }
     }
 
-    private function replaceGeneratedValue($value)
+    private function evaluateValue($value)
     {
         if ('%generate(secret)%' === $value) {
             return $this->generateRandomBytes();
