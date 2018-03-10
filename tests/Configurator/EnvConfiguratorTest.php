@@ -36,7 +36,8 @@ class EnvConfiguratorTest extends TestCase
 
         $phpunit = sys_get_temp_dir().'/phpunit.xml';
         $phpunitDist = $phpunit.'.dist';
-        @unlink($phpunit, $phpunitDist);
+        @unlink($phpunit);
+        @unlink($phpunitDist);
         copy(__DIR__.'/../Fixtures/phpunit.xml.dist', $phpunitDist);
         copy(__DIR__.'/../Fixtures/phpunit.xml.dist', $phpunit);
         $configurator->configure($recipe, [
@@ -143,5 +144,51 @@ EOF
         $this->assertFileEquals(__DIR__.'/../Fixtures/phpunit.xml.dist', $phpunit);
 
         @unlink($phpunit, $env);
+    }
+
+    public function testConfigureGeneratedSecret()
+    {
+        $configurator = new EnvConfigurator(
+            $this->getMockBuilder('Composer\Composer')->getMock(),
+            $this->getMockBuilder('Composer\IO\IOInterface')->getMock(),
+            new Options()
+        );
+
+        $recipe = $this->getMockBuilder('Symfony\Flex\Recipe')->disableOriginalConstructor()->getMock();
+        $recipe->expects($this->any())->method('getName')->will($this->returnValue('FooBundle'));
+
+        $env = sys_get_temp_dir().'/.env.dist';
+        @unlink($env);
+        touch($env);
+        $phpunit = sys_get_temp_dir().'/phpunit.xml';
+        $phpunitDist = $phpunit.'.dist';
+        @unlink($phpunit);
+        @unlink($phpunitDist);
+
+        copy(__DIR__.'/../Fixtures/phpunit.xml.dist', $phpunitDist);
+        copy(__DIR__.'/../Fixtures/phpunit.xml.dist', $phpunit);
+
+        $configurator->configure($recipe, [
+            '#TRUSTED_SECRET_1' => '%generate(secret,32)%',
+            '#TRUSTED_SECRET_2' => '%generate(secret, 32)%',
+            '#TRUSTED_SECRET_3' => '%generate(secret,     32)%',
+            'APP_SECRET' => '%generate(secret)%',
+        ]);
+
+        $envContents = file_get_contents($env);
+        $this->assertRegExp('/#TRUSTED_SECRET_1=[a-z0-9]{64}/', $envContents);
+        $this->assertRegExp('/#TRUSTED_SECRET_2=[a-z0-9]{64}/', $envContents);
+        $this->assertRegExp('/#TRUSTED_SECRET_3=[a-z0-9]{64}/', $envContents);
+        $this->assertRegExp('/APP_SECRET=[a-z0-9]{32}/', $envContents);
+        @unlink($env);
+
+        foreach ([$phpunitDist, $phpunit] as $file) {
+            $fileContents = file_get_contents($file);
+
+            $this->assertRegExp('/<!-- env name="TRUSTED_SECRET_1" value="[a-z0-9]{64}" -->/', $fileContents);
+            $this->assertRegExp('/<!-- env name="TRUSTED_SECRET_2" value="[a-z0-9]{64}" -->/', $fileContents);
+            $this->assertRegExp('/<!-- env name="TRUSTED_SECRET_3" value="[a-z0-9]{64}" -->/', $fileContents);
+            $this->assertRegExp('/<env name="APP_SECRET" value="[a-z0-9]{32}"\/>/', $fileContents);
+        }
     }
 }
