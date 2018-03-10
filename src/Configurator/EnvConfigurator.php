@@ -41,9 +41,7 @@ class EnvConfigurator extends AbstractConfigurator
 
         $data = '';
         foreach ($vars as $key => $value) {
-            if ('%generate(secret)%' === $value) {
-                $value = bin2hex(random_bytes(16));
-            }
+            $value = $this->replaceGeneratedValue($value);
             if ('#' === $key[0] && is_numeric(substr($key, 1))) {
                 $data .= '# '.$value."\n";
 
@@ -78,9 +76,7 @@ class EnvConfigurator extends AbstractConfigurator
 
             $data = '';
             foreach ($vars as $key => $value) {
-                if ('%generate(secret)%' === $value) {
-                    $value = bin2hex(random_bytes(16));
-                }
+                $value = $this->replaceGeneratedValue($value);
                 if ('#' === $key[0]) {
                     if (is_numeric(substr($key, 1))) {
                         $doc = new \DOMDocument();
@@ -141,5 +137,22 @@ class EnvConfigurator extends AbstractConfigurator
             $this->write(sprintf('Removed environment variables from %s', $file));
             file_put_contents($phpunit, $contents);
         }
+    }
+
+    private function replaceGeneratedValue($value)
+    {
+        if ('%generate(secret)%' === $value) {
+            return $this->generateRandomBytes();
+        }
+        if (preg_match('~^%generate\(secret,\s*([0-9]+)\)%$~', $value, $matches)) {
+            return $this->generateRandomBytes($matches[1]);
+        }
+
+        return $value;
+    }
+
+    private function generateRandomBytes($length = 16)
+    {
+        return bin2hex(random_bytes($length));
     }
 }
