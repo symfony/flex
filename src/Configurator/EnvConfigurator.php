@@ -144,7 +144,7 @@ class EnvConfigurator extends AbstractConfigurator
         if ('%generate(secret)%' === $value) {
             return $this->generateRandomBytes();
         }
-        if (preg_match('~^%generate\(secret,\s?([0-9]+)\)%$~', $value, $matches)) {
+        if (preg_match('~^%generate\(secret,\s*([0-9]+)\)%$~', $value, $matches)) {
             return $this->generateRandomBytes($matches[1]);
         }
 
