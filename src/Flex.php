@@ -101,7 +101,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $this->configurator = new Configurator($composer, $io, $this->options);
         $this->downloader = new Downloader($composer, $io, $this->rfs);
         $this->downloader->setFlexId($this->getFlexId());
-        $this->lock = new Lock(str_replace(Factory::getComposerFile(), 'composer.json', 'symfony.lock'));
+        $this->lock = new Lock($this->getSymfonyLockFilePath());
 
         $populateRepoCacheDir = __CLASS__ === self::class;
         if ($composer->getPluginManager()) {
@@ -169,7 +169,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
                 }
             }
 
-            if ($populateRepoCacheDir && isset(self::$repoReadingCommands[$command]) && ('install' !== $command || (file_exists('composer.json') && !file_exists('composer.lock')))) {
+            if ($populateRepoCacheDir && isset(self::$repoReadingCommands[$command]) && ('install' !== $command || ($this->isComposerLockMissing()))) {
                 $this->populateRepoCacheDir();
             }
 
@@ -180,6 +180,30 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
             break;
         }
+    }
+
+    private function getComposerLockFilePath()
+    {
+        $composerFile = Factory::getComposerFile();
+        $lockFilePath = "json" === pathinfo($composerFile, PATHINFO_EXTENSION)
+                ? substr($composerFile, 0, -4).'lock'
+                :  $composerFile .  '.lock';
+        return $lockFilePath;
+    }
+
+    private function getSymfonyLockFilePath()
+    {
+        $lockFilePath = $this->getComposerLockFilePath();
+        $symfonyLock = str_replace("composer.", "symfony.", $lockFilePath);
+        if (getenv("SYMFONY_LOCKFILE_PATH")) {
+            $symfonyLock  = getenv("SYMFONY_LOCKFILE_PATH");
+        }
+        return $symfonyLock;
+    }
+
+    private function isComposerLockMissing()
+    {
+        return file_exists(Factory::getComposerFile()) && !file_exists($this->getComposerLockFilePath());
     }
 
     public function configureProject(Event $event)

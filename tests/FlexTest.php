@@ -33,6 +33,25 @@ use Symfony\Flex\Response;
 class FlexTest extends TestCase
 {
     /**
+    * Call protected/private method of a class.
+    * taken from Juan Tremino's fantastic tutorial
+    * https://jtreminio.com/2013/03/unit-testing-tutorial-part-3-testing-protected-private-methods-coverage-reports-and-crap/
+    *
+    * @param object &$object    Instantiated object that we will run method on.
+    * @param string $methodName Method name to call
+    * @param array  $parameters Array of parameters to pass into method.
+    *
+    * @return mixed Method return.
+    */
+    private function invokeMethod($object, $methodName, array $parameters = array())
+    {
+        $reflection = new \ReflectionClass(get_class($object));
+        $method = $reflection->getMethod($methodName);
+        $method->setAccessible(true);
+        return $method->invokeArgs($object, $parameters);
+    }
+
+    /**
      * @dataProvider getRecordTests
      */
     public function testFrameworkBundleRecord(array $actualInstallOperations, $expectedFinalOperators)
@@ -76,6 +95,34 @@ class FlexTest extends TestCase
                 [$operationFlex, $operationFB, $operationFoo],
             ],
         ];
+    }
+
+    /**
+     * @dataProvider getLockFileTestCases
+     */
+    public function testSymfonyLock($composerEnv, $symfonyEnv, $expectedComposer, $expectedSymfony)
+    {
+        putenv("COMPOSER=" . $composerEnv);
+        putenv("SYMFONY_LOCKFILE_PATH=" . $symfonyEnv);
+
+        $flex = new Flex();
+        $symfonyLockFile = $this->invokeMethod($flex, 'getSymfonyLockFilePath', []);
+        $composerLockFile = $this->invokeMethod($flex, 'getComposerLockFilePath', []);
+        $this->assertEquals($expectedComposer, $composerLockFile);
+        $this->assertEquals($expectedSymfony, $symfonyLockFile);
+
+        putenv("COMPOSER=''");
+        putenv("SYMFONY_LOCKFILE_PATH=''");
+    }
+
+    public function getLockFileTestCases()
+    {
+        // custom COMPOSER env is set, generates correct symfony lock
+        yield ["composer.beta.json","", "composer.beta.lock", "symfony.beta.lock"];
+        // nothing overriden, just verify default names
+        yield ["","", "./composer.lock", "./symfony.lock"];
+        // composer = default, custom symfony.lock path
+        yield ["","symfony.beta.lock", "./composer.lock", "symfony.beta.lock"];
     }
 
     public function testPostInstall()
