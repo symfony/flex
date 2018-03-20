@@ -169,7 +169,8 @@ class Flex implements PluginInterface, EventSubscriberInterface
                 }
             }
 
-            if ($populateRepoCacheDir && isset(self::$repoReadingCommands[$command]) && ('install' !== $command || (file_exists('composer.json') && !file_exists('composer.lock')))) {
+            $composerFile = Factory::getComposerFile();
+            if ($populateRepoCacheDir && isset(self::$repoReadingCommands[$command]) && ('install' !== $command || (file_exists($composerFile) && !file_exists(substr($composerFile, 0, -4).'lock')))) {
                 $this->populateRepoCacheDir();
             }
 
