@@ -637,9 +637,14 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
     private function updateComposerLock()
     {
+        $lock = substr(Factory::getComposerFile(), 0, -4).'lock';
+        if (!file_exists($lock)) {
+            // lock file does not exist yet, bypass
+            return;
+        }
         $lockData = $this->composer->getLocker()->getLockData();
         $lockData['content-hash'] = Locker::getContentHash(file_get_contents(Factory::getComposerFile()));
-        $lockFile = new JsonFile(substr(Factory::getComposerFile(), 0, -4).'lock', null, $this->io);
+        $lockFile = new JsonFile($lock, null, $this->io);
         $lockFile->write($lockData);
     }
 
