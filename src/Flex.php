@@ -31,6 +31,7 @@ use Composer\IO\IOInterface;
 use Composer\IO\NullIO;
 use Composer\Json\JsonFile;
 use Composer\Json\JsonManipulator;
+use Composer\Package\Locker;
 use Composer\Package\PackageInterface;
 use Composer\Plugin\PluginEvents;
 use Composer\Plugin\PluginInterface;
@@ -301,6 +302,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
                     $manipulator = new JsonManipulator(file_get_contents($json->getPath()));
                     $manipulator->addSubNode('extra', 'symfony.allow-contrib', true);
                     file_put_contents($json->getPath(), $manipulator->getContents());
+                    $this->updateComposerLock();
                 }
             }
 
@@ -562,6 +564,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $manipulator = new JsonManipulator(file_get_contents($json->getPath()));
         $manipulator->addSubNode('extra', 'symfony.id', $id);
         file_put_contents($json->getPath(), $manipulator->getContents());
+        $this->updateComposerLock();
 
         return $id;
     }
@@ -629,6 +632,14 @@ class Flex implements PluginInterface, EventSubscriberInterface
             ParallelDownloader::$cacheNext = true;
             $repo->getProviderNames();
         });
+    }
+
+    private function updateComposerLock()
+    {
+        $lockData = $this->composer->getLocker()->getLockData();
+        $lockData['content-hash'] = Locker::getContentHash(file_get_contents(Factory::getComposerFile()));
+        $lockFile = new JsonFile(substr(Factory::getComposerFile(), 0, -4).'lock', null, $this->io);
+        $lockFile->write($lockData);
     }
 
     public static function getSubscribedEvents(): array
