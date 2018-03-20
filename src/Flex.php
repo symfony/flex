@@ -74,6 +74,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         'remove' => false,
         'unpack' => true,
     ];
+    private $shouldUpdateComposerLock = false;
 
     public function activate(Composer $composer, IOInterface $io)
     {
@@ -194,6 +195,8 @@ class Flex implements PluginInterface, EventSubscriberInterface
         // don't use $manipulator->removeProperty() for BC with Composer 1.0
         $contents = preg_replace('{^\s*+"(?:name|description)":.*,$\n}m', '', $manipulator->getContents());
         file_put_contents($json->getPath(), $contents);
+
+        $this->updateComposerLock();
     }
 
     public function record(PackageEvent $event)
@@ -303,7 +306,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
                     $manipulator = new JsonManipulator(file_get_contents($json->getPath()));
                     $manipulator->addSubNode('extra', 'symfony.allow-contrib', true);
                     file_put_contents($json->getPath(), $manipulator->getContents());
-                    $this->updateComposerLock();
+                    $this->shouldUpdateComposerLock = true;
                 }
             }
 
@@ -338,6 +341,10 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
 
         $this->lock->write();
+
+        if ($this->shouldUpdateComposerLock) {
+            $this->updateComposerLock();
+        }
     }
 
     public function enableThanksReminder()
@@ -565,7 +572,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $manipulator = new JsonManipulator(file_get_contents($json->getPath()));
         $manipulator->addSubNode('extra', 'symfony.id', $id);
         file_put_contents($json->getPath(), $manipulator->getContents());
-        $this->updateComposerLock();
+        $this->shouldUpdateComposerLock = true;
 
         return $id;
     }
@@ -638,13 +645,11 @@ class Flex implements PluginInterface, EventSubscriberInterface
     private function updateComposerLock()
     {
         $lock = substr(Factory::getComposerFile(), 0, -4).'lock';
-        if (!file_exists($lock)) {
-            // lock file does not exist yet, bypass
-            return;
-        }
-        $lockData = $this->composer->getLocker()->getLockData();
-        $lockData['content-hash'] = Locker::getContentHash(file_get_contents(Factory::getComposerFile()));
+        $composerJson = file_get_contents(Factory::getComposerFile());
         $lockFile = new JsonFile($lock, null, $this->io);
+        $locker = new Locker($this->io, $lockFile, $this->composer->getRepositoryManager(), $this->composer->getInstallationManager(), $composerJson);
+        $lockData = $locker->getLockData();
+        $lockData['content-hash'] = Locker::getContentHash($composerJson);
         $lockFile->write($lockData);
     }
 
