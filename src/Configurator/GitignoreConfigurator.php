@@ -29,6 +29,7 @@ class GitignoreConfigurator extends AbstractConfigurator
 
         $data = '';
         foreach ($vars as $value) {
+            $value = $this->options->expandTargetDir($value);
             $data .= "$value\n";
         }
         file_put_contents($gitignore, "\n".ltrim($this->markData($recipe, $data), "\r\n"), FILE_APPEND);

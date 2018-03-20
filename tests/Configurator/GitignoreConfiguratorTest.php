@@ -24,7 +24,7 @@ class GitignoreConfiguratorTest extends TestCase
         $configurator = new GitignoreConfigurator(
             $this->getMockBuilder('Composer\Composer')->getMock(),
             $this->getMockBuilder('Composer\IO\IOInterface')->getMock(),
-            new Options()
+            new Options(['public-dir' => 'public'])
         );
 
         $recipe1 = $this->getMockBuilder('Symfony\Flex\Recipe')->disableOriginalConstructor()->getMock();
@@ -39,7 +39,7 @@ class GitignoreConfiguratorTest extends TestCase
 
         $vars1 = [
             '.env',
-            '/public/bundles/',
+            '/%PUBLIC_DIR%/bundles/',
         ];
         $vars2 = [
             '/var/',
