@@ -101,7 +101,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $this->configurator = new Configurator($composer, $io, $this->options);
         $this->downloader = new Downloader($composer, $io, $this->rfs);
         $this->downloader->setFlexId($this->getFlexId());
-        $this->lock = new Lock(str_replace(Factory::getComposerFile(), 'composer.json', 'symfony.lock'));
+        $this->lock = new Lock(str_replace('composer.json', 'symfony.lock', Factory::getComposerFile()));
 
         $populateRepoCacheDir = __CLASS__ === self::class;
         if ($composer->getPluginManager()) {
