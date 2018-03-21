@@ -26,6 +26,7 @@ class ParallelDownloader extends RemoteFilesystem
     private $io;
     private $downloader;
     private $quiet = true;
+    private $progress = true;
     private $nextCallback;
     private $downloadCount;
     private $nextOptions = [];
@@ -49,9 +50,10 @@ class ParallelDownloader extends RemoteFilesystem
         parent::__construct($io, $config, $options, $disableTls);
     }
 
-    public function download(array &$nextArgs, callable $nextCallback, bool $quiet = true)
+    public function download(array &$nextArgs, callable $nextCallback, bool $quiet = true, bool $progress = true)
     {
         $this->quiet = $quiet;
+        $this->progress = $progress;
         $this->downloadCount = count($nextArgs);
         $this->nextCallback = $nextCallback;
         $this->sharedState = (object) [
@@ -74,7 +76,9 @@ class ParallelDownloader extends RemoteFilesystem
             $this->io->writeError('');
             $this->io->writeError(sprintf('<info>Prefetching %d packages</info> %s', $this->downloadCount, $note));
             $this->io->writeError('  - Downloading', false);
-            $this->io->writeError(' (<comment>0%</comment>)', false);
+            if ($this->progress) {
+                $this->io->writeError(' (<comment>0%</comment>)', false);
+            }
         }
         try {
             $this->getNext();
@@ -88,6 +92,7 @@ class ParallelDownloader extends RemoteFilesystem
             $this->nextCallback = null;
             $this->sharedState = null;
             $this->quiet = true;
+            $this->progress = true;
         }
     }
 
@@ -123,9 +128,10 @@ class ParallelDownloader extends RemoteFilesystem
         $this->nextOptions = [];
         $rfs = clone $this;
         $rfs->fileName = $fileName;
+        $rfs->progress = $this->progress && $progress;
 
         try {
-            return $rfs->get($originUrl, $fileUrl, $options, $fileName, $progress);
+            return $rfs->get($originUrl, $fileUrl, $options, $fileName, $rfs->progress);
         } finally {
             $rfs->lastHeaders = null;
             $this->lastHeaders = $rfs->getLastHeaders();
@@ -179,7 +185,7 @@ class ParallelDownloader extends RemoteFilesystem
             $state->bytesTransferred += $bytesMax;
         }
 
-        if (null !== $state->nextArgs && !$this->quiet && 1 <= $progress - $state->lastProgress) {
+        if (null !== $state->nextArgs && !$this->quiet && $this->progress && 1 <= $progress - $state->lastProgress) {
             $progressTime = microtime(true);
 
             if (5 <= $progress - $state->lastProgress || 1 <= $progressTime - $state->lastUpdate) {
