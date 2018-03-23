@@ -1,0 +1,62 @@
+---------------------------------------------------------------------------
+
+by fabpot at 2018-03-20T08:39:21Z
+
+@javiereguiluz @weaverryan What do you think of this command?
+
+When running `fix-recipes` (name to be determined), we check any missing entry in `symfony.lock` and execute the recipe. That makes it easier to upgrade to Symfony 4 or to install a missing recipe (if the server was down or the composer req crashed for some reasons).
+
+---------------------------------------------------------------------------
+
+by javiereguiluz at 2018-03-23T08:19:59Z
+
+I like this command a lot ... but I don't think the name is correct:
+
+```php
+$this->setName('fix-recipes')
+    ->setDescription('Install missing recipes.')
+```
+
+"Fixing recipes" and "installing missing recipes" looks like a different thing to me. Maybe this could be named `update-recipes` (similar to `composer update`). But maybe "update" is wrong too ... then we could name it `install-recipes` which is consistent with the description.
+
+---------------------------------------------------------------------------
+
+by fabpot at 2018-03-23T08:34:54Z
+
+You're right, name is not good right now. `update` feels wrong as we are not updating recipes, we are merely installing the missing ones. I think the correct one would be `install-missing-recipes`. Is it a bit too long?
+
+---------------------------------------------------------------------------
+
+by javiereguiluz at 2018-03-23T08:39:43Z
+
+I don't dislike `install-missing-recipes` ... but `install-recipes` could be enough. I mean, when you do `composer install` it only installs the missing packages (and it even says *"Nothing to install or update"* if needed).
+
+If we need some mode to force the installation of recipes even if they are installed, a `--force` option could be added.
+
+---------------------------------------------------------------------------
+
+by Pierstoval at 2018-03-23T08:51:46Z
+
+I'm 👍 for a `--force`. A simple "changelog" is enough, because this fix might overwrite/create files, so IMO it's better to debug them first with a dry-run
+
+---------------------------------------------------------------------------
+
+by xabbuh at 2018-03-23T09:07:20Z
+
+An optional argument to specify the package(s) for which you want recipes to be applied as well as the `--force` option would be a nice bonus on top. But they could be added in a future PR.
+
+---------------------------------------------------------------------------
+
+by weaverryan at 2018-03-23T15:53:59Z
+
+Good conversation!
+
+* I like `install-recipes`
+* As Javier mentioned, if everything is installed, we can tell them. If we install 2 missing recipes, we can say "Installed 2 missing recipes" so it's clear this installs only missing recipes.
+* Let's discuss `--force` in another PR, but it feels cool :)
+
+---------------------------------------------------------------------------
+
+by fabpot at 2018-03-23T16:12:03Z
+
+Name changed, ready.
