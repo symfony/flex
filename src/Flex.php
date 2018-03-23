@@ -184,6 +184,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             $app->add(new Command\UpdateCommand($resolver));
             $app->add(new Command\RemoveCommand($resolver));
             $app->add(new Command\UnpackCommand($resolver));
+            $app->add(new Command\InstallRecipesCommand($this));
 
             break;
         }
@@ -234,8 +235,12 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $this->update($event);
     }
 
-    public function update(Event $event)
+    public function update(Event $event, $operations = [])
     {
+        if ($operations) {
+            $this->operations = $operations;
+        }
+
         if (!file_exists(getcwd().'/.env') && file_exists(getcwd().'/.env.dist')) {
             copy(getcwd().'/.env.dist', getcwd().'/.env');
         }
