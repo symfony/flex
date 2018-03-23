@@ -120,7 +120,7 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
         }
     }
 
-    private function createSourceIterator(string $source, int $mode): RecursiveIteratorIterator
+    private function createSourceIterator(string $source, int $mode): \RecursiveIteratorIterator
     {
         return new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($source, \RecursiveDirectoryIterator::SKIP_DOTS), $mode);
     }
