@@ -19,7 +19,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Flex\Lock;
 
-class InstallRecipesCommand extends BaseCommand
+class SetupRecipesCommand extends BaseCommand
 {
     private $flex;
 
@@ -32,7 +32,7 @@ class InstallRecipesCommand extends BaseCommand
 
     protected function configure()
     {
-        $this->setName('install-recipes')
+        $this->setName('setup-recipes')
             ->setDescription('Install missing recipes.')
         ;
     }
