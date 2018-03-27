@@ -19,7 +19,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Flex\Lock;
 
-class InstallRecipesCommand extends BaseCommand
+class FixRecipesCommand extends BaseCommand
 {
     private $flex;
 
