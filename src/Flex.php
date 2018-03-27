@@ -184,7 +184,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             $app->add(new Command\UpdateCommand($resolver));
             $app->add(new Command\RemoveCommand($resolver));
             $app->add(new Command\UnpackCommand($resolver));
-            $app->add(new Command\InstallRecipesCommand($this));
+            $app->add(new Command\FixRecipesCommand($this));
 
             break;
         }
