@@ -32,7 +32,7 @@ class FixRecipesCommand extends BaseCommand
 
     protected function configure()
     {
-        $this->setName('install-recipes')
+        $this->setName('fix-recipes')
             ->setDescription('Install missing recipes.')
         ;
     }
