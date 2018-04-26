@@ -60,6 +60,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
     private $displayThanksReminder = 0;
     private $rfs;
     private $progress = true;
+    private $dryRun = false;
     private static $activated = true;
     private static $repoReadingCommands = [
         'create-project' => true,
@@ -173,6 +174,10 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
             if ($input->hasOption('no-progress')) {
                 $this->progress = !$input->getOption('no-progress');
+            }
+
+            if ($input->hasOption('dry-run')) {
+                $this->dryRun = $input->getOption('dry-run');
             }
 
             $composerFile = Factory::getComposerFile();
@@ -433,7 +438,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
     public function populateFilesCacheDir(InstallerEvent $event)
     {
-        if ($this->cacheDirPopulated) {
+        if ($this->cacheDirPopulated || $this->dryRun) {
             return;
         }
         $this->cacheDirPopulated = true;
