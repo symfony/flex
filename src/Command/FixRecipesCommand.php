@@ -14,7 +14,6 @@ namespace Symfony\Flex\Command;
 use Composer\Command\BaseCommand;
 use Composer\DependencyResolver\Operation\InstallOperation;
 use Composer\Factory;
-use Composer\Script\Event;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Flex\Lock;
@@ -76,12 +75,5 @@ class FixRecipesCommand extends BaseCommand
         }
 
         $this->flex->update(new EmptyEvent(), $operations);
-    }
-}
-
-class EmptyEvent extends Event
-{
-    public function __construct()
-    {
     }
 }
