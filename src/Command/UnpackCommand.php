@@ -37,7 +37,8 @@ class UnpackCommand extends BaseCommand
 
     protected function configure()
     {
-        $this->setName('unpack')
+        $this->setName('symfony:unpack')
+            ->setAliases(['unpack'])
             ->setDescription('Unpack a Symfony pack.')
             ->setDefinition([
                 new InputArgument('packages', InputArgument::IS_ARRAY | InputArgument::REQUIRED, 'Installed packages to unpack.'),

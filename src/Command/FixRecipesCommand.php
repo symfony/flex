@@ -32,7 +32,8 @@ class FixRecipesCommand extends BaseCommand
 
     protected function configure()
     {
-        $this->setName('fix-recipes')
+        $this->setName('symfony:fix-recipes')
+            ->setAliases(['fix-recipes'])
             ->setDescription('Install missing recipes.')
         ;
     }
