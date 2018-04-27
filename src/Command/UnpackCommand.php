@@ -50,7 +50,7 @@ class UnpackCommand extends BaseCommand
     {
         $composer = $this->getComposer();
         $packages = $this->resolver->resolve($input->getArgument('packages'), true);
-        $io = $this->getIo();
+        $io = $this->getIO();
         $json = new JsonFile(Factory::getComposerFile());
         $manipulator = new JsonConfigSource($json);
         $locker = $composer->getLocker();

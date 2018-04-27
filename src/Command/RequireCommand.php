@@ -49,14 +49,14 @@ class RequireCommand extends BaseRequireCommand
 
             $unpacker = new Unpacker($this->getComposer());
             $result = $unpacker->unpack($op);
-            $io = $this->getIo();
+            $io = $this->getIO();
             foreach ($result->getUnpacked() as $pkg) {
                 $io->writeError(sprintf('<info>Unpacked %s dependencies</>', $pkg->getName()));
             }
 
             $input->setArgument('packages', $result->getRequired());
         } elseif ($input->getOption('unpack')) {
-            $this->getIo()->writeError('<error>--unpack is incompatible with the interactive mode.</error>');
+            $this->getIO()->writeError('<error>--unpack is incompatible with the interactive mode.</error>');
 
             return 1;
         }
