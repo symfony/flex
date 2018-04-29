@@ -121,8 +121,8 @@ class CopyDirectoryFromPackageConfiguratorTest extends TestCase
         if (is_dir($dir)) {
             $objects = scandir($dir);
             foreach ($objects as $object) {
-                if ($object != "." && $object != "..") {
-                    if (filetype($dir."/".$object) == "dir") {
+                if ($object !== "." && $object !== "..") {
+                    if (filetype($dir."/".$object) === "dir") {
                         $this->rrmdir($dir."/".$object);
                     } else {
                         unlink($dir."/".$object);
