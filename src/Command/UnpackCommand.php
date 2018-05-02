@@ -23,8 +23,8 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Flex\PackageResolver;
-use Symfony\Flex\Unpacker;
 use Symfony\Flex\Unpack\Operation;
+use Symfony\Flex\Unpacker;
 
 class UnpackCommand extends BaseCommand
 {

@@ -11,8 +11,8 @@
 
 namespace Symfony\Flex\Tests;
 
-use Symfony\Flex\PackageResolver;
 use PHPUnit\Framework\TestCase;
+use Symfony\Flex\PackageResolver;
 
 class PackageResolverTest extends TestCase
 {

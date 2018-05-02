@@ -13,8 +13,8 @@ namespace Symfony\Flex\Tests\Configurator;
 
 require_once __DIR__.'/TmpDirMock.php';
 
-use Symfony\Flex\Configurator\BundlesConfigurator;
 use PHPUnit\Framework\TestCase;
+use Symfony\Flex\Configurator\BundlesConfigurator;
 use Symfony\Flex\Options;
 
 class BundlesConfiguratorTest extends TestCase

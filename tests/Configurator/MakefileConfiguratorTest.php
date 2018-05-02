@@ -13,9 +13,9 @@ namespace Symfony\Flex\Tests\Configurator;
 
 require_once __DIR__.'/TmpDirMock.php';
 
+use PHPUnit\Framework\TestCase;
 use Symfony\Flex\Configurator\MakefileConfigurator;
 use Symfony\Flex\Options;
-use PHPUnit\Framework\TestCase;
 
 class MakefileConfiguratorTest extends TestCase
 {
