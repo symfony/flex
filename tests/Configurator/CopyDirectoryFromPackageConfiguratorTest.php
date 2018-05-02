@@ -17,7 +17,6 @@ use Composer\Composer;
 use Composer\Installer\InstallationManager;
 use Composer\IO\IOInterface;
 use Composer\Package\PackageInterface;
-use LogicException;
 use PHPUnit\Framework\TestCase;
 use Symfony\Flex\Configurator\CopyFromPackageConfigurator;
 use Symfony\Flex\Options;
@@ -115,17 +114,18 @@ class CopyDirectoryFromPackageConfiguratorTest extends TestCase
     }
 
     /**
-     * Courtesy of http://php.net/manual/en/function.rmdir.php#98622
+     * Courtesy of http://php.net/manual/en/function.rmdir.php#98622.
      */
-    private function rrmdir($dir) {
+    private function rrmdir($dir)
+    {
         if (is_dir($dir)) {
             $objects = scandir($dir);
             foreach ($objects as $object) {
-                if ($object != "." && $object != "..") {
-                    if (filetype($dir."/".$object) == "dir") {
-                        $this->rrmdir($dir."/".$object);
+                if ('.' != $object && '..' != $object) {
+                    if ('dir' == filetype($dir.'/'.$object)) {
+                        $this->rrmdir($dir.'/'.$object);
                     } else {
-                        unlink($dir."/".$object);
+                        unlink($dir.'/'.$object);
                     }
                 }
             }
