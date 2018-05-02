@@ -75,13 +75,10 @@ class FixRecipesCommand extends BaseCommand
             $operations[] = new InstallOperation($pkg);
         }
 
-        $this->flex->update(new EmptyEvent(), $operations);
-    }
-}
-
-class EmptyEvent extends Event
-{
-    public function __construct()
-    {
+        $this->flex->update(new class extends Event {
+            public function __construct()
+            {
+            }
+        }, $operations);
     }
 }
