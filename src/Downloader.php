@@ -36,7 +36,6 @@ class Downloader
     private $endpoint;
     private $caFile;
     private $flexId;
-    private $eventDispatcher;
 
     public function __construct(Composer $composer, IoInterface $io, ParallelDownloader $rfs)
     {
@@ -51,7 +50,6 @@ class Downloader
         $this->endpoint = rtrim($endpoint, '/');
         $this->io = $io;
         $config = $composer->getConfig();
-        $this->eventDispatcher = $composer->getEventDispatcher();
         $this->rfs = $rfs;
         $this->cache = new Cache($io, $config->get('cache-repo-dir').'/'.preg_replace('{[^a-z0-9.]}i', '-', $this->endpoint));
         $this->sess = bin2hex(random_bytes(16));
