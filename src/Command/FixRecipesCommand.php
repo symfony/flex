@@ -62,7 +62,7 @@ class FixRecipesCommand extends BaseCommand
 
         $composer = $this->getComposer();
         $installedRepo = $composer->getRepositoryManager()->getLocalRepository();
-        $io = $this->getIo();
+        $io = $this->getIO();
 
         $operations = [];
         foreach ($packages as $package) {
