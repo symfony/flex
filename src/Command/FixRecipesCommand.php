@@ -34,7 +34,7 @@ class FixRecipesCommand extends BaseCommand
     {
         $this->setName('symfony:fix-recipes')
             ->setAliases(['fix-recipes'])
-            ->setDescription('Install missing recipes.')
+            ->setDescription('Installs missing recipes.')
         ;
     }
 

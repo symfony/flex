@@ -39,7 +39,7 @@ class UnpackCommand extends BaseCommand
     {
         $this->setName('symfony:unpack')
             ->setAliases(['unpack'])
-            ->setDescription('Unpack a Symfony pack.')
+            ->setDescription('Unpacks a Symfony pack.')
             ->setDefinition([
                 new InputArgument('packages', InputArgument::IS_ARRAY | InputArgument::REQUIRED, 'Installed packages to unpack.'),
                 new InputOption('sort-packages', null, InputOption::VALUE_NONE, 'Sorts packages'),

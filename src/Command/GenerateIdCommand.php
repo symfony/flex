@@ -29,7 +29,7 @@ class GenerateIdCommand extends Command
     protected function configure()
     {
         $this->setName('symfony:generate-id')
-            ->setDescription('Generate a unique ID for this project.')
+            ->setDescription('Generates a unique ID for this project.')
         ;
     }
 
