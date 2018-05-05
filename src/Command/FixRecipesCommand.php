@@ -76,7 +76,7 @@ class FixRecipesCommand extends BaseCommand
             $operations[] = new InstallOperation($pkg);
         }
 
-        $this->flex->update(new class extends Event {
+        $this->flex->update(new class() extends Event {
             public function __construct()
             {
             }
