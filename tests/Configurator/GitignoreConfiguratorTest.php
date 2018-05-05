@@ -13,9 +13,9 @@ namespace Symfony\Flex\Tests\Configurator;
 
 require_once __DIR__.'/TmpDirMock.php';
 
+use PHPUnit\Framework\TestCase;
 use Symfony\Flex\Configurator\GitignoreConfigurator;
 use Symfony\Flex\Options;
-use PHPUnit\Framework\TestCase;
 use Symfony\Flex\Recipe;
 use Composer\IO\IOInterface;
 use Composer\Composer;
