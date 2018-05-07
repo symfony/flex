@@ -31,6 +31,7 @@ use Composer\IO\NullIO;
 use Composer\Json\JsonFile;
 use Composer\Json\JsonManipulator;
 use Composer\Package\Locker;
+use Composer\Plugin\CommandEvent;
 use Composer\Package\PackageInterface;
 use Composer\Plugin\PluginEvents;
 use Composer\Plugin\PluginInterface;
@@ -122,12 +123,6 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
 
         $backtrace = debug_backtrace();
-        foreach ($backtrace as $trace) {
-            if (isset($trace['object']) && $trace['object'] instanceof Installer) {
-                $trace['object']->setSuggestedPackagesReporter(new SuggestedPackagesReporter(new NullIO()));
-                break;
-            }
-        }
 
         foreach ($backtrace as $trace) {
             if (!isset($trace['object']) || !isset($trace['args'][0])) {
@@ -233,6 +228,13 @@ class Flex implements PluginInterface, EventSubscriberInterface
             }
         } else {
             $this->operations[] = $operation;
+        }
+    }
+
+    public function onCommand(CommandEvent $event)
+    {
+        if ($event->getInput()->hasOption('no-suggest')) {
+            $event->getInput()->setOption('no-suggest', true);
         }
     }
 
@@ -680,6 +682,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             ScriptEvents::POST_INSTALL_CMD => 'install',
             ScriptEvents::POST_UPDATE_CMD => 'update',
             PluginEvents::PRE_FILE_DOWNLOAD => 'onFileDownload',
+            PluginEvents::COMMAND => 'onCommand',
             'auto-scripts' => 'executeAutoScripts',
         ];
     }
