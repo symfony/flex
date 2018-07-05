@@ -30,6 +30,7 @@ use Composer\IO\IOInterface;
 use Composer\IO\NullIO;
 use Composer\Json\JsonFile;
 use Composer\Json\JsonManipulator;
+use Composer\Package\Comparer\Comparer;
 use Composer\Package\Locker;
 use Composer\Package\PackageInterface;
 use Composer\Plugin\PluginEvents;
@@ -156,7 +157,12 @@ class Flex implements PluginInterface, EventSubscriberInterface
             }
 
             if ('create-project' === $command) {
-                $input->setInteractive(false);
+                // detect Composer >=1.7 (using the Composer::VERSION constant doesn't work with snapshot builds)
+                if (class_exists(Comparer::class)) {
+                    $input->setOption('remove-vcs', true);
+                } else {
+                    $input->setInteractive(false);
+                }
             } elseif ('update' === $command) {
                 $this->displayThanksReminder = 1;
             }
