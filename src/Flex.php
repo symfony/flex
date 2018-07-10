@@ -36,6 +36,8 @@ use Composer\Plugin\PluginEvents;
 use Composer\Plugin\PluginInterface;
 use Composer\Plugin\PreFileDownloadEvent;
 use Composer\Repository\ComposerRepository as BaseComposerRepository;
+use Composer\Repository\RepositoryFactory;
+use Composer\Repository\RepositoryManager;
 use Composer\Script\Event;
 use Composer\Script\ScriptEvents;
 use Symfony\Component\Console\Input\ArgvInput;
@@ -101,6 +103,13 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
         $rfs = Factory::createRemoteFilesystem($this->io, $this->config);
         $this->rfs = new ParallelDownloader($this->io, $this->config, $rfs->getOptions(), $rfs->isTlsDisabled());
+        $manager = new RepositoryManager($this->io, $this->config, $composer->getEventDispatcher(), $this->rfs);
+        $manager->setRepositoryClass('composer', ComposerRepository::class);
+        foreach (RepositoryFactory::defaultRepos(null, $this->config, $manager) as $repo) {
+            $manager->addRepository($repo);
+        }
+        $manager->setLocalRepository($composer->getRepositoryManager()->getLocalRepository());
+        $composer->setRepositoryManager($manager);
         $this->configurator = new Configurator($composer, $io, $this->options);
         $this->downloader = new Downloader($composer, $io, $this->rfs);
         $this->downloader->setFlexId($this->getFlexId());
