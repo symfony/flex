@@ -25,7 +25,7 @@ use Composer\Json\JsonFile;
  */
 class Downloader
 {
-    private static $DEFAULT_ENDPOINT = 'https://symfony.sh';
+    private static $DEFAULT_ENDPOINT = 'https://flex.symfony.com';
     private static $MAX_LENGTH = 1000;
 
     private $io;
