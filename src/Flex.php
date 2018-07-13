@@ -104,12 +104,20 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
         $rfs = Factory::createRemoteFilesystem($this->io, $this->config);
         $this->rfs = new ParallelDownloader($this->io, $this->config, $rfs->getOptions(), $rfs->isTlsDisabled());
-        $manager = new RepositoryManager($this->io, $this->config, $composer->getEventDispatcher(), $this->rfs);
-        $manager->setRepositoryClass('composer', ComposerRepository::class);
-        foreach (RepositoryFactory::defaultRepos(null, $this->config, $manager) as $repo) {
-            $manager->addRepository($repo);
-        }
-        $manager->setLocalRepository($composer->getRepositoryManager()->getLocalRepository());
+
+        $manager = RepositoryFactory::manager($this->io, $this->config, $composer->getEventDispatcher(), $this->rfs);
+        $setRepositories = \Closure::bind(function (RepositoryManager $manager) {
+            $manager->repositoryClasses = $this->repositoryClasses;
+            $manager->setRepositoryClass('composer', TruncatedComposerRepository::class);
+            $manager->repositories = $this->repositories;
+            $i = 0;
+            foreach (RepositoryFactory::defaultRepos(null, $this->config, $manager) as $repo) {
+                $manager->repositories[$i++] = $repo;
+            }
+            $manager->setLocalRepository($this->getLocalRepository());
+        }, $composer->getRepositoryManager(), RepositoryManager::class);
+
+        $setRepositories($manager);
         $composer->setRepositoryManager($manager);
         $this->configurator = new Configurator($composer, $io, $this->options);
         $this->downloader = new Downloader($composer, $io, $this->rfs);
@@ -277,8 +285,8 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
 
         if (2 === $this->displayThanksReminder) {
-            $love = '\\' === DIRECTORY_SEPARATOR ? 'love' : '💖 ';
-            $star = '\\' === DIRECTORY_SEPARATOR ? 'star' : '★ ';
+            $love = '\\' === \DIRECTORY_SEPARATOR ? 'love' : '💖 ';
+            $star = '\\' === \DIRECTORY_SEPARATOR ? 'star' : '★ ';
 
             $this->io->writeError('');
             $this->io->writeError('What about running <comment>composer global require symfony/thanks && composer thanks</> now?');
@@ -460,7 +468,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $this->cacheDirPopulated = true;
 
         $downloads = [];
-        $cacheDir = rtrim($this->config->get('cache-files-dir'), '\/').DIRECTORY_SEPARATOR;
+        $cacheDir = rtrim($this->config->get('cache-files-dir'), '\/').\DIRECTORY_SEPARATOR;
         $getCacheKey = function (PackageInterface $package, $processedUrl) {
             return $this->getCacheKey($package, $processedUrl);
         };
