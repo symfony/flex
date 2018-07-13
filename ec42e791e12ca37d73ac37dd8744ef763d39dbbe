@@ -1,0 +1,17 @@
+---------------------------------------------------------------------------
+
+by fabpot at 2018-07-13T06:58:53Z
+
+Anyone willing to test this patch before I merge it and release a new version? /cc @ro0NL @sstok @renanbr @lpj145 @andre-qup  @hotrush
+
+---------------------------------------------------------------------------
+
+by hotrush at 2018-07-13T07:27:42Z
+
+@fabpot I have no errors installing new packages with this pr's version
+
+---------------------------------------------------------------------------
+
+by ro0NL at 2018-07-13T07:39:02Z
+
+Works for me :+1:
