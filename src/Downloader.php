@@ -11,7 +11,7 @@
 
 namespace Symfony\Flex;
 
-use Composer\Cache;
+use Composer\Cache as ComposerCache;
 use Composer\Composer;
 use Composer\DependencyResolver\Operation\OperationInterface;
 use Composer\DependencyResolver\Operation\UninstallOperation;
@@ -51,7 +51,7 @@ class Downloader
         $this->io = $io;
         $config = $composer->getConfig();
         $this->rfs = $rfs;
-        $this->cache = new Cache($io, $config->get('cache-repo-dir').'/'.preg_replace('{[^a-z0-9.]}i', '-', $this->endpoint));
+        $this->cache = new ComposerCache($io, $config->get('cache-repo-dir').'/'.preg_replace('{[^a-z0-9.]}i', '-', $this->endpoint));
         $this->sess = bin2hex(random_bytes(16));
 
         if (self::$DEFAULT_ENDPOINT !== $endpoint) {
