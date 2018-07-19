@@ -1,0 +1,24 @@
+---------------------------------------------------------------------------
+
+by weaverryan at 2018-07-18T16:26:54Z
+
+I cloned symfony/skeleton and `composer install` with this patch applied - everything looked happy :)
+
+---------------------------------------------------------------------------
+
+by maxhelias at 2018-07-18T16:32:07Z
+
+I think we should instead use the `Cache` defined in Flex because it extends from `Composer\Cache`.
+Just delete line 14 should be enough in my opinion
+
+---------------------------------------------------------------------------
+
+by fabpot at 2018-07-18T17:04:00Z
+
+/cc @nicolas-grekas
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2018-07-18T19:36:53Z
+
+@maxhelias Cache in the flex namespace has a different responsibility, we should really use Composer's here.
