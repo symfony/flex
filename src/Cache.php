@@ -19,7 +19,62 @@ use Composer\Cache as BaseCache;
 class Cache extends BaseCache
 {
     private static $lowestTags = [
-        'symfony/symfony' => 'v3.4.0',
+        'symfony/symfony' => [
+            'version' => 'v3.4.0',
+            'replaces' => [
+                'symfony/asset',
+                'symfony/browser-kit',
+                'symfony/cache',
+                'symfony/config',
+                'symfony/console',
+                'symfony/css-selector',
+                'symfony/dependency-injection',
+                'symfony/debug',
+                'symfony/debug-bundle',
+                'symfony/doctrine-bridge',
+                'symfony/dom-crawler',
+                'symfony/dotenv',
+                'symfony/event-dispatcher',
+                'symfony/expression-language',
+                'symfony/filesystem',
+                'symfony/finder',
+                'symfony/form',
+                'symfony/framework-bundle',
+                'symfony/http-foundation',
+                'symfony/http-kernel',
+                'symfony/inflector',
+                'symfony/intl',
+                'symfony/ldap',
+                'symfony/lock',
+                'symfony/messenger',
+                'symfony/monolog-bridge',
+                'symfony/options-resolver',
+                'symfony/process',
+                'symfony/property-access',
+                'symfony/property-info',
+                'symfony/proxy-manager-bridge',
+                'symfony/routing',
+                'symfony/security',
+                'symfony/security-core',
+                'symfony/security-csrf',
+                'symfony/security-guard',
+                'symfony/security-http',
+                'symfony/security-bundle',
+                'symfony/serializer',
+                'symfony/stopwatch',
+                'symfony/templating',
+                'symfony/translation',
+                'symfony/twig-bridge',
+                'symfony/twig-bundle',
+                'symfony/validator',
+                'symfony/var-dumper',
+                'symfony/web-link',
+                'symfony/web-profiler-bundle',
+                'symfony/web-server-bundle',
+                'symfony/workflow',
+                'symfony/yaml',
+            ],
+        ],
     ];
 
     public function read($file)
@@ -35,11 +90,16 @@ class Cache extends BaseCache
 
     public function removeLegacyTags(array $data): array
     {
-        foreach (self::$lowestTags as $package => $lowestVersion) {
-            if (!isset($data['packages'][$package][$lowestVersion])) {
+        foreach (self::$lowestTags as $lowestPackage => $settings) {
+            $lowestVersion = $settings['version'];
+            $replacedPackages = $settings['replaces'];
+            if (!isset($data['packages'][$lowestPackage][$lowestVersion])) {
                 continue;
             }
             foreach ($data['packages'] as $package => $versions) {
+                if ($package !== $lowestPackage && !in_array($package, $replacedPackages, true)) {
+                    continue;
+                }
                 foreach ($versions as $version => $composerJson) {
                     if (version_compare($version, $lowestVersion, '<')) {
                         unset($data['packages'][$package][$version]);
