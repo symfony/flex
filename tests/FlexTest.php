@@ -12,7 +12,6 @@
 namespace Symfony\Flex\Tests;
 
 use Composer\Composer;
-use Composer\Config;
 use Composer\DependencyResolver\Operation\InstallOperation;
 use Composer\Factory;
 use Composer\Installer\PackageEvent;
