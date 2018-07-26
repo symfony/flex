@@ -1,0 +1,17 @@
+---------------------------------------------------------------------------
+
+by stof at 2018-07-26T15:50:21Z
+
+@fabpot how does the backend handle the `lock` alias ?
+
+---------------------------------------------------------------------------
+
+by fabpot at 2018-07-26T16:36:26Z
+
+What do you mean? With the new version, nobody can "register" those special aliases, but that does not block those aliases from being used by symfony/*.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2018-07-26T16:52:29Z
+
+Oh indeed, all is fine then :)
