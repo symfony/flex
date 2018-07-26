@@ -13,12 +13,12 @@ namespace Symfony\Flex\Tests\Configurator;
 
 require_once __DIR__.'/TmpDirMock.php';
 
+use Composer\Composer;
+use Composer\IO\IOInterface;
 use PHPUnit\Framework\TestCase;
 use Symfony\Flex\Configurator\EnvConfigurator;
 use Symfony\Flex\Options;
 use Symfony\Flex\Recipe;
-use Composer\IO\IOInterface;
-use Composer\Composer;
 
 class EnvConfiguratorTest extends TestCase
 {

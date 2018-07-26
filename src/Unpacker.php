@@ -15,7 +15,6 @@ use Composer\Composer;
 use Composer\Factory;
 use Composer\Json\JsonFile;
 use Composer\Json\JsonManipulator;
-use Composer\Package\Package;
 use Symfony\Flex\Unpack\Operation;
 use Symfony\Flex\Unpack\Result;
 
