@@ -81,8 +81,8 @@ class Cache extends BaseCache
     {
         $content = parent::read($file);
 
-        if (0 === strpos($file, 'provider-symfony$')) {
-            $content = json_encode($this->removeLegacyTags(json_decode($content, true)));
+        if (0 === strpos($file, 'provider-symfony$') && \is_array($data = json_decode($content, true))) {
+            $content = json_encode($this->removeLegacyTags($data));
         }
 
         return $content;
