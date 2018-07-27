@@ -64,7 +64,7 @@ class CurlDownloader
         $params = stream_context_get_params($context);
 
         $ch = curl_init();
-        $hd = fopen('php://memory', 'w+b');
+        $hd = fopen('php://temp/maxmemory:32768', 'w+b');
         if ($file && !$fd = @fopen($file.'~', 'w+b')) {
             $file = null;
         }

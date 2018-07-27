@@ -48,7 +48,7 @@ class ScriptExecutor
             return;
         }
 
-        $cmdOutput = new StreamOutput(fopen('php://memory', 'rw'), OutputInterface::VERBOSITY_VERBOSE, $this->io->isDecorated());
+        $cmdOutput = new StreamOutput(fopen('php://temp', 'rw'), OutputInterface::VERBOSITY_VERBOSE, $this->io->isDecorated());
         $outputHandler = function ($type, $buffer) use ($cmdOutput) {
             $cmdOutput->write($buffer, false, OutputInterface::OUTPUT_RAW);
         };
