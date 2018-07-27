@@ -659,7 +659,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
                 continue;
             }
 
-            if (!preg_match('#^https\?://#', $repo['url'])) {
+            if (!preg_match('#^http(s\??)?://#', $repo['url'])) {
                 continue;
             }
 
