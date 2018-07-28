@@ -89,6 +89,14 @@ class CurlDownloader
         curl_setopt($ch, CURLOPT_WRITEHEADER, $hd);
         curl_setopt($ch, CURLOPT_FILE, $fd);
         curl_setopt($ch, CURLOPT_SHARE, $this->shareHandle);
+        
+        // feature detect http2 support in the php client/curl version.
+        if (defined('CURL_VERSION_HTTP2') && defined('CURL_HTTP_VERSION_2_0')) {
+            $curlVersion = curl_version();
+            if ($curlVersion["features"] & CURL_VERSION_HTTP2 !== 0) {
+                curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2_0);
+            }
+        }
 
         foreach (self::$options as $type => $options) {
             foreach ($options as $name => $curlopt) {
