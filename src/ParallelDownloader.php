@@ -52,6 +52,7 @@ class ParallelDownloader extends RemoteFilesystem
 
     public function download(array &$nextArgs, callable $nextCallback, bool $quiet = true, bool $progress = true)
     {
+        $previousState = [$this->quiet, $this->progress, $this->downloadCount, $this->nextCallback, $this->sharedState];
         $this->quiet = $quiet;
         $this->progress = $progress;
         $this->downloadCount = count($nextArgs);
@@ -89,10 +90,7 @@ class ParallelDownloader extends RemoteFilesystem
             if (!$this->quiet) {
                 $this->io->writeError('');
             }
-            $this->nextCallback = null;
-            $this->sharedState = null;
-            $this->quiet = true;
-            $this->progress = true;
+            list($this->quiet, $this->progress, $this->downloadCount, $this->nextCallback, $this->sharedState) = $previousState;
         }
     }
 
