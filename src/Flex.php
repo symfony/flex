@@ -30,6 +30,7 @@ use Composer\IO\IOInterface;
 use Composer\IO\NullIO;
 use Composer\Json\JsonFile;
 use Composer\Json\JsonManipulator;
+use Composer\Package\BasePackage;
 use Composer\Package\Comparer\Comparer;
 use Composer\Package\Locker;
 use Composer\Package\PackageInterface;
@@ -105,14 +106,19 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $rfs = Factory::createRemoteFilesystem($this->io, $this->config);
         $this->rfs = new ParallelDownloader($this->io, $this->config, $rfs->getOptions(), $rfs->isTlsDisabled());
 
+        $symfonyRequire = getenv('SYMFONY_REQUIRE') ?: ($composer->getPackage()->getExtra()['symfony']['require'] ?? null);
+
         $manager = RepositoryFactory::manager($this->io, $this->config, $composer->getEventDispatcher(), $this->rfs);
-        $setRepositories = \Closure::bind(function (RepositoryManager $manager) {
+        $setRepositories = \Closure::bind(function (RepositoryManager $manager) use ($symfonyRequire) {
             $manager->repositoryClasses = $this->repositoryClasses;
             $manager->setRepositoryClass('composer', TruncatedComposerRepository::class);
             $manager->repositories = $this->repositories;
             $i = 0;
             foreach (RepositoryFactory::defaultRepos(null, $this->config, $manager) as $repo) {
                 $manager->repositories[$i++] = $repo;
+                if ($repo instanceof TruncatedComposerRepository && $symfonyRequire) {
+                    $repo->setSymfonyRequire($symfonyRequire, $this->io);
+                }
             }
             $manager->setLocalRepository($this->getLocalRepository());
         }, $composer->getRepositoryManager(), RepositoryManager::class);
@@ -156,6 +162,8 @@ class Flex implements PluginInterface, EventSubscriberInterface
                 continue;
             }
 
+            // In Composer 1.0.*, $input knows about option and argument definitions
+            // Since Composer >=1.1, $input contains only raw values
             $input = $trace['args'][0];
             $app = $trace['object'];
 
@@ -195,12 +203,19 @@ class Flex implements PluginInterface, EventSubscriberInterface
                 }
             }
 
-            if ($input->hasOption('no-progress')) {
-                $this->progress = !$input->getOption('no-progress');
+            if ($input->hasParameterOption('--no-progress', true)) {
+                $this->progress = false;
             }
 
-            if ($input->hasOption('dry-run')) {
-                $this->dryRun = $input->getOption('dry-run');
+            if ($input->hasParameterOption('--dry-run', true)) {
+                $this->dryRun = true;
+            }
+
+            if ($input->hasParameterOption('--prefer-lowest', true)) {
+                // When prefer-lowest is set and no stable version has been released,
+                // we consider "dev" more stable than "alpha", "beta" or "RC". This
+                // allows testing lowest versions with potential fixes applied.
+                BasePackage::$stabilities['dev'] = 1 + BasePackage::STABILITY_STABLE;
             }
 
             $composerFile = Factory::getComposerFile();
@@ -530,6 +545,10 @@ class Flex implements PluginInterface, EventSubscriberInterface
             return;
         }
 
+        if (null === $this->downloader->getEndpoint()) {
+            throw new \LogicException('Cannot generate project id when "symfony/flex" is not in the "require" section of the root composer.json.');
+        }
+
         $json = new JsonFile(Factory::getComposerFile());
         $manipulator = new JsonManipulator(file_get_contents($json->getPath()));
         $manipulator->addSubNode('extra', 'symfony.id', $this->downloader->get('/ulid')->getBody()['ulid']);
@@ -540,6 +559,11 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
     private function fetchRecipes(): array
     {
+        if (null === $this->downloader->getEndpoint()) {
+            $this->io->writeError('<warning>Symfony recipes are disabled: "symfony/flex" is not in the "require" section of the root composer.json</warning>');
+
+            return [[], []];
+        }
         $devPackages = null;
         $data = $this->downloader->getRecipes($this->operations);
         $manifests = $data['manifests'] ?? [];

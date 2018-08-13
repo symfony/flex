@@ -42,21 +42,21 @@ class Downloader
         if (getenv('SYMFONY_CAFILE')) {
             $this->caFile = getenv('SYMFONY_CAFILE');
         }
-        if (getenv('SYMFONY_ENDPOINT')) {
-            $endpoint = getenv('SYMFONY_ENDPOINT');
-        } else {
-            $endpoint = $composer->getPackage()->getExtra()['symfony']['endpoint'] ?? self::$DEFAULT_ENDPOINT;
+
+        foreach ($composer->getPackage()->getRequires() as $link) {
+            // recipes apply only when symfony/flex is found in "require" in the root package
+            if ('symfony/flex' !== $link->getTarget()) {
+                continue;
+            }
+            $this->endpoint = rtrim(getenv('SYMFONY_ENDPOINT') ?: ($composer->getPackage()->getExtra()['symfony']['endpoint'] ?? self::$DEFAULT_ENDPOINT), '/');
+            break;
         }
-        $this->endpoint = rtrim($endpoint, '/');
+
         $this->io = $io;
         $config = $composer->getConfig();
         $this->rfs = $rfs;
         $this->cache = new ComposerCache($io, $config->get('cache-repo-dir').'/'.preg_replace('{[^a-z0-9.]}i', '-', $this->endpoint));
         $this->sess = bin2hex(random_bytes(16));
-
-        if (self::$DEFAULT_ENDPOINT !== $endpoint) {
-            $this->io->writeError('<warning>Warning: Using '.$endpoint.' as the Symfony endpoint</warning>');
-        }
     }
 
     public function getSessionId(): string
@@ -67,6 +67,11 @@ class Downloader
     public function setFlexId(string $id = null)
     {
         $this->flexId = $id;
+    }
+
+    public function getEndpoint()
+    {
+        return $this->endpoint;
     }
 
     /**
@@ -120,6 +125,10 @@ class Downloader
             $paths[] = ['/p/'.$chunk];
         }
 
+        if (null !== $this->endpoint && self::$DEFAULT_ENDPOINT !== $this->endpoint) {
+            $this->io->writeError('<warning>Using "'.$this->endpoint.'" as the Symfony endpoint</warning>');
+        }
+
         $bodies = [];
         $this->rfs->download($paths, function ($path) use (&$bodies) {
             if ($body = $this->get($path, [], false)->getBody()) {
@@ -151,6 +160,9 @@ class Downloader
      */
     public function get(string $path, array $headers = [], $cache = true): Response
     {
+        if (null === $this->endpoint) {
+            return new Response([]);
+        }
         $headers[] = 'Package-Session: '.$this->sess;
         $url = $this->endpoint.'/'.ltrim($path, '/');
         $cacheKey = $cache ? ltrim($path, '/') : '';

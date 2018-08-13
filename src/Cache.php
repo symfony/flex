@@ -12,70 +12,27 @@
 namespace Symfony\Flex;
 
 use Composer\Cache as BaseCache;
+use Composer\IO\IOInterface;
+use Composer\Semver\Constraint\Constraint;
+use Composer\Semver\VersionParser;
 
 /**
  * @author Nicolas Grekas <p@tchwork.com>
  */
 class Cache extends BaseCache
 {
-    private static $lowestTags = [
-        'symfony/symfony' => [
-            'version' => 'v3.4.0',
-            'replaces' => [
-                'symfony/asset',
-                'symfony/browser-kit',
-                'symfony/cache',
-                'symfony/config',
-                'symfony/console',
-                'symfony/css-selector',
-                'symfony/dependency-injection',
-                'symfony/debug',
-                'symfony/debug-bundle',
-                'symfony/doctrine-bridge',
-                'symfony/dom-crawler',
-                'symfony/dotenv',
-                'symfony/event-dispatcher',
-                'symfony/expression-language',
-                'symfony/filesystem',
-                'symfony/finder',
-                'symfony/form',
-                'symfony/framework-bundle',
-                'symfony/http-foundation',
-                'symfony/http-kernel',
-                'symfony/inflector',
-                'symfony/intl',
-                'symfony/ldap',
-                'symfony/lock',
-                'symfony/messenger',
-                'symfony/monolog-bridge',
-                'symfony/options-resolver',
-                'symfony/process',
-                'symfony/property-access',
-                'symfony/property-info',
-                'symfony/proxy-manager-bridge',
-                'symfony/routing',
-                'symfony/security',
-                'symfony/security-core',
-                'symfony/security-csrf',
-                'symfony/security-guard',
-                'symfony/security-http',
-                'symfony/security-bundle',
-                'symfony/serializer',
-                'symfony/stopwatch',
-                'symfony/templating',
-                'symfony/translation',
-                'symfony/twig-bridge',
-                'symfony/twig-bundle',
-                'symfony/validator',
-                'symfony/var-dumper',
-                'symfony/web-link',
-                'symfony/web-profiler-bundle',
-                'symfony/web-server-bundle',
-                'symfony/workflow',
-                'symfony/yaml',
-            ],
-        ],
-    ];
+    private $versionParser;
+    private $symfonyRequire;
+    private $symfonyContraints;
+    private $io;
+
+    public function setSymfonyRequire(string $symfonyRequire, IOInterface $io)
+    {
+        $this->versionParser = new VersionParser();
+        $this->symfonyRequire = $symfonyRequire;
+        $this->symfonyContraints = $this->versionParser->parseConstraints($symfonyRequire);
+        $this->io = $io;
+    }
 
     public function read($file)
     {
@@ -90,23 +47,28 @@ class Cache extends BaseCache
 
     public function removeLegacyTags(array $data): array
     {
-        foreach (self::$lowestTags as $lowestPackage => $settings) {
-            $lowestVersion = $settings['version'];
-            $replacedPackages = $settings['replaces'];
-            if (!isset($data['packages'][$lowestPackage][$lowestVersion])) {
-                continue;
-            }
-            foreach ($data['packages'] as $package => $versions) {
-                if ($package !== $lowestPackage && !in_array($package, $replacedPackages, true)) {
+        if (!$this->symfonyContraints || !isset($data['packages']['symfony/symfony'])) {
+            return $data;
+        }
+        $symfonyVersions = $data['packages']['symfony/symfony'];
+
+        foreach ($data['packages'] as $name => $versions) {
+            foreach ($versions as $version => $package) {
+                if ('symfony/symfony' !== $name && 'self.version' !== ($symfonyVersions[preg_replace('/^(\d++\.\d++)\..*/', '$1.x-dev', $version)]['replace'][$name] ?? null)) {
                     continue;
                 }
-                foreach ($versions as $version => $composerJson) {
-                    if (version_compare($version, $lowestVersion, '<')) {
-                        unset($data['packages'][$package][$version]);
+                $normalizedVersion = $package['extra']['branch-alias'][$version] ?? null;
+                $normalizedVersion = $normalizedVersion ? $this->versionParser->normalize($normalizedVersion) : $package['version_normalized'];
+                $provider = new Constraint('==', $normalizedVersion);
+
+                if (!$this->symfonyContraints->matches($provider)) {
+                    if ($this->io) {
+                        $this->io->writeError(sprintf('<info>Restricting packages listed in "symfony/symfony" to "%s"</info>', $this->symfonyRequire));
+                        $this->io = null;
                     }
+                    unset($data['packages'][$name][$version]);
                 }
             }
-            break;
         }
 
         return $data;

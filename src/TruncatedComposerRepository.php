@@ -29,6 +29,11 @@ class TruncatedComposerRepository extends BaseComposerRepository
         $this->cache = new Cache($io, $config->get('cache-repo-dir').'/'.preg_replace('{[^a-z0-9.]}i', '-', $this->url), 'a-z0-9.$');
     }
 
+    public function setSymfonyRequire(string $symfonyRequire, IOInterface $io)
+    {
+        $this->cache->setSymfonyRequire($symfonyRequire, $io);
+    }
+
     protected function fetchFile($filename, $cacheKey = null, $sha256 = null, $storeLastModifiedTime = false)
     {
         $data = parent::fetchFile($filename, $cacheKey, $sha256, $storeLastModifiedTime);
