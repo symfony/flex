@@ -46,7 +46,11 @@ class Lock
 
     public function write()
     {
-        ksort($this->lock);
-        $this->json->write($this->lock);
+        if ($this->lock) {
+            ksort($this->lock);
+            $this->json->write($this->lock);
+        } elseif ($this->json->exists()) {
+            @unlink($this->json->getPath());
+        }
     }
 }

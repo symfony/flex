@@ -83,8 +83,12 @@ class ParallelDownloader extends RemoteFilesystem
         }
         try {
             $this->getNext();
-            if (!$this->quiet) {
+            if ($this->quiet) {
+                // no-op
+            } elseif ($this->progress) {
                 $this->io->overwriteError(' (<comment>100%</comment>)');
+            } else {
+                $this->io->writeError(' (<comment>100%</comment>)');
             }
         } finally {
             if (!$this->quiet) {

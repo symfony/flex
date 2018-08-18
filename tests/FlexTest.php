@@ -16,6 +16,7 @@ use Composer\DependencyResolver\Operation\InstallOperation;
 use Composer\Factory;
 use Composer\Installer\PackageEvent;
 use Composer\IO\BufferIO;
+use Composer\Package\Link;
 use Composer\Package\Locker;
 use Composer\Package\Package;
 use Composer\Package\RootPackageInterface;
@@ -106,6 +107,7 @@ class FlexTest extends TestCase
 
         $downloader = $this->getMockBuilder(Downloader::class)->disableOriginalConstructor()->getMock();
         $downloader->expects($this->once())->method('getRecipes')->willReturn($data);
+        $downloader->expects($this->once())->method('getEndpoint')->willReturn('dummy');
 
         $io = new BufferIO('', OutputInterface::VERBOSITY_VERBOSE);
         $locker = $this->getMockBuilder(Locker::class)->disableOriginalConstructor()->getMock();
@@ -167,6 +169,7 @@ EOF
         $composer->setConfig(Factory::createConfig($io));
         $package = $this->getMockBuilder(RootPackageInterface::class)->disableOriginalConstructor()->getMock();
         $package->method('getExtra')->will($this->returnValue(['symfony' => ['allow-contrib' => true]]));
+        $package->method('getRequires')->will($this->returnValue([new Link('dummy', 'symfony/flex')]));
         $composer->setPackage($package);
         $localRepo = $this->getMockBuilder(WritableRepositoryInterface::class)->disableOriginalConstructor()->getMock();
         $manager = $this->getMockBuilder(RepositoryManager::class)->disableOriginalConstructor()->getMock();
