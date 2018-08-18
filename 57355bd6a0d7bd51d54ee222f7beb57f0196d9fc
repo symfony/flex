@@ -1,0 +1,53 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2018-08-13T17:45:28Z
+
+For `symfony/symfony` master:
+
+before:
+`Memory usage: (peak: 1065.49MB), time: 9.91s`
+
+ with `SYMFONY_REQUIRE='~4.1'`:
+`Memory usage: (peak: 257.37MB), time: 2.57s`
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2018-08-14T08:26:11Z
+
+PR now handles a new `SYMFONY_REQUIRE` env var that should contain a version constraint that will apply to all packages replaced by `symfony/symfony`.
+This works without having to explicitly list these packages in the source, easing maintenance.
+
+This will also allow deprecating `symfony/lts` and `symfony/force-lowest`, allowing to simplify the releasing process: libs that currently use them to test several versions of Symfony components could `composer global require symfony/flex` + e.g. `SYMFONY_REQUIRE='4.1.*'`
+
+---------------------------------------------------------------------------
+
+by BoShurik at 2018-08-14T08:36:56Z
+
+@nicolas-grekas is it possible to set `extra.symfony.require` instead of `SYMFONY_REQUIRE` env var?
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2018-08-14T08:39:31Z
+
+@BoShurik I forgot to mention it, but Yes! I even plan to use it in our skeletons to replace `symfony/lts`.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2018-08-14T11:28:45Z
+
+PR ready, works as expected in https://github.com/symfony/symfony/pull/28199
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2018-08-18T07:48:01Z
+
+Now with a notice:
+![image](https://user-images.githubusercontent.com/243674/44297091-c0b5c980-a2cb-11e8-8e0e-73554af7be80.png)
+
+PR ready, it works well :)
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2018-08-18T08:57:17Z
+
+I removed the special handling of the "none" endpoint. Instead, flex disables recipes (displaying a warning) when it can't find itself in the "require" of the root composer.json
