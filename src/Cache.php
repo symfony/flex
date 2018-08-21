@@ -23,14 +23,14 @@ class Cache extends BaseCache
 {
     private $versionParser;
     private $symfonyRequire;
-    private $symfonyContraints;
+    private $symfonyConstraints;
     private $io;
 
     public function setSymfonyRequire(string $symfonyRequire, IOInterface $io)
     {
         $this->versionParser = new VersionParser();
         $this->symfonyRequire = $symfonyRequire;
-        $this->symfonyContraints = $this->versionParser->parseConstraints($symfonyRequire);
+        $this->symfonyConstraints = $this->versionParser->parseConstraints($symfonyRequire);
         $this->io = $io;
     }
 
@@ -47,7 +47,7 @@ class Cache extends BaseCache
 
     public function removeLegacyTags(array $data): array
     {
-        if (!$this->symfonyContraints || !isset($data['packages']['symfony/symfony'])) {
+        if (!$this->symfonyConstraints || !isset($data['packages']['symfony/symfony'])) {
             return $data;
         }
         $symfonyVersions = $data['packages']['symfony/symfony'];
@@ -61,7 +61,7 @@ class Cache extends BaseCache
                 $normalizedVersion = $normalizedVersion ? $this->versionParser->normalize($normalizedVersion) : $package['version_normalized'];
                 $provider = new Constraint('==', $normalizedVersion);
 
-                if (!$this->symfonyContraints->matches($provider)) {
+                if (!$this->symfonyConstraints->matches($provider)) {
                     if ($this->io) {
                         $this->io->writeError(sprintf('<info>Restricting packages listed in "symfony/symfony" to "%s"</info>', $this->symfonyRequire));
                         $this->io = null;
