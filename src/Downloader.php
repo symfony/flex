@@ -43,8 +43,8 @@ class Downloader
             $this->caFile = getenv('SYMFONY_CAFILE');
         }
 
-        foreach ($composer->getPackage()->getRequires() as $link) {
-            // recipes apply only when symfony/flex is found in "require" in the root package
+        foreach (array_merge($composer->getPackage()->getRequires() ?? [], $composer->getPackage()->getDevRequires() ?? []) as $link) {
+            // recipes apply only when symfony/flex is found in "require" or "require-dev" in the root package
             if ('symfony/flex' !== $link->getTarget()) {
                 continue;
             }

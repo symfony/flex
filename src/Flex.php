@@ -546,7 +546,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
 
         if (null === $this->downloader->getEndpoint()) {
-            throw new \LogicException('Cannot generate project id when "symfony/flex" is not in the "require" section of the root composer.json.');
+            throw new \LogicException('Cannot generate project id when "symfony/flex" is not found in the root composer.json.');
         }
 
         $json = new JsonFile(Factory::getComposerFile());
@@ -560,7 +560,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
     private function fetchRecipes(): array
     {
         if (null === $this->downloader->getEndpoint()) {
-            $this->io->writeError('<warning>Symfony recipes are disabled: "symfony/flex" is not in the "require" section of the root composer.json</warning>');
+            $this->io->writeError('<warning>Symfony recipes are disabled: "symfony/flex" not found in the root composer.json</warning>');
 
             return [[], []];
         }
