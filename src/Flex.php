@@ -106,7 +106,8 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $rfs = Factory::createRemoteFilesystem($this->io, $this->config);
         $this->rfs = new ParallelDownloader($this->io, $this->config, $rfs->getOptions(), $rfs->isTlsDisabled());
 
-        $symfonyRequire = getenv('SYMFONY_REQUIRE') ?: ($composer->getPackage()->getExtra()['symfony']['require'] ?? null);
+        $symfonyRequire = $composer->getPackage()->getExtra();
+        $symfonyRequire = getenv('SYMFONY_REQUIRE') ?: ($symfonyRequire['symfony']['require'] ?? null);
 
         $manager = RepositoryFactory::manager($this->io, $this->config, $composer->getEventDispatcher(), $this->rfs);
         $setRepositories = \Closure::bind(function (RepositoryManager $manager) use ($symfonyRequire) {
