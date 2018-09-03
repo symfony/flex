@@ -20,4 +20,10 @@
   <php>
     <ini name="error_reporting" value="-1" />
   </php>
+
+  <filter>
+      <whitelist>
+          <directory>./src/</directory>
+      </whitelist>
+  </filter>
 </phpunit>
