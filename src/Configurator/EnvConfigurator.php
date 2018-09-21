@@ -22,20 +22,18 @@ class EnvConfigurator extends AbstractConfigurator
     {
         $this->write('Added environment variable defaults');
 
-        $this->configureEnvDist($recipe, $vars);
-        $this->configurePhpUnit($recipe, $vars);
+        $this->configureEnv($recipe, $vars);
     }
 
     public function unconfigure(Recipe $recipe, $vars)
     {
-        $this->unconfigureEnvFiles($recipe, $vars);
-        $this->unconfigurePhpUnit($recipe, $vars);
+        $this->unconfigureEnvFiles($recipe);
     }
 
-    private function configureEnvDist(Recipe $recipe, $vars)
+    private function configureEnv(Recipe $recipe, $vars)
     {
-        $distenv = getcwd().'/.env.dist';
-        if (!is_file($distenv) || $this->isFileMarked($recipe, $distenv)) {
+        $envfile = getcwd().'/.env';
+        if (!is_file($envfile) || $this->isFileMarked($recipe, $envfile)) {
             return;
         }
 
@@ -54,89 +52,24 @@ class EnvConfigurator extends AbstractConfigurator
             }
             $data .= "$key=$value\n";
         }
-        if (!file_exists(getcwd().'/.env')) {
-            copy($distenv, getcwd().'/.env');
-        }
         $data = $this->markData($recipe, $data);
-        file_put_contents($distenv, $data, FILE_APPEND);
-        file_put_contents(getcwd().'/.env', $data, FILE_APPEND);
+        file_put_contents($envfile, $data, FILE_APPEND);
     }
 
-    private function configurePhpUnit(Recipe $recipe, $vars)
+    private function unconfigureEnvFiles(Recipe $recipe)
     {
-        foreach (['phpunit.xml.dist', 'phpunit.xml'] as $file) {
-            $phpunit = getcwd().'/'.$file;
-            if (!is_file($phpunit)) {
-                continue;
-            }
-
-            if ($this->isFileXmlMarked($recipe, $phpunit)) {
-                continue;
-            }
-
-            $data = '';
-            foreach ($vars as $key => $value) {
-                $value = $this->evaluateValue($value);
-                if ('#' === $key[0]) {
-                    if (is_numeric(substr($key, 1))) {
-                        $doc = new \DOMDocument();
-                        $data .= '        '.$doc->saveXML($doc->createComment(' '.$value.' '))."\n";
-                    } else {
-                        $value = $this->options->expandTargetDir($value);
-                        $doc = new \DOMDocument();
-                        $fragment = $doc->createElement('env');
-                        $fragment->setAttribute('name', substr($key, 1));
-                        $fragment->setAttribute('value', $value);
-                        $data .= '        '.str_replace(['<', '/>'], ['<!-- ', ' -->'], $doc->saveXML($fragment))."\n";
-                    }
-                } else {
-                    $value = $this->options->expandTargetDir($value);
-                    $doc = new \DOMDocument();
-                    $fragment = $doc->createElement('env');
-                    $fragment->setAttribute('name', $key);
-                    $fragment->setAttribute('value', $value);
-                    $data .= '        '.$doc->saveXML($fragment)."\n";
-                }
-            }
-            $data = $this->markXmlData($recipe, $data);
-            file_put_contents($phpunit, preg_replace('{^(\s+</php>)}m', $data.'$1', file_get_contents($phpunit)));
+        $envfile = getcwd().'/.env';
+        if (!file_exists($envfile)) {
+            return;
         }
-    }
 
-    private function unconfigureEnvFiles(Recipe $recipe, $vars)
-    {
-        foreach (['.env', '.env.dist'] as $file) {
-            $env = getcwd().'/'.$file;
-            if (!file_exists($env)) {
-                continue;
-            }
-
-            $contents = preg_replace(sprintf('{%s*###> %s ###.*###< %s ###%s+}s', "\n", $recipe->getName(), $recipe->getName(), "\n"), "\n", file_get_contents($env), -1, $count);
-            if (!$count) {
-                continue;
-            }
-
-            $this->write(sprintf('Removing environment variables from %s', $file));
-            file_put_contents($env, $contents);
+        $contents = preg_replace(sprintf('{%s*###> %s ###.*###< %s ###%s+}s', "\n", $recipe->getName(), $recipe->getName(), "\n"), "\n", file_get_contents($envfile), -1, $count);
+        if (!$count) {
+            return;
         }
-    }
 
-    private function unconfigurePhpUnit(Recipe $recipe, $vars)
-    {
-        foreach (['phpunit.xml.dist', 'phpunit.xml'] as $file) {
-            $phpunit = getcwd().'/'.$file;
-            if (!is_file($phpunit)) {
-                continue;
-            }
-
-            $contents = preg_replace(sprintf('{%s*\s+<!-- ###\+ %s ### -->.*<!-- ###- %s ### -->%s+}s', "\n", $recipe->getName(), $recipe->getName(), "\n"), "\n", file_get_contents($phpunit), -1, $count);
-            if (!$count) {
-                continue;
-            }
-
-            $this->write(sprintf('Removed environment variables from %s', $file));
-            file_put_contents($phpunit, $contents);
-        }
+        $this->write(sprintf('Removing environment variables from %s', $envfile));
+        file_put_contents($envfile, $contents);
     }
 
     private function evaluateValue($value)
