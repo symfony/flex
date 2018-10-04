@@ -35,6 +35,7 @@ class SymfonyBundle
         $uninstall = 'uninstall' === $this->operation;
         $classes = [];
         $autoload = $this->package->getAutoload();
+        $isSyliusPlugin = 'sylius-plugin' === $this->package->getType();
         foreach (['psr-4' => true, 'psr-0' => false] as $psr => $isPsr4) {
             if (!isset($autoload[$psr])) {
                 continue;
@@ -45,7 +46,7 @@ class SymfonyBundle
                     $paths = [$paths];
                 }
                 foreach ($paths as $path) {
-                    foreach ($this->extractClassNames($namespace) as $class) {
+                    foreach ($this->extractClassNames($namespace, $isSyliusPlugin) as $class) {
                         // we only check class existence on install as we do have the code available
                         // in contrast to uninstall operation
                         if (!$uninstall && !$this->checkClassExists($class, $path, $isPsr4)) {
@@ -61,19 +62,26 @@ class SymfonyBundle
         return $classes;
     }
 
-    private function extractClassNames(string $namespace): array
+    private function extractClassNames(string $namespace, bool $isSyliusPlugin): array
     {
         $namespace = trim($namespace, '\\');
         $class = $namespace.'\\';
         $parts = explode('\\', $namespace);
         $suffix = $parts[\count($parts) - 1];
-        if ('Bundle' !== substr($suffix, -6)) {
+        $endOfWord = substr($suffix, -6);
+
+        if ($isSyliusPlugin) {
+            if ('Bundle' !== $endOfWord && 'Plugin' !== $endOfWord) {
+                $suffix .= 'Bundle';
+            }
+        } elseif ('Bundle' !== $endOfWord) {
             $suffix .= 'Bundle';
         }
+
         $classes = [$class.$suffix];
         $acc = '';
         foreach (\array_slice($parts, 0, -1) as $part) {
-            if ('Bundle' === $part) {
+            if ('Bundle' === $part || ($isSyliusPlugin && 'Plugin' === $part)) {
                 continue;
             }
             $classes[] = $class.$part.$suffix;
@@ -81,7 +89,7 @@ class SymfonyBundle
             $classes[] = $class.$acc.$suffix;
         }
 
-        return $classes;
+        return array_unique($classes);
     }
 
     private function checkClassExists(string $class, string $path, bool $isPsr4): bool
