@@ -304,8 +304,9 @@ class Flex implements PluginInterface, EventSubscriberInterface
         if ($operations) {
             $this->operations = $operations;
         }
+        $cwd = getcwd();
 
-        if (!file_exists(getcwd().'/.env') && file_exists(getcwd().'/.env.dist')) {
+        if (!file_exists("$cwd/.env") && !file_exists("$cwd/.env.local") && file_exists("$cwd/.env.dist") && false === strpos(file_get_contents("$cwd/.env.dist"), '.env.local')) {
             copy(getcwd().'/.env.dist', getcwd().'/.env');
         }
 
