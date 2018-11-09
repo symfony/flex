@@ -8,6 +8,7 @@ matrix:
     - php: 7.1
       env: COMPOSER_FLAGS='--prefer-lowest'
     - php: 7.2
+    - php: 7.3
   fast_finish: true
 
 cache:
