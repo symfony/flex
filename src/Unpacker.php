@@ -40,7 +40,7 @@ class Unpacker
                 null === $pkg ||
                 'symfony-pack' !== $pkg->getType() ||
                 !$op->shouldUnpack() ||
-                0 === count($pkg->getRequires()) + count($pkg->getDevRequires())
+                0 === \count($pkg->getRequires()) + \count($pkg->getDevRequires())
             ) {
                 $result->addRequired($package['name'].($package['version'] ? ':'.$package['version'] : ''));
 

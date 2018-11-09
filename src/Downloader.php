@@ -112,7 +112,7 @@ class Downloader
             if ($date = $package->getReleaseDate()) {
                 $path .= ','.$date->format('U');
             }
-            if (strlen($chunk) + strlen($path) > self::$MAX_LENGTH) {
+            if (\strlen($chunk) + \strlen($path) > self::$MAX_LENGTH) {
                 $paths[] = ['/p/'.$chunk];
                 $chunk = $path;
             } elseif ($chunk) {

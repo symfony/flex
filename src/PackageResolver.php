@@ -61,7 +61,7 @@ class PackageResolver
                         $versionParser->parseConstraints($argument);
                     } catch (\UnexpectedValueException $e) {
                         // is it a special Symfony version?
-                        if (!in_array($argument, self::$SYMFONY_VERSIONS, true)) {
+                        if (!\in_array($argument, self::$SYMFONY_VERSIONS, true)) {
                             $this->throwAlternatives($argument, $i);
                         }
                     }
@@ -105,7 +105,7 @@ class PackageResolver
             $version = $config['require']['symfony/framework-bundle'];
         } elseif ('next' === $version) {
             $version = '^'.self::$versions[$version].'@dev';
-        } elseif (in_array($version, self::$SYMFONY_VERSIONS, true)) {
+        } elseif (\in_array($version, self::$SYMFONY_VERSIONS, true)) {
             $version = '^'.self::$versions[$version];
         }
 
@@ -120,7 +120,7 @@ class PackageResolver
         $alternatives = [];
         foreach (self::$aliases as $alias => $package) {
             $lev = levenshtein($argument, $alias);
-            if ($lev <= strlen($argument) / 3 || false !== strpos($alias, $argument)) {
+            if ($lev <= \strlen($argument) / 3 || false !== strpos($alias, $argument)) {
                 $alternatives[$package][] = $alias;
             }
         }
@@ -129,7 +129,7 @@ class PackageResolver
         if ($alternatives || 0 === $position) {
             $message = sprintf('"%s" is not a valid alias.', $argument);
             if ($alternatives) {
-                if (1 === count($alternatives)) {
+                if (1 === \count($alternatives)) {
                     $message .= " Did you mean this:\n";
                 } else {
                     $message .= " Did you mean one of these:\n";

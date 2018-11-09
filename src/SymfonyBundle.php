@@ -41,7 +41,7 @@ class SymfonyBundle
             }
 
             foreach ($autoload[$psr] as $namespace => $paths) {
-                if (!is_array($paths)) {
+                if (!\is_array($paths)) {
                     $paths = [$paths];
                 }
                 foreach ($paths as $path) {
@@ -71,13 +71,13 @@ class SymfonyBundle
         $namespace = trim($namespace, '\\');
         $class = $namespace.'\\';
         $parts = explode('\\', $namespace);
-        $suffix = $parts[count($parts) - 1];
+        $suffix = $parts[\count($parts) - 1];
         if ('Bundle' !== substr($suffix, -6)) {
             $suffix .= 'Bundle';
         }
         $classes = [$class.$suffix];
         $acc = '';
-        foreach (array_slice($parts, 0, -1) as $part) {
+        foreach (\array_slice($parts, 0, -1) as $part) {
             if ('Bundle' === $part) {
                 continue;
             }
@@ -93,9 +93,9 @@ class SymfonyBundle
     {
         $classPath = ($this->vendorDir ? $this->vendorDir.'/' : '').$this->package->getPrettyName().'/'.$path.'/';
         $parts = explode('\\', $class);
-        $class = $parts[count($parts) - 1];
+        $class = $parts[\count($parts) - 1];
         if (!$isPsr4) {
-            $classPath .= str_replace('\\', '', implode('/', array_slice($parts, 0, -1))).'/';
+            $classPath .= str_replace('\\', '', implode('/', \array_slice($parts, 0, -1))).'/';
         }
         $classPath .= str_replace('\\', '/', $class).'.php';
 

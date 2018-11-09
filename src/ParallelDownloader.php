@@ -42,7 +42,7 @@ class ParallelDownloader extends RemoteFilesystem
         $this->io = $io;
         if (!method_exists(parent::class, 'getRemoteContents')) {
             $this->io->writeError('Composer >=1.7 not found, downloads will happen in sequence', true, IOInterface::DEBUG);
-        } elseif (!extension_loaded('curl')) {
+        } elseif (!\extension_loaded('curl')) {
             $this->io->writeError('ext-curl not found, downloads will happen in sequence', true, IOInterface::DEBUG);
         } else {
             $this->downloader = new CurlDownloader();
@@ -55,7 +55,7 @@ class ParallelDownloader extends RemoteFilesystem
         $previousState = [$this->quiet, $this->progress, $this->downloadCount, $this->nextCallback, $this->sharedState];
         $this->quiet = $quiet;
         $this->progress = $progress;
-        $this->downloadCount = count($nextArgs);
+        $this->downloadCount = \count($nextArgs);
         $this->nextCallback = $nextCallback;
         $this->sharedState = (object) [
             'bytesMaxCount' => 0,

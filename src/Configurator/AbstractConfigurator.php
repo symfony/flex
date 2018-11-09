@@ -41,7 +41,7 @@ abstract class AbstractConfigurator
 
     protected function write($messages)
     {
-        if (!is_array($messages)) {
+        if (!\is_array($messages)) {
             $messages = [$messages];
         }
         foreach ($messages as $i => $message) {

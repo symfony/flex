@@ -41,9 +41,9 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
                 $this->copyDir($this->path->concatenate([$from, $source]), $this->path->concatenate([$to, $target]));
             } else {
                 $targetPath = $this->path->concatenate([$to, $target]);
-                if (!is_dir(dirname($targetPath))) {
-                    mkdir(dirname($targetPath), 0777, true);
-                    $this->write(sprintf('Created <fg=green>"%s"</>', $this->path->relativize(dirname($targetPath))));
+                if (!is_dir(\dirname($targetPath))) {
+                    mkdir(\dirname($targetPath), 0777, true);
+                    $this->write(sprintf('Created <fg=green>"%s"</>', $this->path->relativize(\dirname($targetPath))));
                 }
 
                 if (!file_exists($targetPath)) {

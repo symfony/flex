@@ -46,7 +46,7 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
     {
         foreach ($files as $file => $data) {
             if (0 === strpos($file, $source)) {
-                $file = $this->path->concatenate([$target, substr($file, strlen($source))]);
+                $file = $this->path->concatenate([$target, substr($file, \strlen($source))]);
                 $this->copyFile($file, $data['contents'], $data['executable']);
             }
         }
@@ -58,8 +58,8 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
             return;
         }
 
-        if (!is_dir(dirname($to))) {
-            mkdir(dirname($to), 0777, true);
+        if (!is_dir(\dirname($to))) {
+            mkdir(\dirname($to), 0777, true);
         }
 
         file_put_contents($to, $contents);
@@ -83,7 +83,7 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
             if ('/' === substr($source, -1)) {
                 foreach (array_keys($files) as $file) {
                     if (0 === strpos($file, $source)) {
-                        $this->removeFile($this->path->concatenate([$to, $target, substr($file, strlen($source))]));
+                        $this->removeFile($this->path->concatenate([$to, $target, substr($file, \strlen($source))]));
                     }
                 }
             } else {
@@ -101,8 +101,8 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
         @unlink($to);
         $this->write(sprintf('Removed <fg=green>"%s"</>', $this->path->relativize($to)));
 
-        if (0 === count(glob(dirname($to).'/*', GLOB_NOSORT))) {
-            @rmdir(dirname($to));
+        if (0 === \count(glob(\dirname($to).'/*', GLOB_NOSORT))) {
+            @rmdir(\dirname($to));
         }
     }
 }

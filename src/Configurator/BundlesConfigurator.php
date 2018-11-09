@@ -68,7 +68,7 @@ class BundlesConfigurator extends AbstractConfigurator
     private function load(string $file): array
     {
         $bundles = file_exists($file) ? (require $file) : [];
-        if (!is_array($bundles)) {
+        if (!\is_array($bundles)) {
             $bundles = [];
         }
 
@@ -87,13 +87,13 @@ class BundlesConfigurator extends AbstractConfigurator
         }
         $contents .= "];\n";
 
-        if (!is_dir(dirname($file))) {
-            mkdir(dirname($file), 0777, true);
+        if (!is_dir(\dirname($file))) {
+            mkdir(\dirname($file), 0777, true);
         }
 
         file_put_contents($file, $contents);
 
-        if (function_exists('opcache_invalidate')) {
+        if (\function_exists('opcache_invalidate')) {
             opcache_invalidate($file);
         }
     }
