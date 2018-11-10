@@ -109,7 +109,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $symfonyRequire = getenv('SYMFONY_REQUIRE') ?: ($composer->getPackage()->getExtra()['symfony']['require'] ?? null);
 
         $manager = RepositoryFactory::manager($this->io, $this->config, $composer->getEventDispatcher(), $this->rfs);
-        $setRepositories = \Closure::bind(function (RepositoryManager $manager) use ($symfonyRequire) {
+        $setRepositories = \Closure::bind(function (RepositoryManager $manager) use (&$symfonyRequire) {
             $manager->repositoryClasses = $this->repositoryClasses;
             $manager->setRepositoryClass('composer', TruncatedComposerRepository::class);
             $manager->repositories = $this->repositories;
@@ -190,6 +190,9 @@ class Flex implements PluginInterface, EventSubscriberInterface
                 }
             } elseif ('update' === $command) {
                 $this->displayThanksReminder = 1;
+            } elseif ('outdated' === $command) {
+                $symfonyRequire = null;
+                $setRepositories($manager);
             }
 
             if (isset(self::$aliasResolveCommands[$command])) {
