@@ -249,7 +249,8 @@ class Flex implements PluginInterface, EventSubscriberInterface
         // replace unbounded contraints for symfony/* packages by extra.symfony.require
         $config = json_decode($contents, true);
         if ($symfonyVersion = $config['extra']['symfony']['require'] ?? null) {
-            $versions = $this->downloader->get('/versions.json');
+            $response = $this->downloader->get('/versions.json');
+            $versions = $response->getBody();
             foreach (['require', 'require-dev'] as $type) {
                 foreach ($config[$type] ?? [] as $package => $version) {
                     if ('*' === $version && isset($versions['splits'][$package])) {
