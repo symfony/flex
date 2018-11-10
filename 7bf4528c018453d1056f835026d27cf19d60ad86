@@ -1,0 +1,59 @@
+---------------------------------------------------------------------------
+
+by teohhanhui at 2018-11-09T14:21:30Z
+
+Magic! 🔮
+
+---------------------------------------------------------------------------
+
+by javiereguiluz at 2018-11-09T14:58:27Z
+
+@teohhanhui I understand we don't always have enough time to write detailed comments ... but please don't add comments like *"Magic!"* because they don't help much to the discussion.
+
+For example, you think this is magic and therefore bad. Could you please describe some scenarios where this feature would backfire us? For example:
+
+* If I do ........ and then ......., this feature will be confusing because the result will be ....... instead of ........
+* This feature will change .......... when doing ......... and that will be confusing to users
+* etc.
+
+Thanks!
+
+---------------------------------------------------------------------------
+
+by teohhanhui at 2018-11-09T17:02:08Z
+
+@javiereguiluz Sorry, it was just a fun comment. I didn't mean for it to be negative. :smile:
+
+---------------------------------------------------------------------------
+
+by teohhanhui at 2018-11-09T17:03:49Z
+
+But, yes, I do have a concern. This might affect other projects that use Symfony Flex and actually intend to use unbounded constraints. (*Why?*)
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2018-11-09T17:56:26Z
+
+In case one is wondering, this applies only to packages in symfony/symfony
+
+---------------------------------------------------------------------------
+
+by ByScripts at 2018-11-09T18:09:43Z
+
+Just to be sure, will this not cause any problems with `symfony/<some>-pack`? Since the version of the packs are 1.* at the moment.
+
+Edit: didn't see Nicolas' comment when posting mine.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2018-11-09T19:49:24Z
+
+> cause any problems with symfony/<some>-pack
+
+I need to check that, you might be right!
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2018-11-10T08:37:28Z
+
+Fixed: the replacement applies now only to packages listed at https://flex.symfony.com/versions.json
