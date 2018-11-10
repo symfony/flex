@@ -98,11 +98,11 @@ class PackageResolver
             try {
                 $config = @json_decode(file_get_contents(Factory::getComposerFile()), true);
             } finally {
-                if (!$isRequire || !isset($config['require']['symfony/framework-bundle'])) {
+                if (!$isRequire || !($config['extra']['symfony']['require'] || isset($config['require']['symfony/framework-bundle']))) {
                     return '';
                 }
             }
-            $version = $config['require']['symfony/framework-bundle'];
+            $version = $config['extra']['symfony']['require'] ?? $config['require']['symfony/framework-bundle'];
         } elseif ('next' === $version) {
             $version = '^'.self::$versions[$version].'@dev';
         } elseif (\in_array($version, self::$SYMFONY_VERSIONS, true)) {

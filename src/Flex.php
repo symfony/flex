@@ -238,8 +238,23 @@ class Flex implements PluginInterface, EventSubscriberInterface
     {
         $json = new JsonFile(Factory::getComposerFile());
         $manipulator = new JsonManipulator(file_get_contents($json->getPath()));
+
         // new projects are most of the time proprietary
         $manipulator->addMainKey('license', 'proprietary');
+
+        // replace unbounded contraints for symfony/* packages by extra.symfony.require
+        $config = json_decode($contents);
+        if ($symfonyVersion = $config['extra']['symfony']['require'] ?? null) {
+            $versions = $this->downloader->get('/versions.json');
+            foreach (['require', 'require-dev'] as $type) {
+                foreach ($config[$type] ?? [] as $package => $version) {
+                    if ('*' === $version && isset($versions['splits'][$package])) {
+                        $manipulator->addLink($type, $package, $symfonyVersion);
+                    }
+                }
+            }
+        }
+
         // 'name' and 'description' are only required for public packages
         // don't use $manipulator->removeProperty() for BC with Composer 1.0
         $contents = preg_replace('{^\s*+"(?:name|description)":.*,$\n}m', '', $manipulator->getContents());
