@@ -1,0 +1,11 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2018-11-09T10:02:52Z
+
+Replaces https://github.com/symfony/flex/pull/423
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2018-11-10T15:49:36Z
+
+Just tested with all recent changes all together: it's deceptively simple. It feels like "it just works" :)
