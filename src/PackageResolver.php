@@ -98,7 +98,7 @@ class PackageResolver
             try {
                 $config = @json_decode(file_get_contents(Factory::getComposerFile()), true);
             } finally {
-                if (!$isRequire || !($config['extra']['symfony']['require'] || isset($config['require']['symfony/framework-bundle']))) {
+                if (!$isRequire || !(isset($config['extra']['symfony']['require']) || isset($config['require']['symfony/framework-bundle']))) {
                     return '';
                 }
             }
