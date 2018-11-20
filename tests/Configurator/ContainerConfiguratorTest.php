@@ -11,8 +11,6 @@
 
 namespace Symfony\Flex\Tests\Configurator;
 
-require_once __DIR__.'/TmpDirMock.php';
-
 use Composer\Composer;
 use Composer\IO\IOInterface;
 use PHPUnit\Framework\TestCase;
@@ -25,7 +23,7 @@ class ContainerConfiguratorTest extends TestCase
     public function testConfigure()
     {
         $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
-        $config = sys_get_temp_dir().'/config/services.yaml';
+        $config = getcwd().'/config/services.yaml';
         file_put_contents(
             $config,
             <<<EOF
@@ -39,7 +37,7 @@ EOF
         $configurator = new ContainerConfigurator(
             $this->getMockBuilder(Composer::class)->getMock(),
             $this->getMockBuilder(IOInterface::class)->getMock(),
-            new Options(['config-dir' => dirname($config)])
+            new Options(['config-dir' => \dirname($config)])
         );
         $configurator->configure($recipe, ['locale' => 'en']);
         $this->assertEquals(<<<EOF
@@ -66,7 +64,7 @@ EOF
     public function testConfigureWithoutParametersKey()
     {
         $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
-        $config = sys_get_temp_dir().'/config/services.yaml';
+        $config = getcwd().'/config/services.yaml';
         file_put_contents(
             $config,
             <<<EOF
@@ -77,7 +75,7 @@ EOF
         $configurator = new ContainerConfigurator(
             $this->getMockBuilder(Composer::class)->getMock(),
             $this->getMockBuilder(IOInterface::class)->getMock(),
-            new Options(['config-dir' => dirname($config)])
+            new Options(['config-dir' => \dirname($config)])
         );
         $configurator->configure($recipe, ['locale' => 'en']);
         $this->assertEquals(<<<EOF
@@ -102,7 +100,7 @@ EOF
     public function testConfigureWithoutDuplicated()
     {
         $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
-        $config = sys_get_temp_dir().'/config/services.yaml';
+        $config = getcwd().'/config/services.yaml';
         file_put_contents(
             $config,
             <<<EOF
@@ -116,7 +114,7 @@ EOF
         $configurator = new ContainerConfigurator(
             $this->getMockBuilder(Composer::class)->getMock(),
             $this->getMockBuilder(IOInterface::class)->getMock(),
-            new Options(['config-dir' => dirname($config)])
+            new Options(['config-dir' => \dirname($config)])
         );
         $configurator->configure($recipe, ['locale' => 'en']);
         $this->assertEquals(<<<EOF
@@ -141,7 +139,7 @@ EOF
     public function testConfigureWithComplexContent()
     {
         $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
-        $config = sys_get_temp_dir().'/config/services.yaml';
+        $config = getcwd().'/config/services.yaml';
         file_put_contents(
             $config,
             <<<EOF
@@ -159,7 +157,7 @@ EOF
         $configurator = new ContainerConfigurator(
             $this->getMockBuilder(Composer::class)->getMock(),
             $this->getMockBuilder(IOInterface::class)->getMock(),
-            new Options(['config-dir' => dirname($config)])
+            new Options(['config-dir' => \dirname($config)])
         );
         $configurator->configure($recipe, ['locale' => 'en', 'foobar' => 'baz']);
         $this->assertEquals(<<<EOF

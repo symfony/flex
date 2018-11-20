@@ -43,6 +43,7 @@ use Composer\Repository\RepositoryManager;
 use Composer\Script\Event;
 use Composer\Script\ScriptEvents;
 use Symfony\Component\Console\Input\ArgvInput;
+use Symfony\Flex\Event\UpdateEvent;
 use Symfony\Thanks\Thanks;
 
 /**
@@ -276,27 +277,8 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
     public function record(PackageEvent $event)
     {
-        if (!$this->shouldRecordOperation($event)) {
-            return;
-        }
-
-        $operation = $event->getOperation();
-        if ($operation instanceof InstallOperation && \in_array($packageName = $operation->getPackage()->getName(), ['symfony/framework-bundle', 'symfony/flex'])) {
-            if ('symfony/flex' === $packageName) {
-                array_unshift($this->operations, $operation);
-            } else {
-                if ($this->operations && $this->operations[0] instanceof InstallOperation && 'symfony/flex' === $this->operations[0]->getPackage()->getName()) {
-                    // framework-bundle should be *after* flex
-                    $flexOperation = $this->operations[0];
-                    unset($this->operations[0]);
-                    array_unshift($this->operations, $operation);
-                    array_unshift($this->operations, $flexOperation);
-                } else {
-                    array_unshift($this->operations, $operation);
-                }
-            }
-        } else {
-            $this->operations[] = $operation;
+        if ($this->shouldRecordOperation($event)) {
+            $this->operations[] = $event->getOperation();
         }
     }
 
@@ -393,7 +375,9 @@ class Flex implements PluginInterface, EventSubscriberInterface
             switch ($recipe->getJob()) {
                 case 'install':
                     $this->io->writeError(sprintf('  - Configuring %s', $this->formatOrigin($recipe->getOrigin())));
-                    $this->configurator->install($recipe);
+                    $this->configurator->install($recipe, [
+                        'force' => $event instanceof UpdateEvent && $event->force(),
+                    ]);
                     $manifest = $recipe->getManifest();
                     if (isset($manifest['post-install-output'])) {
                         foreach ($manifest['post-install-output'] as $line) {
@@ -595,7 +579,11 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $data = $this->downloader->getRecipes($this->operations);
         $manifests = $data['manifests'] ?? [];
         $locks = $data['locks'] ?? [];
-        $recipes = [];
+        // symfony/flex and symfony/framework-bundle recipes should always be applied first
+        $recipes = [
+            'symfony/flex' => null,
+            'symfony/framework-bundle' => null,
+        ];
         foreach ($this->operations as $i => $operation) {
             if ($operation instanceof UpdateOperation) {
                 $package = $operation->getTargetPackage();
@@ -614,7 +602,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             }
 
             if (isset($manifests[$name])) {
-                $recipes[] = new Recipe($package, $name, $job, $manifests[$name]);
+                $recipes[$name] = new Recipe($package, $name, $job, $manifests[$name]);
             }
 
             $noRecipe = !isset($manifests[$name]) || (isset($manifests[$name]['not_installable']) && $manifests[$name]['not_installable']);
@@ -630,13 +618,13 @@ class Flex implements PluginInterface, EventSubscriberInterface
                 }
                 if ($manifest) {
                     $manifest['origin'] = sprintf('%s:%s@auto-generated recipe', $name, $package->getPrettyVersion());
-                    $recipes[] = new Recipe($package, $name, $job, $manifest);
+                    $recipes[$name] = new Recipe($package, $name, $job, $manifest);
                 }
             }
         }
         $this->operations = [];
 
-        return [$recipes, $data['vulnerabilities'] ?? []];
+        return [array_filter($recipes), $data['vulnerabilities'] ?? []];
     }
 
     private function initOptions(): Options
@@ -650,7 +638,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             'public-dir' => 'public',
         ], $this->composer->getPackage()->getExtra());
 
-        return new Options($options);
+        return new Options($options, $this->io);
     }
 
     private function getFlexId()

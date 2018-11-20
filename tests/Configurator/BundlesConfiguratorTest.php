@@ -11,8 +11,6 @@
 
 namespace Symfony\Flex\Tests\Configurator;
 
-require_once __DIR__.'/TmpDirMock.php';
-
 use PHPUnit\Framework\TestCase;
 use Symfony\Flex\Configurator\BundlesConfigurator;
 use Symfony\Flex\Options;
@@ -22,12 +20,12 @@ class BundlesConfiguratorTest extends TestCase
 {
     public function testConfigure()
     {
-        $config = sys_get_temp_dir().'/config/bundles.php';
+        $config = getcwd().'/config/bundles.php';
 
         $configurator = new BundlesConfigurator(
             $this->getMockBuilder('Composer\Composer')->getMock(),
             $this->getMockBuilder('Composer\IO\IOInterface')->getMock(),
-            new Options(['config-dir' => dirname($config)])
+            new Options(['config-dir' => \dirname($config)])
         );
 
         $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();

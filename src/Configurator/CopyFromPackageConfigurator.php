@@ -19,11 +19,11 @@ use Symfony\Flex\Recipe;
  */
 class CopyFromPackageConfigurator extends AbstractConfigurator
 {
-    public function configure(Recipe $recipe, $config)
+    public function configure(Recipe $recipe, $config, array $options = [])
     {
         $this->write('Setting configuration and copying files');
         $packageDir = $this->composer->getInstallationManager()->getInstallPath($recipe->getPackage());
-        $this->copyFiles($config, $packageDir, getcwd());
+        $this->copyFiles($config, $packageDir, getcwd(), $options['force'] ?? false);
     }
 
     public function unconfigure(Recipe $recipe, $config)
@@ -33,12 +33,12 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
         $this->removeFiles($config, $packageDir, getcwd());
     }
 
-    private function copyFiles(array $manifest, string $from, string $to)
+    private function copyFiles(array $manifest, string $from, string $to, bool $overwrite = false)
     {
         foreach ($manifest as $source => $target) {
             $target = $this->options->expandTargetDir($target);
             if ('/' === substr($source, -1)) {
-                $this->copyDir($this->path->concatenate([$from, $source]), $this->path->concatenate([$to, $target]));
+                $this->copyDir($this->path->concatenate([$from, $source]), $this->path->concatenate([$to, $target]), $overwrite);
             } else {
                 $targetPath = $this->path->concatenate([$to, $target]);
                 if (!is_dir(\dirname($targetPath))) {
@@ -46,9 +46,7 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
                     $this->write(sprintf('Created <fg=green>"%s"</>', $this->path->relativize(\dirname($targetPath))));
                 }
 
-                if (!file_exists($targetPath)) {
-                    $this->copyFile($this->path->concatenate([$from, $source]), $targetPath);
-                }
+                $this->copyFile($this->path->concatenate([$from, $source]), $targetPath, $overwrite);
             }
         }
     }
@@ -69,7 +67,7 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
         }
     }
 
-    private function copyDir(string $source, string $target)
+    private function copyDir(string $source, string $target, bool $overwrite)
     {
         if (!is_dir($target)) {
             mkdir($target, 0777, true);
@@ -84,14 +82,14 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
                     $this->write(sprintf('Created <fg=green>"%s"</>', $this->path->relativize($targetPath)));
                 }
             } elseif (!file_exists($targetPath)) {
-                $this->copyFile($item, $targetPath);
+                $this->copyFile($item, $targetPath, $overwrite);
             }
         }
     }
 
-    public function copyFile(string $source, string $target)
+    public function copyFile(string $source, string $target, bool $overwrite = false)
     {
-        if (file_exists($target)) {
+        if (!$this->options->shouldWriteFile($target, $overwrite)) {
             return;
         }
 

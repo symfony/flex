@@ -11,8 +11,6 @@
 
 namespace Symfony\Flex\Tests\Configurator;
 
-require_once __DIR__.'/TmpDirMock.php';
-
 use Composer\Composer;
 use Composer\IO\IOInterface;
 use PHPUnit\Framework\TestCase;
@@ -33,11 +31,11 @@ class EnvConfiguratorTest extends TestCase
         $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
         $recipe->expects($this->any())->method('getName')->will($this->returnValue('FooBundle'));
 
-        $env = sys_get_temp_dir().'/.env.dist';
+        $env = getcwd().'/.env.dist';
         @unlink($env);
         touch($env);
 
-        $phpunit = sys_get_temp_dir().'/phpunit.xml';
+        $phpunit = getcwd().'/phpunit.xml';
         $phpunitDist = $phpunit.'.dist';
         @unlink($phpunit);
         @unlink($phpunitDist);
@@ -160,10 +158,10 @@ EOF
         $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
         $recipe->expects($this->any())->method('getName')->will($this->returnValue('FooBundle'));
 
-        $env = sys_get_temp_dir().'/.env.dist';
+        $env = getcwd().'/.env.dist';
         @unlink($env);
         touch($env);
-        $phpunit = sys_get_temp_dir().'/phpunit.xml';
+        $phpunit = getcwd().'/phpunit.xml';
         $phpunitDist = $phpunit.'.dist';
         @unlink($phpunit);
         @unlink($phpunitDist);

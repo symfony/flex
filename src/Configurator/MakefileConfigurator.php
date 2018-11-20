@@ -18,7 +18,7 @@ use Symfony\Flex\Recipe;
  */
 class MakefileConfigurator extends AbstractConfigurator
 {
-    public function configure(Recipe $recipe, $definitions)
+    public function configure(Recipe $recipe, $definitions, array $options = [])
     {
         $this->write('Added Makefile entries');
 

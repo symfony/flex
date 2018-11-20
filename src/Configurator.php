@@ -44,12 +44,12 @@ class Configurator
         ];
     }
 
-    public function install(Recipe $recipe)
+    public function install(Recipe $recipe, array $options = [])
     {
         $manifest = $recipe->getManifest();
         foreach (array_keys($this->configurators) as $key) {
             if (isset($manifest[$key])) {
-                $this->get($key)->configure($recipe, $manifest[$key]);
+                $this->get($key)->configure($recipe, $manifest[$key], $options);
             }
         }
     }
