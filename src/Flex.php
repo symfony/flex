@@ -239,6 +239,12 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
     public function configureProject(Event $event)
     {
+        if (null === $this->downloader->getEndpoint()) {
+            $this->io->writeError('<warning>Project configuration is disabled: "symfony/flex" not found in the root composer.json</warning>');
+
+            return;
+        }
+
         $json = new JsonFile(Factory::getComposerFile());
         $contents = file_get_contents($json->getPath());
         $manipulator = new JsonManipulator($contents);
