@@ -15,6 +15,7 @@ use Composer\Composer;
 use Composer\IO\IOInterface;
 use PHPUnit\Framework\TestCase;
 use Symfony\Flex\Configurator\GitignoreConfigurator;
+use Symfony\Flex\Lock;
 use Symfony\Flex\Options;
 use Symfony\Flex\Recipe;
 
@@ -27,6 +28,7 @@ class GitignoreConfiguratorTest extends TestCase
             $this->getMockBuilder(IOInterface::class)->getMock(),
             new Options(['public-dir' => 'public', 'root-dir' => FLEX_TEST_DIR])
         );
+        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
 
         $recipe1 = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
         $recipe1->expects($this->any())->method('getName')->will($this->returnValue('FooBundle'));
@@ -60,20 +62,20 @@ EOF;
 ###< BarBundle ###
 EOF;
 
-        $configurator->configure($recipe1, $vars1);
+        $configurator->configure($recipe1, $vars1, $lock);
         $this->assertStringEqualsFile($gitignore, "\n".$gitignoreContents1."\n");
 
-        $configurator->configure($recipe2, $vars2);
+        $configurator->configure($recipe2, $vars2, $lock);
         $this->assertStringEqualsFile($gitignore, "\n".$gitignoreContents1."\n\n".$gitignoreContents2."\n");
 
-        $configurator->configure($recipe1, $vars1);
-        $configurator->configure($recipe2, $vars2);
+        $configurator->configure($recipe1, $vars1, $lock);
+        $configurator->configure($recipe2, $vars2, $lock);
         $this->assertStringEqualsFile($gitignore, "\n".$gitignoreContents1."\n\n".$gitignoreContents2."\n");
 
-        $configurator->unconfigure($recipe1, $vars1);
+        $configurator->unconfigure($recipe1, $vars1, $lock);
         $this->assertStringEqualsFile($gitignore, $gitignoreContents2."\n");
 
-        $configurator->unconfigure($recipe2, $vars2);
+        $configurator->unconfigure($recipe2, $vars2, $lock);
         $this->assertStringEqualsFile($gitignore, '');
 
         @unlink($gitignore);
@@ -115,16 +117,17 @@ EOF;
 # new content
 EOF;
 
+        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
         $configurator->configure($recipe, [
             '.env',
-        ]);
+        ], $lock);
         file_put_contents($gitignore, "\n# new content", \FILE_APPEND);
         $this->assertStringEqualsFile($gitignore, $contentsConfigure);
 
         $configurator->configure($recipe, [
             '.env',
             '.env.test',
-        ], [
+        ], $lock, [
             'force' => true,
         ]);
         $this->assertStringEqualsFile($gitignore, $contentsForce);

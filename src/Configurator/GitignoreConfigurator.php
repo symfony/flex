@@ -11,6 +11,7 @@
 
 namespace Symfony\Flex\Configurator;
 
+use Symfony\Flex\Lock;
 use Symfony\Flex\Recipe;
 
 /**
@@ -18,7 +19,7 @@ use Symfony\Flex\Recipe;
  */
 class GitignoreConfigurator extends AbstractConfigurator
 {
-    public function configure(Recipe $recipe, $vars, array $options = [])
+    public function configure(Recipe $recipe, $vars, Lock $lock, array $options = [])
     {
         $this->write('Added entries to .gitignore');
 
@@ -39,7 +40,7 @@ class GitignoreConfigurator extends AbstractConfigurator
         }
     }
 
-    public function unconfigure(Recipe $recipe, $vars)
+    public function unconfigure(Recipe $recipe, $vars, Lock $lock)
     {
         $file = $this->options->get('root-dir').'/.gitignore';
         if (!file_exists($file)) {

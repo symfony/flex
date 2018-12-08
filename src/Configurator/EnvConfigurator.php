@@ -11,6 +11,7 @@
 
 namespace Symfony\Flex\Configurator;
 
+use Symfony\Flex\Lock;
 use Symfony\Flex\Recipe;
 
 /**
@@ -18,7 +19,7 @@ use Symfony\Flex\Recipe;
  */
 class EnvConfigurator extends AbstractConfigurator
 {
-    public function configure(Recipe $recipe, $vars, array $options = [])
+    public function configure(Recipe $recipe, $vars, Lock $lock, array $options = [])
     {
         $this->write('Added environment variable defaults');
 
@@ -28,7 +29,7 @@ class EnvConfigurator extends AbstractConfigurator
         }
     }
 
-    public function unconfigure(Recipe $recipe, $vars)
+    public function unconfigure(Recipe $recipe, $vars, Lock $lock)
     {
         $this->unconfigureEnvFiles($recipe, $vars);
         $this->unconfigurePhpUnit($recipe, $vars);

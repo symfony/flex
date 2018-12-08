@@ -14,6 +14,7 @@ namespace Symfony\Flex\Configurator;
 use Composer\Factory;
 use Composer\Json\JsonFile;
 use Composer\Json\JsonManipulator;
+use Symfony\Flex\Lock;
 use Symfony\Flex\Recipe;
 
 /**
@@ -21,7 +22,7 @@ use Symfony\Flex\Recipe;
  */
 class ComposerScriptsConfigurator extends AbstractConfigurator
 {
-    public function configure(Recipe $recipe, $scripts, array $options = [])
+    public function configure(Recipe $recipe, $scripts, Lock $lock, array $options = [])
     {
         $json = new JsonFile(Factory::getComposerFile());
 
@@ -35,7 +36,7 @@ class ComposerScriptsConfigurator extends AbstractConfigurator
         file_put_contents($json->getPath(), $manipulator->getContents());
     }
 
-    public function unconfigure(Recipe $recipe, $scripts)
+    public function unconfigure(Recipe $recipe, $scripts, Lock $lock)
     {
         $json = new JsonFile(Factory::getComposerFile());
 

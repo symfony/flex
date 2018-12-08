@@ -11,6 +11,7 @@
 
 namespace Symfony\Flex\Configurator;
 
+use Symfony\Flex\Lock;
 use Symfony\Flex\Recipe;
 
 /**
@@ -18,7 +19,7 @@ use Symfony\Flex\Recipe;
  */
 class BundlesConfigurator extends AbstractConfigurator
 {
-    public function configure(Recipe $recipe, $bundles, array $options = [])
+    public function configure(Recipe $recipe, $bundles, Lock $lock, array $options = [])
     {
         $this->write('Enabling the package as a Symfony bundle');
         $file = $this->getConfFile();
@@ -38,7 +39,7 @@ class BundlesConfigurator extends AbstractConfigurator
         $this->dump($file, $registered);
     }
 
-    public function unconfigure(Recipe $recipe, $bundles)
+    public function unconfigure(Recipe $recipe, $bundles, Lock $lock)
     {
         $this->write('Disabling the Symfony bundle');
         $file = $this->getConfFile();

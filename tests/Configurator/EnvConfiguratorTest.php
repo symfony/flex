@@ -15,6 +15,7 @@ use Composer\Composer;
 use Composer\IO\IOInterface;
 use PHPUnit\Framework\TestCase;
 use Symfony\Flex\Configurator\EnvConfigurator;
+use Symfony\Flex\Lock;
 use Symfony\Flex\Options;
 use Symfony\Flex\Recipe;
 
@@ -27,6 +28,7 @@ class EnvConfiguratorTest extends TestCase
             $this->getMockBuilder(IOInterface::class)->getMock(),
             new Options(['root-dir' => FLEX_TEST_DIR])
         );
+        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
 
         $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
         $recipe->expects($this->any())->method('getName')->will($this->returnValue('FooBundle'));
@@ -52,7 +54,7 @@ class EnvConfiguratorTest extends TestCase
             '#2' => 'Comment 3',
             '#TRUSTED_SECRET' => 's3cretf0rt3st"<>',
             'APP_SECRET' => 's3cretf0rt3st"<>',
-        ]);
+        ], $lock);
 
         $envContents = <<<EOF
 
@@ -118,7 +120,7 @@ EOF;
             '#2' => 'Comment 3',
             '#TRUSTED_SECRET' => 's3cretf0rt3st',
             'APP_SECRET' => 's3cretf0rt3st',
-        ]);
+        ], $lock);
 
         $this->assertStringEqualsFile($env, $envContents);
         $this->assertStringEqualsFile($phpunitDist, $xmlContents);
@@ -131,7 +133,7 @@ EOF;
             '#2' => 'Comment 3',
             '#TRUSTED_SECRET' => 's3cretf0rt3st',
             'APP_SECRET' => 's3cretf0rt3st',
-        ]);
+        ], $lock);
 
         $this->assertStringEqualsFile(
             $env,
@@ -155,6 +157,7 @@ EOF
             $this->getMockBuilder(IOInterface::class)->getMock(),
             new Options(['root-dir' => FLEX_TEST_DIR])
         );
+        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
 
         $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
         $recipe->expects($this->any())->method('getName')->will($this->returnValue('FooBundle'));
@@ -175,7 +178,7 @@ EOF
             '#TRUSTED_SECRET_2' => '%generate(secret, 32)%',
             '#TRUSTED_SECRET_3' => '%generate(secret,     32)%',
             'APP_SECRET' => '%generate(secret)%',
-        ]);
+        ], $lock);
 
         $envContents = file_get_contents($env);
         $this->assertRegExp('/#TRUSTED_SECRET_1=[a-z0-9]{64}/', $envContents);
@@ -298,9 +301,11 @@ EOT;
 
 EOT;
 
+        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
+
         $configurator->configure($recipe, [
             'FOO' => 'bar',
-        ]);
+        ], $lock);
 
         file_put_contents($env, "\n# new content\n", \FILE_APPEND);
         file_put_contents($phpunit, str_replace(
@@ -321,7 +326,7 @@ EOT;
         $configurator->configure($recipe, [
             'FOO' => 'bar',
             'OOF' => 'rab',
-        ], [
+        ], $lock, [
             'force' => true,
         ]);
 

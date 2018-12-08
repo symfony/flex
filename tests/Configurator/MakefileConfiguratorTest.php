@@ -15,6 +15,7 @@ use Composer\Composer;
 use Composer\IO\IOInterface;
 use PHPUnit\Framework\TestCase;
 use Symfony\Flex\Configurator\MakefileConfigurator;
+use Symfony\Flex\Lock;
 use Symfony\Flex\Options;
 use Symfony\Flex\Recipe;
 
@@ -27,6 +28,7 @@ class MakefileConfiguratorTest extends TestCase
             $this->getMockBuilder(IOInterface::class)->getMock(),
             new Options(['root-dir' => FLEX_TEST_DIR])
         );
+        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
 
         $recipe1 = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
         $recipe1->expects($this->any())->method('getName')->will($this->returnValue('FooBundle'));
@@ -64,20 +66,20 @@ EOF
         $makefileContents1 = "###> FooBundle ###\n".implode("\n", $makefile1)."\n###< FooBundle ###";
         $makefileContents2 = "###> BarBundle ###\n".implode("\n", $makefile2)."\n###< BarBundle ###";
 
-        $configurator->configure($recipe1, $makefile1);
+        $configurator->configure($recipe1, $makefile1, $lock);
         $this->assertStringEqualsFile($makefile, "\n".$makefileContents1."\n");
 
-        $configurator->configure($recipe2, $makefile2);
+        $configurator->configure($recipe2, $makefile2, $lock);
         $this->assertStringEqualsFile($makefile, "\n".$makefileContents1."\n\n".$makefileContents2."\n");
 
-        $configurator->configure($recipe1, $makefile1);
-        $configurator->configure($recipe2, $makefile2);
+        $configurator->configure($recipe1, $makefile1, $lock);
+        $configurator->configure($recipe2, $makefile2, $lock);
         $this->assertStringEqualsFile($makefile, "\n".$makefileContents1."\n\n".$makefileContents2."\n");
 
-        $configurator->unconfigure($recipe1, $makefile1);
+        $configurator->unconfigure($recipe1, $makefile1, $lock);
         $this->assertStringEqualsFile($makefile, $makefileContents2."\n");
 
-        $configurator->unconfigure($recipe2, $makefile2);
+        $configurator->unconfigure($recipe2, $makefile2, $lock);
         $this->assertFalse(is_file($makefile));
     }
 
@@ -112,11 +114,13 @@ EOF
             ["###< FooBundle ###\n\n# new content"]
         ));
 
-        $configurator->configure($recipe, $bundleLinesConfigure);
+        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
+
+        $configurator->configure($recipe, $bundleLinesConfigure, $lock);
         file_put_contents($makefile, "\n# new content", \FILE_APPEND);
         $this->assertStringEqualsFile($makefile, $contentConfigure);
 
-        $configurator->configure($recipe, $bundleLinesForce, [
+        $configurator->configure($recipe, $bundleLinesForce, $lock, [
             'force' => true,
         ]);
         $this->assertStringEqualsFile($makefile, $contentForce);

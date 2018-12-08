@@ -80,4 +80,9 @@ class Options
 
         return (bool) $this->io && $this->io->askConfirmation(\sprintf('File "%s" has uncommitted changes, overwrite? [y/N] ', $name), false);
     }
+
+    public function toArray(): array
+    {
+        return $this->options;
+    }
 }
