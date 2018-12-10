@@ -19,7 +19,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Flex\Lock;
 
-class FixRecipesCommand extends BaseCommand
+class SyncRecipesCommand extends BaseCommand
 {
     private $flex;
 
@@ -32,9 +32,9 @@ class FixRecipesCommand extends BaseCommand
 
     protected function configure()
     {
-        $this->setName('symfony:fix-recipes')
-            ->setAliases(['fix-recipes'])
-            ->setDescription('Installs missing recipes.')
+        $this->setName('symfony:sync-recipes')
+            ->setAliases(['sync-recipes', 'fix-recipes'])
+            ->setDescription('Installs or reinstalls recipes for already installed packages.')
         ;
     }
 
