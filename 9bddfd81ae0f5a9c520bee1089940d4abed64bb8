@@ -1,0 +1,62 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2018-12-10T18:46:48Z
+
+Did you check #441? Can you explain what this changes? I don't get it by reading the code.
+
+---------------------------------------------------------------------------
+
+by HugoSantiagoBecerraAdan at 2018-12-10T19:03:33Z
+
+Search for "name" and "description" just once each.
+
+It does not continue searching for more matches of the same word if it is already found, to be sure only the root name is removed and keep the name on the author section.
+
+Already check #441 and I'm trying to solve comment https://github.com/symfony/flex/issues/440#issuecomment-443721144
+
+---------------------------------------------------------------------------
+
+by hectorprats at 2018-12-10T19:21:09Z
+
+I think this is still not a complete solution. You should not delete name / description in any case that is not a skeleton. But if you are going to do something like that, better to do:
+```
+$manipulator->removeMainKey('name');
+$manipulator->removeMainKey('description');
+file_put_contents($json->getPath(), $manipulator->getContents());
+```
+
+instead of doing a regexp
+
+---------------------------------------------------------------------------
+
+by HugoSantiagoBecerraAdan at 2018-12-10T19:30:31Z
+
+@hectorprats It's not a complete solution but a partial solution just for https://github.com/symfony/flex/issues/440#issuecomment-443721144
+
+In [`src/Flex.php` line 264](https://github.com/symfony/flex/blob/master/src/Flex.php#L264) there's a comment that says:
+`// don't use $manipulator->removeProperty() for BC with Composer 1.0`
+
+I guess also applys to `$manipulator->removeMainKey()`.
+
+---------------------------------------------------------------------------
+
+by hectorprats at 2018-12-10T19:35:31Z
+
+Ok, @HugoSantiagoBecerraAdan . But your solution does not solve the problem if there is no 'name' key and yes a subkey inside authors.
+
+If I do a create-project to make a git clone & composer install, it can not erase things from the composer.json
+
+In a skeleton it makes sense. But never in other cases.
+
+---------------------------------------------------------------------------
+
+by stof at 2018-12-11T13:18:53Z
+
+A solution could be to use the manipulator if possible, and use the regex only as a fallback for older composer versions.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2018-12-11T13:19:34Z
+
+There is no need to look for a solution when there is no problem ;)
+Let's keep the code simple.
