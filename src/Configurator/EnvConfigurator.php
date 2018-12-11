@@ -18,7 +18,7 @@ use Symfony\Flex\Recipe;
  */
 class EnvConfigurator extends AbstractConfigurator
 {
-    public function configure(Recipe $recipe, $vars)
+    public function configure(Recipe $recipe, $vars, array $options = [])
     {
         $this->write('Added environment variable defaults');
 

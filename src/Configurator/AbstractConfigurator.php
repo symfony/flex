@@ -35,7 +35,7 @@ abstract class AbstractConfigurator
         $this->path = new Path(getcwd());
     }
 
-    abstract public function configure(Recipe $recipe, $config);
+    abstract public function configure(Recipe $recipe, $config, array $options = []);
 
     abstract public function unconfigure(Recipe $recipe, $config);
 

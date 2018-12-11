@@ -18,7 +18,7 @@ use Symfony\Flex\Recipe;
  */
 class ContainerConfigurator extends AbstractConfigurator
 {
-    public function configure(Recipe $recipe, $parameters)
+    public function configure(Recipe $recipe, $parameters, array $options = [])
     {
         $this->write('Setting parameters');
         $this->addParameters($parameters);

@@ -35,52 +35,6 @@ use Symfony\Flex\Response;
 
 class FlexTest extends TestCase
 {
-    /**
-     * @dataProvider getRecordTests
-     */
-    public function testFrameworkBundleRecord(array $actualInstallOperations, $expectedFinalOperators)
-    {
-        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
-        $lock->expects($this->any())->method('has')->will($this->returnValue(false));
-
-        $flex = \Closure::bind(function () use ($lock) {
-            $flex = new Flex();
-            $flex->lock = $lock;
-
-            return $flex;
-        }, null, Flex::class)->__invoke();
-
-        /** @var InstallOperation[] $actualInstallOperations */
-        foreach ($actualInstallOperations as $operation) {
-            $event = $this->getMockBuilder(PackageEvent::class)->disableOriginalConstructor()->getMock();
-            $event->expects($this->any())->method('getOperation')->willReturn($operation);
-
-            $flex->record($event);
-        }
-
-        $this->assertAttributeEquals($expectedFinalOperators, 'operations', $flex);
-    }
-
-    public function getRecordTests()
-    {
-        $operationFoo = new InstallOperation(new Package('vendor/foo', '1.0.0', '1.0.0'));
-        $operationFB = new InstallOperation(new Package('symfony/framework-bundle', '1.0.0', '1.0.0'));
-        $operationFlex = new InstallOperation(new Package('symfony/flex', '1.0.0', '1.0.0'));
-
-        return [
-            [
-                // install order
-                [$operationFoo, $operationFB, $operationFlex],
-                // expected final order
-                [$operationFlex, $operationFB, $operationFoo],
-            ],
-            [
-                [$operationFoo, $operationFlex, $operationFB],
-                [$operationFlex, $operationFB, $operationFoo],
-            ],
-        ];
-    }
-
     public function testPostInstall()
     {
         $package = new Package('dummy/dummy', '1.0.0', '1.0.0');

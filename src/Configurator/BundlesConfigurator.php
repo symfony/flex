@@ -18,7 +18,7 @@ use Symfony\Flex\Recipe;
  */
 class BundlesConfigurator extends AbstractConfigurator
 {
-    public function configure(Recipe $recipe, $bundles)
+    public function configure(Recipe $recipe, $bundles, array $options = [])
     {
         $this->write('Enabling the package as a Symfony bundle');
         $file = $this->getConfFile();

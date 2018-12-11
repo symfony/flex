@@ -14,9 +14,10 @@ namespace Symfony\Flex\Command;
 use Composer\Command\BaseCommand;
 use Composer\DependencyResolver\Operation\InstallOperation;
 use Composer\Factory;
-use Composer\Script\Event;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Flex\Event\UpdateEvent;
 use Symfony\Flex\Lock;
 
 class SyncRecipesCommand extends BaseCommand
@@ -35,11 +36,14 @@ class SyncRecipesCommand extends BaseCommand
         $this->setName('symfony:sync-recipes')
             ->setAliases(['sync-recipes', 'fix-recipes'])
             ->setDescription('Installs or reinstalls recipes for already installed packages.')
+            ->addOption('force', null, InputOption::VALUE_NONE, 'Ignore the "symfony.lock" file and overwrite existing files')
         ;
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $force = $input->getOption('force');
+
         $symfonyLock = new Lock(getenv('SYMFONY_LOCKFILE') ?: str_replace('composer.json', 'symfony.lock', Factory::getComposerFile()));
         $composer = $this->getComposer();
         $locker = $composer->getLocker();
@@ -47,12 +51,12 @@ class SyncRecipesCommand extends BaseCommand
 
         $packages = [];
         foreach ($lockData['packages'] as $pkg) {
-            if (!$symfonyLock->has($pkg['name'])) {
+            if ($force || !$symfonyLock->has($pkg['name'])) {
                 $packages[] = $pkg['name'];
             }
         }
         foreach ($lockData['packages-dev'] as $pkg) {
-            if (!$symfonyLock->has($pkg['name'])) {
+            if ($force || !$symfonyLock->has($pkg['name'])) {
                 $packages[] = $pkg['name'];
             }
         }
@@ -76,10 +80,6 @@ class SyncRecipesCommand extends BaseCommand
             $operations[] = new InstallOperation($pkg);
         }
 
-        $this->flex->update(new class() extends Event {
-            public function __construct()
-            {
-            }
-        }, $operations);
+        $this->flex->update(new UpdateEvent($force), $operations);
     }
 }

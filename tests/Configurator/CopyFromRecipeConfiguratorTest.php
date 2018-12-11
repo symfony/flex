@@ -11,8 +11,6 @@
 
 namespace Symfony\Flex\Tests\Configurator;
 
-require_once __DIR__.'/TmpDirMock.php';
-
 use Composer\Composer;
 use Composer\IO\IOInterface;
 use PHPUnit\Framework\TestCase;
@@ -39,6 +37,27 @@ class CopyFromRecipeConfiguratorTest extends TestCase
         file_put_contents($this->targetFile, '');
         $this->io->expects($this->exactly(1))->method('writeError')->with(['    Setting configuration and copying files']);
         $this->createConfigurator()->configure($this->recipe, [$this->sourceFileRelativePath => $this->targetFileRelativePath]);
+    }
+
+    public function testConfigureAndOverwriteFiles()
+    {
+        if (!file_exists($this->targetDirectory)) {
+            mkdir($this->targetDirectory);
+        }
+        file_put_contents($this->targetFile, '');
+
+        $this->io->expects($this->at(0))->method('writeError')->with(['    Setting configuration and copying files']);
+        $this->io->expects($this->at(2))->method('writeError')->with(['    Created <fg=green>"./config/file"</>']);
+        $this->io->method('askConfirmation')->with('File "build/config/file" has uncommitted changes, overwrite? [y/N] ')->willReturn(true);
+
+        $this->assertFileExists($this->targetFile);
+        $this->createConfigurator()->configure(
+            $this->recipe,
+            [$this->sourceFileRelativePath => $this->targetFileRelativePath],
+            ['force' => true]
+        );
+        $this->assertFileExists($this->targetFile);
+        $this->assertSame('somecontent', file_get_contents($this->targetFile));
     }
 
     public function testConfigure()
@@ -79,11 +98,11 @@ class CopyFromRecipeConfiguratorTest extends TestCase
     {
         parent::setUp();
 
-        $this->sourceDirectory = sys_get_temp_dir().'/source';
+        $this->sourceDirectory = getcwd().'/source';
         $this->sourceFileRelativePath = 'source/file';
         $this->sourceFile = $this->targetDirectory.'/file';
 
-        $this->targetDirectory = sys_get_temp_dir().'/config';
+        $this->targetDirectory = getcwd().'/config';
         $this->targetFileRelativePath = 'config/file';
         $this->targetFile = $this->targetDirectory.'/file';
 
@@ -108,7 +127,7 @@ class CopyFromRecipeConfiguratorTest extends TestCase
 
     private function createConfigurator(): CopyFromRecipeConfigurator
     {
-        return new CopyFromRecipeConfigurator($this->getMockBuilder(Composer::class)->getMock(), $this->io, new Options());
+        return new CopyFromRecipeConfigurator($this->getMockBuilder(Composer::class)->getMock(), $this->io, new Options([], $this->io));
     }
 
     private function cleanUpTargetFiles()

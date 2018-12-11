@@ -21,7 +21,7 @@ use Symfony\Flex\Recipe;
  */
 class ComposerScriptsConfigurator extends AbstractConfigurator
 {
-    public function configure(Recipe $recipe, $scripts)
+    public function configure(Recipe $recipe, $scripts, array $options = [])
     {
         $json = new JsonFile(Factory::getComposerFile());
 
