@@ -292,10 +292,10 @@ class Flex implements PluginInterface, EventSubscriberInterface
         if ($operations) {
             $this->operations = $operations;
         }
-        $cwd = getcwd();
+        $rootDir = $this->options->get('root-dir');
 
-        if (!file_exists("$cwd/.env") && !file_exists("$cwd/.env.local") && file_exists("$cwd/.env.dist") && false === strpos(file_get_contents("$cwd/.env.dist"), '.env.local')) {
-            copy(getcwd().'/.env.dist', getcwd().'/.env');
+        if (!file_exists("$rootDir/.env") && !file_exists("$rootDir/.env.local") && file_exists("$rootDir/.env.dist") && false === strpos(file_get_contents("$rootDir/.env.dist"), '.env.local')) {
+            copy($rootDir.'/.env.dist', $rootDir.'/.env');
         }
 
         list($recipes, $vulnerabilities) = $this->fetchRecipes();
@@ -629,6 +629,8 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
     private function initOptions(): Options
     {
+        $extra = $this->composer->getPackage()->getExtra();
+
         $options = array_merge([
             'bin-dir' => 'bin',
             'conf-dir' => 'conf',
@@ -636,7 +638,8 @@ class Flex implements PluginInterface, EventSubscriberInterface
             'src-dir' => 'src',
             'var-dir' => 'var',
             'public-dir' => 'public',
-        ], $this->composer->getPackage()->getExtra());
+            'root-dir' => $extra['symfony']['root-dir'] ?? '.',
+        ], $extra);
 
         return new Options($options, $this->io);
     }

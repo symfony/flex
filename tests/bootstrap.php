@@ -1,22 +1,10 @@
 <?php
 
-namespace Symfony\Flex\Configurator;
-
-function getcwd()
-{
-    return \dirname(__DIR__).'/build';
-}
-
-namespace Symfony\Flex\Tests\Configurator;
-
-function getcwd()
-{
-    return \dirname(__DIR__).'/build';
-}
-
 require __DIR__.'/../vendor/autoload.php';
 
-if (is_dir($buildDir = getcwd())) {
+define('FLEX_TEST_DIR', dirname(__DIR__).'/build');
+
+if (is_dir($buildDir = FLEX_TEST_DIR)) {
     $files = new \RecursiveIteratorIterator(
         new \RecursiveDirectoryIterator($buildDir, \RecursiveDirectoryIterator::SKIP_DOTS),
         \RecursiveIteratorIterator::CHILD_FIRST

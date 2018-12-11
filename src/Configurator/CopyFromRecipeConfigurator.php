@@ -21,13 +21,13 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
     public function configure(Recipe $recipe, $config, array $options = [])
     {
         $this->write('Setting configuration and copying files');
-        $this->copyFiles($config, $recipe->getFiles(), getcwd(), $options['force'] ?? false);
+        $this->copyFiles($config, $recipe->getFiles(), $this->options->get('root-dir'), $options['force'] ?? false);
     }
 
     public function unconfigure(Recipe $recipe, $config)
     {
         $this->write('Removing configuration and files');
-        $this->removeFiles($config, $recipe->getFiles(), getcwd());
+        $this->removeFiles($config, $recipe->getFiles(), $this->options->get('root-dir'));
     }
 
     private function copyFiles(array $manifest, array $files, string $to, bool $overwrite = false)
@@ -62,7 +62,7 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
             mkdir(\dirname($to), 0777, true);
         }
 
-        file_put_contents($to, $contents);
+        file_put_contents($to, $this->options->expandTargetDir($contents));
         if ($executable) {
             @chmod($to, fileperms($to) | 0111);
         }

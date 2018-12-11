@@ -32,7 +32,7 @@ abstract class AbstractConfigurator
         $this->composer = $composer;
         $this->io = $io;
         $this->options = $options;
-        $this->path = new Path(getcwd());
+        $this->path = new Path($options->get('root-dir'));
     }
 
     abstract public function configure(Recipe $recipe, $config, array $options = []);

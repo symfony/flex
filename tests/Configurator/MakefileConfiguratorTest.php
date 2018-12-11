@@ -25,7 +25,7 @@ class MakefileConfiguratorTest extends TestCase
         $configurator = new MakefileConfigurator(
             $this->getMockBuilder(Composer::class)->getMock(),
             $this->getMockBuilder(IOInterface::class)->getMock(),
-            new Options()
+            new Options(['root-dir' => FLEX_TEST_DIR])
         );
 
         $recipe1 = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
@@ -34,7 +34,7 @@ class MakefileConfiguratorTest extends TestCase
         $recipe2 = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
         $recipe2->expects($this->any())->method('getName')->will($this->returnValue('BarBundle'));
 
-        $makefile = getcwd().'/Makefile';
+        $makefile = FLEX_TEST_DIR.'/Makefile';
         @unlink($makefile);
         touch($makefile);
 

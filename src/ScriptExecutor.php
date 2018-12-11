@@ -99,7 +99,7 @@ class ScriptExecutor
             return null;
         }
 
-        $console = ProcessExecutor::escape($this->options->get('bin-dir').'/console');
+        $console = ProcessExecutor::escape($this->options->get('root-dir').'/'.$this->options->get('bin-dir').'/console');
         if ($this->io->isDecorated()) {
             $console .= ' --ansi';
         }

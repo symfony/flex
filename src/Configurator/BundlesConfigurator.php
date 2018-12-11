@@ -100,6 +100,6 @@ class BundlesConfigurator extends AbstractConfigurator
 
     private function getConfFile(): string
     {
-        return $this->options->expandTargetDir('%CONFIG_DIR%/bundles.php');
+        return $this->options->get('root-dir').'/'.$this->options->expandTargetDir('%CONFIG_DIR%/bundles.php');
     }
 }

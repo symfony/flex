@@ -119,11 +119,11 @@ class CopyFromPackageConfiguratorTest extends TestCase
     {
         parent::setUp();
 
-        $this->sourceDirectory = getcwd().'/package';
+        $this->sourceDirectory = FLEX_TEST_DIR.'/package';
         $this->sourceFileRelativePath = 'package/file';
         $this->sourceFile = $this->sourceDirectory.'/file';
 
-        $this->targetDirectory = getcwd().'/public';
+        $this->targetDirectory = FLEX_TEST_DIR.'/public';
         $this->targetFileRelativePath = 'public/file';
         $this->targetFile = $this->targetDirectory.'/file';
 
@@ -137,7 +137,7 @@ class CopyFromPackageConfiguratorTest extends TestCase
         $installationManager->expects($this->exactly(1))
             ->method('getInstallPath')
             ->with($package)
-            ->willReturn(getcwd())
+            ->willReturn(FLEX_TEST_DIR)
         ;
         $this->composer = $this->getMockBuilder(Composer::class)->getMock();
         $this->composer->expects($this->exactly(1))
@@ -158,13 +158,13 @@ class CopyFromPackageConfiguratorTest extends TestCase
 
     private function createConfigurator(): CopyFromPackageConfigurator
     {
-        return new CopyFromPackageConfigurator($this->composer, $this->io, new Options([], $this->io));
+        return new CopyFromPackageConfigurator($this->composer, $this->io, new Options(['root-dir' => FLEX_TEST_DIR], $this->io));
     }
 
     private function cleanUpTargetFiles()
     {
         @unlink($this->targetFile);
-        @rmdir(getcwd().'/package');
-        @rmdir(getcwd().'/public');
+        @rmdir(FLEX_TEST_DIR.'/package');
+        @rmdir(FLEX_TEST_DIR.'/public');
     }
 }
