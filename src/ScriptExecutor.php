@@ -19,7 +19,6 @@ use Composer\Util\ProcessExecutor;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Output\StreamOutput;
 use Symfony\Component\Process\PhpExecutableFinder;
-use Symfony\Component\Process\ProcessUtils;
 
 /**
  * @author Fabien Potencier <fabien@symfony.com>
@@ -100,7 +99,7 @@ class ScriptExecutor
             return null;
         }
 
-        $console = ProcessUtils::escapeArgument($this->options->get('bin-dir').'/console');
+        $console = ProcessExecutor::escape($this->options->get('bin-dir').'/console');
         if ($this->io->isDecorated()) {
             $console .= ' --ansi';
         }
@@ -128,8 +127,8 @@ class ScriptExecutor
             $arguments[] = '--php-ini='.$ini;
         }
 
-        $phpArgs = implode(' ', array_map([ProcessUtils::class, 'escapeArgument'], $arguments));
+        $phpArgs = implode(' ', array_map([ProcessExecutor::class, 'escape'], $arguments));
 
-        return ProcessUtils::escapeArgument($php).($phpArgs ? ' '.$phpArgs : '').' '.$cmd;
+        return ProcessExecutor::escape($php).($phpArgs ? ' '.$phpArgs : '').' '.$cmd;
     }
 }
