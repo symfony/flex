@@ -1,0 +1,80 @@
+---------------------------------------------------------------------------
+
+by Pierstoval at 2018-11-20T10:53:17Z
+
+> Either we use a single `--force` parameter that does both (ignore symfony.lock an overwrite existing files)
+> Or we create two separate arguments if worth it.
+
+What about `[-f] --force` and `[-l] --ignore-lock`?
+
+---------------------------------------------------------------------------
+
+by Pierstoval at 2018-11-21T09:13:20Z
+
+Everything should be fixed now 👍
+
+---------------------------------------------------------------------------
+
+by Pierstoval at 2018-11-22T13:07:04Z
+
+@nicolas-grekas Tests are fixed, but I have an issue with Windows, I'm sure it's mostly because of the tests and not Flex itself, but it seems that `git` behaves differently on Linux and Windows in certain cases. This might introduce edge cases for Windows users... but I'm not even sure that this would happen.
+
+For example, here's a difference in terms of exit code:
+
+On windows:
+```
+> php -r "exec('git branch', $o, $c); var_dump($o, $c);"
+fatal: not a git repository (or any of the parent directories): .git
+Command line code:1:
+array(0) {
+}
+Command line code:1:
+int(0)
+```
+
+On linux:
+
+```
+$ php -r "exec('git branch', \$o, \$c); var_dump(\$o, \$c);"
+fatal: Not a git repository (or any of the parent directories): .git
+array(0) {
+}
+int(128)
+```
+
+In the tests, this is caused by the fact that the test files are located in `/tmp`. I'm thinking about creating a `build/` directory covered by `.gitignore` to put the files there (as if they're ignored we can expect the configurator to ask the user whether to overwrite the file or not), but I'm not sure.
+
+Should I change the tests so they use files directly in the project so it's covered by Git? Or is there anything to do that would make the tests compatible with both Linux and Windows? Can we put the Flex repo on AppVeyor? 😄
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2018-11-23T21:14:34Z
+
+Except for some minor changes, I played with the feature and this looks great to me!
+
+The experience could be improved, eg:
+- files that are in the stash could be overridden without confirmation
+- there could be more options than just `y/N` when asking confirmation, eg show the diff, or edit the patch before applying, or approve all or just quit or `?` to display help (very much like what `git add -p` does).
+
+BUT this would be for future PRs.
+
+:+1:
+
+---------------------------------------------------------------------------
+
+by Pierstoval at 2018-11-24T13:00:43Z
+
+I fixed the reviews! For the next features, I can create other PRs targeted on this one so we could work on this in parallel without the need for tons of new releases, if you like :slightly_smiling_face:
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2018-12-10T14:50:20Z
+
+2nd commit fixes https://github.com/symfony/symfony/issues/29510
+(fabbot failure is a false-positive)
+
+---------------------------------------------------------------------------
+
+by fabpot at 2018-12-11T07:39:15Z
+
+Needs a rebase now that the commands has been renamed.
