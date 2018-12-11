@@ -268,7 +268,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
         // 'name' and 'description' are only required for public packages
         // don't use $manipulator->removeProperty() for BC with Composer 1.0
-        $contents = preg_replace('{^\s*+"(?:name|description)":.*,$\n}m', '', $manipulator->getContents());
+        $contents = preg_replace(['{^\s*+"name":.*,$\n}m', '{^\s*+"description":.*,$\n}m'], '', $manipulator->getContents(), 1);
         file_put_contents($json->getPath(), $contents);
 
         $this->updateComposerLock();
