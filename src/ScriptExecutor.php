@@ -43,7 +43,7 @@ class ScriptExecutor
      */
     public function execute(string $type, string $cmd)
     {
-        if (0 === strpos($type,'@php ')) {
+        if (0 === strpos($type, '@php ')) {
             $cmd = explode(' ', $type, 2)[1];
             $type = 'php-script';
         }
@@ -53,7 +53,7 @@ class ScriptExecutor
             return;
         }
 
-        $cmdOutput = new StreamOutput(fopen('php://temp', 'rw'), OutputInterface::VERBOSITY_VERBOSE, $this->io->isDecorated());
+        $cmdOutput = new StreamOutput(fopen('php://temp', 'rwb'), OutputInterface::VERBOSITY_VERBOSE, $this->io->isDecorated());
         $outputHandler = function ($type, $buffer) use ($cmdOutput) {
             $cmdOutput->write($buffer, false, OutputInterface::OUTPUT_RAW);
         };
