@@ -298,15 +298,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             copy(getcwd().'/.env.dist', getcwd().'/.env');
         }
 
-        list($recipes, $vulnerabilities) = $this->fetchRecipes();
-        if ($vulnerabilities) {
-            $this->io->writeError(sprintf('<info>Vulnerabilities: %d package%s</>', \count($vulnerabilities), \count($recipes) > 1 ? 's' : ''));
-        }
-        foreach ($vulnerabilities as $name => $vulns) {
-            foreach ($vulns as $v) {
-                $this->io->writeError(sprintf('  - <error>Vulnerability on %s</>: %s', $name, $v));
-            }
-        }
+        $recipes = $this->fetchRecipes();
 
         if (2 === $this->displayThanksReminder) {
             $love = '\\' === \DIRECTORY_SEPARATOR ? 'love' : '💖 ';
@@ -573,7 +565,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         if (null === $this->downloader->getEndpoint()) {
             $this->io->writeError('<warning>Symfony recipes are disabled: "symfony/flex" not found in the root composer.json</warning>');
 
-            return [[], []];
+            return [];
         }
         $devPackages = null;
         $data = $this->downloader->getRecipes($this->operations);
@@ -624,7 +616,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
         $this->operations = [];
 
-        return [array_filter($recipes), $data['vulnerabilities'] ?? []];
+        return array_filter($recipes);
     }
 
     private function initOptions(): Options

@@ -53,7 +53,6 @@ class FlexTest extends TestCase
                     'origin' => 'dummy/dummy:1.0@github.com/symfony/recipes:master',
                 ],
             ],
-            'vulnerabilities' => [],
         ];
 
         $configurator = $this->getMockBuilder(Configurator::class)->disableOriginalConstructor()->getMock();
