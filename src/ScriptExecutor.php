@@ -43,6 +43,11 @@ class ScriptExecutor
      */
     public function execute(string $type, string $cmd)
     {
+        if (0 === strpos($type,'@php ')) {
+            $cmd = explode(' ', $type, 2)[1];
+            $type = 'php-script';
+        }
+
         $parsedCmd = $this->options->expandTargetDir($cmd);
         if (null === $expandedCmd = $this->expandCmd($type, $parsedCmd)) {
             return;
