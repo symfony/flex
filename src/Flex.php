@@ -430,14 +430,21 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
     public function executeAutoScripts(Event $event)
     {
-        $event->stopPropagation();
-
         // force reloading scripts as we might have added and removed during this run
         $json = new JsonFile(Factory::getComposerFile());
         $jsonContents = $json->read();
 
+        $autoScripts = $jsonContents['scripts']['auto-scripts'];
+
+        // Ignore none flex autoscripts
+        if (array_keys($autoScripts) === range(0, \count($autoScripts) - 1)) {
+            return;
+        }
+
+        $event->stopPropagation();
+
         $executor = new ScriptExecutor($this->composer, $this->io, $this->options);
-        foreach ($jsonContents['scripts']['auto-scripts'] as $cmd => $type) {
+        foreach ($autoScripts as $cmd => $type) {
             $executor->execute($type, $cmd);
         }
 
