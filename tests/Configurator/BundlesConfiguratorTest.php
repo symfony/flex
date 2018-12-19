@@ -20,12 +20,12 @@ class BundlesConfiguratorTest extends TestCase
 {
     public function testConfigure()
     {
-        $config = getcwd().'/config/bundles.php';
+        $config = FLEX_TEST_DIR.'/config/bundles.php';
 
         $configurator = new BundlesConfigurator(
             $this->getMockBuilder('Composer\Composer')->getMock(),
             $this->getMockBuilder('Composer\IO\IOInterface')->getMock(),
-            new Options(['config-dir' => \dirname($config)])
+            new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
         );
 
         $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();

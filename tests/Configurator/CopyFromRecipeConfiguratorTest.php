@@ -98,11 +98,11 @@ class CopyFromRecipeConfiguratorTest extends TestCase
     {
         parent::setUp();
 
-        $this->sourceDirectory = getcwd().'/source';
+        $this->sourceDirectory = FLEX_TEST_DIR.'/source';
         $this->sourceFileRelativePath = 'source/file';
         $this->sourceFile = $this->targetDirectory.'/file';
 
-        $this->targetDirectory = getcwd().'/config';
+        $this->targetDirectory = FLEX_TEST_DIR.'/config';
         $this->targetFileRelativePath = 'config/file';
         $this->targetFile = $this->targetDirectory.'/file';
 
@@ -127,7 +127,7 @@ class CopyFromRecipeConfiguratorTest extends TestCase
 
     private function createConfigurator(): CopyFromRecipeConfigurator
     {
-        return new CopyFromRecipeConfigurator($this->getMockBuilder(Composer::class)->getMock(), $this->io, new Options([], $this->io));
+        return new CopyFromRecipeConfigurator($this->getMockBuilder(Composer::class)->getMock(), $this->io, new Options(['root-dir' => FLEX_TEST_DIR], $this->io));
     }
 
     private function cleanUpTargetFiles()

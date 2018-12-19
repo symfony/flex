@@ -23,7 +23,7 @@ class EnvConfigurator extends AbstractConfigurator
         $this->write('Added environment variable defaults');
 
         $this->configureEnvDist($recipe, $vars);
-        if (!file_exists(getcwd().'/.env.test')) {
+        if (!file_exists($this->options->get('root-dir').'/.env.test')) {
             $this->configurePhpUnit($recipe, $vars);
         }
     }
@@ -37,7 +37,7 @@ class EnvConfigurator extends AbstractConfigurator
     private function configureEnvDist(Recipe $recipe, $vars)
     {
         foreach (['.env.dist', '.env'] as $file) {
-            $env = getcwd().'/'.$file;
+            $env = $this->options->get('root-dir').'/'.$file;
             if (!is_file($env)) {
                 continue;
             }
@@ -69,7 +69,7 @@ class EnvConfigurator extends AbstractConfigurator
     private function configurePhpUnit(Recipe $recipe, $vars)
     {
         foreach (['phpunit.xml.dist', 'phpunit.xml'] as $file) {
-            $phpunit = getcwd().'/'.$file;
+            $phpunit = $this->options->get('root-dir').'/'.$file;
             if (!is_file($phpunit)) {
                 continue;
             }
@@ -110,7 +110,7 @@ class EnvConfigurator extends AbstractConfigurator
     private function unconfigureEnvFiles(Recipe $recipe, $vars)
     {
         foreach (['.env', '.env.dist'] as $file) {
-            $env = getcwd().'/'.$file;
+            $env = $this->options->get('root-dir').'/'.$file;
             if (!file_exists($env)) {
                 continue;
             }
@@ -128,7 +128,7 @@ class EnvConfigurator extends AbstractConfigurator
     private function unconfigurePhpUnit(Recipe $recipe, $vars)
     {
         foreach (['phpunit.xml.dist', 'phpunit.xml'] as $file) {
-            $phpunit = getcwd().'/'.$file;
+            $phpunit = $this->options->get('root-dir').'/'.$file;
             if (!is_file($phpunit)) {
                 continue;
             }

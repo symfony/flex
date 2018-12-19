@@ -23,14 +23,14 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
     {
         $this->write('Setting configuration and copying files');
         $packageDir = $this->composer->getInstallationManager()->getInstallPath($recipe->getPackage());
-        $this->copyFiles($config, $packageDir, getcwd(), $options['force'] ?? false);
+        $this->copyFiles($config, $packageDir, $this->options->get('root-dir'), $options['force'] ?? false);
     }
 
     public function unconfigure(Recipe $recipe, $config)
     {
         $this->write('Removing configuration and files');
         $packageDir = $this->composer->getInstallationManager()->getInstallPath($recipe->getPackage());
-        $this->removeFiles($config, $packageDir, getcwd());
+        $this->removeFiles($config, $packageDir, $this->options->get('root-dir'));
     }
 
     private function copyFiles(array $manifest, string $from, string $to, bool $overwrite = false)
@@ -97,7 +97,7 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
             throw new LogicException(sprintf('File "%s" does not exist!', $source));
         }
 
-        copy($source, $target);
+        file_put_contents($target, $this->options->expandTargetDir(file_get_contents($source)));
         @chmod($target, fileperms($target) | (fileperms($source) & 0111));
         $this->write(sprintf('Created <fg=green>"%s"</>', $this->path->relativize($target)));
     }

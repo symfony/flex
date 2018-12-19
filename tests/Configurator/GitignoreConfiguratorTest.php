@@ -25,7 +25,7 @@ class GitignoreConfiguratorTest extends TestCase
         $configurator = new GitignoreConfigurator(
             $this->getMockBuilder(Composer::class)->getMock(),
             $this->getMockBuilder(IOInterface::class)->getMock(),
-            new Options(['public-dir' => 'public'])
+            new Options(['public-dir' => 'public', 'root-dir' => FLEX_TEST_DIR])
         );
 
         $recipe1 = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
@@ -34,7 +34,7 @@ class GitignoreConfiguratorTest extends TestCase
         $recipe2 = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
         $recipe2->expects($this->any())->method('getName')->will($this->returnValue('BarBundle'));
 
-        $gitignore = getcwd().'/.gitignore';
+        $gitignore = FLEX_TEST_DIR.'/.gitignore';
         @unlink($gitignore);
         touch($gitignore);
 

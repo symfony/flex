@@ -22,16 +22,17 @@ class MakefileConfigurator extends AbstractConfigurator
     {
         $this->write('Added Makefile entries');
 
-        $makefile = getcwd().'/Makefile';
+        $makefile = $this->options->get('root-dir').'/Makefile';
         if ($this->isFileMarked($recipe, $makefile)) {
             return;
         }
 
-        $data = $this->markData($recipe, implode("\n", $definitions));
+        $data = $this->options->expandTargetDir(implode("\n", $definitions));
+        $data = $this->markData($recipe, $data);
 
         if (!file_exists($makefile)) {
             file_put_contents(
-                getcwd().'/Makefile',
+                $this->options->get('root-dir').'/Makefile',
                 <<<EOF
 ifndef APP_ENV
 	include .env
@@ -45,12 +46,12 @@ help:
 EOF
             );
         }
-        file_put_contents(getcwd().'/Makefile', "\n".ltrim($data, "\r\n"), FILE_APPEND);
+        file_put_contents($this->options->get('root-dir').'/Makefile', "\n".ltrim($data, "\r\n"), FILE_APPEND);
     }
 
     public function unconfigure(Recipe $recipe, $vars)
     {
-        if (!file_exists($makefile = getcwd().'/Makefile')) {
+        if (!file_exists($makefile = $this->options->get('root-dir').'/Makefile')) {
             return;
         }
 
