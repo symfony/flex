@@ -24,6 +24,10 @@ class GitignoreConfigurator extends AbstractConfigurator
 
         $gitignore = $this->options->get('root-dir').'/.gitignore';
         if ($this->isFileMarked($recipe, $gitignore)) {
+            if ($options['force'] ?? false) {
+                $this->doUnconfigure($recipe, true);
+            }
+
             return;
         }
 
@@ -37,6 +41,11 @@ class GitignoreConfigurator extends AbstractConfigurator
 
     public function unconfigure(Recipe $recipe, $vars)
     {
+        $this->doUnconfigure($recipe);
+    }
+
+    private function doUnconfigure(Recipe $recipe, bool $silent = false)
+    {
         $file = $this->options->get('root-dir').'/.gitignore';
         if (!file_exists($file)) {
             return;
@@ -47,7 +56,9 @@ class GitignoreConfigurator extends AbstractConfigurator
             return;
         }
 
-        $this->write('Removed entries in .gitignore');
+        if (!$silent) {
+            $this->write('Removed entries in .gitignore');
+        }
         file_put_contents($file, ltrim($contents, "\r\n"));
     }
 }
