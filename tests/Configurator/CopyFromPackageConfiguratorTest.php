@@ -51,7 +51,7 @@ class CopyFromPackageConfiguratorTest extends TestCase
             mkdir($this->sourceDirectory);
         }
         file_put_contents($this->sourceFile, 'somecontent');
-        file_put_contents($this->targetFile, '');
+        file_put_contents($this->targetFile, '-');
 
         $this->io->expects($this->at(0))->method('writeError')->with(['    Setting configuration and copying files']);
         $this->io->expects($this->at(2))->method('writeError')->with(['    Created <fg=green>"./public/file"</>']);
