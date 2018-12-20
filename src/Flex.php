@@ -15,6 +15,7 @@ use Composer\Composer;
 use Composer\Config;
 use Composer\Console\Application;
 use Composer\DependencyResolver\Operation\InstallOperation;
+use Composer\DependencyResolver\Operation\OperationInterface;
 use Composer\DependencyResolver\Operation\UninstallOperation;
 use Composer\DependencyResolver\Operation\UpdateOperation;
 use Composer\DependencyResolver\Pool;
@@ -48,7 +49,7 @@ use Harmony\Flex\Event\UpdateEvent;
 use Harmony\Flex\IO\ConsoleIO;
 use Harmony\Flex\Repository\HarmonyRepository;
 use Symfony\Component\Console\Input\ArgvInput;
-use Symfony\Component\Console\Input\Input;
+use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Thanks\Thanks;
 
 /**
@@ -130,7 +131,10 @@ class Flex implements PluginInterface, EventSubscriberInterface
     private $shouldUpdateComposerLock = false;
 
     /** @var Platform $platform */
-    protected $platform;
+    private $platform;
+
+    /** @var string|null $command */
+    private $command;
 
     /**
      * @param Composer    $composer
@@ -241,7 +245,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
             // In Composer 1.0.*, $input knows about option and argument definitions
             // Since Composer >=1.1, $input contains only raw values
-            /** @var Input $input */
+            /** @var InputInterface $input */
             $input = $trace['args'][0];
             $app   = $trace['object'];
 
@@ -255,31 +259,31 @@ class Flex implements PluginInterface, EventSubscriberInterface
             }
 
             try {
-                $command = $input->getFirstArgument();
-                $command = $command ? $app->find($command)->getName() : null;
+                $command       = $input->getFirstArgument();
+                $this->command = $command ? $app->find($command)->getName() : null;
             }
             catch (\InvalidArgumentException $e) {
             }
 
-            if ('create-project' === $command) {
+            if ('create-project' === $this->command) {
                 // detect Composer >=1.7 (using the Composer::VERSION constant doesn't work with snapshot builds)
                 if (class_exists(Comparer::class)) {
                     $input->setOption('remove-vcs', true);
                 } else {
                     $input->setInteractive(false);
                 }
-            } elseif ('update' === $command) {
+            } elseif ('update' === $this->command) {
                 $this->displayThanksReminder = 1;
-            } elseif ('outdated' === $command) {
+            } elseif ('outdated' === $this->command) {
                 $symfonyRequire = null;
                 $setRepositories($manager);
             }
 
-            if (isset(self::$aliasResolveCommands[$command])) {
+            if (isset(self::$aliasResolveCommands[$this->command])) {
                 // early resolve for BC with Composer 1.0
                 if ($input->hasArgument('packages')) {
-                    $input->setArgument('packages',
-                        $resolver->resolve($input->getArgument('packages'), self::$aliasResolveCommands[$command]));
+                    $input->setArgument('packages', $resolver->resolve($input->getArgument('packages'),
+                        self::$aliasResolveCommands[$this->command]));
                 }
 
                 if ($input->hasOption('no-suggest')) {
@@ -303,7 +307,8 @@ class Flex implements PluginInterface, EventSubscriberInterface
             }
 
             $composerFile = Factory::getComposerFile();
-            if ($populateRepoCacheDir && isset(self::$repoReadingCommands[$command]) && ('install' !== $command ||
+            if ($populateRepoCacheDir && isset(self::$repoReadingCommands[$this->command]) &&
+                ('install' !== $this->command ||
                     (file_exists($composerFile) && !file_exists(substr($composerFile, 0, - 4) . 'lock')))) {
                 $this->populateRepoCacheDir();
             }
@@ -370,6 +375,29 @@ class Flex implements PluginInterface, EventSubscriberInterface
     {
         if ($this->shouldRecordOperation($event)) {
             $this->operations[] = $event->getOperation();
+        }
+    }
+
+    /**
+     * Install packages with custom types starting by `harmony-`
+     *
+     * @param PackageEvent $event
+     */
+    public function installCustomTypes(PackageEvent $event): void
+    {
+        /** @var OperationInterface|InstallOperation|UpdateOperation $operation */
+        $operation = $event->getOperation();
+        $package   = $operation->getPackage();
+        $type      = $package->getType();
+
+        if (0 === strpos($type, Installer::PREFIX)) {
+            try {
+                /** @var Installer $installer */
+                $installer = $this->composer->getInstallationManager()->getInstaller($type);
+                $installer->postInstall($package);
+            }
+            catch (\InvalidArgumentException $e) {
+            }
         }
     }
 
@@ -498,6 +526,46 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
         if ($this->shouldUpdateComposerLock) {
             $this->updateComposerLock();
+        }
+    }
+
+    /**
+     * @param Event $event
+     *
+     * @throws \Http\Client\Exception
+     * @throws \Exception
+     */
+    public function projectInitialize(Event $event)
+    {
+        if ('create-project' === $this->command) {
+            $this->platform->authenticate();
+            $project = $this->platform->getProject($this->config);
+            // Ask for Harmony Project Id
+            if (true === $project->getId() && false === $this->lock->exists()) {
+                // Install themes
+                $project->installThemes();
+
+                // Configure `DATABASE_URL` env variable from configured project information.
+                $project->configDatabases();
+
+                // Install stacks.
+                $project->installStacks();
+
+                // Ask user to initialize database.
+                $project->initDatabase();
+
+                // Ask create new admin user
+                $project->createUser();
+
+                // Clear useless/unused files/folders
+                $project->clear();
+
+                // Create lock file
+                $this->lock->write();
+
+                // Process successfully completed
+                $this->io->success('HarmonyCMS installation successful');
+            }
         }
     }
 
@@ -895,12 +963,12 @@ class Flex implements PluginInterface, EventSubscriberInterface
             InstallerEvents::POST_DEPENDENCIES_SOLVING => [['populateFilesCacheDir', PHP_INT_MAX]],
             PackageEvents::PRE_PACKAGE_INSTALL         => [['populateFilesCacheDir', ~PHP_INT_MAX]],
             PackageEvents::PRE_PACKAGE_UPDATE          => [['populateFilesCacheDir', ~PHP_INT_MAX]],
-            PackageEvents::POST_PACKAGE_INSTALL        => 'record',
+            PackageEvents::POST_PACKAGE_INSTALL        => [['record'], ['installCustomTypes']],
             PackageEvents::POST_PACKAGE_UPDATE         => [['record'], ['enableThanksReminder']],
             PackageEvents::POST_PACKAGE_UNINSTALL      => 'record',
             ScriptEvents::POST_CREATE_PROJECT_CMD      => 'createProject', // old name: configureProject
             ScriptEvents::POST_INSTALL_CMD             => 'install',
-            ScriptEvents::POST_UPDATE_CMD              => 'update',
+            ScriptEvents::POST_UPDATE_CMD              => [['projectInitialize'], ['update']],
             PluginEvents::PRE_FILE_DOWNLOAD            => 'onFileDownload',
             'auto-scripts'                             => 'executeAutoScripts',
         ];
