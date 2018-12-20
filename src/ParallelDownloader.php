@@ -892,19 +892,22 @@ class ParallelDownloader extends RemoteFilesystem
             return $result;
         }
 
-        if (self::$cacheNext) {
-            self::$cacheNext = false;
-
-            if (3 < \func_num_args()) {
-                $result = $this->getRemoteContents($originUrl, $fileUrl, $context, $responseHeaders);
-                self::$cache[$fileUrl] = [$responseHeaders, $result];
-            } else {
-                $result = $this->getRemoteContents($originUrl, $fileUrl, $context);
-                self::$cache[$fileUrl] = $result;
-            }
-
-            return $result;
-        }
+        /**
+         * Issue with this parts of code, asking indefinitely for an OAuth2 access token
+         */
+//        if (self::$cacheNext) {
+//            self::$cacheNext = false;
+//
+//            if (3 < \func_num_args()) {
+//                $result = $this->getRemoteContents($originUrl, $fileUrl, $context, $responseHeaders);
+//                self::$cache[$fileUrl] = [$responseHeaders, $result];
+//            } else {
+//                $result = $this->getRemoteContents($originUrl, $fileUrl, $context);
+//                self::$cache[$fileUrl] = $result;
+//            }
+//
+//            return $result;
+//        }
 
         if (!$this->downloader) {
             return parent::getRemoteContents($originUrl, $fileUrl, $context, $responseHeaders);
