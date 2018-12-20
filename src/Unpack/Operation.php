@@ -9,7 +9,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\Flex\Unpack;
+namespace Harmony\Flex\Unpack;
 
 class Operation
 {

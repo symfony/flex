@@ -9,13 +9,13 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\Flex\Configurator;
+namespace Harmony\Flex\Configurator;
 
 use Composer\Composer;
 use Composer\IO\IOInterface;
-use Symfony\Flex\Options;
-use Symfony\Flex\Path;
-use Symfony\Flex\Recipe;
+use Harmony\Flex\Options;
+use Harmony\Flex\Path;
+use Harmony\Flex\Recipe;
 
 /**
  * @author Fabien Potencier <fabien@symfony.com>

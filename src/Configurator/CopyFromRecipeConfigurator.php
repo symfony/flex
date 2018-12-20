@@ -9,9 +9,9 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\Flex\Configurator;
+namespace Harmony\Flex\Configurator;
 
-use Symfony\Flex\Recipe;
+use Harmony\Flex\Recipe;
 
 /**
  * @author Fabien Potencier <fabien@symfony.com>

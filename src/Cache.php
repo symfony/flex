@@ -9,7 +9,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\Flex;
+namespace Harmony\Flex;
 
 use Composer\Cache as BaseCache;
 use Composer\IO\IOInterface;

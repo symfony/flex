@@ -9,15 +9,16 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\Flex\Command;
+namespace Harmony\Flex\Command;
 
 use Composer\Command\RemoveCommand as BaseRemoveCommand;
+use Harmony\Flex\PackageResolver;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Flex\PackageResolver;
 
 class RemoveCommand extends BaseRemoveCommand
 {
+
     private $resolver;
 
     public function __construct(PackageResolver $resolver)

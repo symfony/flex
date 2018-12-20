@@ -1,32 +1,51 @@
 {
-    "name": "symfony/flex",
-    "type": "composer-plugin",
-    "description": "Composer plugin for Symfony",
-    "license": "MIT",
-    "authors": [
-        {
-            "name": "Fabien Potencier",
-            "email": "fabien.potencier@gmail.com"
-        }
-    ],
-    "require": {
-        "php": "^7.0",
-        "composer-plugin-api": "^1.0"
-    },
-    "require-dev": {
-        "composer/composer": "^1.0.2",
-        "symfony/phpunit-bridge": "^3.4.19|^4.1.8",
-        "symfony/process": "^2.7|^3.0|^4.0"
-    },
-    "autoload": {
-        "psr-4": {
-            "Symfony\\Flex\\": "src"
-        }
-    },
-    "extra": {
-        "branch-alias": {
-            "dev-master": "1.1-dev"
-        },
-        "class": "Symfony\\Flex\\Flex"
+  "name": "harmony/flex",
+  "description": "Harmony Composer plugin",
+  "homepage": "https://harmonycms.net",
+  "type": "composer-plugin",
+  "license": "LGPL-3.0-or-later",
+  "authors": [
+    {
+      "name": "David Sanchez",
+      "email": "david38sanchez@gmail.com",
+      "homepage": "http://davidsanchez.me"
     }
+  ],
+  "require": {
+    "php": "^7.1.3",
+    "ext-dom": "*",
+    "ext-json": "*",
+    "composer-plugin-api": "^1.0",
+    "harmony/sdk": "dev-master",
+    "oohology/dotenvwriter": "^1.3",
+    "php-http/guzzle6-adapter": "^2.0",
+    "symfony/http-foundation": "*",
+    "symfony/serializer": "*",
+    "symfony/yaml": "*"
+  },
+  "require-dev": {
+    "composer/composer": "^1.0.2",
+    "symfony/phpunit-bridge": "^3.4.19|^4.1.8",
+    "symfony/process": "^2.7|^3.0|^4.0",
+    "symfony/thanks": "^1.1"
+  },
+  "autoload": {
+    "psr-4": {
+      "Harmony\\Flex\\": "src"
+    }
+  },
+  "config": {
+    "sort-packages": true
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true,
+  "extra": {
+    "class": "Harmony\\Flex\\Flex",
+    "branch-alias": {
+      "dev-master": "1.0-dev"
+    },
+    "symfony": {
+      "require": "4.2.*"
+    }
+  }
 }

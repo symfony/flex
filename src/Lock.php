@@ -9,7 +9,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\Flex;
+namespace Harmony\Flex;
 
 use Composer\Json\JsonFile;
 
@@ -18,33 +18,69 @@ use Composer\Json\JsonFile;
  */
 class Lock
 {
+
+    /** @var JsonFile $json */
     private $json;
+
+    /** @var array|mixed $ */
     private $lock = [];
 
+    /**
+     * Lock constructor.
+     *
+     * @param $lockFile
+     */
     public function __construct($lockFile)
     {
         $this->json = new JsonFile($lockFile);
-        if ($this->json->exists()) {
+        if ($this->exists()) {
             $this->lock = $this->json->read();
         }
     }
 
-    public function has($name): bool
+    /**
+     * Check if lock file exists
+     *
+     * @return bool
+     */
+    public function exists(): bool
+    {
+        return $this->json->exists();
+    }
+
+    /**
+     * @param string $name
+     *
+     * @return bool
+     */
+    public function has(string $name): bool
     {
         return array_key_exists($name, $this->lock);
     }
 
-    public function get($name)
+    /**
+     * @param string $name
+     *
+     * @return array|null
+     */
+    public function get(string $name): ?array
     {
         return $this->lock[$name] ?? null;
     }
 
-    public function add($name, $data)
+    /**
+     * @param string $name
+     * @param mixed  $data
+     */
+    public function add(string $name, $data)
     {
         $this->lock[$name] = $data;
     }
 
-    public function remove($name)
+    /**
+     * @param string $name
+     */
+    public function remove(string $name)
     {
         unset($this->lock[$name]);
     }
@@ -54,7 +90,7 @@ class Lock
         if ($this->lock) {
             ksort($this->lock);
             $this->json->write($this->lock);
-        } elseif ($this->json->exists()) {
+        } elseif ($this->exists()) {
             @unlink($this->json->getPath());
         }
     }

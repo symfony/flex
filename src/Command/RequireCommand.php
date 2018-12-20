@@ -9,19 +9,20 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\Flex\Command;
+namespace Harmony\Flex\Command;
 
 use Composer\Command\RequireCommand as BaseRequireCommand;
 use Composer\Package\Version\VersionParser;
+use Harmony\Flex\PackageResolver;
+use Harmony\Flex\Unpack\Operation;
+use Harmony\Flex\Unpacker;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Flex\PackageResolver;
-use Symfony\Flex\Unpack\Operation;
-use Symfony\Flex\Unpacker;
 
 class RequireCommand extends BaseRequireCommand
 {
+
     private $resolver;
 
     public function __construct(PackageResolver $resolver)
@@ -42,14 +43,15 @@ class RequireCommand extends BaseRequireCommand
         $packages = $this->resolver->resolve($input->getArgument('packages'), true);
         if ($packages) {
             $versionParser = new VersionParser();
-            $op = new Operation($input->getOption('unpack'), $input->getOption('sort-packages') || $this->getComposer()->getConfig()->get('sort-packages'));
+            $op            = new Operation($input->getOption('unpack'),
+                $input->getOption('sort-packages') || $this->getComposer()->getConfig()->get('sort-packages'));
             foreach ($versionParser->parseNameVersionPairs($packages) as $package) {
                 $op->addPackage($package['name'], $package['version'] ?? '', $input->getOption('dev'));
             }
 
             $unpacker = new Unpacker($this->getComposer(), $this->resolver);
-            $result = $unpacker->unpack($op);
-            $io = $this->getIO();
+            $result   = $unpacker->unpack($op);
+            $io       = $this->getIO();
             foreach ($result->getUnpacked() as $pkg) {
                 $io->writeError(sprintf('<info>Unpacked %s dependencies</>', $pkg->getName()));
             }

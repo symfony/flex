@@ -9,39 +9,56 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\Flex;
+namespace Harmony\Flex;
 
 use Composer\Composer;
 use Composer\IO\IOInterface;
-use Symfony\Flex\Configurator\AbstractConfigurator;
+use Harmony\Flex\Configurator\AbstractConfigurator;
+use Symfony\Component\Yaml\Yaml;
 
 /**
  * @author Fabien Potencier <fabien@symfony.com>
  */
 class Configurator
 {
-    private $composer;
-    private $io;
-    private $options;
-    private $configurators;
-    private $cache;
+
+    /** Constant */
+    const HARMONY_CONFIG_YAML = 'harmony.yaml';
+
+    /** @var string $configDir */
+    protected $configDir;
+
+    /** @var string $defaultConfigFile */
+    protected $defaultConfigFile;
+
+    private   $composer;
+
+    private   $io;
+
+    private   $options;
+
+    private   $configurators;
+
+    private   $cache;
 
     public function __construct(Composer $composer, IOInterface $io, Options $options)
     {
         $this->composer = $composer;
-        $this->io = $io;
-        $this->options = $options;
+        $this->io       = $io;
+        $this->options  = $options;
         // ordered list of configurators
-        $this->configurators = [
-            'bundles' => Configurator\BundlesConfigurator::class,
-            'copy-from-recipe' => Configurator\CopyFromRecipeConfigurator::class,
+        $this->configurators     = [
+            'bundles'           => Configurator\BundlesConfigurator::class,
+            'copy-from-recipe'  => Configurator\CopyFromRecipeConfigurator::class,
             'copy-from-package' => Configurator\CopyFromPackageConfigurator::class,
-            'env' => Configurator\EnvConfigurator::class,
-            'container' => Configurator\ContainerConfigurator::class,
-            'makefile' => Configurator\MakefileConfigurator::class,
-            'composer-scripts' => Configurator\ComposerScriptsConfigurator::class,
-            'gitignore' => Configurator\GitignoreConfigurator::class,
+            'env'               => Configurator\EnvConfigurator::class,
+            'container'         => Configurator\ContainerConfigurator::class,
+            'makefile'          => Configurator\MakefileConfigurator::class,
+            'composer-scripts'  => Configurator\ComposerScriptsConfigurator::class,
+            'gitignore'         => Configurator\GitignoreConfigurator::class,
         ];
+        $this->configDir         = dirname($composer->getConfig()->get('vendor-dir'));
+        $this->defaultConfigFile = $this->configDir . '/config/packages/' . self::HARMONY_CONFIG_YAML;
     }
 
     public function install(Recipe $recipe, array $options = [])
@@ -52,6 +69,20 @@ class Configurator
                 $this->get($key)->configure($recipe, $manifest[$key], $options);
             }
         }
+    }
+
+    /**
+     * @param string $key
+     * @param        $value
+     *
+     * @return bool|int
+     */
+    public function update(string $key, $value)
+    {
+        $yaml                  = Yaml::parseFile($this->defaultConfigFile);
+        $yaml['harmony'][$key] = $value;
+
+        return file_put_contents($this->defaultConfigFile, Yaml::dump($yaml));
     }
 
     public function unconfigure(Recipe $recipe)

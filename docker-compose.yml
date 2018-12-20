@@ -1,0 +1,12 @@
+version: '3'
+services:
+  # PHP
+  php:
+    container_name: harmony_flex_php
+    build: .
+    expose:
+      - 9000
+    volumes:
+      - .:/usr/src/flex
+      - ~/.ssh/id_rsa:/root/.ssh/id_rsa # Share local machine SSH key to docker
+    working_dir: /usr/src/flex

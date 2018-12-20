@@ -9,12 +9,12 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\Flex\Configurator;
+namespace Harmony\Flex\Configurator;
 
 use Composer\Factory;
 use Composer\Json\JsonFile;
 use Composer\Json\JsonManipulator;
-use Symfony\Flex\Recipe;
+use Harmony\Flex\Recipe;
 
 /**
  * @author Fabien Potencier <fabien@symfony.com>

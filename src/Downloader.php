@@ -9,7 +9,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\Flex;
+namespace Harmony\Flex;
 
 use Composer\Cache as ComposerCache;
 use Composer\Composer;
@@ -25,51 +25,81 @@ use Composer\Json\JsonFile;
  */
 class Downloader
 {
+
     private static $DEFAULT_ENDPOINT = 'https://flex.symfony.com';
-    private static $MAX_LENGTH = 1000;
 
-    private $io;
-    private $sess;
-    private $cache;
-    private $rfs;
-    private $degradedMode = false;
-    private $endpoint;
-    private $caFile;
-    private $flexId;
+    private static $MAX_LENGTH       = 1000;
 
+    private        $io;
+
+    private        $sess;
+
+    private        $cache;
+
+    private        $rfs;
+
+    private        $degradedMode     = false;
+
+    private        $endpoint;
+
+    private        $caFile;
+
+    private        $flexId;
+
+    /**
+     * Downloader constructor.
+     *
+     * @param Composer           $composer
+     * @param IOInterface        $io
+     * @param ParallelDownloader $rfs
+     *
+     * @throws \Exception
+     */
     public function __construct(Composer $composer, IoInterface $io, ParallelDownloader $rfs)
     {
         if (getenv('SYMFONY_CAFILE')) {
             $this->caFile = getenv('SYMFONY_CAFILE');
         }
 
-        foreach (array_merge($composer->getPackage()->getRequires() ?? [], $composer->getPackage()->getDevRequires() ?? []) as $link) {
+        foreach (array_merge($composer->getPackage()->getRequires() ?? [],
+            $composer->getPackage()->getDevRequires() ?? []) as $link) {
             // recipes apply only when symfony/flex is found in "require" or "require-dev" in the root package
-            if ('symfony/flex' !== $link->getTarget()) {
+            if ('harmony/flex' !== $link->getTarget()) {
                 continue;
             }
-            $this->endpoint = rtrim(getenv('SYMFONY_ENDPOINT') ?: ($composer->getPackage()->getExtra()['symfony']['endpoint'] ?? self::$DEFAULT_ENDPOINT), '/');
+            $this->endpoint = rtrim(getenv('SYMFONY_ENDPOINT') ?:
+                ($composer->getPackage()->getExtra()['symfony']['endpoint'] ?? self::$DEFAULT_ENDPOINT), '/');
             break;
         }
 
-        $this->io = $io;
-        $config = $composer->getConfig();
-        $this->rfs = $rfs;
-        $this->cache = new ComposerCache($io, $config->get('cache-repo-dir').'/'.preg_replace('{[^a-z0-9.]}i', '-', $this->endpoint));
-        $this->sess = bin2hex(random_bytes(16));
+        $this->io    = $io;
+        $config      = $composer->getConfig();
+        $this->rfs   = $rfs;
+        $this->cache = new ComposerCache($io,
+            $config->get('cache-repo-dir') . '/' . preg_replace('{[^a-z0-9.]}i', '-', $this->endpoint));
+        $this->sess  = bin2hex(random_bytes(16));
     }
 
+    /**
+     * @return string
+     */
     public function getSessionId(): string
     {
         return $this->sess;
     }
 
+    /**
+     * @param string|null $id
+     */
     public function setFlexId(string $id = null)
     {
         $this->flexId = $id;
     }
 
-    public function getEndpoint()
+    /**
+     * @return string
+     */
+    public function getEndpoint(): string
     {
         return $this->endpoint;
     }
@@ -78,6 +108,8 @@ class Downloader
      * Downloads recipes.
      *
      * @param OperationInterface[] $operations
+     *
+     * @return array
      */
     public function getRecipes(array $operations): array
     {
@@ -87,7 +119,7 @@ class Downloader
             $o = 'i';
             if ($operation instanceof UpdateOperation) {
                 $package = $operation->getTargetPackage();
-                $o = 'u';
+                $o       = 'u';
             } else {
                 $package = $operation->getPackage();
                 if ($operation instanceof UninstallOperation) {
@@ -98,10 +130,8 @@ class Downloader
             $version = $package->getPrettyVersion();
             if (0 === strpos($version, 'dev-') && isset($package->getExtra()['branch-alias'])) {
                 $branchAliases = $package->getExtra()['branch-alias'];
-                if (
-                    (isset($branchAliases[$version]) && $alias = $branchAliases[$version]) ||
-                    (isset($branchAliases['dev-master']) && $alias = $branchAliases['dev-master'])
-                ) {
+                if ((isset($branchAliases[$version]) && $alias = $branchAliases[$version]) ||
+                    (isset($branchAliases['dev-master']) && $alias = $branchAliases['dev-master'])) {
                     $version = $alias;
                 }
             }
@@ -110,23 +140,23 @@ class Downloader
             $name = str_replace('/', ',', $package->getNames()[0]);
             $path = sprintf('%s,%s%s', $name, $o, $version);
             if ($date = $package->getReleaseDate()) {
-                $path .= ','.$date->format('U');
+                $path .= ',' . $date->format('U');
             }
             if (\strlen($chunk) + \strlen($path) > self::$MAX_LENGTH) {
-                $paths[] = ['/p/'.$chunk];
-                $chunk = $path;
+                $paths[] = ['/p/' . $chunk];
+                $chunk   = $path;
             } elseif ($chunk) {
-                $chunk .= ';'.$path;
+                $chunk .= ';' . $path;
             } else {
                 $chunk = $path;
             }
         }
         if ($chunk) {
-            $paths[] = ['/p/'.$chunk];
+            $paths[] = ['/p/' . $chunk];
         }
 
         if (null !== $this->endpoint && self::$DEFAULT_ENDPOINT !== $this->endpoint) {
-            $this->io->writeError('<warning>Using "'.$this->endpoint.'" as the Symfony endpoint</warning>');
+            $this->io->writeError('<warning>Using "' . $this->endpoint . '" as the Symfony endpoint</warning>');
         }
 
         $bodies = [];
@@ -154,15 +184,20 @@ class Downloader
      *
      * @param string $path    The path to get on the server
      * @param array  $headers An array of HTTP headers
+     * @param bool   $cache
+     *
+     * @return Response
+     * @throws \Http\Client\Exception
+     * @throws \Throwable
      */
     public function get(string $path, array $headers = [], $cache = true): Response
     {
         if (null === $this->endpoint) {
             return new Response([]);
         }
-        $headers[] = 'Package-Session: '.$this->sess;
-        $url = $this->endpoint.'/'.ltrim($path, '/');
-        $cacheKey = $cache ? ltrim($path, '/') : '';
+        $headers[] = 'Package-Session: ' . $this->sess;
+        $url       = $this->endpoint . '/' . ltrim($path, '/');
+        $cacheKey  = $cache ? ltrim($path, '/') : '';
 
         if ($cacheKey && $contents = $this->cache->read($cacheKey)) {
             $cachedResponse = Response::fromJson(json_decode($contents, true));
@@ -179,16 +214,26 @@ class Downloader
         return $this->fetchFile($url, $cacheKey, $headers);
     }
 
+    /**
+     * @param string $url
+     * @param string $cacheKey
+     * @param array  $headers
+     *
+     * @return Response
+     * @throws \Http\Client\Exception
+     * @throws \Throwable
+     */
     private function fetchFile(string $url, string $cacheKey, array $headers): Response
     {
         $options = $this->getOptions($headers);
         $retries = 3;
-        while ($retries--) {
+        while ($retries --) {
             try {
                 $json = $this->rfs->getContents($this->endpoint, $url, false, $options);
 
                 return $this->parseJson($json, $url, $cacheKey, $this->rfs->getLastHeaders());
-            } catch (\Exception $e) {
+            }
+            catch (\Exception $e) {
                 if ($e instanceof TransportException && 404 === $e->getStatusCode()) {
                     throw $e;
                 }
@@ -201,7 +246,7 @@ class Downloader
                 if ($cacheKey && $contents = $this->cache->read($cacheKey)) {
                     $this->switchToDegradedMode($e, $url);
 
-                    return Response::fromJson(JsonFile::parseJson($contents, $this->cache->getRoot().$cacheKey));
+                    return Response::fromJson(JsonFile::parseJson($contents, $this->cache->getRoot() . $cacheKey));
                 }
 
                 throw $e;
@@ -209,12 +254,23 @@ class Downloader
         }
     }
 
-    private function fetchFileIfLastModified(string $url, string $cacheKey, string $lastModifiedTime, array $headers): Response
+    /**
+     * @param string $url
+     * @param string $cacheKey
+     * @param string $lastModifiedTime
+     * @param array  $headers
+     *
+     * @return Response
+     * @throws \Http\Client\Exception
+     * @throws \Throwable
+     */
+    private function fetchFileIfLastModified(string $url, string $cacheKey, string $lastModifiedTime,
+                                             array $headers): Response
     {
-        $headers[] = 'If-Modified-Since: '.$lastModifiedTime;
-        $options = $this->getOptions($headers);
-        $retries = 3;
-        while ($retries--) {
+        $headers[] = 'If-Modified-Since: ' . $lastModifiedTime;
+        $options   = $this->getOptions($headers);
+        $retries   = 3;
+        while ($retries --) {
             try {
                 $json = $this->rfs->getContents($this->endpoint, $url, false, $options);
                 if (304 === $this->rfs->findStatusCode($this->rfs->getLastHeaders())) {
@@ -222,7 +278,8 @@ class Downloader
                 }
 
                 return $this->parseJson($json, $url, $cacheKey, $this->rfs->getLastHeaders());
-            } catch (\Exception $e) {
+            }
+            catch (\Exception $e) {
                 if ($e instanceof TransportException && 404 === $e->getStatusCode()) {
                     throw $e;
                 }
@@ -239,14 +296,23 @@ class Downloader
         }
     }
 
+    /**
+     * @param string $json
+     * @param string $url
+     * @param string $cacheKey
+     * @param array  $lastHeaders
+     *
+     * @return Response
+     * @throws \ErrorException
+     */
     private function parseJson(string $json, string $url, string $cacheKey, array $lastHeaders): Response
     {
         $data = JsonFile::parseJson($json, $url);
         if (!empty($data['warning'])) {
-            $this->io->writeError('<warning>Warning from '.$url.': '.$data['warning'].'</warning>');
+            $this->io->writeError('<warning>Warning from ' . $url . ': ' . $data['warning'] . '</warning>');
         }
         if (!empty($data['info'])) {
-            $this->io->writeError('<info>Info from '.$url.': '.$data['info'].'</info>');
+            $this->io->writeError('<info>Info from ' . $url . ': ' . $data['info'] . '</info>');
         }
 
         $response = new Response($data, $lastHeaders);
@@ -257,21 +323,31 @@ class Downloader
         return $response;
     }
 
+    /**
+     * @param \Exception $e
+     * @param string     $url
+     */
     private function switchToDegradedMode(\Exception $e, string $url)
     {
         if (!$this->degradedMode) {
-            $this->io->writeError('<warning>'.$e->getMessage().'</warning>');
-            $this->io->writeError('<warning>'.$url.' could not be fully loaded, package information was loaded from the local cache and may be out of date</warning>');
+            $this->io->writeError('<warning>' . $e->getMessage() . '</warning>');
+            $this->io->writeError('<warning>' . $url .
+                ' could not be fully loaded, package information was loaded from the local cache and may be out of date</warning>');
         }
         $this->degradedMode = true;
     }
 
+    /**
+     * @param array $headers
+     *
+     * @return array
+     */
     private function getOptions(array $headers): array
     {
         $options = ['http' => ['header' => $headers]];
 
         if ($this->flexId) {
-            $options['http']['header'][] = 'Project: '.$this->flexId;
+            $options['http']['header'][] = 'Project: ' . $this->flexId;
         }
 
         if (null !== $this->caFile) {

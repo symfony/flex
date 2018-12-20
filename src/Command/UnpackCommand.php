@@ -9,7 +9,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\Flex\Command;
+namespace Harmony\Flex\Command;
 
 use Composer\Command\BaseCommand;
 use Composer\Config\JsonConfigSource;
@@ -18,16 +18,17 @@ use Composer\Installer;
 use Composer\Json\JsonFile;
 use Composer\Package\Locker;
 use Composer\Package\Version\VersionParser;
+use Harmony\Flex\PackageResolver;
+use Harmony\Flex\Unpack\Operation;
+use Harmony\Flex\Unpacker;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Flex\PackageResolver;
-use Symfony\Flex\Unpack\Operation;
-use Symfony\Flex\Unpacker;
 
 class UnpackCommand extends BaseCommand
 {
+
     public function __construct(PackageResolver $resolver)
     {
         $this->resolver = $resolver;
@@ -41,21 +42,21 @@ class UnpackCommand extends BaseCommand
             ->setAliases(['unpack'])
             ->setDescription('Unpacks a Symfony pack.')
             ->setDefinition([
-                new InputArgument('packages', InputArgument::IS_ARRAY | InputArgument::REQUIRED, 'Installed packages to unpack.'),
+                new InputArgument('packages', InputArgument::IS_ARRAY | InputArgument::REQUIRED,
+                    'Installed packages to unpack.'),
                 new InputOption('sort-packages', null, InputOption::VALUE_NONE, 'Sorts packages'),
-            ])
-        ;
+            ]);
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $composer = $this->getComposer();
-        $packages = $this->resolver->resolve($input->getArgument('packages'), true);
-        $io = $this->getIO();
-        $json = new JsonFile(Factory::getComposerFile());
-        $manipulator = new JsonConfigSource($json);
-        $locker = $composer->getLocker();
-        $lockData = $locker->getLockData();
+        $composer      = $this->getComposer();
+        $packages      = $this->resolver->resolve($input->getArgument('packages'), true);
+        $io            = $this->getIO();
+        $json          = new JsonFile(Factory::getComposerFile());
+        $manipulator   = new JsonConfigSource($json);
+        $locker        = $composer->getLocker();
+        $lockData      = $locker->getLockData();
         $installedRepo = $composer->getRepositoryManager()->getLocalRepository();
         $versionParser = new VersionParser();
 
@@ -80,7 +81,7 @@ class UnpackCommand extends BaseCommand
         }
 
         $unpacker = new Unpacker($composer, $this->resolver);
-        $result = $unpacker->unpack($op);
+        $result   = $unpacker->unpack($op);
 
         // remove the packages themselves
         if (!$result->getUnpacked()) {
@@ -107,23 +108,22 @@ class UnpackCommand extends BaseCommand
                 }
             }
         }
-        $lockData['packages'] = array_values($lockData['packages']);
+        $lockData['packages']     = array_values($lockData['packages']);
         $lockData['packages-dev'] = array_values($lockData['packages-dev']);
         $lockData['content-hash'] = $locker->getContentHash(file_get_contents($json->getPath()));
-        $lockFile = new JsonFile(substr($json->getPath(), 0, -4).'lock', null, $io);
+        $lockFile                 = new JsonFile(substr($json->getPath(), 0, - 4) . 'lock', null, $io);
         $lockFile->write($lockData);
 
         // force removal of files under vendor/
-        $locker = new Locker($io, $lockFile, $composer->getRepositoryManager(), $composer->getInstallationManager(), file_get_contents($json->getPath()));
+        $locker = new Locker($io, $lockFile, $composer->getRepositoryManager(), $composer->getInstallationManager(),
+            file_get_contents($json->getPath()));
         $composer->setLocker($locker);
         $install = Installer::create($io, $composer);
-        $install
-            ->setDevMode(true)
+        $install->setDevMode(true)
             ->setDumpAutoloader(false)
             ->setRunScripts(false)
             ->setSkipSuggest(true)
-            ->setIgnorePlatformRequirements(true)
-        ;
+            ->setIgnorePlatformRequirements(true);
 
         return $install->run();
     }

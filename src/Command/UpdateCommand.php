@@ -9,15 +9,21 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\Flex\Command;
+namespace Harmony\Flex\Command;
 
 use Composer\Command\UpdateCommand as BaseUpdateCommand;
+use Harmony\Flex\PackageResolver;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Flex\PackageResolver;
 
+/**
+ * Class UpdateCommand
+ *
+ * @package Harmony\Flex\Command
+ */
 class UpdateCommand extends BaseUpdateCommand
 {
+
     private $resolver;
 
     public function __construct(PackageResolver $resolver)
