@@ -594,6 +594,9 @@ class Flex implements PluginInterface, EventSubscriberInterface
                 }
                 $this->lock->add($name, $locks[$name]);
             } elseif ($operation instanceof UninstallOperation) {
+                if (!$this->lock->has($name)) {
+                    continue;
+                }
                 $this->lock->remove($name);
             }
 
