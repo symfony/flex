@@ -86,7 +86,7 @@ class ScriptExecutor
             case 'script':
                 return $cmd;
             default:
-                throw new \InvalidArgumentException(sprintf('Command type "%s" is not valid.', $type));
+                throw new \InvalidArgumentException(sprintf('Invalid symfony/flex auto-script in composer.json: "%s" is not a valid type of command.', $type));
         }
     }
 
