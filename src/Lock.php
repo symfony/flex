@@ -34,6 +34,11 @@ class Lock
         return array_key_exists($name, $this->lock);
     }
 
+    public function get($name)
+    {
+        return $this->lock[$name] ?? null;
+    }
+
     public function add($name, $data)
     {
         $this->lock[$name] = $data;
