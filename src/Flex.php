@@ -588,6 +588,10 @@ class Flex implements PluginInterface, EventSubscriberInterface
             $job = $operation->getJobType();
 
             if ($operation instanceof InstallOperation && isset($locks[$name])) {
+                $ref = $this->lock->get($name)['recipe']['ref'] ?? null;
+                if ($ref && ($locks[$name]['recipe']['ref'] ?? null) === $ref) {
+                    continue;
+                }
                 $this->lock->add($name, $locks[$name]);
             } elseif ($operation instanceof UninstallOperation) {
                 $this->lock->remove($name);
