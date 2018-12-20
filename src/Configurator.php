@@ -31,16 +31,28 @@ class Configurator
     /** @var string $defaultConfigFile */
     protected $defaultConfigFile;
 
-    private   $composer;
+    /** @var Composer $composer */
+    private $composer;
 
-    private   $io;
+    /** @var IOInterface $io */
+    private $io;
 
-    private   $options;
+    /** @var Options $options */
+    private $options;
 
-    private   $configurators;
+    /** @var array $configurators */
+    private $configurators;
 
-    private   $cache;
+    /** @var array $cache */
+    private $cache;
 
+    /**
+     * Configurator constructor.
+     *
+     * @param Composer    $composer
+     * @param IOInterface $io
+     * @param Options     $options
+     */
     public function __construct(Composer $composer, IOInterface $io, Options $options)
     {
         $this->composer = $composer;
@@ -61,6 +73,10 @@ class Configurator
         $this->defaultConfigFile = $this->configDir . '/config/packages/' . self::HARMONY_CONFIG_YAML;
     }
 
+    /**
+     * @param Recipe $recipe
+     * @param array  $options
+     */
     public function install(Recipe $recipe, array $options = [])
     {
         $manifest = $recipe->getManifest();
@@ -85,6 +101,9 @@ class Configurator
         return file_put_contents($this->defaultConfigFile, Yaml::dump($yaml));
     }
 
+    /**
+     * @param Recipe $recipe
+     */
     public function unconfigure(Recipe $recipe)
     {
         $manifest = $recipe->getManifest();
@@ -95,6 +114,11 @@ class Configurator
         }
     }
 
+    /**
+     * @param $key
+     *
+     * @return AbstractConfigurator
+     */
     private function get($key): AbstractConfigurator
     {
         if (!isset($this->configurators[$key])) {
