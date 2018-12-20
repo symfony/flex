@@ -61,11 +61,11 @@ class Options
             return false;
         }
 
-        if ($this->gitExists()) {
-            exec('git status --short --ignored -- '.ProcessExecutor::escape($file).' 2>&1', $output, $status);
-        } else {
-            $status = 1;
+        if (!filesize($file)) {
+            return true;
         }
+
+        exec('git status --short --ignored -- '.ProcessExecutor::escape($file).' 2>&1', $output, $status);
 
         if (0 !== $status) {
             return (bool) $this->io && $this->io->askConfirmation(\sprintf('Cannot determine the state of the "%s" file, overwrite anyway? [y/N] ', $file), false);
@@ -79,16 +79,5 @@ class Options
         $name = \strlen($output[0]) - \strlen($name) === strrpos($output[0], $name) ? substr($output[0], 3) : $name;
 
         return (bool) $this->io && $this->io->askConfirmation(\sprintf('File "%s" has uncommitted changes, overwrite? [y/N] ', $name), false);
-    }
-
-    private function gitExists(): bool
-    {
-        static $gitExists;
-
-        if (\is_bool($gitExists)) {
-            return $gitExists;
-        }
-
-        return $gitExists = @is_executable(strtok(exec('\\' === \DIRECTORY_SEPARATOR ? 'where git' : 'command -v git'), PHP_EOL));
     }
 }
