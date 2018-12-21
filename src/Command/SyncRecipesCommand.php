@@ -114,7 +114,7 @@ class SyncRecipesCommand extends BaseCommand
         $operations = [];
         foreach ($packages as $package) {
             if (null === $pkg = $installedRepo->findPackage($package, '*')) {
-                $io->writeError(sprintf('<error>Package %s is not installed</>', $package));
+                $io->writeError(sprintf('<error>Package %s is not installed</error>', $package));
 
                 return 1;
             }
@@ -146,7 +146,7 @@ class SyncRecipesCommand extends BaseCommand
                 '',
                 '    Not all of the changes will be relevant to your app: you now',
                 '    need to selectively add or revert them using e.g. a combination',
-                '    of <comment>git add -p</> and <comment>git checkout -p</>',
+                '    of <comment>git add -p</comment> and <comment>git checkout -p</comment>',
                 '',
             ];
 
@@ -156,20 +156,20 @@ class SyncRecipesCommand extends BaseCommand
                 $output[] = '';
             }
 
-            $output[] = '  * Use <comment>git checkout .</> to revert the changes.';
+            $output[] = '  * Use <comment>git checkout .</comment> to revert the changes.';
             $output[] = '';
 
             if ($createEnvLocal) {
                 $output[] = '    To revert the changes made to .env files, run';
                 $output[]
-                          = sprintf('    <comment>git mv %s.env %1$s.env.dist</> && <comment>%s %1$s.env.local %1$s.env</>',
+                          = sprintf('    <comment>git mv %s.env %1$s.env.dist</comment> && <comment>%s %1$s.env.local %1$s.env</comment>',
                     '.' !== $this->rootDir ? $this->rootDir . '/' : '', $win ? 'rename' : 'mv');
                 $output[] = '';
             }
 
-            $output[] = '    New (untracked) files can be inspected using <comment>git clean --dry-run</>';
-            $output[] = '    Add the new files you want to keep using <comment>git add</>';
-            $output[] = '    then delete the rest using <comment>git clean --force</>';
+            $output[] = '    New (untracked) files can be inspected using <comment>git clean --dry-run</comment>';
+            $output[] = '    Add the new files you want to keep using <comment>git add</comment>';
+            $output[] = '    then delete the rest using <comment>git clean --force</comment>';
             $output[] = '';
 
             $io->write($output);

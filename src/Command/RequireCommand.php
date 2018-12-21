@@ -53,7 +53,7 @@ class RequireCommand extends BaseRequireCommand
             $result   = $unpacker->unpack($op);
             $io       = $this->getIO();
             foreach ($result->getUnpacked() as $pkg) {
-                $io->writeError(sprintf('<info>Unpacked %s dependencies</>', $pkg->getName()));
+                $io->writeError(sprintf('<info>Unpacked %s dependencies</info>', $pkg->getName()));
             }
 
             $input->setArgument('packages', $result->getRequired());

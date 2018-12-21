@@ -48,6 +48,21 @@ class UnpackCommand extends BaseCommand
             ]);
     }
 
+    /**
+     * Executes the current command.
+     * This method is not abstract because you can use this class
+     * as a concrete class. In this case, instead of defining the
+     * execute() method, you set the code to execute by passing
+     * a Closure to the setCode() method.
+     *
+     * @param InputInterface  $input
+     * @param OutputInterface $output
+     *
+     * @return int|null null or 0 if everything went fine, or an error code
+     * @throws \Http\Client\Exception
+     * @throws \Throwable
+     * @see setCode()
+     */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $composer      = $this->getComposer();
@@ -63,7 +78,7 @@ class UnpackCommand extends BaseCommand
         $op = new Operation(true, $input->getOption('sort-packages') || $composer->getConfig()->get('sort-packages'));
         foreach ($versionParser->parseNameVersionPairs($packages) as $package) {
             if (null === $pkg = $installedRepo->findPackage($package['name'], '*')) {
-                $io->writeError(sprintf('<error>Package %s is not installed</>', $package['name']));
+                $io->writeError(sprintf('<error>Package %s is not installed</error>', $package['name']));
 
                 return 1;
             }
@@ -85,13 +100,13 @@ class UnpackCommand extends BaseCommand
 
         // remove the packages themselves
         if (!$result->getUnpacked()) {
-            $io->writeError('<info>Nothing to unpack</>');
+            $io->writeError('<info>Nothing to unpack</info>');
 
-            return;
+            return null;
         }
 
         foreach ($result->getUnpacked() as $pkg) {
-            $io->writeError(sprintf('<info>Unpacked %s dependencies</>', $pkg->getName()));
+            $io->writeError(sprintf('<info>Unpacked %s dependencies</info>', $pkg->getName()));
         }
 
         foreach ($result->getUnpacked() as $package) {

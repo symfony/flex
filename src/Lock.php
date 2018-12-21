@@ -85,6 +85,9 @@ class Lock
         unset($this->lock[$name]);
     }
 
+    /**
+     * @throws \Exception
+     */
     public function write()
     {
         if ($this->lock) {
