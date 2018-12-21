@@ -8,18 +8,28 @@ use Composer\IO\IOInterface;
 use Composer\Json\JsonFile;
 use Composer\Util\RemoteFilesystem;
 use Harmony\Sdk;
+use Symfony\Component\Console\Style\SymfonyStyle;
 
 /**
  * Class Stack
  *
  * @package Harmony\Flex\Platform\Handler
  */
-class Stack extends AbstractHandler
+class Stack
 {
 
     /** Constants */
     const REPOSITORY = 'https://git.harmonycms.net';
     const ENDPOINT   = 'https://raw.githubusercontent.com/harmonycms/stacks/master';
+
+    /** @var Sdk\Client $client */
+    protected $client;
+
+    /** @var IOInterface|SymfonyStyle $io */
+    protected $io;
+
+    /** @var Composer $composer */
+    protected $composer;
 
     /** @var mixed $configJson */
     protected $configJson;
@@ -36,8 +46,10 @@ class Stack extends AbstractHandler
      */
     public function __construct(IOInterface $io, Sdk\Client $client, Composer $composer)
     {
-        parent::__construct($io, $client, $composer);
-        $this->rfs = Factory::createRemoteFilesystem($this->io, $this->composer->getConfig());
+        $this->client   = $client;
+        $this->io       = $io;
+        $this->composer = $composer;
+        $this->rfs      = Factory::createRemoteFilesystem($this->io, $this->composer->getConfig());
 
         $json             = new JsonFile(self::ENDPOINT . '/config.json', $this->rfs);
         $this->configJson = $json->read();

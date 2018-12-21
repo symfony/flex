@@ -17,8 +17,10 @@ use Composer\Repository\InstalledFilesystemRepository;
 use Harmony\Flex\Configurator;
 use Harmony\Flex\Platform\Project as PlatformProject;
 use Harmony\Flex\Platform\Settings;
+use Harmony\Flex\ScriptExecutor;
 use Harmony\Flex\Serializer\Normalizer\ProjectNormalizer;
 use Harmony\Sdk;
+use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Filesystem\Exception\IOException;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Finder\SplFileInfo;
@@ -31,8 +33,17 @@ use Symfony\Component\Serializer\Serializer;
  *
  * @package Harmony\Flex\Platform
  */
-class Project extends AbstractHandler
+class Project
 {
+
+    /** @var Sdk\Client $client */
+    protected $client;
+
+    /** @var IOInterface|SymfonyStyle $io */
+    protected $io;
+
+    /** @var Composer $composer */
+    protected $composer;
 
     /** @var Filesystem $fs */
     protected $fs;
@@ -61,23 +72,29 @@ class Project extends AbstractHandler
     /**
      * @var bool $activated
      */
-    protected static $activated = true;
+    protected $activated = true;
+
+    /** @var ScriptExecutor $executor */
+    protected $executor;
 
     /**
      * Project constructor.
      *
-     * @param IOInterface  $io
-     * @param Sdk\Client   $client
-     * @param Composer     $composer
-     * @param Configurator $configurator
-     * @param Config       $config
+     * @param IOInterface    $io
+     * @param Sdk\Client     $client
+     * @param Composer       $composer
+     * @param Configurator   $configurator
+     * @param Config         $config
+     * @param ScriptExecutor $executor
      *
      * @throws \Http\Client\Exception
      */
     public function __construct(IOInterface $io, Sdk\Client $client, Composer $composer, Configurator $configurator,
-                                Config $config)
+                                Config $config, ScriptExecutor $executor)
     {
-        parent::__construct($io, $client, $composer);
+        $this->client              = $client;
+        $this->io                  = $io;
+        $this->composer            = $composer;
         $this->fs                  = new Filesystem();
         $this->harmonyCacheFile    = $config->get('data-dir') . '/harmony.json';
         $this->settings            = new Settings();
@@ -85,6 +102,7 @@ class Project extends AbstractHandler
         $this->installationManager = $composer->getInstallationManager();
         $this->serializer          = new Serializer([new ProjectNormalizer()], [new JsonEncoder()]);
         $this->configurator        = $configurator;
+        $this->executor            = $executor;
 
         $this->getOrAskForId();
     }
@@ -108,25 +126,8 @@ class Project extends AbstractHandler
      */
     public function configDatabases(): void
     {
-        /**
-         * TODO:
-         * 1. Manage multiple databases.
-         * 2. Manage other schemes (MONDODB, COUCHDB)
-         */
         if ($this->projectData->hasDatabases()) {
             $this->configurator->get('env-project')->configure($this->projectData, []);
-
-            //            // Comment old `DATABASE_URL` variable
-            //            $comment = null;
-            //            if (true === is_array($oldDatabaseUrl = $this->envWriter->get('DATABASE_URL'))) {
-            //                $comment = $oldDatabaseUrl['key'] . '=' . $oldDatabaseUrl['value'];
-            //            }
-            //            // Update `DATABASE_URL` variable
-            //            $databaseUrl = $this->settings->buildDatabaseUrl($this->projectData['databases'][0]);
-            //            $this->envWriter->set('DATABASE_URL', $databaseUrl, $comment);
-            //            // Save data
-            //            // TODO: (Fix) Copy to `.env` even if database not present, otherwise it throw an exception
-            //            $this->envWriter->save()->save('.env');
         }
     }
 
@@ -142,8 +143,8 @@ class Project extends AbstractHandler
         if ($this->projectData->hasDatabases()) {
             // Execute init commands for database
             if ($this->io->confirm('Initialize database?', false)) {
-                $this->executeCommand('doctrine:database:create --if-not-exists');
-                $this->executeCommand('doctrine:schema:update --force');
+                $this->executor->execute('symfony-cmd', 'doctrine:database:create --if-not-exists');
+                $this->executor->execute('symfony-cmd', 'doctrine:schema:update --force');
             }
         }
     }
@@ -159,8 +160,9 @@ class Project extends AbstractHandler
         if ($this->projectData->hasDatabases()) {
             $config  = $this->stack->getConfigJson();
             $schemes = [];
-            foreach ($this->projectData['databases'] as $database) {
-                $schemes[$database['scheme']] = $database['scheme'];
+            /** @var PlatformProject\Database $database */
+            foreach ($this->projectData->getDatabases() as $database) {
+                $schemes[$database->getScheme()] = $database->getScheme();
             }
             foreach ($schemes as $scheme) {
                 if (isset($config['doctrine']['scheme'][$scheme])) {
@@ -184,8 +186,8 @@ class Project extends AbstractHandler
      */
     public function installThemes(): void
     {
-        if (isset($this->projectData['themes'])) {
-            foreach ($this->projectData['themes'] as $name => $value) {
+        if ($this->projectData->hasThemes()) {
+            foreach ($this->projectData->getThemes() as $name => $value) {
                 $package = $this->composer->getRepositoryManager()->findPackage($name, $value['version']);
                 if (null !== $package) {
                     $operation = new InstallOperation($package);
@@ -212,9 +214,17 @@ class Project extends AbstractHandler
     {
         if ($this->projectData->hasDatabases()) {
             if ($this->io->confirm('Create super-admin user?', false)) {
-                $this->executeCommand('fos:user:create --super-admin');
+                $this->executor->execute('symfony-cmd', 'fos:user:create --super-admin');
             }
         }
+    }
+
+    /**
+     * @return bool
+     */
+    public function isActivated(): bool
+    {
+        return $this->activated;
     }
 
     /**
@@ -243,7 +253,7 @@ class Project extends AbstractHandler
             $this->projectData = $this->serializer->deserialize(json_encode($projectData), PlatformProject::class,
                 'json');
 
-            return self::$activated = true;
+            return $this->activated = true;
         }
 
         askForId:
@@ -268,12 +278,12 @@ class Project extends AbstractHandler
                         $this->fs->dumpFile($this->harmonyCacheFile, json_encode([$projectId => []]));
                         $this->io->success('HarmonyCMS Project ID verified.');
 
-                        return self::$activated = true;
+                        return $this->activated = true;
                     }
                     catch (IOException $e) {
                         $this->io->error('Error saving project ID!');
 
-                        return self::$activated = false;
+                        return $this->activated = false;
                     }
                 } else {
                     $this->io->error(sprintf('[%d/3] Invalid HarmonyCMS Project ID provided, please try again', $step));
@@ -286,6 +296,6 @@ class Project extends AbstractHandler
             }
         }
 
-        return self::$activated = false;
+        return $this->activated = false;
     }
 }

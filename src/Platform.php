@@ -41,19 +41,25 @@ class Platform
      */
     protected $activated = true;
 
+    /** @var ScriptExecutor $executor */
+    protected $executor;
+
     /**
      * Platform constructor.
      *
-     * @param Composer     $composer
-     * @param IOInterface  $io
-     * @param Configurator $configurator
+     * @param Composer       $composer
+     * @param IOInterface    $io
+     * @param Configurator   $configurator
+     * @param ScriptExecutor $executor
      */
-    public function __construct(Composer $composer, IOInterface $io, Configurator $configurator)
+    public function __construct(Composer $composer, IOInterface $io, Configurator $configurator,
+                                ScriptExecutor $executor)
     {
         $this->composer     = $composer;
         $this->io           = $io;
         $this->client       = new Sdk\Client();
         $this->configurator = $configurator;
+        $this->executor     = $executor;
     }
 
     /**
@@ -126,7 +132,7 @@ class Platform
      */
     public function getProject(): Project
     {
-        return new Project($this->io, $this->client, $this->composer, $this->configurator,
-            $this->composer->getConfig());
+        return new Project($this->io, $this->client, $this->composer, $this->configurator, $this->composer->getConfig(),
+            $this->executor);
     }
 }

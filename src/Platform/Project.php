@@ -237,6 +237,14 @@ class Project
     }
 
     /**
+     * @return bool
+     */
+    public function hasExtensions(): bool
+    {
+        return !empty($this->extensions);
+    }
+
+    /**
      * @return array
      */
     public function getPackages(): array
@@ -254,6 +262,14 @@ class Project
         $this->packages = $packages;
 
         return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasPackages(): bool
+    {
+        return !empty($this->packages);
     }
 
     /**
@@ -277,6 +293,14 @@ class Project
     }
 
     /**
+     * @return bool
+     */
+    public function hasThemes(): bool
+    {
+        return !empty($this->themes);
+    }
+
+    /**
      * @return array
      */
     public function getTranslations(): array
@@ -294,5 +318,13 @@ class Project
         $this->translations = $translations;
 
         return $this;
+    }
+
+    /**
+     * @return bool
+     */
+    public function hasTranslations(): bool
+    {
+        return !empty($this->translations);
     }
 }

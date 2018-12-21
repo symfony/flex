@@ -47,6 +47,7 @@ use Composer\Script\ScriptEvents;
 use Composer\Util\RemoteFilesystem;
 use Harmony\Flex\Event\UpdateEvent;
 use Harmony\Flex\IO\ConsoleIO;
+use Harmony\Flex\Platform\Handler;
 use Harmony\Flex\Repository\HarmonyRepository;
 use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Input\InputInterface;
@@ -136,6 +137,12 @@ class Flex implements PluginInterface, EventSubscriberInterface
     /** @var string|null $command */
     private $command;
 
+    /** @var Handler\Project $project */
+    private $project;
+
+    /** @var ScriptExecutor $executor */
+    private $executor;
+
     /**
      * @param Composer    $composer
      * @param IOInterface $io
@@ -166,6 +173,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $this->io       = new ConsoleIO($io);
         $this->config   = $composer->getConfig();
         $this->options  = $this->initOptions();
+        $this->executor = new ScriptExecutor($this->composer, $this->io, $this->options);
 
         // Plugin initialized successfully
         if ($this->io->isDebug()) {
@@ -223,7 +231,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $composer->getInstallationManager()->addInstaller(new Installer($this->io, $composer));
 
         // Platform
-        $this->platform = new Platform($this->composer, $this->io, $this->configurator);
+        $this->platform = new Platform($this->composer, $this->io, $this->configurator, $this->executor);
         $this->platform->checkConnectivity();
 
         $backtrace = debug_backtrace();
@@ -535,38 +543,46 @@ class Flex implements PluginInterface, EventSubscriberInterface
      * @throws \Http\Client\Exception
      * @throws \Exception
      */
-    public function projectInitialize(Event $event)
+    public function harmonyProjectInitialize(Event $event)
     {
         if ('create-project' === $this->command) {
             $this->platform->authenticate();
-            $project = $this->platform->getProject($this->config);
-            // Ask for Harmony Project Id
-            if (true === $project->getId() && false === $this->lock->exists()) {
-                // Install themes
-//                $project->installThemes();
-
-                // Configure `DATABASE_URL` env variable from configured project information.
-                $project->configDatabases();
-
+            $this->project = $this->platform->getProject();
+            if (true === $this->project->isActivated()) {
                 // Install stacks.
-                $project->installStacks();
+                $this->project->installStacks();
 
-                // Ask user to initialize database.
-                $project->initDatabase();
-
-                // Ask create new admin user
-                $project->createUser();
-
-                // Clear useless/unused files/folders
-                $project->clear();
-
-                // Create lock file
-                $this->lock->write();
-
-                // Process successfully completed
-                $this->io->success('HarmonyCMS installation successful');
+                // Install themes
+                $this->project->installThemes();
             }
         }
+    }
+
+    /**
+     * @throws \Http\Client\Exception
+     * @throws \Exception
+     */
+    public function postHarmonyProjectInstall()
+    {
+        $this->platform->authenticate();
+
+        // Configure `DATABASE_URL` env variable from configured project information.
+        $this->project->configDatabases();
+
+        // Ask user to initialize database.
+        $this->project->initDatabase();
+
+        // Ask create new admin user
+        $this->project->createUser();
+
+        // Clear useless/unused files/folders
+        $this->project->clear();
+
+        // Create lock file
+        $this->lock->write();
+
+        // Process successfully completed
+        $this->io->success('HarmonyCMS installation successful');
     }
 
     public function enableThanksReminder()
@@ -588,9 +604,8 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $json         = new JsonFile(Factory::getComposerFile());
         $jsonContents = $json->read();
 
-        $executor = new ScriptExecutor($this->composer, $this->io, $this->options);
         foreach ($jsonContents['scripts']['auto-scripts'] as $cmd => $type) {
-            $executor->execute($type, $cmd);
+            $this->executor->execute($type, $cmd);
         }
 
         $this->io->write($this->postInstallOutput);
@@ -838,7 +853,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
     }
 
     /**
-     * @return |null
+     * @return string|null
      */
     private function getFlexId()
     {
@@ -966,9 +981,9 @@ class Flex implements PluginInterface, EventSubscriberInterface
             PackageEvents::POST_PACKAGE_INSTALL        => [['record'], ['installCustomTypes']],
             PackageEvents::POST_PACKAGE_UPDATE         => [['record'], ['enableThanksReminder']],
             PackageEvents::POST_PACKAGE_UNINSTALL      => 'record',
-            ScriptEvents::POST_CREATE_PROJECT_CMD      => 'createProject', // old name: configureProject
+            ScriptEvents::POST_CREATE_PROJECT_CMD      => [['createProject'], ['postHarmonyProjectInstall']],
             ScriptEvents::POST_INSTALL_CMD             => 'install',
-            ScriptEvents::POST_UPDATE_CMD              => [['projectInitialize'], ['update']],
+            ScriptEvents::POST_UPDATE_CMD              => [['harmonyProjectInitialize'], ['update']],
             PluginEvents::PRE_FILE_DOWNLOAD            => 'onFileDownload',
             'auto-scripts'                             => 'executeAutoScripts',
         ];
