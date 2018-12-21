@@ -40,6 +40,9 @@ class Database
     /** @var string $url */
     private $url;
 
+    /** @var array $env */
+    private $env = [];
+
     /**
      * @return string
      */
@@ -241,6 +244,26 @@ class Database
     }
 
     /**
+     * @return array
+     */
+    public function getEnv(): array
+    {
+        return $this->env;
+    }
+
+    /**
+     * @param array $env
+     *
+     * @return Database
+     */
+    public function setEnv(array $env): Database
+    {
+        $this->env = $env;
+
+        return $this;
+    }
+
+    /**
      * Build database url formatted like:
      * <type>://[user[:password]@][host][:port][/db][?param_1=value_1&param_2=value_2...]
      *
@@ -249,15 +272,14 @@ class Database
      */
     public function buildDatabaseUrl(): void
     {
-        $this->url
-            =  // scheme
-            ($this->getScheme() ? $this->getScheme() . "://" : '//') . // host
+        $this->url = ($this->getScheme() ? $this->getScheme() . "://" : '//') .// scheme
             ($this->getHost() ?
                 (($this->getUser() ? $this->getUser() . ($this->getPass() ? ":" . $this->getPass() : '') . '@' : '') .
-                    $this->getHost() . ($this->getPort() ? ":" . $this->getPort() : '')) : '') . // path
-            ($this->getPath() ? '/' . $this->getPath() : '') . // memory
-            (true === $this->isMemory() ? '/:memory:' : '') . // db_name
-            ($this->getName() ? '/' . $this->getName() : '') . // query
-            (!empty($this->getQuery()) ? '?' . http_build_query($this->getQuery(), '', '&') : '');
+                    $this->getHost() . ($this->getPort() ? ":" . $this->getPort() : '')) : '') . // host
+            ($this->getPath() ? '/' . $this->getPath() : '') . // path
+            (true === $this->isMemory() ? '/:memory:' : '') . // memory
+            (($this->getName() && 'mongodb' !== $this->getScheme()) ? '/' . $this->getName() : '') . // db_name
+            (!empty($this->getQuery()) ? '?' . http_build_query($this->getQuery(), '', '&') : ''); // query
     }
+
 }
