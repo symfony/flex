@@ -209,6 +209,14 @@ class Project
     }
 
     /**
+     * @return bool
+     */
+    public function hasDatabases(): bool
+    {
+        return !empty($this->databases);
+    }
+
+    /**
      * @return array
      */
     public function getExtensions(): array

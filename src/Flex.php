@@ -223,7 +223,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $composer->getInstallationManager()->addInstaller(new Installer($this->io, $composer));
 
         // Platform
-        $this->platform = new Platform($this->composer, $this->io);
+        $this->platform = new Platform($this->composer, $this->io, $this->configurator);
         $this->platform->checkConnectivity();
 
         $backtrace = debug_backtrace();
@@ -543,7 +543,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             // Ask for Harmony Project Id
             if (true === $project->getId() && false === $this->lock->exists()) {
                 // Install themes
-                $project->installThemes();
+//                $project->installThemes();
 
                 // Configure `DATABASE_URL` env variable from configured project information.
                 $project->configDatabases();

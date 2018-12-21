@@ -18,7 +18,7 @@ use Harmony\Flex\Recipe;
  */
 class MakefileConfigurator extends AbstractConfigurator
 {
-    public function configure(Recipe $recipe, $definitions, array $options = [])
+    public function configure($recipe, $definitions, array $options = [])
     {
         $this->write('Added Makefile entries');
 
@@ -49,7 +49,7 @@ EOF
         file_put_contents($this->options->get('root-dir').'/Makefile', "\n".ltrim($data, "\r\n"), FILE_APPEND);
     }
 
-    public function unconfigure(Recipe $recipe, $vars)
+    public function unconfigure($recipe, $vars)
     {
         if (!file_exists($makefile = $this->options->get('root-dir').'/Makefile')) {
             return;

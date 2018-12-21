@@ -18,13 +18,13 @@ use Harmony\Flex\Recipe;
  */
 class CopyFromRecipeConfigurator extends AbstractConfigurator
 {
-    public function configure(Recipe $recipe, $config, array $options = [])
+    public function configure($recipe, $config, array $options = [])
     {
         $this->write('Setting configuration and copying files');
         $this->copyFiles($config, $recipe->getFiles(), $this->options->get('root-dir'), $options['force'] ?? false);
     }
 
-    public function unconfigure(Recipe $recipe, $config)
+    public function unconfigure($recipe, $config)
     {
         $this->write('Removing configuration and files');
         $this->removeFiles($config, $recipe->getFiles(), $this->options->get('root-dir'));

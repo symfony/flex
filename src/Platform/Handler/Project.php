@@ -14,14 +14,17 @@ use Composer\IO\IOInterface;
 use Composer\Json\JsonFile;
 use Composer\Repository\CompositeRepository;
 use Composer\Repository\InstalledFilesystemRepository;
-use DotEnvWriter\DotEnvWriter;
+use Harmony\Flex\Configurator;
+use Harmony\Flex\Platform\Project as PlatformProject;
 use Harmony\Flex\Platform\Settings;
+use Harmony\Flex\Serializer\Normalizer\ProjectNormalizer;
 use Harmony\Sdk;
 use Symfony\Component\Filesystem\Exception\IOException;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Finder\SplFileInfo;
 use Symfony\Component\Serializer\Encoder\JsonDecode;
 use Symfony\Component\Serializer\Encoder\JsonEncoder;
+use Symfony\Component\Serializer\Serializer;
 
 /**
  * Class Project
@@ -37,11 +40,8 @@ class Project extends AbstractHandler
     /** @var string $harmonyCacheFile */
     protected $harmonyCacheFile;
 
-    /** @var array $projectData */
-    protected $projectData = [];
-
-    /** @var DotEnvWriter $envWriter */
-    protected $envWriter;
+    /** @var PlatformProject $projectData */
+    protected $projectData;
 
     /** @var Settings $settings */
     protected $settings;
@@ -52,23 +52,32 @@ class Project extends AbstractHandler
     /** @var InstallationManager $installationManager */
     protected $installationManager;
 
+    /** @var Serializer $serializer */
+    protected $serializer;
+
+    /** @var Configurator $configurator */
+    protected $configurator;
+
     /**
      * Project constructor.
      *
-     * @param IOInterface $io
-     * @param Sdk\Client  $client
-     * @param Composer    $composer
-     * @param Config      $config
+     * @param IOInterface  $io
+     * @param Sdk\Client   $client
+     * @param Composer     $composer
+     * @param Configurator $configurator
+     * @param Config       $config
      */
-    public function __construct(IOInterface $io, Sdk\Client $client, Composer $composer, Config $config)
+    public function __construct(IOInterface $io, Sdk\Client $client, Composer $composer, Configurator $configurator,
+                                Config $config)
     {
         parent::__construct($io, $client, $composer);
         $this->fs                  = new Filesystem();
         $this->harmonyCacheFile    = $config->get('data-dir') . '/harmony.json';
-        $this->envWriter           = new DotEnvWriter(getcwd() . '/.env.dist');
         $this->settings            = new Settings();
         $this->stack               = new Stack($io, $client, $composer);
         $this->installationManager = $composer->getInstallationManager();
+        $this->serializer          = new Serializer([new ProjectNormalizer()], [new JsonEncoder()]);
+        $this->configurator        = $configurator;
     }
 
     /**
@@ -90,10 +99,14 @@ class Project extends AbstractHandler
              * TODO:
              * Deserialize `project` to classes: Project, ProjectDatabase, Extensions, Packages, Themes, Translations
              */
-            if (null === $projectId || false === is_array($this->projectData = $projects->getProject($projectId)) ||
-                isset($this->projectData['code']) && 400 === $this->projectData['code']) {
+            $projectData = $projects->getProject($projectId);
+            if (null === $projectId || false === is_array($projectData) ||
+                isset($projectData['code']) && 400 === $projectData['code']) {
+
                 return $this->askForId();
             }
+            $this->projectData = $this->serializer->deserialize(json_encode($projectData), PlatformProject::class,
+                'json');
 
             return true;
         }
@@ -125,18 +138,20 @@ class Project extends AbstractHandler
          * 1. Manage multiple databases.
          * 2. Manage other schemes (MONDODB, COUCHDB)
          */
-        if (!empty($this->projectData['databases'])) {
-            // Comment old `DATABASE_URL` variable
-            $comment = null;
-            if (true === is_array($oldDatabaseUrl = $this->envWriter->get('DATABASE_URL'))) {
-                $comment = $oldDatabaseUrl['key'] . '=' . $oldDatabaseUrl['value'];
-            }
-            // Update `DATABASE_URL` variable
-            $databaseUrl = $this->settings->buildDatabaseUrl($this->projectData['databases'][0]);
-            $this->envWriter->set('DATABASE_URL', $databaseUrl, $comment);
-            // Save data
-            // TODO: (Fix) Copy to `.env` even if database not present, otherwise it throw an exception
-            $this->envWriter->save()->save('.env');
+        if ($this->projectData->hasDatabases()) {
+            $this->configurator->get('env-project')->configure($this->projectData, []);
+
+            //            // Comment old `DATABASE_URL` variable
+            //            $comment = null;
+            //            if (true === is_array($oldDatabaseUrl = $this->envWriter->get('DATABASE_URL'))) {
+            //                $comment = $oldDatabaseUrl['key'] . '=' . $oldDatabaseUrl['value'];
+            //            }
+            //            // Update `DATABASE_URL` variable
+            //            $databaseUrl = $this->settings->buildDatabaseUrl($this->projectData['databases'][0]);
+            //            $this->envWriter->set('DATABASE_URL', $databaseUrl, $comment);
+            //            // Save data
+            //            // TODO: (Fix) Copy to `.env` even if database not present, otherwise it throw an exception
+            //            $this->envWriter->save()->save('.env');
         }
     }
 
@@ -149,7 +164,7 @@ class Project extends AbstractHandler
      */
     public function initDatabase(): void
     {
-        if (!empty($this->projectData['databases'])) {
+        if ($this->projectData->hasDatabases()) {
             // Execute init commands for database
             if ($this->io->confirm('Initialize database?', false)) {
                 $this->executeCommand('doctrine:database:create --if-not-exists');
@@ -166,7 +181,7 @@ class Project extends AbstractHandler
      */
     public function installStacks(): void
     {
-        if (!empty($this->projectData['databases'])) {
+        if ($this->projectData->hasDatabases()) {
             $config  = $this->stack->getConfigJson();
             $schemes = [];
             foreach ($this->projectData['databases'] as $database) {
@@ -220,7 +235,7 @@ class Project extends AbstractHandler
      */
     public function createUser(): void
     {
-        if (isset($this->projectData['databases'])) {
+        if ($this->projectData->hasDatabases()) {
             if ($this->io->confirm('Create super-admin user?', false)) {
                 $this->executeCommand('fos:user:create --super-admin');
             }
@@ -246,12 +261,13 @@ class Project extends AbstractHandler
             $step    = 1;
             while ($retries --) {
                 /** @var Sdk\Receiver\Projects $projects */
-                $projects          = $this->client->getReceiver(Sdk\Client::RECEIVER_PROJECTS);
-                $this->projectData = $projects->getProject($projectId);
-                if (is_array($this->projectData) ||
-                    isset($this->projectData['code']) && 400 !== $this->projectData['code']) {
-                    // store value in `harmony.json` file
+                $projects    = $this->client->getReceiver(Sdk\Client::RECEIVER_PROJECTS);
+                $projectData = $projects->getProject($projectId);
+                if (is_array($projectData) || isset($projectData['code']) && 400 !== $projectData['code']) {
+                    $this->projectData = $this->serializer->deserialize(json_encode($projectData),
+                        PlatformProject::class, 'json');
                     try {
+                        // store value in `harmony.json` file
                         $this->fs->dumpFile($this->harmonyCacheFile, json_encode([$projectId => []]));
                         $this->io->success('HarmonyCMS Project ID verified.');
 

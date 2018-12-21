@@ -28,17 +28,22 @@ class Platform
     /** @var Sdk\Client $client */
     protected $client;
 
+    /** @var Configurator $configurator */
+    protected $configurator;
+
     /**
      * Platform constructor.
      *
-     * @param Composer    $composer
-     * @param IOInterface $io
+     * @param Composer     $composer
+     * @param IOInterface  $io
+     * @param Configurator $configurator
      */
-    public function __construct(Composer $composer, IOInterface $io)
+    public function __construct(Composer $composer, IOInterface $io, Configurator $configurator)
     {
-        $this->composer = $composer;
-        $this->io       = $io;
-        $this->client   = new Sdk\Client();
+        $this->composer     = $composer;
+        $this->io           = $io;
+        $this->client       = new Sdk\Client();
+        $this->configurator = $configurator;
     }
 
     /**
@@ -72,6 +77,6 @@ class Platform
      */
     public function getProject(Config $config): Project
     {
-        return new Project($this->io, $this->client, $this->composer, $config);
+        return new Project($this->io, $this->client, $this->composer, $this->configurator, $config);
     }
 }

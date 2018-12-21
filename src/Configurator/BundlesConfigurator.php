@@ -18,7 +18,7 @@ use Harmony\Flex\Recipe;
  */
 class BundlesConfigurator extends AbstractConfigurator
 {
-    public function configure(Recipe $recipe, $bundles, array $options = [])
+    public function configure($recipe, $bundles, array $options = [])
     {
         $this->write('Enabling the package as a Symfony bundle');
         $file = $this->getConfFile();
@@ -38,7 +38,7 @@ class BundlesConfigurator extends AbstractConfigurator
         $this->dump($file, $registered);
     }
 
-    public function unconfigure(Recipe $recipe, $bundles)
+    public function unconfigure($recipe, $bundles)
     {
         $this->write('Disabling the Symfony bundle');
         $file = $this->getConfFile();

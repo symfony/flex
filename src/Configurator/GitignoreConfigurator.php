@@ -18,7 +18,7 @@ use Harmony\Flex\Recipe;
  */
 class GitignoreConfigurator extends AbstractConfigurator
 {
-    public function configure(Recipe $recipe, $vars, array $options = [])
+    public function configure($recipe, $vars, array $options = [])
     {
         $this->write('Added entries to .gitignore');
 
@@ -35,7 +35,7 @@ class GitignoreConfigurator extends AbstractConfigurator
         file_put_contents($gitignore, "\n".ltrim($this->markData($recipe, $data), "\r\n"), FILE_APPEND);
     }
 
-    public function unconfigure(Recipe $recipe, $vars)
+    public function unconfigure($recipe, $vars)
     {
         $file = $this->options->get('root-dir').'/.gitignore';
         if (!file_exists($file)) {

@@ -19,14 +19,14 @@ use LogicException;
  */
 class CopyFromPackageConfigurator extends AbstractConfigurator
 {
-    public function configure(Recipe $recipe, $config, array $options = [])
+    public function configure($recipe, $config, array $options = [])
     {
         $this->write('Setting configuration and copying files');
         $packageDir = $this->composer->getInstallationManager()->getInstallPath($recipe->getPackage());
         $this->copyFiles($config, $packageDir, $this->options->get('root-dir'), $options['force'] ?? false);
     }
 
-    public function unconfigure(Recipe $recipe, $config)
+    public function unconfigure($recipe, $config)
     {
         $this->write('Removing configuration and files');
         $packageDir = $this->composer->getInstallationManager()->getInstallPath($recipe->getPackage());

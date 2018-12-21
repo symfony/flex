@@ -26,7 +26,7 @@ class EnvConfigurator extends AbstractConfigurator
      *
      * @throws \Exception
      */
-    public function configure(Recipe $recipe, $vars, array $options = [])
+    public function configure($recipe, $vars, array $options = [])
     {
         $this->write('Added environment variable defaults');
 
@@ -40,7 +40,7 @@ class EnvConfigurator extends AbstractConfigurator
      * @param Recipe $recipe
      * @param        $vars
      */
-    public function unconfigure(Recipe $recipe, $vars)
+    public function unconfigure($recipe, $vars)
     {
         $this->unconfigureEnvFiles($recipe, $vars);
         $this->unconfigurePhpUnit($recipe, $vars);

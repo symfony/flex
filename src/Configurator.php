@@ -68,6 +68,7 @@ class Configurator
             'makefile'          => Configurator\MakefileConfigurator::class,
             'composer-scripts'  => Configurator\ComposerScriptsConfigurator::class,
             'gitignore'         => Configurator\GitignoreConfigurator::class,
+            'env-project'       => Configurator\EnvProjectConfigurator::class
         ];
         $this->configDir         = dirname($composer->getConfig()->get('vendor-dir'));
         $this->defaultConfigFile = $this->configDir . '/config/packages/' . self::HARMONY_CONFIG_YAML;
@@ -119,7 +120,7 @@ class Configurator
      *
      * @return AbstractConfigurator
      */
-    private function get($key): AbstractConfigurator
+    public function get($key): AbstractConfigurator
     {
         if (!isset($this->configurators[$key])) {
             throw new \InvalidArgumentException(sprintf('Unknown configurator "%s".', $key));

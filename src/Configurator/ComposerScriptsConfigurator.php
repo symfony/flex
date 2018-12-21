@@ -21,7 +21,7 @@ use Harmony\Flex\Recipe;
  */
 class ComposerScriptsConfigurator extends AbstractConfigurator
 {
-    public function configure(Recipe $recipe, $scripts, array $options = [])
+    public function configure($recipe, $scripts, array $options = [])
     {
         $json = new JsonFile(Factory::getComposerFile());
 
@@ -35,7 +35,7 @@ class ComposerScriptsConfigurator extends AbstractConfigurator
         file_put_contents($json->getPath(), $manipulator->getContents());
     }
 
-    public function unconfigure(Recipe $recipe, $scripts)
+    public function unconfigure($recipe, $scripts)
     {
         $json = new JsonFile(Factory::getComposerFile());
 
