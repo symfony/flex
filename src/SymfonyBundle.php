@@ -32,7 +32,7 @@ class SymfonyBundle
 
     public function getClassNames(): array
     {
-        $all = 'uninstall' === $this->operation;
+        $uninstall = 'uninstall' === $this->operation;
         $classes = [];
         $autoload = $this->package->getAutoload();
         foreach (['psr-4' => true, 'psr-0' => false] as $psr => $isPsr4) {
@@ -46,17 +46,12 @@ class SymfonyBundle
                 }
                 foreach ($paths as $path) {
                     foreach ($this->extractClassNames($namespace) as $class) {
-                        if (!$all) {
-                            // we only check class existence on install as we do have the code available
-                            if (!$this->checkClassExists($class, $path, $isPsr4)) {
-                                continue;
-                            }
-
-                            return [$class];
+                        // we only check class existence on install as we do have the code available
+                        // in contrast to uninstall operation
+                        if (!$uninstall && !$this->checkClassExists($class, $path, $isPsr4)) {
+                            continue;
                         }
 
-                        // on uninstall, we gather all possible values (as we don't have access to the code anymore)
-                        // and try to remove them all from bundles.php
                         $classes[] = $class;
                     }
                 }
