@@ -49,67 +49,83 @@ class Project
     private $translations = [];
 
     /**
-     * @return mixed
+     * @return string
      */
-    public function getName()
+    public function getName(): string
     {
         return $this->name;
     }
 
     /**
-     * @param mixed $name
+     * @param string $name
+     *
+     * @return Project
      */
-    public function setName($name): void
+    public function setName(string $name): Project
     {
         $this->name = $name;
+
+        return $this;
     }
 
     /**
-     * @return mixed
+     * @return string|null
      */
-    public function getDescription()
+    public function getDescription(): ?string
     {
         return $this->description;
     }
 
     /**
-     * @param mixed $description
+     * @param string|null $description
+     *
+     * @return Project
      */
-    public function setDescription($description): void
+    public function setDescription(?string $description): Project
     {
         $this->description = $description;
+
+        return $this;
     }
 
     /**
-     * @return mixed
+     * @return string
      */
-    public function getSlug()
+    public function getSlug(): string
     {
         return $this->slug;
     }
 
     /**
-     * @param mixed $slug
+     * @param string $slug
+     *
+     * @return Project
      */
-    public function setSlug($slug): void
+    public function setSlug(string $slug): Project
     {
         $this->slug = $slug;
+
+        return $this;
     }
 
     /**
-     * @return mixed
+     * @return string|null
      */
-    public function getUrl()
+    public function getUrl(): ?string
     {
         return $this->url;
     }
 
     /**
-     * @param mixed $url
+     * @param string|null $url
+     *
+     * @return Project
      */
-    public function setUrl($url): void
+    public function setUrl(?string $url): Project
     {
         $this->url = $url;
+
+        return $this;
     }
 
     /**
@@ -122,46 +138,58 @@ class Project
 
     /**
      * @param bool $isSecured
+     *
+     * @return Project
      */
-    public function setIsSecured(bool $isSecured): void
+    public function setIsSecured(bool $isSecured): Project
     {
         $this->isSecured = $isSecured;
+
+        return $this;
     }
 
     /**
-     * @return mixed
+     * @return \DateTime|null
      */
-    public function getCreatedAt()
+    public function getCreatedAt(): ?\DateTime
     {
         return $this->createdAt;
     }
 
     /**
-     * @param mixed $createdAt
+     * @param \DateTime|null $createdAt
+     *
+     * @return Project
      */
-    public function setCreatedAt($createdAt): void
+    public function setCreatedAt(?\DateTime $createdAt): Project
     {
         $this->createdAt = $createdAt;
+
+        return $this;
     }
 
     /**
-     * @return mixed
+     * @return \DateTime|Null
      */
-    public function getUpdatedAt()
+    public function getUpdatedAt(): ?\DateTime
     {
         return $this->updatedAt;
     }
 
     /**
-     * @param mixed $updatedAt
+     * @param \DateTime|Null $updatedAt
+     *
+     * @return Project
      */
-    public function setUpdatedAt($updatedAt): void
+    public function setUpdatedAt(?\DateTime $updatedAt): Project
     {
         $this->updatedAt = $updatedAt;
+
+        return $this;
     }
 
     /**
-     * @return array
+     * @return Database[]
      */
     public function getDatabases(): array
     {
@@ -169,19 +197,15 @@ class Project
     }
 
     /**
-     * @param Database[] $databases
-     */
-    public function setDatabases(array $databases): void
-    {
-        $this->databases = $databases;
-    }
-
-    /**
      * @param Database $database
+     *
+     * @return Project
      */
-    public function addDatabase(Database $database): void
+    public function addDatabase(Database $database): Project
     {
         $this->databases[] = $database;
+
+        return $this;
     }
 
     /**
@@ -194,10 +218,14 @@ class Project
 
     /**
      * @param array $extensions
+     *
+     * @return Project
      */
-    public function setExtensions(array $extensions): void
+    public function setExtensions(array $extensions): Project
     {
         $this->extensions = $extensions;
+
+        return $this;
     }
 
     /**
@@ -210,10 +238,14 @@ class Project
 
     /**
      * @param array $packages
+     *
+     * @return Project
      */
-    public function setPackages(array $packages): void
+    public function setPackages(array $packages): Project
     {
         $this->packages = $packages;
+
+        return $this;
     }
 
     /**
@@ -226,10 +258,14 @@ class Project
 
     /**
      * @param array $themes
+     *
+     * @return Project
      */
-    public function setThemes(array $themes): void
+    public function setThemes(array $themes): Project
     {
         $this->themes = $themes;
+
+        return $this;
     }
 
     /**
@@ -242,9 +278,13 @@ class Project
 
     /**
      * @param array $translations
+     *
+     * @return Project
      */
-    public function setTranslations(array $translations): void
+    public function setTranslations(array $translations): Project
     {
         $this->translations = $translations;
+
+        return $this;
     }
 }

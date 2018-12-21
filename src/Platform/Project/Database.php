@@ -50,10 +50,14 @@ class Database
 
     /**
      * @param string $scheme
+     *
+     * @return Database
      */
-    public function setScheme(string $scheme): void
+    public function setScheme(string $scheme): Database
     {
         $this->scheme = $scheme;
+
+        return $this;
     }
 
     /**
@@ -66,10 +70,14 @@ class Database
 
     /**
      * @param string|null $host
+     *
+     * @return Database
      */
-    public function setHost(?string $host): void
+    public function setHost(?string $host): Database
     {
         $this->host = $host;
+
+        return $this;
     }
 
     /**
@@ -82,10 +90,14 @@ class Database
 
     /**
      * @param string|null $name
+     *
+     * @return Database
      */
-    public function setName(?string $name): void
+    public function setName(?string $name): Database
     {
         $this->name = $name;
+
+        return $this;
     }
 
     /**
@@ -98,10 +110,14 @@ class Database
 
     /**
      * @param string|null $user
+     *
+     * @return Database
      */
-    public function setUser(?string $user): void
+    public function setUser(?string $user): Database
     {
         $this->user = $user;
+
+        return $this;
     }
 
     /**
@@ -114,10 +130,14 @@ class Database
 
     /**
      * @param string|null $pass
+     *
+     * @return Database
      */
-    public function setPass(?string $pass): void
+    public function setPass(?string $pass): Database
     {
         $this->pass = $pass;
+
+        return $this;
     }
 
     /**
@@ -130,10 +150,14 @@ class Database
 
     /**
      * @param int|null $port
+     *
+     * @return Database
      */
-    public function setPort(?int $port): void
+    public function setPort(?int $port): Database
     {
         $this->port = $port;
+
+        return $this;
     }
 
     /**
@@ -146,10 +170,14 @@ class Database
 
     /**
      * @param string|null $path
+     *
+     * @return Database
      */
-    public function setPath(?string $path): void
+    public function setPath(?string $path): Database
     {
         $this->path = $path;
+
+        return $this;
     }
 
     /**
@@ -162,10 +190,14 @@ class Database
 
     /**
      * @param bool $memory
+     *
+     * @return Database
      */
-    public function setMemory(bool $memory): void
+    public function setMemory(bool $memory): Database
     {
         $this->memory = $memory;
+
+        return $this;
     }
 
     /**
@@ -178,10 +210,34 @@ class Database
 
     /**
      * @param array $query
+     *
+     * @return Database
      */
-    public function setQuery(array $query): void
+    public function setQuery(array $query): Database
     {
         $this->query = $query;
+
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getUrl(): string
+    {
+        return $this->url;
+    }
+
+    /**
+     * @param string $url
+     *
+     * @return Database
+     */
+    public function setUrl(string $url): Database
+    {
+        $this->url = $url;
+
+        return $this;
     }
 
     /**
@@ -189,11 +245,12 @@ class Database
      * <type>://[user[:password]@][host][:port][/db][?param_1=value_1&param_2=value_2...]
      *
      * @example mysql://user:password@127.0.0.1/db_name/?unix_socket=/path/to/socket
-     * @return string
+     * @return void
      */
-    private function buildDatabaseUrl(): string
+    public function buildDatabaseUrl(): void
     {
-        return // scheme
+        $this->url
+            =  // scheme
             ($this->getScheme() ? $this->getScheme() . "://" : '//') . // host
             ($this->getHost() ?
                 (($this->getUser() ? $this->getUser() . ($this->getPass() ? ":" . $this->getPass() : '') . '@' : '') .
