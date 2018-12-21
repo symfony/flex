@@ -1,8 +1,6 @@
 <?php
 
-namespace Harmony\Flex\Platform;
-
-use Harmony\Flex\Platform\Project\Database;
+namespace Harmony\Flex\Platform\Model;
 
 /**
  * Class Project
@@ -33,7 +31,7 @@ class Project
     /** @var \DateTime|Null $updatedAt */
     private $updatedAt;
 
-    /** @var Database[] $databases */
+    /** @var ProjectDatabase[] $databases */
     private $databases = [];
 
     /** @var array $extensions */
@@ -189,7 +187,7 @@ class Project
     }
 
     /**
-     * @return Database[]
+     * @return ProjectDatabase[]
      */
     public function getDatabases(): array
     {
@@ -197,11 +195,11 @@ class Project
     }
 
     /**
-     * @param Database $database
+     * @param ProjectDatabase $database
      *
      * @return Project
      */
-    public function addDatabase(Database $database): Project
+    public function addDatabase(ProjectDatabase $database): Project
     {
         $this->databases[] = $database;
 

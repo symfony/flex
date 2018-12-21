@@ -3,7 +3,7 @@
 namespace Harmony\Flex\Configurator;
 
 use DotEnvWriter\DotEnvWriter;
-use Harmony\Flex\Platform\Project;
+use Harmony\Flex\Platform\Model\Project;
 
 /**
  * Class EnvProjectConfigurator
@@ -49,7 +49,7 @@ class EnvProjectConfigurator extends AbstractConfigurator
             }
             $envWriter = new DotEnvWriter($env);
 
-            /** @var Project\Database $database */
+            /** @var Project\ProjectDatabase $database */
             foreach ($project->getDatabases() as $database) {
                 foreach ($database->getEnv() as $key => $value) {
                     // Comment old `DATABASE_URL` variable

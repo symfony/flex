@@ -2,7 +2,8 @@
 
 namespace Harmony\Flex\Serializer\Normalizer;
 
-use Harmony\Flex\Platform\Project;
+use Harmony\Flex\Platform\Model\Project;
+use Harmony\Flex\Platform\Model\ProjectDatabase;
 use Symfony\Component\Serializer\Exception\BadMethodCallException;
 use Symfony\Component\Serializer\Exception\ExtraAttributesException;
 use Symfony\Component\Serializer\Exception\InvalidArgumentException;
@@ -67,7 +68,7 @@ class ProjectNormalizer implements DenormalizerInterface, DenormalizerAwareInter
         }
         if (isset($data['databases']) && is_array($data['databases'])) {
             foreach ($data['databases'] as $db) {
-                $database = new Project\Database();
+                $database = new ProjectDatabase();
                 $database->setScheme($db['scheme']);
                 if (isset($db['host'])) {
                     $database->setHost($db['host']);

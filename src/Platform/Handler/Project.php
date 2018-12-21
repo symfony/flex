@@ -15,8 +15,8 @@ use Composer\Json\JsonFile;
 use Composer\Repository\CompositeRepository;
 use Composer\Repository\InstalledFilesystemRepository;
 use Harmony\Flex\Configurator;
-use Harmony\Flex\Platform\Project as PlatformProject;
-use Harmony\Flex\Platform\Settings;
+use Harmony\Flex\Platform\Model\Project as ProjectModel;
+use Harmony\Flex\Platform\Model\ProjectDatabase;
 use Harmony\Flex\ScriptExecutor;
 use Harmony\Flex\Serializer\Normalizer\ProjectNormalizer;
 use Harmony\Sdk;
@@ -51,11 +51,8 @@ class Project
     /** @var string $harmonyCacheFile */
     protected $harmonyCacheFile;
 
-    /** @var PlatformProject $projectData */
+    /** @var ProjectModel $projectData */
     protected $projectData;
-
-    /** @var Settings $settings */
-    protected $settings;
 
     /** @var Stack $stack */
     protected $stack;
@@ -97,7 +94,6 @@ class Project
         $this->composer            = $composer;
         $this->fs                  = new Filesystem();
         $this->harmonyCacheFile    = $config->get('data-dir') . '/harmony.json';
-        $this->settings            = new Settings();
         $this->stack               = new Stack($io, $client, $composer);
         $this->installationManager = $composer->getInstallationManager();
         $this->serializer          = new Serializer([new ProjectNormalizer()], [new JsonEncoder()]);
@@ -160,7 +156,7 @@ class Project
         if ($this->projectData->hasDatabases()) {
             $config  = $this->stack->getConfigJson();
             $schemes = [];
-            /** @var PlatformProject\Database $database */
+            /** @var ProjectDatabase $database */
             foreach ($this->projectData->getDatabases() as $database) {
                 $schemes[$database->getScheme()] = $database->getScheme();
             }
@@ -250,8 +246,7 @@ class Project
 
                 goto askForId;
             }
-            $this->projectData = $this->serializer->deserialize(json_encode($projectData), PlatformProject::class,
-                'json');
+            $this->projectData = $this->serializer->deserialize(json_encode($projectData), ProjectModel::class, 'json');
 
             return $this->activated = true;
         }
@@ -271,8 +266,8 @@ class Project
                 $projects    = $this->client->getReceiver(Sdk\Client::RECEIVER_PROJECTS);
                 $projectData = $projects->getProject($projectId);
                 if (is_array($projectData) || isset($projectData['code']) && 400 !== $projectData['code']) {
-                    $this->projectData = $this->serializer->deserialize(json_encode($projectData),
-                        PlatformProject::class, 'json');
+                    $this->projectData = $this->serializer->deserialize(json_encode($projectData), ProjectModel::class,
+                        'json');
                     try {
                         // store value in `harmony.json` file
                         $this->fs->dumpFile($this->harmonyCacheFile, json_encode([$projectId => []]));
