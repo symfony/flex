@@ -59,6 +59,11 @@ class Project extends AbstractHandler
     protected $configurator;
 
     /**
+     * @var bool $activated
+     */
+    protected static $activated = true;
+
+    /**
      * Project constructor.
      *
      * @param IOInterface  $io
@@ -66,6 +71,8 @@ class Project extends AbstractHandler
      * @param Composer     $composer
      * @param Configurator $configurator
      * @param Config       $config
+     *
+     * @throws \Http\Client\Exception
      */
     public function __construct(IOInterface $io, Sdk\Client $client, Composer $composer, Configurator $configurator,
                                 Config $config)
@@ -78,40 +85,8 @@ class Project extends AbstractHandler
         $this->installationManager = $composer->getInstallationManager();
         $this->serializer          = new Serializer([new ProjectNormalizer()], [new JsonEncoder()]);
         $this->configurator        = $configurator;
-    }
 
-    /**
-     * Returns project ID.
-     *
-     * @return bool
-     * @throws \Exception
-     * @throws \Http\Client\Exception
-     */
-    public function getId(): bool
-    {
-        /** @var Sdk\Receiver\Projects $projects */
-        $projects = $this->client->getReceiver(Sdk\Client::RECEIVER_PROJECTS);
-        if (true === $this->fs->exists($this->harmonyCacheFile)) {
-            $file      = new SplFileInfo($this->harmonyCacheFile, '', '');
-            $data      = (new JsonDecode(true))->decode($file->getContents(), JsonEncoder::FORMAT);
-            $projectId = key((array)$data);
-            /**
-             * TODO:
-             * Deserialize `project` to classes: Project, ProjectDatabase, Extensions, Packages, Themes, Translations
-             */
-            $projectData = $projects->getProject($projectId);
-            if (null === $projectId || false === is_array($projectData) ||
-                isset($projectData['code']) && 400 === $projectData['code']) {
-
-                return $this->askForId();
-            }
-            $this->projectData = $this->serializer->deserialize(json_encode($projectData), PlatformProject::class,
-                'json');
-
-            return true;
-        }
-
-        return $this->askForId();
+        $this->getOrAskForId();
     }
 
     /**
@@ -249,8 +224,30 @@ class Project extends AbstractHandler
      * @throws \Http\Client\Exception
      * @throws \Exception
      */
-    protected function askForId(): bool
+    protected function getOrAskForId(): bool
     {
+        if (true === $this->fs->exists($this->harmonyCacheFile)) {
+            $file      = new SplFileInfo($this->harmonyCacheFile, '', '');
+            $data      = (new JsonDecode(true))->decode($file->getContents(), JsonEncoder::FORMAT);
+            $projectId = key((array)$data);
+
+            /** @var Sdk\Receiver\Projects $projects */
+            $projects    = $this->client->getReceiver(Sdk\Client::RECEIVER_PROJECTS);
+            $projectData = $projects->getProject($projectId);
+
+            if (null === $projectId || false === is_array($projectData) ||
+                isset($projectData['code']) && 400 === $projectData['code']) {
+
+                goto askForId;
+            }
+            $this->projectData = $this->serializer->deserialize(json_encode($projectData), PlatformProject::class,
+                'json');
+
+            return self::$activated = true;
+        }
+
+        askForId:
+
         $projectId
             = $this->io->ask("Please provide an HarmonyCMS Project ID or press any key to complete installation: ",
             null, function ($value) {
@@ -271,12 +268,12 @@ class Project extends AbstractHandler
                         $this->fs->dumpFile($this->harmonyCacheFile, json_encode([$projectId => []]));
                         $this->io->success('HarmonyCMS Project ID verified.');
 
-                        return true;
+                        return self::$activated = true;
                     }
                     catch (IOException $e) {
                         $this->io->error('Error saving project ID!');
 
-                        return false;
+                        return self::$activated = false;
                     }
                 } else {
                     $this->io->error(sprintf('[%d/3] Invalid HarmonyCMS Project ID provided, please try again', $step));
@@ -289,6 +286,6 @@ class Project extends AbstractHandler
             }
         }
 
-        return false;
+        return self::$activated = false;
     }
 }
