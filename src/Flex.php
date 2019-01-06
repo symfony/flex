@@ -587,6 +587,18 @@ class Flex implements PluginInterface, EventSubscriberInterface
             $name = $package->getNames()[0];
             $job = $operation->getJobType();
 
+            if (!empty($manifests[$name]['manifest']['conflict']) && !$operation instanceof UninstallOperation) {
+                $lockedRepository = $this->composer->getLocker()->getLockedRepository();
+
+                foreach ($manifests[$name]['manifest']['conflict'] as $conflictingPackage => $constraint) {
+                    if ($lockedRepository->findPackage($conflictingPackage, $constraint)) {
+                        $this->io->writeError(sprintf('  - Skipping recipe for %s: it conflicts with %s %s.', $name, $conflictingPackage, $constraint), true, IOInterface::VERBOSE);
+
+                        continue 2;
+                    }
+                }
+            }
+
             if ($operation instanceof InstallOperation && isset($locks[$name])) {
                 $ref = $this->lock->get($name)['recipe']['ref'] ?? null;
                 if ($ref && ($locks[$name]['recipe']['ref'] ?? null) === $ref) {
