@@ -69,4 +69,25 @@ abstract class AbstractConfigurator
     {
         return "\n".sprintf('        <!-- ###+ %s ### -->%s%s%s        <!-- ###- %s ### -->%s', $recipe->getName(), "\n", rtrim($data, "\r\n"), "\n", $recipe->getName(), "\n");
     }
+
+    /**
+     * @return bool True if section was found and replaced
+     */
+    protected function updateData(string $file, string $data): bool
+    {
+        $pieces = explode("\n", trim($data));
+        $startMark = trim(reset($pieces));
+        $endMark = trim(end($pieces));
+        $contents = file_get_contents($file);
+
+        if (false === strpos($contents, $startMark) || false === strpos($contents, $endMark)) {
+            return false;
+        }
+
+        $pattern = '/'.preg_quote($startMark, '/').'.*?'.preg_quote($endMark, '/').'/s';
+        $newContents = preg_replace($pattern, trim($data), $contents);
+        file_put_contents($file, $newContents);
+
+        return true;
+    }
 }

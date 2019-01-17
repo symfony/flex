@@ -78,4 +78,57 @@ EOF;
 
         @unlink($gitignore);
     }
+
+    public function testConfigureForce()
+    {
+        $configurator = new GitignoreConfigurator(
+            $this->getMockBuilder(Composer::class)->getMock(),
+            $this->getMockBuilder(IOInterface::class)->getMock(),
+            new Options(['public-dir' => 'public', 'root-dir' => FLEX_TEST_DIR])
+        );
+
+        $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
+        $recipe->expects($this->any())->method('getName')->will($this->returnValue('FooBundle'));
+
+        $gitignore = FLEX_TEST_DIR.'/.gitignore';
+        @unlink($gitignore);
+        touch($gitignore);
+        file_put_contents($gitignore, "# preexisting content\n");
+
+        $contentsConfigure = <<<EOF
+# preexisting content
+
+###> FooBundle ###
+.env
+###< FooBundle ###
+
+# new content
+EOF;
+        $contentsForce = <<<EOF
+# preexisting content
+
+###> FooBundle ###
+.env
+.env.test
+###< FooBundle ###
+
+# new content
+EOF;
+
+        $configurator->configure($recipe, [
+            '.env',
+        ]);
+        file_put_contents($gitignore, "\n# new content", \FILE_APPEND);
+        $this->assertStringEqualsFile($gitignore, $contentsConfigure);
+
+        $configurator->configure($recipe, [
+            '.env',
+            '.env.test',
+        ], [
+            'force' => true,
+        ]);
+        $this->assertStringEqualsFile($gitignore, $contentsForce);
+
+        @unlink($gitignore);
+    }
 }

@@ -23,11 +23,7 @@ class GitignoreConfigurator extends AbstractConfigurator
         $this->write('Added entries to .gitignore');
 
         $gitignore = $this->options->get('root-dir').'/.gitignore';
-        if ($this->isFileMarked($recipe, $gitignore)) {
-            if ($options['force'] ?? false) {
-                $this->doUnconfigure($recipe, true);
-            }
-
+        if (empty($options['force']) && $this->isFileMarked($recipe, $gitignore)) {
             return;
         }
 
@@ -36,15 +32,14 @@ class GitignoreConfigurator extends AbstractConfigurator
             $value = $this->options->expandTargetDir($value);
             $data .= "$value\n";
         }
-        file_put_contents($gitignore, "\n".ltrim($this->markData($recipe, $data), "\r\n"), FILE_APPEND);
+        $data = "\n".ltrim($this->markData($recipe, $data), "\r\n");
+
+        if (!$this->updateData($gitignore, $data)) {
+            file_put_contents($gitignore, $data, FILE_APPEND);
+        }
     }
 
     public function unconfigure(Recipe $recipe, $vars)
-    {
-        $this->doUnconfigure($recipe);
-    }
-
-    private function doUnconfigure(Recipe $recipe, bool $silent = false)
     {
         $file = $this->options->get('root-dir').'/.gitignore';
         if (!file_exists($file)) {
@@ -56,9 +51,7 @@ class GitignoreConfigurator extends AbstractConfigurator
             return;
         }
 
-        if (!$silent) {
-            $this->write('Removed entries in .gitignore');
-        }
+        $this->write('Removed entries in .gitignore');
         file_put_contents($file, ltrim($contents, "\r\n"));
     }
 }
