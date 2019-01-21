@@ -23,12 +23,13 @@ class MakefileConfigurator extends AbstractConfigurator
         $this->write('Added Makefile entries');
 
         $makefile = $this->options->get('root-dir').'/Makefile';
-        if ($this->isFileMarked($recipe, $makefile)) {
+        if (empty($options['force']) && $this->isFileMarked($recipe, $makefile)) {
             return;
         }
 
         $data = $this->options->expandTargetDir(implode("\n", $definitions));
         $data = $this->markData($recipe, $data);
+        $data = "\n".ltrim($data, "\r\n");
 
         if (!file_exists($makefile)) {
             file_put_contents(
@@ -46,7 +47,10 @@ help:
 EOF
             );
         }
-        file_put_contents($this->options->get('root-dir').'/Makefile', "\n".ltrim($data, "\r\n"), FILE_APPEND);
+
+        if (!$this->updateData($makefile, $data)) {
+            file_put_contents($makefile, $data, FILE_APPEND);
+        }
     }
 
     public function unconfigure(Recipe $recipe, $vars)

@@ -22,9 +22,9 @@ class EnvConfigurator extends AbstractConfigurator
     {
         $this->write('Added environment variable defaults');
 
-        $this->configureEnvDist($recipe, $vars);
+        $this->configureEnvDist($recipe, $vars, $options['force'] ?? false);
         if (!file_exists($this->options->get('root-dir').'/.env.test')) {
-            $this->configurePhpUnit($recipe, $vars);
+            $this->configurePhpUnit($recipe, $vars, $options['force'] ?? false);
         }
     }
 
@@ -34,7 +34,7 @@ class EnvConfigurator extends AbstractConfigurator
         $this->unconfigurePhpUnit($recipe, $vars);
     }
 
-    private function configureEnvDist(Recipe $recipe, $vars)
+    private function configureEnvDist(Recipe $recipe, $vars, bool $update)
     {
         foreach (['.env.dist', '.env'] as $file) {
             $env = $this->options->get('root-dir').'/'.$file;
@@ -42,7 +42,7 @@ class EnvConfigurator extends AbstractConfigurator
                 continue;
             }
 
-            if ($this->isFileMarked($recipe, $env)) {
+            if (!$update && $this->isFileMarked($recipe, $env)) {
                 continue;
             }
 
@@ -62,11 +62,14 @@ class EnvConfigurator extends AbstractConfigurator
                 $data .= "$key=$value\n";
             }
             $data = $this->markData($recipe, $data);
-            file_put_contents($env, $data, FILE_APPEND);
+
+            if (!$this->updateData($env, $data)) {
+                file_put_contents($env, $data, FILE_APPEND);
+            }
         }
     }
 
-    private function configurePhpUnit(Recipe $recipe, $vars)
+    private function configurePhpUnit(Recipe $recipe, $vars, bool $update)
     {
         foreach (['phpunit.xml.dist', 'phpunit.xml'] as $file) {
             $phpunit = $this->options->get('root-dir').'/'.$file;
@@ -74,7 +77,7 @@ class EnvConfigurator extends AbstractConfigurator
                 continue;
             }
 
-            if ($this->isFileXmlMarked($recipe, $phpunit)) {
+            if (!$update && $this->isFileXmlMarked($recipe, $phpunit)) {
                 continue;
             }
 
@@ -103,7 +106,10 @@ class EnvConfigurator extends AbstractConfigurator
                 }
             }
             $data = $this->markXmlData($recipe, $data);
-            file_put_contents($phpunit, preg_replace('{^(\s+</php>)}m', $data.'$1', file_get_contents($phpunit)));
+
+            if (!$this->updateData($phpunit, $data)) {
+                file_put_contents($phpunit, preg_replace('{^(\s+</php>)}m', $data.'$1', file_get_contents($phpunit)));
+            }
         }
     }
 
