@@ -233,6 +233,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             $app->add(new Command\UnpackCommand($resolver));
             $app->add(new Command\SyncRecipesCommand($this, $this->options->get('root-dir')));
             $app->add(new Command\GenerateIdCommand($this));
+            $app->add(new Command\DumpEnvCommand($this->config, $this->options));
 
             break;
         }
