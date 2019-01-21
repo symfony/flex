@@ -1,0 +1,20 @@
+---------------------------------------------------------------------------
+
+by renanbr at 2019-01-17T15:47:48Z
+
+Updates:
+
+- `GitignoreConfigurator`, `MakefileConfigurator`, `EnvConfigurator` are impacted
+- They preserve the order of sections
+- `AbstractConfigurator` has a new method called `updateData(string $file, string $data): bool` ~~reconfigure(string $file, string $data)~~
+    - **update**: this method tries to replace existing content, returns true if section is found and replaced
+    - markers are guessed based on the first and last non-empty lines of `$data` given
+    - it is the configurator's responsability to build the contents
+
+---------------------------------------------------------------------------
+
+by renanbr at 2019-01-18T14:08:09Z
+
+tweaks applied, squashed
+
+it's ready ready to be reviewed
