@@ -1,0 +1,27 @@
+---------------------------------------------------------------------------
+
+by lyrixx at 2019-01-02T16:15:01Z
+
+Why is this a composer command? IMHO it should be a Symfony command (`bin/console env:dump prod`)
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2019-01-02T16:17:06Z
+
+At least because we want to ship this for all Symfony versions without waiting for 4.3.
+
+---------------------------------------------------------------------------
+
+by lyrixx at 2019-01-02T16:38:25Z
+
+This seems a hack to me. If we go in that sens, we will move many code here.
+I understand the reason, but I don't like the implementation :/
+What about a `symfony/backport` ?
+
+Of course I'm not strongly against this hack, but if we could find a better alternative, this will be much better
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2019-01-02T16:45:43Z
+
+Please, not another package to maintain. If you want, you can provide a command to 4.3 and then we could deprecate this one. Personally, I don't think it's worth the effort. `dump-autoload` is a Composer command, so would be `dump-env`. Both are run at the same stage, looks consistent to me.
