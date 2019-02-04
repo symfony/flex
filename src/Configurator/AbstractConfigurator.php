@@ -75,6 +75,10 @@ abstract class AbstractConfigurator
      */
     protected function updateData(string $file, string $data): bool
     {
+        if (!file_exists($file)) {
+            return false;
+        }
+
         $pieces = explode("\n", trim($data));
         $startMark = trim(reset($pieces));
         $endMark = trim(end($pieces));
