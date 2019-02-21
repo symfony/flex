@@ -11,6 +11,7 @@
 
 namespace Symfony\Flex\Configurator;
 
+use Symfony\Flex\Lock;
 use Symfony\Flex\Recipe;
 
 /**
@@ -18,13 +19,13 @@ use Symfony\Flex\Recipe;
  */
 class ContainerConfigurator extends AbstractConfigurator
 {
-    public function configure(Recipe $recipe, $parameters, array $options = [])
+    public function configure(Recipe $recipe, $parameters, Lock $lock, array $options = [])
     {
         $this->write('Setting parameters');
         $this->addParameters($parameters);
     }
 
-    public function unconfigure(Recipe $recipe, $parameters)
+    public function unconfigure(Recipe $recipe, $parameters, Lock $lock)
     {
         $this->write('Unsetting parameters');
         $target = $this->options->get('root-dir').'/'.$this->options->expandTargetDir('%CONFIG_DIR%/services.yaml');

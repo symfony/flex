@@ -368,7 +368,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             switch ($recipe->getJob()) {
                 case 'install':
                     $this->io->writeError(sprintf('  - Configuring %s', $this->formatOrigin($recipe->getOrigin())));
-                    $this->configurator->install($recipe, [
+                    $this->configurator->install($recipe, $this->lock, [
                         'force' => $event instanceof UpdateEvent && $event->force(),
                     ]);
                     $manifest = $recipe->getManifest();
@@ -383,7 +383,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
                     break;
                 case 'uninstall':
                     $this->io->writeError(sprintf('  - Unconfiguring %s', $this->formatOrigin($recipe->getOrigin())));
-                    $this->configurator->unconfigure($recipe);
+                    $this->configurator->unconfigure($recipe, $this->lock);
                     break;
             }
         }
@@ -605,7 +605,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
                 if ($ref && ($locks[$name]['recipe']['ref'] ?? null) === $ref) {
                     continue;
                 }
-                $this->lock->add($name, $locks[$name]);
+                $this->lock->set($name, $locks[$name]);
             } elseif ($operation instanceof UninstallOperation) {
                 if (!$this->lock->has($name)) {
                     continue;

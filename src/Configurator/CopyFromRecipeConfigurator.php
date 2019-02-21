@@ -11,6 +11,7 @@
 
 namespace Symfony\Flex\Configurator;
 
+use Symfony\Flex\Lock;
 use Symfony\Flex\Recipe;
 
 /**
@@ -18,44 +19,83 @@ use Symfony\Flex\Recipe;
  */
 class CopyFromRecipeConfigurator extends AbstractConfigurator
 {
-    public function configure(Recipe $recipe, $config, array $options = [])
+    public function configure(Recipe $recipe, $config, Lock $lock, array $options = [])
     {
         $this->write('Setting configuration and copying files');
-        $this->copyFiles($config, $recipe->getFiles(), $this->options->get('root-dir'), $options['force'] ?? false);
+        $options = array_merge($this->options->toArray(), $options);
+
+        $lock->add($recipe->getName(), ['files' => $this->copyFiles($config, $recipe->getFiles(), $options)]);
     }
 
-    public function unconfigure(Recipe $recipe, $config)
+    public function unconfigure(Recipe $recipe, $config, Lock $lock)
     {
         $this->write('Removing configuration and files');
-        $this->removeFiles($config, $recipe->getFiles(), $this->options->get('root-dir'));
+        $this->removeFiles($config, $this->getRemovableFilesFromRecipeAndLock($recipe, $lock), $this->options->get('root-dir'));
     }
 
-    private function copyFiles(array $manifest, array $files, string $to, bool $overwrite = false)
+    private function getRemovableFilesFromRecipeAndLock(Recipe $recipe, Lock $lock): array
     {
+        $lockedFiles = array_unique(
+            array_reduce(
+                array_column($lock->all(), 'files'),
+                function (array $carry, array $package) {
+                    return array_merge($carry, $package);
+                },
+                []
+            )
+        );
+
+        $removableFiles = $recipe->getFiles();
+        foreach ($lockedFiles as $file) {
+            if (isset($removableFiles[$file])) {
+                unset($removableFiles[$file]);
+            }
+        }
+
+        return $removableFiles;
+    }
+
+    private function copyFiles(array $manifest, array $files, array $options): array
+    {
+        $copiedFiles = [];
+        $to = $options['root-dir'] ?? '.';
+
         foreach ($manifest as $source => $target) {
             $target = $this->options->expandTargetDir($target);
             if ('/' === substr($source, -1)) {
-                $this->copyDir($source, $this->path->concatenate([$to, $target]), $files, $overwrite);
+                $copiedFiles = array_merge(
+                    $copiedFiles,
+                    $this->copyDir($source, $this->path->concatenate([$to, $target]), $files, $options)
+                );
             } else {
-                $this->copyFile($this->path->concatenate([$to, $target]), $files[$source]['contents'], $files[$source]['executable'], $overwrite);
+                $copiedFiles[] = $this->copyFile($this->path->concatenate([$to, $target]), $files[$source]['contents'], $files[$source]['executable'], $options);
             }
         }
+
+        return $copiedFiles;
     }
 
-    private function copyDir(string $source, string $target, array $files, bool $overwrite = false)
+    private function copyDir(string $source, string $target, array $files, array $options): array
     {
+        $copiedFiles = [];
         foreach ($files as $file => $data) {
             if (0 === strpos($file, $source)) {
                 $file = $this->path->concatenate([$target, substr($file, \strlen($source))]);
-                $this->copyFile($file, $data['contents'], $data['executable'], $overwrite);
+                $copiedFiles[] = $this->copyFile($file, $data['contents'], $data['executable'], $options);
             }
         }
+
+        return $copiedFiles;
     }
 
-    private function copyFile(string $to, string $contents, bool $executable, bool $overwrite = false)
+    private function copyFile(string $to, string $contents, bool $executable, array $options): string
     {
+        $overwrite = $options['force'] ?? false;
+        $basePath = $options['root-dir'] ?? '.';
+        $copiedFile = str_replace($basePath.\DIRECTORY_SEPARATOR, '', $to);
+
         if (!$this->options->shouldWriteFile($to, $overwrite)) {
-            return;
+            return $copiedFile;
         }
 
         if (!is_dir(\dirname($to))) {
@@ -68,6 +108,8 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
         }
 
         $this->write(sprintf('Created <fg=green>"%s"</>', $this->path->relativize($to)));
+
+        return $copiedFile;
     }
 
     private function removeFiles(array $manifest, array $files, string $to)

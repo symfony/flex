@@ -17,6 +17,7 @@ use Composer\IO\IOInterface;
 use Composer\Package\PackageInterface;
 use PHPUnit\Framework\TestCase;
 use Symfony\Flex\Configurator\CopyFromPackageConfigurator;
+use Symfony\Flex\Lock;
 use Symfony\Flex\Options;
 use Symfony\Flex\Recipe;
 
@@ -45,7 +46,10 @@ class CopyDirectoryFromPackageConfiguratorTest extends TestCase
         foreach ($this->targetFiles as $targetFile) {
             $this->assertFileNotExists($targetFile);
         }
-        $this->createConfigurator()->configure($this->recipe, [$this->sourceFileRelativePath => $this->targetFileRelativePath]);
+        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
+        $this->createConfigurator()->configure($this->recipe, [
+            $this->sourceFileRelativePath => $this->targetFileRelativePath,
+        ], $lock);
         foreach ($this->targetFiles as $targetFile) {
             $this->assertFileExists($targetFile);
         }

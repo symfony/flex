@@ -13,6 +13,7 @@ namespace Symfony\Flex\Configurator;
 
 use Composer\Composer;
 use Composer\IO\IOInterface;
+use Symfony\Flex\Lock;
 use Symfony\Flex\Options;
 use Symfony\Flex\Path;
 use Symfony\Flex\Recipe;
@@ -35,9 +36,9 @@ abstract class AbstractConfigurator
         $this->path = new Path($options->get('root-dir'));
     }
 
-    abstract public function configure(Recipe $recipe, $config, array $options = []);
+    abstract public function configure(Recipe $recipe, $config, Lock $lock, array $options = []);
 
-    abstract public function unconfigure(Recipe $recipe, $config);
+    abstract public function unconfigure(Recipe $recipe, $config, Lock $lock);
 
     protected function write($messages)
     {

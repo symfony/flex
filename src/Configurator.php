@@ -44,22 +44,22 @@ class Configurator
         ];
     }
 
-    public function install(Recipe $recipe, array $options = [])
+    public function install(Recipe $recipe, Lock $lock, array $options = [])
     {
         $manifest = $recipe->getManifest();
         foreach (array_keys($this->configurators) as $key) {
             if (isset($manifest[$key])) {
-                $this->get($key)->configure($recipe, $manifest[$key], $options);
+                $this->get($key)->configure($recipe, $manifest[$key], $lock, $options);
             }
         }
     }
 
-    public function unconfigure(Recipe $recipe)
+    public function unconfigure(Recipe $recipe, Lock $lock)
     {
         $manifest = $recipe->getManifest();
         foreach (array_keys($this->configurators) as $key) {
             if (isset($manifest[$key])) {
-                $this->get($key)->unconfigure($recipe, $manifest[$key]);
+                $this->get($key)->unconfigure($recipe, $manifest[$key], $lock);
             }
         }
     }
