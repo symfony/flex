@@ -1,0 +1,27 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2018-12-20T12:15:10Z
+
+(rebase needed)
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2019-01-22T12:04:59Z
+
+Hi @dbrumann, friendly ping to know the status here :)
+
+---------------------------------------------------------------------------
+
+by dbrumann at 2019-01-23T13:52:46Z
+
+Hi @nicolas-grekas. Sorry for not updating. I'm currently busy settling into a new client project.
+
+Writing tests for this was a bit tricky due to the Lock-class requiring a file to write to. I think the rebase and the flexible root-dir made this a bit easier, but I had no time to confirm this. I don't feel comfortable mocking the calls to Lock as I want to ensure the file list is handled properly.
+
+I won't have time until Wednesday next week though. I set the end of the first week of February as my personal deadline for this.
+
+---------------------------------------------------------------------------
+
+by dbrumann at 2019-02-08T14:16:38Z
+
+Hey @nicolas-grekas I think this is ready. Let me know if something is missing for you.
