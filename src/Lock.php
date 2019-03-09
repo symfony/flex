@@ -32,7 +32,7 @@ class Lock
 
     public function has($name): bool
     {
-        return array_key_exists($name, $this->lock);
+        return \array_key_exists($name, $this->lock);
     }
 
     public function add($name, $data)
