@@ -81,8 +81,9 @@ class BundlesConfigurator extends AbstractConfigurator
         $contents = "<?php\n\nreturn [\n";
         foreach ($bundles as $class => $envs) {
             $contents .= "    $class::class => [";
-            foreach (array_keys($envs) as $env) {
-                $contents .= "'$env' => true, ";
+            foreach ($envs as $env => $value) {
+                $booleanValue = var_export($value, true);
+                $contents .= "'$env' => $booleanValue, ";
             }
             $contents = substr($contents, 0, -2)."],\n";
         }

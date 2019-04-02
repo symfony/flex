@@ -48,4 +48,42 @@ return [
 EOF
         , file_get_contents($config));
     }
+
+    public function testConfigureWhenBundlesAlreayExists()
+    {
+        $config = FLEX_TEST_DIR.'/config/bundles.php';
+        file_put_contents($config, <<<EOF
+<?php
+
+return [
+    BarBundle::class => ['prod' => false, 'all' => true],
+];
+EOF
+        );
+
+        $configurator = new BundlesConfigurator(
+            $this->getMockBuilder('Composer\Composer')->getMock(),
+            $this->getMockBuilder('Composer\IO\IOInterface')->getMock(),
+            new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
+        );
+
+        $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
+        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
+
+        $configurator->configure($recipe, [
+            'FooBundle' => ['dev', 'test'],
+            'Symfony\Bundle\FrameworkBundle\FrameworkBundle' => ['all'],
+        ], $lock);
+        $this->assertEquals(<<<EOF
+<?php
+
+return [
+    BarBundle::class => ['prod' => false, 'all' => true],
+    Symfony\Bundle\FrameworkBundle\FrameworkBundle::class => ['all' => true],
+    FooBundle::class => ['dev' => true, 'test' => true],
+];
+
+EOF
+        , file_get_contents($config));
+    }
 }
