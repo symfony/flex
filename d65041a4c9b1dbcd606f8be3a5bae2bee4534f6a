@@ -1,0 +1,11 @@
+---------------------------------------------------------------------------
+
+by stof at 2019-04-15T13:31:13Z
+
+What looks weird is that Composer 2.x (still in dev) is still doing the replacement even when using Curl. So either that change is wrong, or Composer 2.x will also suffer from it.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2019-04-15T14:01:20Z
+
+@stof Composer 2 borrowed code from flex, so it might benefit from the exposure we have here and thus should be patched accordingly (#486 also)
