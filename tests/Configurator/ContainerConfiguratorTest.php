@@ -192,4 +192,47 @@ services:
 EOF
         , file_get_contents($config));
     }
+
+    public function testConfigureWithEnvVariable()
+    {
+        $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
+        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
+        $config = FLEX_TEST_DIR.'/config/services.yaml';
+        file_put_contents(
+            $config,
+            <<<EOF
+# comment
+parameters:
+    env(APP_ENV): ''
+
+services:
+
+EOF
+        );
+        $configurator = new ContainerConfigurator(
+            $this->getMockBuilder(Composer::class)->getMock(),
+            $this->getMockBuilder(IOInterface::class)->getMock(),
+            new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
+        );
+        $configurator->configure($recipe, ['env(APP_ENV)' => ''], $lock);
+        $this->assertEquals(<<<EOF
+# comment
+parameters:
+    env(APP_ENV): ''
+
+services:
+
+EOF
+            , file_get_contents($config));
+
+        $configurator->unconfigure($recipe, ['env(APP_ENV)' => ''], $lock);
+        $this->assertEquals(<<<EOF
+# comment
+parameters:
+
+services:
+
+EOF
+            , file_get_contents($config));
+    }
 }
