@@ -32,7 +32,7 @@ class ContainerConfigurator extends AbstractConfigurator
         $lines = [];
         foreach (file($target) as $line) {
             foreach (array_keys($parameters) as $key) {
-                if (preg_match("/^\s+$key\:/", $line)) {
+                if (preg_match(sprintf('/^\s+%s\:/', preg_quote($key, '/')), $line)) {
                     continue 2;
                 }
             }
@@ -62,7 +62,7 @@ class ContainerConfigurator extends AbstractConfigurator
                 continue;
             }
             foreach ($parameters as $key => $value) {
-                if (preg_match("/^\s+$key\:/", $line)) {
+                if (preg_match(sprintf('/^\s+%s\:/', preg_quote($key, '/')), $line)) {
                     unset($parameters[$key]);
                 }
             }
