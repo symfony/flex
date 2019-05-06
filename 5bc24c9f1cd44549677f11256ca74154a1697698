@@ -1,0 +1,67 @@
+---------------------------------------------------------------------------
+
+by lchrusciel at 2018-10-04T10:27:42Z
+
+Thanks for the support for our convention :) We have this already done in our skeleton so that all new plugins will support flex 🎉
+ https://github.com/Sylius/PluginSkeleton/blob/master/src/AcmeSyliusExamplePlugin.php
+
+---------------------------------------------------------------------------
+
+by pjedrzejewski at 2018-10-04T11:00:11Z
+
+Thank you @dunglas! :)
+
+---------------------------------------------------------------------------
+
+by fabpot at 2018-11-12T12:27:10Z
+
+Can you also rebase?
+
+---------------------------------------------------------------------------
+
+by OskarStark at 2019-01-17T08:54:42Z
+
+@dunglas would be great to get this feature 👍
+
+---------------------------------------------------------------------------
+
+by francoispluchino at 2019-05-05T12:50:56Z
+
+See Symfony Flex extend to other projects to facilitate the configuration is something very good, and I thank the Symfony team for that, because I see that we are moving in the right direction. However, you must not perceive my message as negative, on the contrary, but I think this feature should not be natively integrated with Flex.
+
+As @nicolas-grekas has very well recalled in his [comment](https://github.com/symfony/flex/pull/174#issuecomment-334525569), it is best to avoid adding specific code that we will have to maintain. Given that this is a feature specific to Sylius, this should be integrated only in the Sylius project.
+
+Obviously, in the state, it is not possible to do it, however, I think it would be interesting to reconsider the proposition #173 (and the PR #174) which would allow the team in charge of Sylius to create a plugin for Flex realizing what they need for their project.
+
+In this same comment dated Oct. 5, 2017, @nicolas-grekas indicated:
+
+> Personally, I would thus respectfully recommend to not merge this PR or any similar approach in the short/mid term (nobody knows about the future :)).
+
+In 2 years, the interfaces of the main components of Flex have not changed, and the plugin can now be considered as stabilized, given that it is in version 1.2.3 with 103 deployed versions, without changing the interfaces and private properties needed to extend Flex.
+
+Of course and as mentioned in this [comment](https://github.com/symfony/flex/issues/206#issuecomment-356740101), the PR #174 must be updated, but I think it is now reasonable and interesting to reopen the discussion of the relevance and utility to extend Flex, thus avoiding specific cases like this.
+
+---------------------------------------------------------------------------
+
+by dunglas at 2019-05-05T16:19:28Z
+
+It could be a middle or long term solution. But in the meantime, Sylius is an important part of the Symfony ecosystem, and this very specific conventions is used in the wild for years. While this PR isn't merged, it makes the install or Sylius plugins with Flex (installed by default) bad.
+
+I suggest to:
+
+1. merge this PR as is
+2. if #174 get merged, move Sylius support in a separate plugin at this point
+
+---------------------------------------------------------------------------
+
+by Pierstoval at 2019-05-06T13:15:18Z
+
+Why not fork Flex and publish a "SyliusFlex" package as a plugin, and only implement the necessary configurators to make a Sylius plugin be added to any Symfony-based project?.
+
+[HarmonyCMS](https://github.com/harmonycms/flex) did that for their own business.
+
+---------------------------------------------------------------------------
+
+by fabpot at 2019-05-06T13:19:40Z
+
+Because forking Flex should be avoided. It fragments the community for no good reasons.
