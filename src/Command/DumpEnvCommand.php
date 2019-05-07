@@ -127,7 +127,7 @@ EOPHP;
         $process->run();
 
         if (!$process->isSuccessful()) {
-            throw new \RuntimeException($process->getErrorOutput());
+            throw new \RuntimeException($process->getErrorOutput().$process->getOutput());
         }
 
         if (!$env = $process->getOutput()) {
