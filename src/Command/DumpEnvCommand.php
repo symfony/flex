@@ -124,11 +124,7 @@ EOPHP;
         if (method_exists($process, 'inheritEnvironmentVariables')) {
             $process->inheritEnvironmentVariables();
         }
-        $process->run();
-
-        if (!$process->isSuccessful()) {
-            throw new \RuntimeException($process->getErrorOutput().$process->getOutput());
-        }
+        $process->mustRun();
 
         if (!$env = $process->getOutput()) {
             throw new \RuntimeException('Please run "composer require symfony/dotenv" to load the ".env" files configuring the application.');
