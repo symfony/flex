@@ -21,16 +21,18 @@ use Composer\Semver\VersionParser;
  */
 class Cache extends BaseCache
 {
+    private $versions;
     private $versionParser;
     private $symfonyRequire;
     private $symfonyConstraints;
     private $io;
 
-    public function setSymfonyRequire(string $symfonyRequire, IOInterface $io = null)
+    public function setSymfonyRequire(string $symfonyRequire, array $versions, IOInterface $io = null)
     {
         $this->versionParser = new VersionParser();
         $this->symfonyRequire = $symfonyRequire;
         $this->symfonyConstraints = $this->versionParser->parseConstraints($symfonyRequire);
+        $this->versions = $versions;
         $this->io = $io;
     }
 
@@ -51,19 +53,17 @@ class Cache extends BaseCache
             return $data;
         }
 
-        $symfonyPackages = [];
+        $masterVersion = $this->versions['master'];
         $symfonySymfony = $data['packages']['symfony/symfony'];
 
         foreach ($symfonySymfony as $version => $composerJson) {
             if ('dev-master' === $version) {
-                $normalizedVersion = $this->versionParser->normalize($composerJson['extra']['branch-alias']['dev-master']);
+                $normalizedVersion = $this->versionParser->normalize($masterVersion);
             } else {
                 $normalizedVersion = $composerJson['version_normalized'];
             }
 
-            if ($this->symfonyConstraints->matches(new Constraint('==', $normalizedVersion))) {
-                $symfonyPackages += $composerJson['replace'];
-            } else {
+            if (!$this->symfonyConstraints->matches(new Constraint('==', $normalizedVersion))) {
                 if (null !== $this->io) {
                     $this->io->writeError(sprintf('<info>Restricting packages listed in "symfony/symfony" to "%s"</info>', $this->symfonyRequire));
                     $this->io = null;
@@ -75,6 +75,15 @@ class Cache extends BaseCache
         if (!$symfonySymfony) {
             // ignore requirements: their intersection with versions of symfony/symfony is empty
             return $data;
+        }
+
+        $symfonyPackages = [];
+        foreach ($this->versions['splits'] as $name => $versions) {
+            foreach ($versions as $version) {
+                if ($this->symfonyConstraints->matches(new Constraint('==', $this->versionParser->normalize($version)))) {
+                    $symfonyPackages[$name] = true;
+                }
+            }
         }
 
         $data['packages']['symfony/symfony'] = $symfonySymfony;
