@@ -108,17 +108,20 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $this->rfs = new ParallelDownloader($this->io, $this->config, $rfs->getOptions(), $rfs->isTlsDisabled());
 
         $symfonyRequire = getenv('SYMFONY_REQUIRE') ?: ($composer->getPackage()->getExtra()['symfony']['require'] ?? null);
+        $this->downloader = $downloader = new Downloader($composer, $io, $this->rfs);
+        $this->downloader->setFlexId($this->getFlexId());
 
         $manager = RepositoryFactory::manager($this->io, $this->config, $composer->getEventDispatcher(), $this->rfs);
-        $setRepositories = \Closure::bind(function (RepositoryManager $manager) use (&$symfonyRequire) {
+        $setRepositories = \Closure::bind(function (RepositoryManager $manager) use (&$symfonyRequire, $downloader) {
             $manager->repositoryClasses = $this->repositoryClasses;
             $manager->setRepositoryClass('composer', TruncatedComposerRepository::class);
             $manager->repositories = $this->repositories;
+            $versions = $downloader->get('/versions.json')->getBody();
             $i = 0;
             foreach (RepositoryFactory::defaultRepos(null, $this->config, $manager) as $repo) {
                 $manager->repositories[$i++] = $repo;
                 if ($repo instanceof TruncatedComposerRepository && $symfonyRequire) {
-                    $repo->setSymfonyRequire($symfonyRequire, $this->io);
+                    $repo->setSymfonyRequire($symfonyRequire, $versions, $this->io);
                 }
             }
             $manager->setLocalRepository($this->getLocalRepository());
@@ -127,8 +130,6 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $setRepositories($manager);
         $composer->setRepositoryManager($manager);
         $this->configurator = new Configurator($composer, $io, $this->options);
-        $this->downloader = new Downloader($composer, $io, $this->rfs);
-        $this->downloader->setFlexId($this->getFlexId());
         $this->lock = new Lock(getenv('SYMFONY_LOCKFILE') ?: str_replace('composer.json', 'symfony.lock', Factory::getComposerFile()));
 
         $populateRepoCacheDir = __CLASS__ === self::class;

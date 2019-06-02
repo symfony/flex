@@ -19,17 +19,17 @@ class CacheTest extends TestCase
     /**
      * @dataProvider provideRemoveLegacyTags
      */
-    public function testRemoveLegacyTags(array $expected, array $packages, string $symfonyRequire)
+    public function testRemoveLegacyTags(array $expected, array $packages, string $symfonyRequire, array $versions)
     {
         $cache = (new \ReflectionClass(Cache::class))->newInstanceWithoutConstructor();
-        $cache->setSymfonyRequire($symfonyRequire);
+        $cache->setSymfonyRequire($symfonyRequire, $versions);
 
         $this->assertSame(['packages' => $expected], $cache->removeLegacyTags(['packages' => $packages]));
     }
 
     public function provideRemoveLegacyTags()
     {
-        yield 'no-symfony/symfony' => [[123], [123], '~1'];
+        yield 'no-symfony/symfony' => [[123], [123], '~1', ['master' => '3.5', 'splits' => []]];
 
         $branchAlias = function ($versionAlias) {
             return [
@@ -48,15 +48,11 @@ class CacheTest extends TestCase
             'symfony/symfony' => [
                 '3.3.0' => [
                     'version_normalized' => '3.3.0.0',
-                    'replace' => ['symfony/foo' => 'self.version'],
                 ],
                 '3.4.0' => [
                     'version_normalized' => '3.4.0.0',
-                    'replace' => ['symfony/foo' => 'self.version'],
                 ],
-                'dev-master' => $branchAlias('3.5') + [
-                    'replace' => ['symfony/foo' => 'self.version'],
-                ],
+                'dev-master' => $branchAlias('3.5'),
             ],
             'symfony/foo' => [
                 '3.3.0' => ['version_normalized' => '3.3.0.0'],
@@ -65,28 +61,32 @@ class CacheTest extends TestCase
             ],
         ];
 
-        yield 'empty-intersection-ignores' => [$packages, $packages, '~2.0'];
-        yield 'empty-intersection-ignores' => [$packages, $packages, '~4.0'];
+        yield 'empty-intersection-ignores' => [$packages, $packages, '~2.0', ['master' => '3.5', 'splits' => [
+            'symfony/foo' => ['3.3', '3.4', '3.5'],
+        ]]];
+        yield 'empty-intersection-ignores' => [$packages, $packages, '~4.0', ['master' => '3.5', 'splits' => [
+            'symfony/foo' => ['3.3', '3.4', '3.5'],
+        ]]];
 
         $expected = $packages;
         unset($expected['symfony/symfony']['3.3.0']);
         unset($expected['symfony/foo']['3.3.0']);
 
-        yield 'non-empty-intersection-filters' => [$expected, $packages, '~3.4'];
+        yield 'non-empty-intersection-filters' => [$expected, $packages, '~3.4', ['master' => '3.5', 'splits' => [
+            'symfony/foo' => ['3.4', '3.5'],
+        ]]];
 
         unset($expected['symfony/symfony']['3.4.0']);
         unset($expected['symfony/foo']['3.4.0']);
 
-        yield 'master-only' => [$expected, $packages, '~3.5'];
+        yield 'master-only' => [$expected, $packages, '~3.5', ['master' => '3.5', 'splits' => [
+            'symfony/foo' => ['3.5'],
+        ]]];
 
         $packages = [
             'symfony/symfony' => [
                 '2.8.0' => [
                     'version_normalized' => '2.8.0.0',
-                    'replace' => [
-                        'symfony/legacy' => 'self.version',
-                        'symfony/foo' => 'self.version',
-                    ],
                 ],
             ],
             'symfony/legacy' => [
@@ -95,23 +95,17 @@ class CacheTest extends TestCase
             ],
         ];
 
-        yield 'legacy-are-not-filtered' => [$packages, $packages, '~3.0'];
+        yield 'legacy-are-not-filtered' => [$packages, $packages, '~3.0', ['master' => '3.5', 'splits' => [
+            'symfony/legacy' => ['2.8'],
+            'symfony/foo' => ['2.8'],
+        ]]];
 
         $packages = [
             'symfony/symfony' => [
                 '2.8.0' => [
                     'version_normalized' => '2.8.0.0',
-                    'replace' => [
-                        'symfony/foo' => 'self.version',
-                        'symfony/new' => 'self.version',
-                    ],
                 ],
-                'dev-master' => $branchAlias('3.0') + [
-                    'replace' => [
-                        'symfony/foo' => 'self.version',
-                        'symfony/new' => 'self.version',
-                    ],
-                ],
+                'dev-master' => $branchAlias('3.0'),
             ],
             'symfony/foo' => [
                 '2.8.0' => ['version_normalized' => '2.8.0.0'],
@@ -126,6 +120,9 @@ class CacheTest extends TestCase
         unset($expected['symfony/symfony']['dev-master']);
         unset($expected['symfony/foo']['dev-master']);
 
-        yield 'master-is-filtered-only-when-in-range' => [$expected, $packages, '~2.8'];
+        yield 'master-is-filtered-only-when-in-range' => [$expected, $packages, '~2.8', ['master' => '3.0', 'splits' => [
+            'symfony/foo' => ['2.8', '3.0'],
+            'symfony/new' => ['2.8', '3.0'],
+        ]]];
     }
 }
