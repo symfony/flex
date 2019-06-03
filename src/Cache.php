@@ -25,15 +25,32 @@ class Cache extends BaseCache
     private $versionParser;
     private $symfonyRequire;
     private $symfonyConstraints;
-    private $io;
 
     public function setSymfonyRequire(string $symfonyRequire, array $versions, IOInterface $io = null)
     {
         $this->versionParser = new VersionParser();
         $this->symfonyRequire = $symfonyRequire;
         $this->symfonyConstraints = $this->versionParser->parseConstraints($symfonyRequire);
+
+        foreach ($versions['splits'] as $name => $vers) {
+            foreach ($vers as $i => $v) {
+                $v = $this->versionParser->normalize($v);
+
+                if (!$this->symfonyConstraints->matches(new Constraint('==', $v))) {
+                    if (null !== $io) {
+                        $io->writeError(sprintf('<info>Restricting packages listed in "symfony/symfony" to "%s"</info>', $this->symfonyRequire));
+                        $io = null;
+                    }
+                    unset($vers[$i]);
+                }
+            }
+
+            if (!$vers || $vers === $versions['splits'][$name]) {
+                unset($versions['splits'][$name]);
+            }
+        }
+
         $this->versions = $versions;
-        $this->io = $io;
     }
 
     public function read($file)
@@ -49,60 +66,48 @@ class Cache extends BaseCache
 
     public function removeLegacyTags(array $data): array
     {
-        if (!$this->symfonyConstraints || !isset($data['packages']['symfony/symfony'])) {
+        if (!$this->symfonyConstraints) {
             return $data;
         }
 
-        $masterVersion = $this->versions['master'];
-        $symfonySymfony = $data['packages']['symfony/symfony'];
+        foreach ($data['packages'] as $name => $versions) {
+            if (!isset($this->versions['splits'][$name]) || null === $devMasterAlias = $versions['dev-master']['extra']['branch-alias']['dev-master'] ?? null) {
+                continue;
+            }
+
+            foreach ($versions as $version => $composerJson) {
+                if ('dev-master' === $version) {
+                    $normalizedVersion = $this->versionParser->normalize($devMasterAlias);
+                } else {
+                    $normalizedVersion = $composerJson['version_normalized'];
+                }
+
+                if (!$this->symfonyConstraints->matches(new Constraint('==', $normalizedVersion))) {
+                    unset($versions[$version]);
+                }
+            }
+
+            $data['packages'][$name] = $versions;
+        }
+
+        if (null === $symfonySymfony = $data['packages']['symfony/symfony'] ?? null) {
+            return $data;
+        }
 
         foreach ($symfonySymfony as $version => $composerJson) {
             if ('dev-master' === $version) {
-                $normalizedVersion = $this->versionParser->normalize($masterVersion);
+                $normalizedVersion = $this->versionParser->normalize($composerJson['extra']['branch-alias']['dev-master']);
             } else {
                 $normalizedVersion = $composerJson['version_normalized'];
             }
 
             if (!$this->symfonyConstraints->matches(new Constraint('==', $normalizedVersion))) {
-                if (null !== $this->io) {
-                    $this->io->writeError(sprintf('<info>Restricting packages listed in "symfony/symfony" to "%s"</info>', $this->symfonyRequire));
-                    $this->io = null;
-                }
                 unset($symfonySymfony[$version]);
             }
         }
 
-        if (!$symfonySymfony) {
-            // ignore requirements: their intersection with versions of symfony/symfony is empty
-            return $data;
-        }
-
-        $symfonyPackages = [];
-        foreach ($this->versions['splits'] as $name => $versions) {
-            foreach ($versions as $version) {
-                if ($this->symfonyConstraints->matches(new Constraint('==', $this->versionParser->normalize($version)))) {
-                    $symfonyPackages[$name] = true;
-                }
-            }
-        }
-
-        $data['packages']['symfony/symfony'] = $symfonySymfony;
-        unset($symfonySymfony['dev-master']);
-
-        foreach ($data['packages'] as $name => $versions) {
-            if (!isset($symfonyPackages[$name]) || null === $devMasterAlias = $versions['dev-master']['extra']['branch-alias']['dev-master'] ?? null) {
-                continue;
-            }
-            $devMaster = $versions['dev-master'];
-            $versions = array_intersect_key($versions, $symfonySymfony);
-
-            if ($this->symfonyConstraints->matches(new Constraint('==', $this->versionParser->normalize($devMasterAlias)))) {
-                $versions['dev-master'] = $devMaster;
-            }
-
-            if ($versions) {
-                $data['packages'][$name] = $versions;
-            }
+        if ($symfonySymfony) {
+            $data['packages']['symfony/symfony'] = $symfonySymfony;
         }
 
         return $data;
