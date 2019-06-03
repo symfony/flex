@@ -132,6 +132,18 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $this->configurator = new Configurator($composer, $io, $this->options);
         $this->lock = new Lock(getenv('SYMFONY_LOCKFILE') ?: str_replace('composer.json', 'symfony.lock', Factory::getComposerFile()));
 
+        $disable = true;
+        foreach (array_merge($composer->getPackage()->getRequires() ?? [], $composer->getPackage()->getDevRequires() ?? []) as $link) {
+            // recipes apply only when symfony/flex is found in "require" or "require-dev" in the root package
+            if ('symfony/flex' === $link->getTarget()) {
+                $disable = false;
+                break;
+            }
+        }
+        if ($disable) {
+            $downloader->disable();
+        }
+
         $populateRepoCacheDir = __CLASS__ === self::class;
         if ($composer->getPluginManager()) {
             foreach ($composer->getPluginManager()->getPlugins() as $plugin) {
@@ -242,7 +254,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
     public function configureProject(Event $event)
     {
-        if (null === $this->downloader->getEndpoint()) {
+        if (!$this->downloader->isEnabled()) {
             $this->io->writeError('<warning>Project configuration is disabled: "symfony/flex" not found in the root composer.json</warning>');
 
             return;
@@ -550,7 +562,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             return;
         }
 
-        if (null === $this->downloader->getEndpoint()) {
+        if (!$this->downloader->isEnabled()) {
             throw new \LogicException('Cannot generate project id when "symfony/flex" is not found in the root composer.json.');
         }
 
@@ -564,7 +576,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
     private function fetchRecipes(): array
     {
-        if (null === $this->downloader->getEndpoint()) {
+        if (!$this->downloader->isEnabled()) {
             $this->io->writeError('<warning>Symfony recipes are disabled: "symfony/flex" not found in the root composer.json</warning>');
 
             return [];

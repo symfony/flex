@@ -60,7 +60,7 @@ class FlexTest extends TestCase
 
         $downloader = $this->getMockBuilder(Downloader::class)->disableOriginalConstructor()->getMock();
         $downloader->expects($this->once())->method('getRecipes')->willReturn($data);
-        $downloader->expects($this->once())->method('getEndpoint')->willReturn('dummy');
+        $downloader->expects($this->once())->method('isEnabled')->willReturn(true);
 
         $io = new BufferIO('', OutputInterface::VERBOSITY_VERBOSE);
         $locker = $this->getMockBuilder(Locker::class)->disableOriginalConstructor()->getMock();
