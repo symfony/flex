@@ -31,7 +31,7 @@ class EnvConfiguratorTest extends TestCase
         $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
 
         $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
-        $recipe->expects($this->any())->method('getName')->will($this->returnValue('FooBundle'));
+        $recipe->expects($this->any())->method('getName')->willReturn('FooBundle');
 
         $env = FLEX_TEST_DIR.'/.env.dist';
         @unlink($env);
@@ -160,7 +160,7 @@ EOF
         $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
 
         $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
-        $recipe->expects($this->any())->method('getName')->will($this->returnValue('FooBundle'));
+        $recipe->expects($this->any())->method('getName')->willReturn('FooBundle');
 
         $env = FLEX_TEST_DIR.'/.env.dist';
         @unlink($env);
@@ -206,7 +206,7 @@ EOF
         );
 
         $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
-        $recipe->expects($this->any())->method('getName')->will($this->returnValue('FooBundle'));
+        $recipe->expects($this->any())->method('getName')->willReturn('FooBundle');
 
         $env = FLEX_TEST_DIR.'/.env.dist';
         $phpunit = FLEX_TEST_DIR.'/phpunit.xml';

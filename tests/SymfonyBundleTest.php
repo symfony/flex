@@ -23,9 +23,9 @@ class SymfonyBundleTest extends TestCase
     public function testGetClassNamesForInstall($package, $autoload, $classes, $type = null)
     {
         $config = $this->getMockBuilder('Composer\Config')->getMock();
-        $config->expects($this->any())->method('get')->will($this->returnValue(__DIR__.'/Fixtures/vendor'));
+        $config->expects($this->any())->method('get')->willReturn(__DIR__.'/Fixtures/vendor');
         $composer = $this->getMockBuilder('Composer\Composer')->getMock();
-        $composer->expects($this->once())->method('getConfig')->will($this->returnValue($config));
+        $composer->expects($this->once())->method('getConfig')->willReturn($config);
         $package = new Package($package, '1.0', '1.0');
         $package->setAutoload($autoload);
         if ($type) {
