@@ -1,0 +1,21 @@
+---------------------------------------------------------------------------
+
+by stof at 2019-06-05T12:58:55Z
+
+shouldn't a reference to another env variable be resolved at runtime rather than at dumping time, so that you don't need to re-dump when changing the other env variable ?
+This improved dump command is still not equivalent to running Dotenv (changes to the `.env` file of course require re-dumping, but I'm talking about changes to real env variables).
+
+Btw, what happens if we *add* a real env variable, for which the `.env` file contains a default value ? Would re-dumping be necessary ?
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2019-06-05T13:00:02Z
+
+Yes: dump-env is about freezing the defaults, nothing more. Then real env vars can take over at runtime as usual.
+
+---------------------------------------------------------------------------
+
+by DavG at 2019-06-05T13:40:08Z
+
+Sounds perfect to me @nicolas-grekas , thanks for reconsidering the issue.
+I'm gonna do some manual tests too.
