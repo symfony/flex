@@ -82,6 +82,44 @@ EOF;
         unlink($envLocal);
     }
 
+    /**
+     * @backupGlobals enabled
+     */
+    public function testEnvCanBeReferenced()
+    {
+        @mkdir(FLEX_TEST_DIR);
+        $env = FLEX_TEST_DIR.'/.env';
+        $envLocal = FLEX_TEST_DIR.'/.env.local.php';
+        @unlink($env);
+        @unlink($envLocal);
+
+        $envContent = <<<'EOF'
+BAR=$FOO
+FOO=123
+EOF;
+        file_put_contents($env, $envContent);
+
+        $_SERVER['FOO'] = 'Foo';
+        $_SERVER['BAR'] = 'Bar';
+
+        $command = $this->createCommandDumpEnv();
+        $command->execute([
+            'env' => 'prod',
+        ]);
+
+        $this->assertFileExists($envLocal);
+
+        $vars = require $envLocal;
+        $this->assertSame([
+            'APP_ENV' => 'prod',
+            'BAR' => 'Foo',
+            'FOO' => '123',
+        ], $vars);
+
+        unlink($env);
+        unlink($envLocal);
+    }
+
     private function createCommandDumpEnv()
     {
         $command = new DumpEnvCommand(
