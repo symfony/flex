@@ -29,7 +29,7 @@ class CacheTest extends TestCase
 
     public function provideRemoveLegacyTags()
     {
-        yield 'no-symfony/symfony' => [[123], [123], '~1', ['master' => '3.5', 'splits' => []]];
+        yield 'no-symfony/symfony' => [[123], [123], '~1', ['splits' => []]];
 
         $branchAlias = function ($versionAlias) {
             return [
@@ -61,10 +61,10 @@ class CacheTest extends TestCase
             ],
         ];
 
-        yield 'empty-intersection-ignores' => [$packages, $packages, '~2.0', ['master' => '3.5', 'splits' => [
+        yield 'empty-intersection-ignores' => [$packages, $packages, '~2.0', ['splits' => [
             'symfony/foo' => ['3.3', '3.4', '3.5'],
         ]]];
-        yield 'empty-intersection-ignores' => [$packages, $packages, '~4.0', ['master' => '3.5', 'splits' => [
+        yield 'empty-intersection-ignores' => [$packages, $packages, '~4.0', ['splits' => [
             'symfony/foo' => ['3.3', '3.4', '3.5'],
         ]]];
 
@@ -72,15 +72,15 @@ class CacheTest extends TestCase
         unset($expected['symfony/symfony']['3.3.0']);
         unset($expected['symfony/foo']['3.3.0']);
 
-        yield 'non-empty-intersection-filters' => [$expected, $packages, '~3.4', ['master' => '3.5', 'splits' => [
-            'symfony/foo' => ['3.4', '3.5'],
+        yield 'non-empty-intersection-filters' => [$expected, $packages, '~3.4', ['splits' => [
+            'symfony/foo' => ['3.3', '3.4', '3.5'],
         ]]];
 
         unset($expected['symfony/symfony']['3.4.0']);
         unset($expected['symfony/foo']['3.4.0']);
 
-        yield 'master-only' => [$expected, $packages, '~3.5', ['master' => '3.5', 'splits' => [
-            'symfony/foo' => ['3.5'],
+        yield 'master-only' => [$expected, $packages, '~3.5', ['splits' => [
+            'symfony/foo' => ['3.4', '3.5'],
         ]]];
 
         $packages = [
@@ -95,7 +95,7 @@ class CacheTest extends TestCase
             ],
         ];
 
-        yield 'legacy-are-not-filtered' => [$packages, $packages, '~3.0', ['master' => '3.5', 'splits' => [
+        yield 'legacy-are-not-filtered' => [$packages, $packages, '~3.0', ['splits' => [
             'symfony/legacy' => ['2.8'],
             'symfony/foo' => ['2.8'],
         ]]];
@@ -120,9 +120,9 @@ class CacheTest extends TestCase
         unset($expected['symfony/symfony']['dev-master']);
         unset($expected['symfony/foo']['dev-master']);
 
-        yield 'master-is-filtered-only-when-in-range' => [$expected, $packages, '~2.8', ['master' => '3.0', 'splits' => [
+        yield 'master-is-filtered-only-when-in-range' => [$expected, $packages, '~2.8', ['splits' => [
             'symfony/foo' => ['2.8', '3.0'],
-            'symfony/new' => ['2.8', '3.0'],
+            'symfony/new' => ['3.0'],
         ]]];
     }
 }
