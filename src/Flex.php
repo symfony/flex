@@ -479,9 +479,11 @@ class Flex implements PluginInterface, EventSubscriberInterface
             $packages[] = [$job['packageName'], $job['constraint']];
         }
 
-        $this->rfs->download($packages, function ($packageName, $constraint) use (&$listed, &$packages, $pool) {
+        $loadExtraRepos = !(new \ReflectionMethod(Pool::class, 'match'))->isPublic(); // Detect Composer < 1.7.3
+        $this->rfs->download($packages, function ($packageName, $constraint) use (&$listed, &$packages, $pool, $loadExtraRepos) {
             foreach ($pool->whatProvides($packageName, $constraint, true) as $package) {
-                foreach (array_merge($package->getRequires(), $package->getConflicts(), $package->getReplaces()) as $link) {
+                $links = $loadExtraRepos ? array_merge($package->getRequires(), $package->getConflicts(), $package->getReplaces()) : $package->getRequires();
+                foreach ($links as $link) {
                     if (isset($listed[$link->getTarget()]) || false === strpos($link->getTarget(), '/')) {
                         continue;
                     }
