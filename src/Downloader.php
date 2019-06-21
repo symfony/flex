@@ -27,6 +27,7 @@ class Downloader
 {
     private static $DEFAULT_ENDPOINT = 'https://flex.symfony.com';
     private static $MAX_LENGTH = 1000;
+    private static $versions;
 
     private $io;
     private $sess;
@@ -70,6 +71,11 @@ class Downloader
     public function disable()
     {
         $this->enabled = false;
+    }
+
+    public function getVersions()
+    {
+        return self::$versions ?? self::$versions = $this->get('/versions.json')->getBody();
     }
 
     /**

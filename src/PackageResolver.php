@@ -22,7 +22,6 @@ class PackageResolver
 {
     private static $SYMFONY_VERSIONS = ['lts', 'previous', 'stable', 'next'];
     private static $aliases;
-    private static $versions;
     private $downloader;
 
     public function __construct(Downloader $downloader)
@@ -86,11 +85,9 @@ class PackageResolver
             return $version ? ':'.$version : '';
         }
 
-        if (null === self::$versions) {
-            self::$versions = $this->downloader->get('/versions.json')->getBody();
-        }
+        $versions = $this->downloader->getVersions();
 
-        if (!isset(self::$versions['splits'][$package])) {
+        if (!isset($versions['splits'][$package])) {
             return $version ? ':'.$version : '';
         }
 
@@ -104,9 +101,9 @@ class PackageResolver
             }
             $version = $config['extra']['symfony']['require'] ?? $config['require']['symfony/framework-bundle'];
         } elseif ('next' === $version) {
-            $version = '^'.self::$versions[$version].'@dev';
+            $version = '^'.$versions[$version].'@dev';
         } elseif (\in_array($version, self::$SYMFONY_VERSIONS, true)) {
-            $version = '^'.self::$versions[$version];
+            $version = '^'.$versions[$version];
         }
 
         return ':'.$version;

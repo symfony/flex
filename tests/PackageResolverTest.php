@@ -90,6 +90,17 @@ class PackageResolverTest extends TestCase
     private function getResolver()
     {
         $downloader = $this->getMockBuilder('Symfony\Flex\Downloader')->disableOriginalConstructor()->getMock();
+        $downloader->expects($this->any())
+            ->method('getVersions')
+            ->willReturn([
+                'lts' => '3.4',
+                'next' => '4.0',
+                'splits' => [
+                    'symfony/console' => ['3.4'],
+                    'symfony/translation' => ['3.4'],
+                    'symfony/validator' => ['3.4'],
+                ],
+            ]);
 
         $resolver = new PackageResolver($downloader);
         $p = new \ReflectionProperty($resolver, 'aliases');
@@ -99,17 +110,6 @@ class PackageResolverTest extends TestCase
             'console' => 'symfony/console',
             'translation' => 'symfony/translation',
             'validator' => 'symfony/validator',
-        ]);
-        $p = new \ReflectionProperty($resolver, 'versions');
-        $p->setAccessible(true);
-        $p->setValue($resolver, [
-            'lts' => '3.4',
-            'next' => '4.0',
-            'splits' => [
-                'symfony/console' => ['3.4'],
-                'symfony/translation' => ['3.4'],
-                'symfony/validator' => ['3.4'],
-            ],
         ]);
 
         return $resolver;
