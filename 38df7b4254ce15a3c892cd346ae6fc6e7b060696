@@ -1,0 +1,169 @@
+---------------------------------------------------------------------------
+
+by francoispluchino at 2017-10-04T08:26:28Z
+
+With the proposal #173, this PR would become useless, but you could add this feature to Flex by creating a Composer plugin requiring Flex in her dependencies.
+
+---------------------------------------------------------------------------
+
+by stof at 2017-10-04T08:45:02Z
+
+Well, creating a plugin as described in #173 would not help much AFAIU, as it would also require extending the flex server to support more fields in the recipes (your proposal does not only involve changing Flex, but also the recipes)
+
+---------------------------------------------------------------------------
+
+by francoispluchino at 2017-10-04T08:50:00Z
+
+It is not necessary to add new server-side fields, if the plugin is able to retrieve information elsewhere, for example: in the composer extra section, or in local file.
+
+---------------------------------------------------------------------------
+
+by dunglas at 2017-10-04T09:02:53Z
+
+For this PR for instance, it must retrieve fields from the recipe, so from the server (because the server parses and modifies the recipe).
+
+---------------------------------------------------------------------------
+
+by dunglas at 2017-10-04T09:04:46Z
+
+But regarding this PR, it can be made more generic as `Dockerfile`s are just text files, and `docker-compose.yaml` YAML files. I will probably rename the configurators, but I would like to test it as is before (it requires some tiny server-side modifications).
+
+---------------------------------------------------------------------------
+
+by francoispluchino at 2017-10-04T10:21:11Z
+
+@dunglas Regarding the required new fields, see my [comment](https://github.com/symfony/flex/issues/173#issuecomment-334112575).
+
+---------------------------------------------------------------------------
+
+by dunglas at 2018-05-28T10:51:42Z
+
+@fabpot has done the required changes on the Flex server side. I need to test if it works now. I'll do it as soon as possible.
+
+---------------------------------------------------------------------------
+
+by covex-nn at 2018-05-28T13:23:47Z
+
+You use json array to describe services for `docker-compose.yaml`. Each item of that array represents a line of a yaml file, and it is a string with some spaces at the beginning. Indent must be validated somehow, because all recipes must use a same indent in `docker-compose.yaml`. If one recipe will use 2 spaces, and the other - will use 4 (or even 3), then docker-compose will not be able to start services. But these services can be launched independently. Try it for yourself:
+
+```yaml
+version: '3.4'
+
+services:
+    mongo: # first recipe, 4 spaces
+        image: mongo:3.6
+  mysql: # second recipe, 2 spaces
+    image: mysql:5.7
+```
+
+Also, what if a service name (or a volume name) for two different recipes will be equal?
+
+---------------------------------------------------------------------------
+
+by covex-nn at 2018-05-28T14:27:54Z
+
+I can skip `DockerfileConfigurator` by removing `###> recipes ###` from my Dockerfile. But it won't be possible to skip `DockerComposerConfigurator` - it will add not validated `$config` to my `docker-compose.yaml` anyway =(
+
+---------------------------------------------------------------------------
+
+by maxhelias at 2018-05-28T17:11:04Z
+
+Would not it be relevant to disable docker support for people who do not use it so that there is no loss of performance in case they already have a `docker-composer.yaml` or `Dockerfile` file at the root of their project ?
+
+I see this with an options in the `composer.json` but why not in another way if someone has a better idea
+
+---------------------------------------------------------------------------
+
+by maxhelias at 2019-01-23T18:25:29Z
+
+@covex-nn we have add some new features.
+Now you can enable / disable support in `composer.json` with `symfony.docker` extra.
+The indentation of the file is taken into consideration and each new service will be added at the end of the list.
+The format in the recipe looks like this symfony/recipes#413
+I'm waiting your feedback 😃
+
+Note : a rebase is necessary for fix `.gitignore` and `AbstractConfigurator` do not take into consideration their modication
+
+---------------------------------------------------------------------------
+
+by dunglas at 2019-05-11T07:24:44Z
+
+This one is ready to be merged.
+
+---------------------------------------------------------------------------
+
+by maxhelias at 2019-05-13T21:14:28Z
+
+If anyone wants to try, just following these instruction
+
+## Clone a docker skeleton :
+```
+git clone https://github.com/dunglas/symfony-docker
+```
+Run the docker :
+```
+docker-compose up -d
+```
+
+## Switch branch :
+Define the fork repo on repositories section like this :
+```
+"repositories": [
+ {
+   "type": "vcs",
+   "url": "https://github.com/dunglas/flex"
+ }
+],
+```
+Define the branch `dev-docker` for `symfony/flex` dependencies on `composer.json`
+
+## Test a recipe :
+```
+SYMFONY_ENDPOINT=https://symfony.sh/r/github.com/symfony/recipes/{PR} composer req {recipe}
+```
+### Recipe available :
+Mercure : https://github.com/symfony/recipes/pull/583
+Messenger : https://github.com/symfony/recipes/pull/413
+Doctrine : https://github.com/symfony/recipes/pull/113
+
+---------------------------------------------------------------------------
+
+by teohhanhui at 2019-05-16T00:11:38Z
+
+Would love to review this before it gets merged. Hope we're not in a hurry, after 2 years.
+
+---------------------------------------------------------------------------
+
+by dunglas at 2019-06-13T09:24:40Z
+
+Hi there, can we merge this one?
+
+---------------------------------------------------------------------------
+
+by fabpot at 2019-06-26T08:31:40Z
+
+@dunglas Can you cleanup the commit history? That's the last thing to do before merging!
+
+---------------------------------------------------------------------------
+
+by dunglas at 2019-06-26T16:58:18Z
+
+@fabpot last comments fixed, and history cleaned.
+
+@teohhanhui
+
+> git (or something else) might do EOL conversion... So that assumption is dangerous.
+
+Makes sense, changed to use a regex then.
+
+> Maybe use the same markers as Docker official images?
+
+Flex uses the same markers everywhere. I'm not sure if it's a good idea to change just for Docker.
+
+---------------------------------------------------------------------------
+
+by teohhanhui at 2019-06-26T17:27:09Z
+
+> Flex uses the same markers everywhere. I'm not sure if it's a good idea to change just for Docker.
+
+Indeed it's not important, as long as it's appropriate for the target file's syntax. :smile:
