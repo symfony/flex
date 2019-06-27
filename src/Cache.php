@@ -69,12 +69,16 @@ class Cache extends BaseCache
         }
 
         foreach ($data['packages'] as $name => $versions) {
-            if (!isset($this->versions['splits'][$name]) || null === $devMasterAlias = $versions['dev-master']['extra']['branch-alias']['dev-master'] ?? null) {
+            if (!isset($this->versions['splits'][$name])) {
                 continue;
             }
 
             foreach ($versions as $version => $composerJson) {
                 if ('dev-master' === $version) {
+                    if (null === $devMasterAlias = $versions['dev-master']['extra']['branch-alias']['dev-master'] ?? null) {
+                        continue;
+                    }
+
                     $normalizedVersion = $this->versionParser->normalize($devMasterAlias);
                 } elseif (!isset($composerJson['version_normalized'])) {
                     continue;
