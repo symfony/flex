@@ -366,15 +366,34 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $composer->getDownloadManager()->setOutputProgress($this->progress);
 
         $installer = \Closure::bind(function () use ($composer, &$devMode) {
-            return Installer::create($this->io, $composer)
+            $installer = Installer::create($this->io, $composer)
                 ->setPreferSource($this->preferSource)
                 ->setPreferDist($this->preferDist)
+                ->setPreferStable($this->preferStable)
+                ->setPreferLowest($this->preferLowest)
                 ->setDevMode($devMode = $this->devMode)
                 ->setIgnorePlatformRequirements($this->ignorePlatformReqs)
                 ->setSuggestedPackagesReporter($this->suggestedPackagesReporter)
                 ->setOptimizeAutoloader($this->optimizeAutoloader)
                 ->setClassMapAuthoritative($this->classMapAuthoritative)
+                ->setVerbose($this->verbose)
                 ->setUpdate(true);
+
+            $extraProperties = [
+                'apcuAutoloader',
+                'skipSuggest',
+                'updateWhitelist',
+                'whitelistAllDependencies',
+                'whitelistDependencies',
+                'whitelistTransitiveDependencies',
+            ];
+            foreach ($extraProperties as $property) {
+                if (property_exists($installer, $property)) {
+                    $installer->{$property} = $this->{$property};
+                }
+            }
+
+            return $installer;
         }, $this->installer, $this->installer)();
 
         $composer->getEventDispatcher()->dispatchScript(ScriptEvents::POST_ROOT_PACKAGE_INSTALL, $devMode);
