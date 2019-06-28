@@ -256,7 +256,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $backtrace = debug_backtrace();
         foreach ($backtrace as $trace) {
             if (isset($trace['object']) && $trace['object'] instanceof Installer) {
-                $this->installer = $trace['object'];
+                $this->installer = \Closure::bind(function () { return $this->update ? $this : null; }, $trace['object'], $trace['object'])();
                 $trace['object']->setSuggestedPackagesReporter(new SuggestedPackagesReporter(new NullIO()));
                 break;
             }
@@ -315,7 +315,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
 
         $this->update();
-
+        $this->cacheDirPopulated = true;
         $this->composer->getInstallationManager()->addInstaller(new NoopInstaller());
 
         \Closure::bind(function () {
