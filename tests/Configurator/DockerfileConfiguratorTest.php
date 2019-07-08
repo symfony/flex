@@ -21,6 +21,16 @@ use Symfony\Flex\Recipe;
 
 class DockerfileConfiguratorTest extends TestCase
 {
+    public function setUp()
+    {
+        @mkdir(FLEX_TEST_DIR);
+    }
+
+    protected function tearDown()
+    {
+        @unlink(FLEX_TEST_DIR.'/Dockerfile');
+    }
+
     public function testConfigure()
     {
         $originalContent = <<<'EOF'
@@ -94,7 +104,6 @@ EOF;
         $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
         $recipe->method('getName')->willReturn('doctrine/doctrine-bundle');
 
-        @mkdir(FLEX_TEST_DIR);
         $config = FLEX_TEST_DIR.'/Dockerfile';
         file_put_contents($config, $originalContent);
 

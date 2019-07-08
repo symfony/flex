@@ -99,7 +99,7 @@ class DockerComposeConfigurator extends AbstractConfigurator
         }
 
         foreach ($config as $key => $value) {
-            if (0 === preg_match(sprintf('{^%s:[ \t\r\n]*([ \t]+\w)}m', $key), $contents, $matches)) {
+            if (0 === preg_match(sprintf('{^%s:[ \t\r\n]*([ \t]+\w|#)}m', $key), $contents, $matches)) {
                 $contents = preg_replace(sprintf('{\n?^%s:[ \t\r\n]*}sm', $key), '', $contents, -1, $count);
             }
         }
