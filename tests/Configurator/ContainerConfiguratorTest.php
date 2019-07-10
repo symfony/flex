@@ -193,6 +193,56 @@ EOF
         , file_get_contents($config));
     }
 
+    public function testConfigureWithComplexContent2()
+    {
+        $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
+        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
+        $config = FLEX_TEST_DIR.'/config/services.yaml';
+        file_put_contents(
+            $config,
+            <<<EOF
+parameters:
+    # comment 1
+    locale: es
+
+services:
+
+EOF
+        );
+        $configurator = new ContainerConfigurator(
+            $this->getMockBuilder(Composer::class)->getMock(),
+            $this->getMockBuilder(IOInterface::class)->getMock(),
+            new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
+        );
+        $configurator->configure($recipe, ['locale' => 'en', 'foobar' => 'baz', 'array' => ['key1' => 'value', 'key2' => "Escape ' one quote"], 'key1' => 'Keep It'], $lock);
+        $this->assertEquals(<<<EOF
+parameters:
+    # comment 1
+    locale: es
+    foobar: 'baz'
+    array:
+        key1: 'value'
+        key2: 'Escape '' one quote'
+    key1: 'Keep It'
+
+services:
+
+EOF
+            , file_get_contents($config));
+
+        $configurator->unconfigure($recipe, ['locale' => 'en', 'array' => ['key1' => 'value', 'key2' => "Escape ' one quote"]], $lock);
+        $this->assertEquals(<<<EOF
+parameters:
+    # comment 1
+    foobar: 'baz'
+    key1: 'Keep It'
+
+services:
+
+EOF
+            , file_get_contents($config));
+    }
+
     public function testConfigureWithEnvVariable()
     {
         $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
