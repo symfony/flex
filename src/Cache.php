@@ -118,6 +118,10 @@ class Cache extends BaseCache
         $versions = $this->downloader->getVersions();
         $this->downloader = null;
 
+        if (!isset($versions['splits'])) {
+            return $this->versions = $versions;
+        }
+
         foreach ($versions['splits'] as $name => $vers) {
             foreach ($vers as $i => $v) {
                 $v = $this->versionParser->normalize($v);
