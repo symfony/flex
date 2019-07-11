@@ -118,12 +118,11 @@ class Flex implements PluginInterface, EventSubscriberInterface
             $manager->repositoryClasses = $this->repositoryClasses;
             $manager->setRepositoryClass('composer', TruncatedComposerRepository::class);
             $manager->repositories = $this->repositories;
-            $versions = $downloader->getVersions();
             $i = 0;
             foreach (RepositoryFactory::defaultRepos(null, $this->config, $manager) as $repo) {
                 $manager->repositories[$i++] = $repo;
                 if ($repo instanceof TruncatedComposerRepository && $symfonyRequire) {
-                    $repo->setSymfonyRequire($symfonyRequire, $versions, $this->io);
+                    $repo->setSymfonyRequire($symfonyRequire, $downloader, $this->io);
                 }
             }
             $manager->setLocalRepository($this->getLocalRepository());
