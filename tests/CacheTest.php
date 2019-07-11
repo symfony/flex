@@ -21,8 +21,12 @@ class CacheTest extends TestCase
      */
     public function testRemoveLegacyTags(array $expected, array $packages, string $symfonyRequire, array $versions)
     {
+        $downloader = $this->getMockBuilder('Symfony\Flex\Downloader')->disableOriginalConstructor()->getMock();
+        $downloader->expects($this->once())
+            ->method('getVersions')
+            ->willReturn($versions);
         $cache = (new \ReflectionClass(Cache::class))->newInstanceWithoutConstructor();
-        $cache->setSymfonyRequire($symfonyRequire, $versions);
+        $cache->setSymfonyRequire($symfonyRequire, $downloader);
 
         $this->assertSame(['packages' => $expected], $cache->removeLegacyTags(['packages' => $packages]));
     }
