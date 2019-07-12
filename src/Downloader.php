@@ -161,7 +161,7 @@ class Downloader
      */
     public function get(string $path, array $headers = [], $cache = true): Response
     {
-        if (!$this->enabled) {
+        if (!$this->enabled && '/versions.json' !== $path) {
             return new Response([]);
         }
         $headers[] = 'Package-Session: '.$this->sess;
