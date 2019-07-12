@@ -11,6 +11,7 @@
 
 namespace Symfony\Flex;
 
+use Composer\Command\GlobalCommand;
 use Composer\Composer;
 use Composer\Console\Application;
 use Composer\DependencyResolver\Operation\InstallOperation;
@@ -257,7 +258,10 @@ class Flex implements PluginInterface, EventSubscriberInterface
             if (isset($trace['object']) && $trace['object'] instanceof Installer) {
                 $this->installer = \Closure::bind(function () { return $this->update ? $this : null; }, $trace['object'], $trace['object'])();
                 $trace['object']->setSuggestedPackagesReporter(new SuggestedPackagesReporter(new NullIO()));
-                break;
+            }
+
+            if (isset($trace['object']) && $trace['object'] instanceof GlobalCommand) {
+                $this->downloader->disable();
             }
         }
 
