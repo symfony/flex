@@ -699,8 +699,8 @@ class Flex implements PluginInterface, EventSubscriberInterface
                 $package = $operation->getPackage();
             }
 
-            // FIXME: getNames() can return n names
-            $name = $package->getNames()[0];
+            // FIXME: Multi name with getNames()
+            $name = $package->getName();
             $job = $operation->getJobType();
 
             if (!empty($manifests[$name]['manifest']['conflict']) && !$operation instanceof UninstallOperation) {
@@ -806,8 +806,8 @@ class Flex implements PluginInterface, EventSubscriberInterface
             }
         }
 
-        // FIXME: getNames() can return n names
-        $name = $package->getNames()[0];
+        // FIXME: Multi name with getNames()
+        $name = $package->getName();
         if ($operation instanceof InstallOperation) {
             if (!$this->lock->has($name)) {
                 return true;
