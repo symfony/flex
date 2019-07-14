@@ -361,44 +361,17 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
         file_put_contents($jsonPath, $manipulator->getContents());
 
-        $composer = Factory::create($this->io);
-        $composer->getDownloadManager()->setOutputProgress($this->progress);
-
-        $installer = \Closure::bind(function () use ($composer, &$devMode) {
-            $installer = Installer::create($this->io, $composer)
-                ->setPreferSource($this->preferSource)
-                ->setPreferDist($this->preferDist)
-                ->setPreferStable($this->preferStable)
-                ->setPreferLowest($this->preferLowest)
-                ->setDevMode($devMode = $this->devMode)
-                ->setIgnorePlatformRequirements($this->ignorePlatformReqs)
-                ->setSuggestedPackagesReporter($this->suggestedPackagesReporter)
-                ->setOptimizeAutoloader($this->optimizeAutoloader)
-                ->setClassMapAuthoritative($this->classMapAuthoritative)
-                ->setVerbose($this->verbose)
-                ->setUpdate(true);
-
-            $extraProperties = [
-                'apcuAutoloader',
-                'skipSuggest',
-                'updateWhitelist',
-                'whitelistAllDependencies',
-                'whitelistDependencies',
-                'whitelistTransitiveDependencies',
-            ];
-            foreach ($extraProperties as $property) {
-                if (property_exists($installer, $property)) {
-                    $installer->{$property} = $this->{$property};
-                }
-            }
-
-            return $installer;
+        $this->cacheDirPopulated = false;
+        $rm = $this->composer->getRepositoryManager();
+        $package = Factory::create($this->io)->getPackage();
+        $this->composer->setPackage($package);
+        \Closure::bind(function () use ($package, $rm) {
+            $this->package = $package;
+            $this->repositoryManager = $rm;
         }, $this->installer, $this->installer)();
+        $this->composer->getEventDispatcher()->__construct($this->composer, $this->io);
 
-        $composer->getEventDispatcher()->dispatchScript(ScriptEvents::POST_ROOT_PACKAGE_INSTALL, $devMode);
-
-        ParallelDownloader::$cacheNext = true;
-        $status = $installer->run();
+        $status = $this->installer->run();
         if (0 !== $status) {
             exit($status);
         }
