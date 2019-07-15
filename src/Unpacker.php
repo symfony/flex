@@ -35,7 +35,8 @@ class Unpacker
         $json = new JsonFile(Factory::getComposerFile());
         $manipulator = new JsonManipulator(file_get_contents($json->getPath()));
         foreach ($op->getPackages() as $package) {
-            $pkg = $this->composer->getRepositoryManager()->findPackage($package['name'], $package['version'] ?: '*');
+            $pkg = $this->composer->getRepositoryManager()->getLocalRepository()->findPackage($package['name'], $package['version'] ?: '*');
+            $pkg = $pkg ?? $this->composer->getRepositoryManager()->findPackage($package['name'], $package['version'] ?: '*');
 
             // not unpackable or no --unpack flag or empty packs (markers)
             if (
