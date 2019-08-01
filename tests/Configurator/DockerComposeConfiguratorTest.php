@@ -234,8 +234,6 @@ YAML
       - db-data:/var/lib/postgresql/data:rw
       # You may use a bind-mounted host directory instead, so that it is harder to accidentally remove the volume and lose all your data!
       # - ./docker/db/data:/var/lib/postgresql/data:rw
-    ports:
-      - "5432:5432"
 ###< doctrine/doctrine-bundle ###
 
 volumes:
@@ -244,9 +242,6 @@ volumes:
 ###< doctrine/doctrine-bundle ###
 
 YAML;
-
-        $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
-        $recipe->method('getName')->willReturn('symfony/mercure-bundle');
 
         $dockerComposeFile = FLEX_TEST_DIR.'/docker-compose.yml';
         file_put_contents($dockerComposeFile, $originalContent);
@@ -267,8 +262,6 @@ YAML;
                 '    - CORS_ALLOWED_ORIGINS=*',
                 '    - PUBLISH_ALLOWED_ORIGINS=http://localhost:1337',
                 '    - DEMO=1',
-                '  ports:',
-                '    - "1337:80"',
             ],
         ];
 
@@ -288,8 +281,6 @@ YAML;
       - db-data:/var/lib/postgresql/data:rw
       # You may use a bind-mounted host directory instead, so that it is harder to accidentally remove the volume and lose all your data!
       # - ./docker/db/data:/var/lib/postgresql/data:rw
-    ports:
-      - "5432:5432"
 ###< doctrine/doctrine-bundle ###
 
 ###> symfony/mercure-bundle ###
@@ -303,8 +294,6 @@ YAML;
       - CORS_ALLOWED_ORIGINS=*
       - PUBLISH_ALLOWED_ORIGINS=http://localhost:1337
       - DEMO=1
-    ports:
-      - "1337:80"
 ###< symfony/mercure-bundle ###
 
 volumes:
@@ -321,5 +310,77 @@ YAML
         // Unconfigure doctrine
         $this->configurator->unconfigure($this->recipeDb, self::CONFIG_DB, $this->lock);
         $this->assertEquals(self::ORIGINAL_CONTENT, file_get_contents($dockerComposeFile));
+    }
+
+    public function testUnconfigureFileWithManyMarks()
+    {
+        $originalContent = self::ORIGINAL_CONTENT.<<<'YAML'
+
+###> symfony/messenger ###
+  rabbitmq:
+    image: rabbitmq:management-alpine
+    environment:
+      # You should definitely change the password in production
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+###< symfony/messenger ###
+
+###> doctrine/doctrine-bundle ###
+  db:
+    image: postgres:11-alpine
+    environment:
+      - POSTGRES_DB=symfony
+      - POSTGRES_USER=symfony
+      # You should definitely change the password in production
+      - POSTGRES_PASSWORD=!ChangeMe!
+    volumes:
+      - db-data:/var/lib/postgresql/data:rw
+      # You may use a bind-mounted host directory instead, so that it is harder to accidentally remove the volume and lose all your data!
+      # - ./docker/db/data:/var/lib/postgresql/data:rw
+###< doctrine/doctrine-bundle ###
+
+volumes:
+###> symfony/messenger ###
+  rabbitmq-data: {}
+###< symfony/messenger ###
+
+###> doctrine/doctrine-bundle ###
+  db-data: {}
+###< doctrine/doctrine-bundle ###
+
+YAML;
+
+        $contentWithoutDoctrine = self::ORIGINAL_CONTENT.<<<'YAML'
+
+###> symfony/messenger ###
+  rabbitmq:
+    image: rabbitmq:management-alpine
+    environment:
+      # You should definitely change the password in production
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+###< symfony/messenger ###
+
+volumes:
+###> symfony/messenger ###
+  rabbitmq-data: {}
+###< symfony/messenger ###
+
+
+YAML;
+
+        $dockerComposeFile = FLEX_TEST_DIR.'/docker-compose.yml';
+        file_put_contents($dockerComposeFile, $originalContent);
+
+        /** @var Recipe|\PHPUnit\Framework\MockObject\MockObject $recipe */
+        $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
+        $recipe->method('getName')->willReturn('symfony/messenger');
+
+        $this->configurator->unconfigure($this->recipeDb, self::CONFIG_DB, $this->lock);
+        $this->assertEquals($contentWithoutDoctrine, file_get_contents($dockerComposeFile));
     }
 }
