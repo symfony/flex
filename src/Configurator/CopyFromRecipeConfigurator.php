@@ -30,7 +30,7 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
     public function unconfigure(Recipe $recipe, $config, Lock $lock)
     {
         $this->write('Removing configuration and files');
-        $this->removeFiles($config, $this->getRemovableFilesFromRecipeAndLock($recipe, $lock), $this->options->get('root-dir'));
+        $this->removeFiles($config, $this->getRemovableFilesFromRecipeAndLock($recipe, $lock), $this->options->get('root-dir') ?? '');
     }
 
     private function getRemovableFilesFromRecipeAndLock(Recipe $recipe, Lock $lock): array
@@ -58,7 +58,7 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
     private function copyFiles(array $manifest, array $files, array $options): array
     {
         $copiedFiles = [];
-        $to = $options['root-dir'] ?? '.';
+        $to = $options['root-dir'] ?? '';
 
         foreach ($manifest as $source => $target) {
             $target = $this->options->expandTargetDir($target);
@@ -91,8 +91,7 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
     private function copyFile(string $to, string $contents, bool $executable, array $options): string
     {
         $overwrite = $options['force'] ?? false;
-        $basePath = $options['root-dir'] ?? '.';
-        $copiedFile = str_replace($basePath.\DIRECTORY_SEPARATOR, '', $to);
+        $copiedFile = str_replace($options['root-dir'].'/', '', $to);
 
         if (!$this->options->shouldWriteFile($to, $overwrite)) {
             return $copiedFile;
