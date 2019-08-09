@@ -30,7 +30,7 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
     public function unconfigure(Recipe $recipe, $config, Lock $lock)
     {
         $this->write('Removing configuration and files');
-        $this->removeFiles($config, $this->getRemovableFilesFromRecipeAndLock($recipe, $lock), $this->options->get('root-dir') ?? '');
+        $this->removeFiles($config, $this->getRemovableFilesFromRecipeAndLock($recipe, $lock), $this->options->get('root-dir') ?? '.');
     }
 
     private function getRemovableFilesFromRecipeAndLock(Recipe $recipe, Lock $lock): array
@@ -58,17 +58,18 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
     private function copyFiles(array $manifest, array $files, array $options): array
     {
         $copiedFiles = [];
-        $to = $options['root-dir'] ?? '';
+        $to = $options['root-dir'] ?? '.';
 
         foreach ($manifest as $source => $target) {
             $target = $this->options->expandTargetDir($target);
+            $path = $this->normalize($this->path->concatenate([$to, $target]));
             if ('/' === substr($source, -1)) {
                 $copiedFiles = array_merge(
                     $copiedFiles,
-                    $this->copyDir($source, $this->path->concatenate([$to, $target]), $files, $options)
+                    $this->copyDir($source, $path, $files, $options)
                 );
             } else {
-                $copiedFiles[] = $this->copyFile($this->path->concatenate([$to, $target]), $files[$source]['contents'], $files[$source]['executable'], $options);
+                $copiedFiles[] = $this->copyFile($path, $files[$source]['contents'], $files[$source]['executable'], $options);
             }
         }
 
@@ -80,7 +81,7 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
         $copiedFiles = [];
         foreach ($files as $file => $data) {
             if (0 === strpos($file, $source)) {
-                $file = $this->path->concatenate([$target, substr($file, \strlen($source))]);
+                $file = $this->normalize($this->path->concatenate([$target, substr($file, \strlen($source))]));
                 $copiedFiles[] = $this->copyFile($file, $data['contents'], $data['executable'], $options);
             }
         }
@@ -91,7 +92,8 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
     private function copyFile(string $to, string $contents, bool $executable, array $options): string
     {
         $overwrite = $options['force'] ?? false;
-        $copiedFile = str_replace($options['root-dir'].'/', '', $to);
+        $rootDir = $options['root-dir'] ?? '.';
+        $copiedFile = str_replace($rootDir.'/', '', $to);
 
         if (!$this->options->shouldWriteFile($to, $overwrite)) {
             return $copiedFile;
@@ -124,11 +126,11 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
             if ('/' === substr($source, -1)) {
                 foreach (array_keys($files) as $file) {
                     if (0 === strpos($file, $source)) {
-                        $this->removeFile($this->path->concatenate([$to, $target, substr($file, \strlen($source))]));
+                        $this->removeFile($this->normalize($this->path->concatenate([$to, $target, \substr($file, \strlen($source))])));
                     }
                 }
             } else {
-                $this->removeFile($this->path->concatenate([$to, $target]));
+                $this->removeFile($this->normalize($this->path->concatenate([$to, $target])));
             }
         }
     }
@@ -145,5 +147,13 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
         if (0 === \count(glob(\dirname($to).'/*', GLOB_NOSORT))) {
             @rmdir(\dirname($to));
         }
+    }
+
+    private function normalize(string $path): string
+    {
+        $pathSegments = \explode('/', \str_replace('\\', '/', $path));
+        $normalizedSegments = \array_filter($pathSegments, function ($segment) { return '.' !== $segment; });
+
+        return \implode('/', $normalizedSegments);
     }
 }
