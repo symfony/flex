@@ -126,7 +126,7 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
             if ('/' === substr($source, -1)) {
                 foreach (array_keys($files) as $file) {
                     if (0 === strpos($file, $source)) {
-                        $this->removeFile($this->normalize($this->path->concatenate([$to, $target, \substr($file, \strlen($source))])));
+                        $this->removeFile($this->normalize($this->path->concatenate([$to, $target, substr($file, \strlen($source))])));
                     }
                 }
             } else {
@@ -151,9 +151,9 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
 
     private function normalize(string $path): string
     {
-        $pathSegments = \explode('/', \str_replace('\\', '/', $path));
-        $normalizedSegments = \array_filter($pathSegments, function ($segment) { return '.' !== $segment; });
+        $pathSegments = explode('/', str_replace('\\', '/', $path));
+        $normalizedSegments = array_filter($pathSegments, function ($segment) { return '.' !== $segment; });
 
-        return \implode('/', $normalizedSegments);
+        return implode('/', $normalizedSegments);
     }
 }
