@@ -46,8 +46,12 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
         );
 
         $removableFiles = $recipe->getFiles();
-        foreach ($lockedFiles as $file) {
-            if (isset($removableFiles[$file])) {
+
+        $lockedFiles = array_map('realpath', $lockedFiles);
+
+        // Compare file paths by their real path to abstract OS differences
+        foreach (array_keys($removableFiles) as $file) {
+            if (\in_array(realpath($file), $lockedFiles)) {
                 unset($removableFiles[$file]);
             }
         }

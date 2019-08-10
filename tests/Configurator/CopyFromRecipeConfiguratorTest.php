@@ -104,7 +104,7 @@ class CopyFromRecipeConfiguratorTest extends TestCase
         $this->assertFileExists($this->sourceFile);
 
         $lock = new Lock(FLEX_TEST_DIR.'/test.lock');
-        $lock->set('other-recipe', ['files' => [$this->targetFileRelativePath]]);
+        $lock->set('other-recipe', ['files' => ['./'.$this->targetFileRelativePath]]);
 
         $this->createConfigurator()->unconfigure($this->recipe, [$this->targetFileRelativePath], $lock);
 
