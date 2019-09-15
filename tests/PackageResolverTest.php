@@ -51,6 +51,18 @@ class PackageResolverTest extends TestCase
                 ['ext-mongodb'],
                 ['ext-mongodb'],
             ],
+            [
+                ['test/test:dev-patch'],
+                ['test/test:dev-patch'],
+            ],
+            [
+                ['test/test:dev-patch/hotfix'],
+                ['test/test:dev-patch/hotfix'],
+            ],
+            [
+                ['test/test=dev-patch/hotfix', 'cli lts', 'validator:3.2'],
+                ['test/test:dev-patch/hotfix', 'symfony/console:^3.4', 'symfony/validator:3.2'],
+            ],
         ];
     }
 
