@@ -32,6 +32,9 @@ class PackageResolver
     public function resolve(array $arguments = [], bool $isRequire = false): array
     {
         $versionParser = new VersionParser();
+        if (null === self::$aliases) {
+            self::$aliases = $this->downloader->get('/aliases.json')->getBody();
+        }
 
         // first pass split on ':', '=' or ' ' to separate package names and versions
         $explodedArguments = [];
@@ -52,9 +55,6 @@ class PackageResolver
         $packages = [];
         foreach ($explodedArguments as $i => $argument) {
             if (false === strpos($argument, '/') && !preg_match(PlatformRepository::PLATFORM_PACKAGE_REGEX, $argument) && !\in_array($argument, ['mirrors', 'nothing'])) {
-                if (null === self::$aliases) {
-                    self::$aliases = $this->downloader->get('/aliases.json')->getBody();
-                }
 
                 if (isset(self::$aliases[$argument])) {
                     $argument = self::$aliases[$argument];
