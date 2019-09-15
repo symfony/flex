@@ -33,10 +33,14 @@ class PackageResolver
     {
         $versionParser = new VersionParser();
 
-        // first pass split on : and = to separate package names and versions
+        // first pass split on ':', '=' or ' ' to separate package names and versions
         $explodedArguments = [];
         foreach ($arguments as $argument) {
-            if ((false !== $pos = strpos($argument, ':')) || (false !== $pos = strpos($argument, '='))) {
+            if (
+                (false !== $pos = strpos($argument, ':')) ||
+                (false !== $pos = strpos($argument, '=')) ||
+                (false !== $pos = strpos($argument, ' '))
+            ) {
                 $explodedArguments[] = substr($argument, 0, $pos);
                 $explodedArguments[] = substr($argument, $pos + 1);
             } else {
