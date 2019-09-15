@@ -37,41 +37,47 @@ class PackageResolver
         }
 
         // first pass split on ':', '=' or ' ' to separate package names and versions
-        $explodedArguments = [];
+        $searchInfo = [];
         foreach ($arguments as $argument) {
             if (
                 (false !== $pos = strpos($argument, ':')) ||
                 (false !== $pos = strpos($argument, '=')) ||
                 (false !== $pos = strpos($argument, ' '))
             ) {
-                $explodedArguments[] = substr($argument, 0, $pos);
-                $explodedArguments[] = substr($argument, $pos + 1);
+                $name = substr($argument, 0, $pos);
+                $version = substr($argument, $pos + 1);
+                $searchInfo[$name] = $version;
             } else {
-                $explodedArguments[] = $argument;
+                $searchInfo[$argument] = null;
             }
         }
 
         // second pass to resolve package names
         $packages = [];
-        foreach ($explodedArguments as $i => $argument) {
-            if (false === strpos($argument, '/') && !preg_match(PlatformRepository::PLATFORM_PACKAGE_REGEX, $argument) && !\in_array($argument, ['mirrors', 'nothing'])) {
+        $i = 0;
+        foreach ($searchInfo as $name => $version) {
+            $version = self::$aliases[$version] ?? $version;
+            $name = self::$aliases[$name] ?? $name;
+            $name .= ($version ? ":$version" : '');
 
-                if (isset(self::$aliases[$argument])) {
-                    $argument = self::$aliases[$argument];
-                } else {
-                    // is it a version or an alias that does not exist?
-                    try {
-                        $versionParser->parseConstraints($argument);
-                    } catch (\UnexpectedValueException $e) {
-                        // is it a special Symfony version?
-                        if (!\in_array($argument, self::$SYMFONY_VERSIONS, true)) {
-                            $this->throwAlternatives($argument, $i);
-                        }
+            if (
+                false === strpos($name, '/') &&
+                !preg_match(PlatformRepository::PLATFORM_PACKAGE_REGEX, $name) &&
+                !\in_array($version, ['mirrors', 'nothing'])
+            ) {
+                // is it a version or an alias that does not exist?
+                try {
+                    $versionParser->parseConstraints($name);
+                } catch (\UnexpectedValueException $e) {
+                    // is it a special Symfony version?
+                    if (!\in_array($version, self::$SYMFONY_VERSIONS, true)) {
+                        $this->throwAlternatives($name, $i);
                     }
                 }
             }
 
-            $packages[] = $argument;
+            $packages[] = $name;
+            ++$i;
         }
 
         // third pass to resolve versions
