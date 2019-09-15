@@ -36,11 +36,11 @@ class PackageResolverTest extends TestCase
                 ['symfony/console', 'symfony/validator', 'symfony/translation'],
             ],
             [
-                ['cli', 'lts', 'validator', '3.2', 'translation'],
+                ['cli lts', 'validator 3.2', 'translation'],
                 ['symfony/console:^3.4', 'symfony/validator:3.2', 'symfony/translation'],
             ],
             [
-                ['cli:lts', 'validator=3.2', 'translation', 'next'],
+                ['cli:lts', 'validator=3.2', 'translation next'],
                 ['symfony/console:^3.4', 'symfony/validator:3.2', 'symfony/translation:^4.0@dev'],
             ],
             [
