@@ -53,10 +53,16 @@ class FlexTest extends TestCase
                     'origin' => 'dummy/dummy:1.0@github.com/symfony/recipes:master',
                 ],
             ],
+            'locks' => [
+                'dummy/dummy' => [
+                    'recipe' => [],
+                    'version' => '',
+                ],
+            ],
         ];
 
         $configurator = $this->getMockBuilder(Configurator::class)->disableOriginalConstructor()->getMock();
-        $configurator->expects($this->once())->method('install')->with($this->equalTo(new Recipe($package, 'dummy/dummy', 'install', $data['manifests']['dummy/dummy'])));
+        $configurator->expects($this->once())->method('install')->with($this->equalTo(new Recipe($package, 'dummy/dummy', 'install', $data['manifests']['dummy/dummy'], $data['locks']['dummy/dummy'])));
 
         $downloader = $this->getMockBuilder(Downloader::class)->disableOriginalConstructor()->getMock();
         $downloader->expects($this->once())->method('getRecipes')->willReturn($data);

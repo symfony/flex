@@ -22,13 +22,15 @@ class Recipe
     private $name;
     private $job;
     private $data;
+    private $lock;
 
-    public function __construct(PackageInterface $package, string $name, string $job, array $data)
+    public function __construct(PackageInterface $package, string $name, string $job, array $data, array $lock = [])
     {
         $this->package = $package;
         $this->name = $name;
         $this->job = $job;
         $this->data = $data;
+        $this->lock = $lock;
     }
 
     public function getPackage(): PackageInterface
@@ -83,5 +85,20 @@ class Recipe
     public function isContrib(): bool
     {
         return $this->data['is_contrib'] ?? false;
+    }
+
+    public function getRef()
+    {
+        return $this->lock['recipe']['ref'] ?? null;
+    }
+
+    public function isAuto(): bool
+    {
+        return !isset($this->lock['recipe']);
+    }
+
+    public function getVersion(): string
+    {
+        return $this->lock['version'];
     }
 }

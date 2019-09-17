@@ -243,6 +243,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             $app->add(new Command\UpdateCommand($resolver));
             $app->add(new Command\RemoveCommand($resolver));
             $app->add(new Command\UnpackCommand($resolver));
+            $app->add(new Command\RecipesCommand($this, $this->lock));
             $app->add(new Command\InstallRecipesCommand($this, $this->options->get('root-dir')));
             $app->add(new Command\GenerateIdCommand($this));
             $app->add(new Command\DumpEnvCommand($this->config, $this->options));
@@ -402,7 +403,8 @@ class Flex implements PluginInterface, EventSubscriberInterface
             copy($rootDir.'/.env.dist', $rootDir.'/.env');
         }
 
-        $recipes = $this->fetchRecipes();
+        $recipes = $this->fetchRecipes($this->operations);
+        $this->operations = [];     // Reset the operation after getting recipes
 
         if (2 === $this->displayThanksReminder) {
             $love = '\\' === \DIRECTORY_SEPARATOR ? 'love' : '💖 ';
@@ -700,7 +702,7 @@ EOPHP
         );
     }
 
-    private function fetchRecipes(): array
+    public function fetchRecipes(array $operations): array
     {
         if (!$this->downloader->isEnabled()) {
             $this->io->writeError('<warning>Symfony recipes are disabled: "symfony/flex" not found in the root composer.json</>');
@@ -708,7 +710,7 @@ EOPHP
             return [];
         }
         $devPackages = null;
-        $data = $this->downloader->getRecipes($this->operations);
+        $data = $this->downloader->getRecipes($operations);
         $manifests = $data['manifests'] ?? [];
         $locks = $data['locks'] ?? [];
         // symfony/flex and symfony/framework-bundle recipes should always be applied first
@@ -716,7 +718,7 @@ EOPHP
             'symfony/flex' => null,
             'symfony/framework-bundle' => null,
         ];
-        foreach ($this->operations as $i => $operation) {
+        foreach ($operations as $i => $operation) {
             if ($operation instanceof UpdateOperation) {
                 $package = $operation->getTargetPackage();
             } else {
@@ -753,7 +755,7 @@ EOPHP
             }
 
             if (isset($manifests[$name])) {
-                $recipes[$name] = new Recipe($package, $name, $job, $manifests[$name]);
+                $recipes[$name] = new Recipe($package, $name, $job, $manifests[$name], $locks[$name] ?? []);
             }
 
             $noRecipe = !isset($manifests[$name]) || (isset($manifests[$name]['not_installable']) && $manifests[$name]['not_installable']);
@@ -773,7 +775,7 @@ EOPHP
                 }
             }
         }
-        $this->operations = [];
+        $operations = [];
 
         return array_filter($recipes);
     }
