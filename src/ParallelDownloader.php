@@ -244,7 +244,7 @@ class ParallelDownloader extends RemoteFilesystem
             return $result;
         }
 
-        if (!$this->downloader) {
+        if (!$this->downloader || !preg_match('/^https?:/', $originUrl)) {
             return parent::getRemoteContents($originUrl, $fileUrl, $context, $responseHeaders);
         }
 
