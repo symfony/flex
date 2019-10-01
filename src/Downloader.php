@@ -130,7 +130,7 @@ class Downloader
         }
 
         if ($this->enabled && self::$DEFAULT_ENDPOINT !== $this->endpoint) {
-            $this->io->writeError('<warning>Using "'.$this->endpoint.'" as the Symfony endpoint</warning>');
+            $this->io->writeError('<warning>Using "'.$this->endpoint.'" as the Symfony endpoint</>');
         }
 
         $bodies = [];
@@ -247,10 +247,10 @@ class Downloader
     {
         $data = JsonFile::parseJson($json, $url);
         if (!empty($data['warning'])) {
-            $this->io->writeError('<warning>Warning from '.$url.': '.$data['warning'].'</warning>');
+            $this->io->writeError('<warning>Warning from '.$url.': '.$data['warning'].'</>');
         }
         if (!empty($data['info'])) {
-            $this->io->writeError('<info>Info from '.$url.': '.$data['info'].'</info>');
+            $this->io->writeError('<info>Info from '.$url.': '.$data['info'].'</>');
         }
 
         $response = new Response($data, $lastHeaders);
@@ -264,8 +264,8 @@ class Downloader
     private function switchToDegradedMode(\Exception $e, string $url)
     {
         if (!$this->degradedMode) {
-            $this->io->writeError('<warning>'.$e->getMessage().'</warning>');
-            $this->io->writeError('<warning>'.$url.' could not be fully loaded, package information was loaded from the local cache and may be out of date</warning>');
+            $this->io->writeError('<warning>'.$e->getMessage().'</>');
+            $this->io->writeError('<warning>'.$url.' could not be fully loaded, package information was loaded from the local cache and may be out of date</>');
         }
         $this->degradedMode = true;
     }

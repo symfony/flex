@@ -70,7 +70,7 @@ class ParallelDownloader extends RemoteFilesystem
 
         if (!$this->quiet) {
             if (!$this->downloader && method_exists(parent::class, 'getRemoteContents')) {
-                $this->io->writeError('<warning>Enable the "cURL" PHP extension for faster downloads</warning>');
+                $this->io->writeError('<warning>Enable the "cURL" PHP extension for faster downloads</>');
             }
 
             $note = '';
@@ -80,10 +80,10 @@ class ParallelDownloader extends RemoteFilesystem
             }
 
             $this->io->writeError('');
-            $this->io->writeError(sprintf('<info>Prefetching %d packages</info> %s', $this->downloadCount, $note));
+            $this->io->writeError(sprintf('<info>Prefetching %d packages</> %s', $this->downloadCount, $note));
             $this->io->writeError('  - Downloading', false);
             if ($this->progress) {
-                $this->io->writeError(' (<comment>0%</comment>)', false);
+                $this->io->writeError(' (<comment>0%</>)', false);
             }
         }
         try {
@@ -91,9 +91,9 @@ class ParallelDownloader extends RemoteFilesystem
             if ($this->quiet) {
                 // no-op
             } elseif ($this->progress) {
-                $this->io->overwriteError(' (<comment>100%</comment>)');
+                $this->io->overwriteError(' (<comment>100%</>)');
             } else {
-                $this->io->writeError(' (<comment>100%</comment>)');
+                $this->io->writeError(' (<comment>100%</>)');
             }
         } finally {
             if (!$this->quiet) {
@@ -197,7 +197,7 @@ class ParallelDownloader extends RemoteFilesystem
 
             if (5 <= $progress - $state->lastProgress || 1 <= $progressTime - $state->lastUpdate) {
                 $state->lastProgress = $progress;
-                $this->io->overwriteError(sprintf(' (<comment>%d%%</comment>)', $progress), false);
+                $this->io->overwriteError(sprintf(' (<comment>%d%%</>)', $progress), false);
                 $state->lastUpdate = microtime(true);
             }
         }
