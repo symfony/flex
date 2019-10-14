@@ -1,0 +1,20 @@
+---------------------------------------------------------------------------
+
+by fabpot at 2019-10-01T07:34:13Z
+
+I'd rather change ending tags that are not `</>`.
+
+---------------------------------------------------------------------------
+
+by maxhelias at 2019-10-01T07:42:48Z
+
+I'm going to change that, but what's the benefit of having only `</>` ?
+
+In fact, I chose this way to correct also PhpStorm's errors
+![Capture d’écran 2019-10-01 à 09 37 50](https://user-images.githubusercontent.com/12966574/65943362-953e6180-e42f-11e9-8394-d6eb4737a39e.png)
+
+---------------------------------------------------------------------------
+
+by fabpot at 2019-10-01T07:48:11Z
+
+It's shorter and you cannot have a closing tag that does not match the opening one.
