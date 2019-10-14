@@ -43,7 +43,7 @@ class SyncRecipesCommand extends BaseCommand
         ;
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $win = '\\' === \DIRECTORY_SEPARATOR;
         $force = $input->getOption('force');
@@ -70,7 +70,7 @@ class SyncRecipesCommand extends BaseCommand
         }
 
         if (!$packages) {
-            return;
+            return 0;
         }
 
         $composer = $this->getComposer();
@@ -136,5 +136,7 @@ class SyncRecipesCommand extends BaseCommand
 
             $io->write($output);
         }
+
+        return 0;
     }
 }

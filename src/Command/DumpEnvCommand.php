@@ -45,7 +45,7 @@ class DumpEnvCommand extends BaseCommand
         ;
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $_SERVER['APP_ENV'] = $env = $input->getArgument('env');
         $path = $this->options->get('root-dir').'/.env';
@@ -63,6 +63,8 @@ EOF;
         file_put_contents($path.'.local.php', $vars, LOCK_EX);
 
         $this->getIO()->writeError('Successfully dumped .env files in <info>.env.local.php</>');
+
+        return 0;
     }
 
     private function loadEnv(string $path, string $env): array

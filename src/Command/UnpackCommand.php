@@ -86,7 +86,7 @@ class UnpackCommand extends BaseCommand
         if (!$result->getUnpacked()) {
             $io->writeError('<info>Nothing to unpack</>');
 
-            return;
+            return 1;
         }
 
         foreach ($result->getUnpacked() as $pkg) {
