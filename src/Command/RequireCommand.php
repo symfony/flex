@@ -56,7 +56,7 @@ class RequireCommand extends BaseRequireCommand
 
             $input->setArgument('packages', $result->getRequired());
         } elseif ($input->getOption('unpack')) {
-            $this->getIO()->writeError('<error>--unpack is incompatible with the interactive mode.</error>');
+            $this->getIO()->writeError('<error>--unpack is incompatible with the interactive mode.</>');
 
             return 1;
         }

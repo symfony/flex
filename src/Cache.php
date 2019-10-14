@@ -74,7 +74,7 @@ class Cache extends BaseCache
 
                 if (!$this->symfonyConstraints->matches(new Constraint('==', $normalizedVersion))) {
                     if (null !== $this->io) {
-                        $this->io->writeError(sprintf('<info>Restricting packages listed in "symfony/symfony" to "%s"</info>', $this->symfonyRequire));
+                        $this->io->writeError(sprintf('<info>Restricting packages listed in "symfony/symfony" to "%s"</>', $this->symfonyRequire));
                         $this->io = null;
                     }
                     unset($versions[$version]);
