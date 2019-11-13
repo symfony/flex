@@ -243,7 +243,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             $app->add(new Command\UpdateCommand($resolver));
             $app->add(new Command\RemoveCommand($resolver));
             $app->add(new Command\UnpackCommand($resolver));
-            $app->add(new Command\RecipesCommand($this));
+            $app->add(new Command\RecipesCommand($this, $this->lock));
             $app->add(new Command\SyncRecipesCommand($this, $this->options->get('root-dir')));
             $app->add(new Command\GenerateIdCommand($this));
             $app->add(new Command\DumpEnvCommand($this->config, $this->options));
@@ -404,7 +404,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
 
         $recipes = $this->fetchRecipes($this->operations);
-        $this->operations = [];     // Reset the operation after getting recipes
+        $this->operations = [];     // This was done so that we could re-use $this->fetchRecipes() elsewhere - but keep "clearing" $this->operations, which the existing code does currently.
 
         if (2 === $this->displayThanksReminder) {
             $love = '\\' === \DIRECTORY_SEPARATOR ? 'love' : '💖 ';
