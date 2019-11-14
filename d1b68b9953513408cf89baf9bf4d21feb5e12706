@@ -1,0 +1,22 @@
+---------------------------------------------------------------------------
+
+by kevinpapst at 2019-11-13T22:01:50Z
+
+Can't remember what happened back then... but thanks for finding and fixing this one!
+
+A quick check on a current project revealed
+```
+echo $fileUrl . ' # '. $originUrl . PHP_EOL;
+
+https://repo.packagist.org/packages.json # repo.packagist.org
+http://repo.packagist.org/p/provider-latest%2478290d5e9564c411f926482cc97e72347d1a3c20d7800ff867b4b05bb338a4f2.json # repo.packagist.org
+https://flex.symfony.com/versions.json # https://flex.symfony.com
+... and so on
+```
+
+for a local package it is always the same
+```
+var/packages/DemoBundle.zip # var/packages/DemoBundle.zip
+```
+
+So using `$fileUrl` looks like the right choice.
