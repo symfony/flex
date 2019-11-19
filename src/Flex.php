@@ -711,18 +711,25 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
             $noRecipe = !isset($manifests[$name]) || (isset($manifests[$name]['not_installable']) && $manifests[$name]['not_installable']);
             if ($noRecipe && 'symfony-bundle' === $package->getType()) {
-                $manifest = [];
-                $bundle = new SymfonyBundle($this->composer, $package, $job);
-                if (null === $devPackages) {
-                    $devPackages = array_column($this->composer->getLocker()->getLockData()['packages-dev'], 'name');
-                }
-                $envs = \in_array($name, $devPackages) ? ['dev', 'test'] : ['all'];
-                foreach ($bundle->getClassNames() as $class) {
-                    $manifest['manifest']['bundles'][$class] = $envs;
-                }
-                if ($manifest) {
-                    $manifest['origin'] = sprintf('%s:%s@auto-generated recipe', $name, $package->getPrettyVersion());
+                $inlineRecipe = $this->composer->getInstallationManager()->getInstallPath($package) . '/manifest.json';
+                if (file_exists($inlineRecipe)) {
+                    $manifest['origin'] = sprintf('%s:%s@inline recipe', $name, $package->getPrettyVersion());
+                    $manifest['path'] = $inlineRecipe;
                     $recipes[$name] = new Recipe($package, $name, $job, $manifest);
+                } else {
+                    $manifest = [];
+                    $bundle = new SymfonyBundle($this->composer, $package, $job);
+                    if (null === $devPackages) {
+                        $devPackages = array_column($this->composer->getLocker()->getLockData()['packages-dev'], 'name');
+                    }
+                    $envs = \in_array($name, $devPackages) ? ['dev', 'test'] : ['all'];
+                    foreach ($bundle->getClassNames() as $class) {
+                        $manifest['manifest']['bundles'][$class] = $envs;
+                    }
+                    if ($manifest) {
+                        $manifest['origin'] = sprintf('%s:%s@auto-generated recipe', $name, $package->getPrettyVersion());
+                        $recipes[$name] = new Recipe($package, $name, $job, $manifest);
+                    }
                 }
             }
         }
@@ -762,7 +769,12 @@ class Flex implements PluginInterface, EventSubscriberInterface
             return $origin;
         }
 
-        return sprintf('<info>%s</> (<comment>>=%s</>): From %s', $matches[1], $matches[2], 'auto-generated recipe' === $matches[3] ? '<comment>'.$matches[3].'</>' : $matches[3]);
+        $from = $matches[3];
+        if ('auto-generated recipe' === $matches[3] || 'inline recipe' === $matches[3]) {
+            $from = '<comment>'.$matches[3].'</>';
+        }
+
+        return sprintf('<info>%s</> (<comment>>=%s</>): From %s', $matches[1], $matches[2], $from);
     }
 
     private function shouldRecordOperation(PackageEvent $event): bool
