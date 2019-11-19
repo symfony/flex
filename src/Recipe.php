@@ -48,8 +48,8 @@ class Recipe
 
     public function getManifest(): array
     {
-        if (array_key_exists('path', $this->data)) {
-          return json_decode(file_get_contents($this->data['path']), true);
+        if (\array_key_exists('path', $this->data)) {
+            return json_decode(file_get_contents($this->data['path']), true);
         }
 
         if (!isset($this->data['manifest'])) {

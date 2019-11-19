@@ -711,7 +711,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
             $noRecipe = !isset($manifests[$name]) || (isset($manifests[$name]['not_installable']) && $manifests[$name]['not_installable']);
             if ($noRecipe && 'symfony-bundle' === $package->getType()) {
-                $inlineRecipe = $this->composer->getInstallationManager()->getInstallPath($package) . '/manifest.json';
+                $inlineRecipe = $this->composer->getInstallationManager()->getInstallPath($package).'/manifest.json';
                 if (file_exists($inlineRecipe)) {
                     $manifest['origin'] = sprintf('%s:%s@inline recipe', $name, $package->getPrettyVersion());
                     $manifest['path'] = $inlineRecipe;
