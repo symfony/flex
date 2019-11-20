@@ -711,10 +711,25 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
             $noRecipe = !isset($manifests[$name]) || (isset($manifests[$name]['not_installable']) && $manifests[$name]['not_installable']);
             if ($noRecipe && 'symfony-bundle' === $package->getType()) {
-                $inlineRecipe = $this->composer->getInstallationManager()->getInstallPath($package).'/manifest.json';
-                if (file_exists($inlineRecipe)) {
+                // Get the lock data from all packages, including dev.
+                $lockDataPackages = array_merge(
+                    $this->composer->getLocker()->getLockData()['packages'],
+                    $this->composer->getLocker()->getLockData()['packages-dev']
+                );
+
+                // Get lock data of the package.
+                $lockDataPackage = current(
+                    array_filter(
+                        $lockDataPackages,
+                        static function ($lockData) use ($package) {
+                            return $lockData['name'] === $package->getName();
+                        }
+                    )
+                );
+
+                if (isset($lockDataPackage['extra']['recipe']) && \is_array($lockDataPackage['extra']['recipe'])) {
                     $manifest['origin'] = sprintf('%s:%s@inline recipe', $name, $package->getPrettyVersion());
-                    $manifest['path'] = $inlineRecipe;
+                    $manifest['recipe'] = $lockDataPackage['extra']['recipe'];
                     $recipes[$name] = new Recipe($package, $name, $job, $manifest);
                 } else {
                     $manifest = [];
