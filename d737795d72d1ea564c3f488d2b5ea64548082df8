@@ -1,0 +1,108 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2019-11-27T12:50:00Z
+
+> Shouldn't this be on composer instead ?
+
+I don't know, please open an issue on composer if you think so.
+Flex can be more opinionated than composer, so here it is.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2019-11-27T15:58:13Z
+
+PR ready. I simplified the implementation a lot and the version og PHP is now dumped in `symfony.lock` (adding it to `composer.lock` doesn't work well).
+
+---------------------------------------------------------------------------
+
+by naderman at 2019-11-27T16:31:05Z
+
+@nicolas-grekas Would be great if you could contribute this to Composer in a portable way (allow any php version acceptable by all packages in the lock file), rather than continue to add differences in flex that more or less turn it into a fork of Composer.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2019-11-27T16:43:27Z
+
+> Would be great if you could contribute this to Composer in a portable way (allow any php version acceptable by all packages in the lock file)
+
+You mean compiling the constraints of all packages into a single PHP inline expression?
+I don't know how to do this. It looks like this would take way more time than what I can contribute here, thus the PR on Flex with a smaller scope.
+
+> continue to add differences in flex that more or less turn it into a fork of Composer.
+
+I've been told by Jordi that the less composer-core has to maintain, the better it is for the project. That makes sense, moving things into plugins goes in this direction. I am not able to decide what might be needed for composer-core and what is not. Therefore, I contribute to flex, and the community can then migrate ideas (+code) to composer core.
+
+That's the thermodynamics of OSS. Don't put more on my shoulders please :)
+
+---------------------------------------------------------------------------
+
+by Seldaek at 2019-11-27T18:34:53Z
+
+@nicolas-grekas I think this sounds like a great addition to Composer core, as it's a small patch and of use to most people, if you don't have time to do it that's fine.. But for the record I don't think I said that we don't want any contributions :) IMO some things are best done in plugins, if only as a more flexible testing ground. If things prove useful we can then add to core. But once things are in core it's very very hard to remove/change anything, so yeah I tend to be cautious.
+
+Anyway if you want to keep this here for now feel free, or if you or someone else wants to submit it to composer with the changes suggested in https://twitter.com/naderman/status/1199725101542981634 that'd be even better. If nobody steps up I'll try to when I get a chance.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2019-11-27T18:43:06Z
+
+> I don't think I said that we don't want any contributions :)
+
+that's not what I said either ;)
+
+The plan looks good:
+1. we merge this in flex so that this can be propagated to the community very fast - might trigger interesting feedbacks also,
+2. then composer adds this simple logic in core, no more,
+3. last step would be to generate a PHP expression for the set of constraints coming from packages.
+
+I don't know if 3. is needed at all: it might give little benefits compared to the effort required to achieve it. That's my feeling at least. 2. would totally make sense, PR welcome on composer if anyone is reading :)
+
+---------------------------------------------------------------------------
+
+by naderman at 2019-11-27T19:24:12Z
+
+@nicolas-grekas I don't think we necessarily need a full expression, I would just calculate the lowest version number acceptable for all packages, rather than rely on what was used to run the update, anyway I'll see if I can quickly put together the calculation for that.
+
+---------------------------------------------------------------------------
+
+by naderman at 2019-11-27T20:26:01Z
+
+Having looked at this a bit more it does indeed seem like it's not easy even to just get a a lowest common denominator from the current semver lib, would need to expand the constraints/multi-constraints a bit to provide that. So entirely agree with your plan, I added an issue on the composer repo to implement this and can add any feedback you collect with flex there too then: https://github.com/composer/composer/issues/8451 and on the semver lib: https://github.com/composer/semver/issues/71 and https://github.com/composer/semver/issues/72
+
+I think especially the latter two would be an interesting challenge for a new contributor if someone wants to try working on those!
+
+---------------------------------------------------------------------------
+
+by pierrejoye at 2019-11-28T07:21:26Z
+
+If one builds on one php deploy to a target using different php? I think it is why it cannot be done  by composer only.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2019-11-28T07:30:30Z
+
+> If one builds on one php deploy to a target using different php? I think it is why it cannot be done by composer only.
+
+that's supported only if `config.platform.php` sticks to a specific minor version. Otherwise, there will be a transitive deps mismatch (eg build on PHP 7.2 get SF5 components, deploy on 7.1 get a fatal error).
+
+This takes `config.platform.php` into account and allows computing the deps on 7.1 and deploying on 7.2.
+
+---------------------------------------------------------------------------
+
+by beberlei at 2019-11-30T09:51:15Z
+
+Just realized that this approach is not bulletproof, since you can composer install with one version and then just composer dump:autoload with another version. This case is actually whats happening to me for our integration test suite of a PHP extension.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2019-11-30T09:54:32Z
+
+@beberlei WDYM? Where is the issue with this process? When the update is computed, the version of PHP used at the time is stored in symfony.lock. Then, the dump-autoload will preserve that version in the generated autoload file, so the safeguard will still be correct.
+
+Or do you mean something else?
+
+---------------------------------------------------------------------------
+
+by beberlei at 2019-11-30T10:29:04Z
+
+@nicolas-grekas ah thats right then, i am not too deep into flex and symfony.lock, i assumed it was based on how Composer autoload generator works. Ignore my comment then please :)
