@@ -1,0 +1,13 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2019-12-01T15:08:56Z
+
+PR ready. FYI the implementation could be a bit more robust if https://flex.symfony.com/versions.json could list the latest stable version of each branch.
+
+e.g.
+```
+"branches": {
+  "2.7" => "2.7.123",
+  etc
+}
+```
