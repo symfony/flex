@@ -674,6 +674,10 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
         $autoloadFile = $this->config->get('vendor-dir').'/autoload.php';
 
+        if (!file_exists($autoloadFile)) {
+            return;
+        }
+
         $code = file_get_contents($autoloadFile);
         $code = substr($code, \strlen("<?php\n"));
 
