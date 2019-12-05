@@ -31,8 +31,8 @@ class Configurator
         $this->composer = $composer;
         $this->io = $io;
         $this->options = $options;
-        // ordered list of configurators
-        $this->configurators = [
+        // We register only configurators that are not in the disabled list
+        $this->registerConfigurators([
             'bundles' => Configurator\BundlesConfigurator::class,
             'copy-from-recipe' => Configurator\CopyFromRecipeConfigurator::class,
             'copy-from-package' => Configurator\CopyFromPackageConfigurator::class,
@@ -43,7 +43,7 @@ class Configurator
             'gitignore' => Configurator\GitignoreConfigurator::class,
             'dockerfile' => Configurator\DockerfileConfigurator::class,
             'docker-compose' => Configurator\DockerComposeConfigurator::class,
-        ];
+        ]);
     }
 
     public function install(Recipe $recipe, Lock $lock, array $options = [])
@@ -79,5 +79,13 @@ class Configurator
         $class = $this->configurators[$key];
 
         return $this->cache[$key] = new $class($this->composer, $this->io, $this->options);
+    }
+
+    private function registerConfigurators(array $configuratorNameAndClassMap)
+    {
+        $conf = $this->composer->getPackage()->getExtra()['symfony']['disable'] ?? [];
+        foreach ($configuratorNameAndClassMap as $configuratorName => $configuratorClass) {
+            !\in_array($configuratorName, $conf, true) ?: $this->configurators[$configuratorName] = $configuratorClass;
+        }
     }
 }
