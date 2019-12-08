@@ -15,6 +15,7 @@ use Composer\Command\BaseCommand;
 use Composer\DependencyResolver\Operation\InstallOperation;
 use Composer\Factory;
 use Symfony\Component\Console\Exception\RuntimeException;
+use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -39,6 +40,7 @@ class SyncRecipesCommand extends BaseCommand
         $this->setName('symfony:sync-recipes')
             ->setAliases(['sync-recipes', 'fix-recipes'])
             ->setDescription('Installs or reinstalls recipes for already installed packages.')
+            ->addArgument('packages', InputArgument::IS_ARRAY | InputArgument::OPTIONAL, 'Recipes that should be installed.')
             ->addOption('force', null, InputOption::VALUE_NONE, 'Ignore the "symfony.lock" file and overwrite existing files')
         ;
     }
@@ -58,24 +60,46 @@ class SyncRecipesCommand extends BaseCommand
         $lockData = $locker->getLockData();
 
         $packages = [];
+        $totalPackages = [];
         foreach ($lockData['packages'] as $pkg) {
+            $totalPackages[] = $pkg['name'];
             if ($force || !$symfonyLock->has($pkg['name'])) {
                 $packages[] = $pkg['name'];
             }
         }
         foreach ($lockData['packages-dev'] as $pkg) {
+            $totalPackages[] = $pkg['name'];
             if ($force || !$symfonyLock->has($pkg['name'])) {
                 $packages[] = $pkg['name'];
             }
         }
 
+        $io = $this->getIO();
+
+        if ($targetPackages = $input->getArgument('packages')) {
+            if ($invalidPackages = array_diff($targetPackages, $totalPackages)) {
+                $io->writeError(sprintf('<warning>Cannot update: some packages are not installed:</warning> %s', implode(', ', $invalidPackages)));
+
+                return 1;
+            }
+
+            if ($packagesRequiringForce = array_diff($targetPackages, $packages)) {
+                $io->writeError(sprintf('Recipe(s) already installed for: <info>%s</info>', implode(', ', $packagesRequiringForce)));
+                $io->writeError('Re-run the command with <info>--force</info> to re-install the recipes.');
+                $io->writeError('');
+            }
+
+            $packages = array_diff($targetPackages, $packagesRequiringForce);
+        }
+
         if (!$packages) {
+            $io->writeError('No recipes to install.');
+
             return 0;
         }
 
         $composer = $this->getComposer();
         $installedRepo = $composer->getRepositoryManager()->getLocalRepository();
-        $io = $this->getIO();
 
         $operations = [];
         foreach ($packages as $package) {
@@ -102,9 +126,9 @@ class SyncRecipesCommand extends BaseCommand
         if ($force) {
             $output = [
                 '',
-                '<bg=blue;fg=white>                                                    </>',
-                '<bg=blue;fg=white> Config files are now reset to their initial state. </>',
-                '<bg=blue;fg=white>                                                    </>',
+                '<bg=blue;fg=white>                                                            </>',
+                '<bg=blue;fg=white> Files have been reset to the latest version of the recipe. </>',
+                '<bg=blue;fg=white>                                                            </>',
                 '',
                 '  * Use <comment>git diff</> to inspect the changes.',
                 '',
