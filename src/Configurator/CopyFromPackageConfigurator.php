@@ -22,7 +22,7 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
 {
     public function configure(Recipe $recipe, $config, Lock $lock, array $options = [])
     {
-        $this->write('Setting configuration and copying files');
+        $this->write('Copying files from package');
         $packageDir = $this->composer->getInstallationManager()->getInstallPath($recipe->getPackage());
         $options = array_merge($this->options->toArray(), $options);
 
@@ -31,7 +31,7 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
 
     public function unconfigure(Recipe $recipe, $config, Lock $lock)
     {
-        $this->write('Removing configuration and files');
+        $this->write('Removing files from package');
         $packageDir = $this->composer->getInstallationManager()->getInstallPath($recipe->getPackage());
         $this->removeFiles($config, $packageDir, $this->options->get('root-dir'));
     }
@@ -47,7 +47,7 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
                 $targetPath = $this->path->concatenate([$to, $target]);
                 if (!is_dir(\dirname($targetPath))) {
                     mkdir(\dirname($targetPath), 0777, true);
-                    $this->write(sprintf('Created <fg=green>"%s"</>', $this->path->relativize(\dirname($targetPath))));
+                    $this->write(sprintf('  Created <fg=green>"%s"</>', $this->path->relativize(\dirname($targetPath))));
                 }
 
                 $this->copyFile($this->path->concatenate([$from, $source]), $targetPath, $options);
@@ -65,7 +65,7 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
                 $targetPath = $this->path->concatenate([$to, $target]);
                 if (file_exists($targetPath)) {
                     @unlink($targetPath);
-                    $this->write(sprintf('Removed <fg=green>"%s"</>', $this->path->relativize($targetPath)));
+                    $this->write(sprintf('  Removed <fg=green>"%s"</>', $this->path->relativize($targetPath)));
                 }
             }
         }
@@ -83,7 +83,7 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
             if ($item->isDir()) {
                 if (!is_dir($targetPath)) {
                     mkdir($targetPath);
-                    $this->write(sprintf('Created <fg=green>"%s"</>', $this->path->relativize($targetPath)));
+                    $this->write(sprintf('  Created <fg=green>"%s"</>', $this->path->relativize($targetPath)));
                 }
             } elseif (!file_exists($targetPath)) {
                 $this->copyFile($item, $targetPath, $options);
@@ -104,7 +104,7 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
 
         file_put_contents($target, $this->options->expandTargetDir(file_get_contents($source)));
         @chmod($target, fileperms($target) | (fileperms($source) & 0111));
-        $this->write(sprintf('Created <fg=green>"%s"</>', $this->path->relativize($target)));
+        $this->write(sprintf('  Created <fg=green>"%s"</>', $this->path->relativize($target)));
     }
 
     private function removeFilesFromDir(string $source, string $target)
@@ -115,10 +115,10 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
             if ($item->isDir()) {
                 // that removes the dir only if it is empty
                 @rmdir($targetPath);
-                $this->write(sprintf('Removed directory <fg=green>"%s"</>', $this->path->relativize($targetPath)));
+                $this->write(sprintf('  Removed directory <fg=green>"%s"</>', $this->path->relativize($targetPath)));
             } else {
                 @unlink($targetPath);
-                $this->write(sprintf('Removed <fg=green>"%s"</>', $this->path->relativize($targetPath)));
+                $this->write(sprintf('  Removed <fg=green>"%s"</>', $this->path->relativize($targetPath)));
             }
         }
     }

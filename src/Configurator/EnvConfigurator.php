@@ -21,7 +21,7 @@ class EnvConfigurator extends AbstractConfigurator
 {
     public function configure(Recipe $recipe, $vars, Lock $lock, array $options = [])
     {
-        $this->write('Added environment variable defaults');
+        $this->write('Adding environment variable defaults');
 
         $this->configureEnvDist($recipe, $vars, $options['force'] ?? false);
         if (!file_exists($this->options->get('root-dir').'/.env.test')) {
@@ -145,7 +145,7 @@ class EnvConfigurator extends AbstractConfigurator
                 continue;
             }
 
-            $this->write(sprintf('Removed environment variables from %s', $file));
+            $this->write(sprintf('Removing environment variables from %s', $file));
             file_put_contents($phpunit, $contents);
         }
     }
