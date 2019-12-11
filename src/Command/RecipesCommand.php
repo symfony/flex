@@ -12,11 +12,13 @@
 namespace Symfony\Flex\Command;
 
 use Composer\Command\BaseCommand;
+use Composer\Downloader\TransportException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Flex\InformationOperation;
 use Symfony\Flex\Lock;
+use Symfony\Flex\ParallelDownloader;
 use Symfony\Flex\Recipe;
 
 /**
@@ -27,13 +29,14 @@ class RecipesCommand extends BaseCommand
     /** @var \Symfony\Flex\Flex */
     private $flex;
 
-    /** @var Lock */
     private $symfonyLock;
+    private $downloader;
 
-    public function __construct(/* cannot be type-hinted */ $flex, Lock $symfonyLock)
+    public function __construct(/* cannot be type-hinted */ $flex, Lock $symfonyLock, ParallelDownloader $downloader)
     {
         $this->flex = $flex;
         $this->symfonyLock = $symfonyLock;
+        $this->downloader = $downloader;
 
         parent::__construct();
     }
@@ -128,9 +131,11 @@ class RecipesCommand extends BaseCommand
 
     private function displayPackageInformation(Recipe $recipe)
     {
+        $io = $this->getIO();
         $recipeLock = $this->symfonyLock->get($recipe->getName());
 
         $lockRef = $recipeLock['recipe']['ref'] ?? null;
+        $lockRepo = $recipeLock['recipe']['repo'] ?? null;
         $lockFiles = $recipeLock['files'] ?? null;
 
         $status = '<comment>up to date</comment>';
@@ -142,16 +147,63 @@ class RecipesCommand extends BaseCommand
             $status = '<comment>update available</comment>';
         }
 
-        $io = $this->getIO();
-        $io->write('<info>name</info>     : '.$recipe->getName());
-        $io->write('<info>version</info>  : '.$recipeLock['version']);
-        if (!$recipe->isAuto()) {
-            $io->write('<info>repo</info>     : '.sprintf('https://%s/tree/master/%s/%s', $recipeLock['recipe']['repo'], $recipe->getName(), $recipeLock['version']));
+        $branch = $recipeLock['recipe']['branch'] ?? 'master';
+        $gitSha = null;
+        $commitDate = null;
+        if (null !== $lockRef && null !== $lockRepo) {
+            try {
+                list($gitSha, $commitDate) = $this->findRecipeCommitDataFromTreeRef(
+                    $recipe->getName(),
+                    $lockRepo,
+                    $branch,
+                    $recipeLock['version'],
+                    $lockRef
+                );
+            } catch (TransportException $exception) {
+                $io->writeError('Error downloading exact git sha for installed recipe.');
+            }
         }
-        $io->write('<info>status</info>   : '.$status);
+
+        $io->write('<info>name</info>             : '.$recipe->getName());
+        $io->write('<info>version</info>          : '.$recipeLock['version']);
+        $io->write('<info>status</info>           : '.$status);
+        if (!$recipe->isAuto()) {
+            $recipeUrl = sprintf(
+                'https://%s/tree/%s/%s/%s',
+                $lockRepo,
+                // if something fails, default to the branch as the closest "sha"
+                $gitSha ?? $branch,
+                $recipe->getName(),
+                $recipeLock['version']
+            );
+
+            $io->write('<info>installed recipe</info> : '.$recipeUrl);
+        }
+
+        if ($lockRef !== $recipe->getRef()) {
+            $io->write('<info>latest recipe</info>    : '.$recipe->getURL());
+
+            // if the version is the same, point them to the history
+            if ($recipe->getVersion() === $recipeLock['version'] && null !== $gitSha) {
+                $historyUrl = sprintf(
+                    'https://%s/commits/%s/%s/%s',
+                    $lockRepo,
+                    $branch,
+                    $recipe->getName(),
+                    $recipe->getVersion()
+                );
+
+                // show commits since one second after the currently-installed recipe
+                if (null !== $commitDate) {
+                    $historyUrl .= '?since='.(new \DateTime($commitDate))->modify('+1 seconds')->format('c\Z');
+                }
+
+                $io->write('<info>new commits</info>      : '.$historyUrl);
+            }
+        }
 
         if (null !== $lockFiles) {
-            $io->write('<info>files</info>    : ');
+            $io->write('<info>files</info>            : ');
             $io->write('');
 
             $tree = $this->generateFilesTree($lockFiles);
@@ -251,5 +303,60 @@ class RecipesCommand extends BaseCommand
         }
 
         $io->write($line);
+    }
+
+    /**
+     * Attempts to find the original git sha when the recipe was installed.
+     */
+    private function findRecipeCommitDataFromTreeRef(string $package, string $repo, string $branch, string $version, string $lockRef)
+    {
+        // only supports public repository placement
+        if (0 !== strpos($repo, 'github.com')) {
+            return [null, null];
+        }
+
+        $parts = explode('/', $repo);
+        if (3 !== \count($parts)) {
+            return [null, null];
+        }
+
+        $recipePath = sprintf('%s/%s', $package, $version);
+        $commitsData = $this->requestGitHubApi(sprintf(
+            'https://api.github.com/repos/%s/%s/commits?path=%s&sha=%s',
+            $parts[1],
+            $parts[2],
+            $recipePath,
+            $branch
+        ));
+
+        foreach ($commitsData as $commitData) {
+            // go back the commits one-by-one
+            $treeUrl = $commitData['commit']['tree']['url'].'?recursive=true';
+
+            // fetch the full tree, then look for the tree for the package path
+            $treeData = $this->requestGitHubApi($treeUrl);
+            foreach ($treeData['tree'] as $treeItem) {
+                if ($treeItem['path'] !== $recipePath) {
+                    continue;
+                }
+
+                if ($treeItem['sha'] === $lockRef) {
+                    // shorten for brevity
+                    return [
+                        substr($commitData['sha'], 0, 7),
+                        $commitData['commit']['committer']['date'],
+                    ];
+                }
+            }
+        }
+
+        return [null, null];
+    }
+
+    private function requestGitHubApi(string $path)
+    {
+        $contents = $this->downloader->getContents('api.github.com', $path, false);
+
+        return json_decode($contents, true);
     }
 }
