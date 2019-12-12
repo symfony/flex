@@ -36,7 +36,7 @@ class CopyFromRecipeConfiguratorTest extends TestCase
             mkdir($this->targetDirectory);
         }
         file_put_contents($this->targetFile, '');
-        $this->io->expects($this->exactly(1))->method('writeError')->with(['    Setting configuration and copying files']);
+        $this->io->expects($this->exactly(1))->method('writeError')->with(['    Copying files from recipe']);
         $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
         $this->createConfigurator()->configure($this->recipe, [$this->sourceFileRelativePath => $this->targetFileRelativePath], $lock);
     }
@@ -65,8 +65,8 @@ class CopyFromRecipeConfiguratorTest extends TestCase
         file_put_contents($this->targetFile, '-');
         $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
 
-        $this->io->expects($this->at(0))->method('writeError')->with(['    Setting configuration and copying files']);
-        $this->io->expects($this->at(2))->method('writeError')->with(['    Created <fg=green>"./config/file"</>']);
+        $this->io->expects($this->at(0))->method('writeError')->with(['    Copying files from recipe']);
+        $this->io->expects($this->at(2))->method('writeError')->with(['      Created <fg=green>"./config/file"</>']);
         $this->io->method('askConfirmation')->with('File "build/config/file" has uncommitted changes, overwrite? [y/N] ')->willReturn(true);
 
         $this->assertFileExists($this->targetFile);
@@ -82,8 +82,8 @@ class CopyFromRecipeConfiguratorTest extends TestCase
 
     public function testConfigure()
     {
-        $this->io->expects($this->at(0))->method('writeError')->with(['    Setting configuration and copying files']);
-        $this->io->expects($this->at(1))->method('writeError')->with(['    Created <fg=green>"./config/file"</>']);
+        $this->io->expects($this->at(0))->method('writeError')->with(['    Copying files from recipe']);
+        $this->io->expects($this->at(1))->method('writeError')->with(['      Created <fg=green>"./config/file"</>']);
 
         $this->assertFileNotExists($this->targetFile);
         $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
@@ -113,8 +113,8 @@ class CopyFromRecipeConfiguratorTest extends TestCase
 
     public function testUnconfigure()
     {
-        $this->io->expects($this->at(0))->method('writeError')->with(['    Removing configuration and files']);
-        $this->io->expects($this->at(1))->method('writeError')->with(['    Removed <fg=green>"./config/file"</>']);
+        $this->io->expects($this->at(0))->method('writeError')->with(['    Removing files from recipe']);
+        $this->io->expects($this->at(1))->method('writeError')->with(['      Removed <fg=green>"./config/file"</>']);
 
         if (!file_exists($this->targetDirectory)) {
             mkdir($this->targetDirectory);
@@ -129,7 +129,7 @@ class CopyFromRecipeConfiguratorTest extends TestCase
     public function testNoFilesRemoved()
     {
         $this->assertFileNotExists($this->targetFile);
-        $this->io->expects($this->exactly(1))->method('writeError')->with(['    Removing configuration and files']);
+        $this->io->expects($this->exactly(1))->method('writeError')->with(['    Removing files from recipe']);
         $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
         $this->createConfigurator()->unconfigure($this->recipe, [$this->sourceFileRelativePath => $this->targetFileRelativePath], $lock);
     }
