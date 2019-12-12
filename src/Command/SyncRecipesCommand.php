@@ -76,6 +76,13 @@ class SyncRecipesCommand extends BaseCommand
 
         $io = $this->getIO();
 
+        if (!$io->isVerbose()) {
+            $io->writeError([
+                'Run command with <info>-v</info> to see more details',
+                '',
+            ]);
+        }
+
         if ($targetPackages = $input->getArgument('packages')) {
             if ($invalidPackages = array_diff($targetPackages, $totalPackages)) {
                 $io->writeError(sprintf('<warning>Cannot update: some packages are not installed:</warning> %s', implode(', ', $invalidPackages)));
