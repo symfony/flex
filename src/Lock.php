@@ -49,14 +49,18 @@ class Lock
 
     public function set($name, $data)
     {
-        $this->lock[$name] = $data;
-        $this->changed = true;
+        if (!\array_key_exists($name, $this->lock) || $data !== $this->lock[$name]) {
+            $this->lock[$name] = $data;
+            $this->changed = true;
+        }
     }
 
     public function remove($name)
     {
-        unset($this->lock[$name]);
-        $this->changed = true;
+        if (\array_key_exists($name, $this->lock)) {
+            unset($this->lock[$name]);
+            $this->changed = true;
+        }
     }
 
     public function write()
