@@ -1,0 +1,10 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2019-12-13T17:23:08Z
+
+Getting the tree is super nice!
+I'm wondering if the links are that useful: I clicked on one for symfony/console and fine, there were symlinks + what should I do about that?
+
+Something super useful would be to be able to display the diff. I'm sure we can checkout the files locally and use git to render the diff.
+
+:gift_heart:
