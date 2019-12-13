@@ -183,23 +183,19 @@ class RecipesCommand extends BaseCommand
         if ($lockRef !== $recipe->getRef()) {
             $io->write('<info>latest recipe</info>    : '.$recipe->getURL());
 
-            // if the version is the same, point them to the history
-            if ($recipe->getVersion() === $recipeLock['version'] && null !== $gitSha) {
-                $historyUrl = sprintf(
-                    'https://%s/commits/%s/%s/%s',
-                    $lockRepo,
-                    $branch,
-                    $recipe->getName(),
-                    $recipe->getVersion()
-                );
+            $historyUrl = sprintf(
+                'https://%s/commits/%s/%s',
+                $lockRepo,
+                $branch,
+                $recipe->getName()
+            );
 
-                // show commits since one second after the currently-installed recipe
-                if (null !== $commitDate) {
-                    $historyUrl .= '?since='.(new \DateTime($commitDate))->modify('+1 seconds')->format('c\Z');
-                }
-
-                $io->write('<info>new commits</info>      : '.$historyUrl);
+            // show commits since one second after the currently-installed recipe
+            if (null !== $commitDate) {
+                $historyUrl .= '?since='.(new \DateTime($commitDate))->modify('+1 seconds')->format('c\Z');
             }
+
+            $io->write('<info>recipe history</info>   : '.$historyUrl);
         }
 
         if (null !== $lockFiles) {
@@ -211,11 +207,13 @@ class RecipesCommand extends BaseCommand
             $this->displayFilesTree($tree);
         }
 
-        $io->write([
-            '',
-            'Update this recipe by running:',
-            sprintf('<info>composer recipes:install %s --force -v</info>', $recipe->getName()),
-        ]);
+        if ($lockRef !== $recipe->getRef()) {
+            $io->write([
+                '',
+                'Update this recipe by running:',
+                sprintf('<info>composer recipes:install %s --force -v</info>', $recipe->getName()),
+            ]);
+        }
     }
 
     private function generateFilesTree(array $files): array
