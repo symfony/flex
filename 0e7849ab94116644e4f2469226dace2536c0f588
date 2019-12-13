@@ -1,0 +1,17 @@
+---------------------------------------------------------------------------
+
+by weaverryan at 2019-12-11T19:40:25Z
+
+Needs a rebase now and fabbot is failing
+
+---------------------------------------------------------------------------
+
+by maxhelias at 2019-12-11T19:44:59Z
+
+The fabbot failing is due to the trigger_error which cannot be silent otherwise it does not appear
+
+---------------------------------------------------------------------------
+
+by maxhelias at 2019-12-12T08:43:29Z
+
+It's ready to merge :)
