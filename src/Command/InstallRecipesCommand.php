@@ -22,7 +22,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Flex\Event\UpdateEvent;
 use Symfony\Flex\Lock;
 
-class SyncRecipesCommand extends BaseCommand
+class InstallRecipesCommand extends BaseCommand
 {
     private $flex;
     private $rootDir;
@@ -37,8 +37,8 @@ class SyncRecipesCommand extends BaseCommand
 
     protected function configure()
     {
-        $this->setName('symfony:sync-recipes')
-            ->setAliases(['sync-recipes', 'fix-recipes'])
+        $this->setName('symfony:recipes:install')
+            ->setAliases(['recipes:install', 'symfony:sync-recipes', 'sync-recipes', 'fix-recipes'])
             ->setDescription('Installs or reinstalls recipes for already installed packages.')
             ->addArgument('packages', InputArgument::IS_ARRAY | InputArgument::OPTIONAL, 'Recipes that should be installed.')
             ->addOption('force', null, InputOption::VALUE_NONE, 'Ignore the "symfony.lock" file and overwrite existing files')
