@@ -295,7 +295,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         // new projects are most of the time proprietary
         $manipulator->addMainKey('license', 'proprietary');
 
-        // replace unbounded contraints for symfony/* packages by extra.symfony.require
+        // replace unbounded constraints for symfony/* packages by extra.symfony.require
         $config = json_decode($contents, true);
         if ($symfonyVersion = $config['extra']['symfony']['require'] ?? null) {
             $versions = $this->downloader->getVersions();
