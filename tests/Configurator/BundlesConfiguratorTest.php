@@ -37,7 +37,7 @@ class BundlesConfiguratorTest extends TestCase
             'FooBundle' => ['dev', 'test'],
             'Symfony\Bundle\FrameworkBundle\FrameworkBundle' => ['all'],
         ], $lock);
-        $this->assertEquals(<<<EOF
+        $this->assertEquals(<<<'EOF'
 <?php
 
 return [
@@ -52,7 +52,7 @@ EOF
     public function testConfigureWhenBundlesAlreayExists()
     {
         $config = FLEX_TEST_DIR.'/config/bundles.php';
-        file_put_contents($config, <<<EOF
+        file_put_contents($config, <<<'EOF'
 <?php
 
 return [
@@ -74,7 +74,7 @@ EOF
             'FooBundle' => ['dev', 'test'],
             'Symfony\Bundle\FrameworkBundle\FrameworkBundle' => ['all'],
         ], $lock);
-        $this->assertEquals(<<<EOF
+        $this->assertEquals(<<<'EOF'
 <?php
 
 return [

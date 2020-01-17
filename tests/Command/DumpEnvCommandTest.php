@@ -28,7 +28,7 @@ class DumpEnvCommandTest extends TestCase
         @unlink($env);
         @unlink($envLocal);
 
-        $envContent = <<<EOF
+        $envContent = <<<'EOF'
 APP_ENV=dev
 APP_SECRET=abcdefgh123456789
 EOF;
@@ -59,7 +59,7 @@ EOF;
         @unlink($env);
         @unlink($envLocal);
 
-        $envContent = <<<EOF
+        $envContent = <<<'EOF'
 APP_ENV=dev
 APP_SECRET=abcdefgh123456789
 EOF;

@@ -137,7 +137,7 @@ EOF;
 
         $this->assertStringEqualsFile(
             $env,
-            <<<EOF
+            <<<'EOF'
 
 
 EOF

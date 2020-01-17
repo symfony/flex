@@ -49,13 +49,13 @@ class GitignoreConfiguratorTest extends TestCase
             '/vendor/',
         ];
 
-        $gitignoreContents1 = <<<EOF
+        $gitignoreContents1 = <<<'EOF'
 ###> FooBundle ###
 .env
 /public/bundles/
 ###< FooBundle ###
 EOF;
-        $gitignoreContents2 = <<<EOF
+        $gitignoreContents2 = <<<'EOF'
 ###> BarBundle ###
 /var/
 /vendor/
@@ -97,7 +97,7 @@ EOF;
         touch($gitignore);
         file_put_contents($gitignore, "# preexisting content\n");
 
-        $contentsConfigure = <<<EOF
+        $contentsConfigure = <<<'EOF'
 # preexisting content
 
 ###> FooBundle ###
@@ -106,7 +106,7 @@ EOF;
 
 # new content
 EOF;
-        $contentsForce = <<<EOF
+        $contentsForce = <<<'EOF'
 # preexisting content
 
 ###> FooBundle ###

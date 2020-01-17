@@ -42,7 +42,7 @@ class MakefileConfiguratorTest extends TestCase
 
         $makefile1 = explode(
             "\n",
-            <<<EOF
+            <<<'EOF'
 CONSOLE := $(shell which bin/console)
 sf_console:
 ifndef CONSOLE
@@ -52,7 +52,7 @@ EOF
         );
         $makefile2 = explode(
             "\n",
-            <<<EOF
+            <<<'EOF'
 cache-clear:
 ifdef CONSOLE
 	@$(CONSOLE) cache:clear --no-warmup

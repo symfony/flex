@@ -111,7 +111,7 @@ class FlexTest extends TestCase
         $this->assertSame($expected, $postInstallOutput);
 
         $this->assertSame(
-            <<<EOF
+            <<<'EOF'
 Symfony operations: 1 recipe ()
   - Configuring dummy/dummy (>=1.0): From github.com/symfony/recipes:master
 
