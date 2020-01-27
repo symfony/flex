@@ -395,8 +395,6 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
     public function install(Event $event = null)
     {
-        $this->updateAutoloadFile();
-
         $rootDir = $this->options->get('root-dir');
 
         if (!file_exists("$rootDir/.env") && !file_exists("$rootDir/.env.local") && file_exists("$rootDir/.env.dist") && false === strpos(file_get_contents("$rootDir/.env.dist"), '.env.local')) {
@@ -668,7 +666,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $this->updateComposerLock();
     }
 
-    private function updateAutoloadFile()
+    public function updateAutoloadFile()
     {
         if (!$platform = $this->lock->get('php')['version'] ?? null) {
             return;
@@ -898,6 +896,7 @@ EOPHP
             ScriptEvents::POST_INSTALL_CMD => 'install',
             ScriptEvents::PRE_UPDATE_CMD => 'configureInstaller',
             ScriptEvents::POST_UPDATE_CMD => 'update',
+            ScriptEvents::POST_AUTOLOAD_DUMP => 'updateAutoloadFile',
             PluginEvents::PRE_FILE_DOWNLOAD => 'onFileDownload',
             'auto-scripts' => 'executeAutoScripts',
         ];
