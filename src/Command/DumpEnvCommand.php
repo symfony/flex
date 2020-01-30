@@ -84,7 +84,11 @@ EOF;
         putenv('SYMFONY_DOTENV_VARS='.$_SERVER['SYMFONY_DOTENV_VARS']);
 
         try {
-            $dotenv = new Dotenv(false);
+            if (method_exists(Dotenv::class, 'usePutenv')) {
+                $dotenv = new Dotenv();
+            } else {
+                $dotenv = new Dotenv(false);
+            }
 
             if (method_exists($dotenv, 'loadEnv')) {
                 $dotenv->loadEnv($path);
