@@ -668,6 +668,11 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
     public function updateAutoloadFile()
     {
+        $strictPhpVersion = $this->composer->getPackage()->getExtra()['symfony']['strict-php-version'] ?? true;
+        if (!$strictPhpVersion) {
+            return;
+        }
+
         if (!$platform = $this->lock->get('php')['version'] ?? null) {
             return;
         }
