@@ -691,7 +691,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         file_put_contents($autoloadFile, <<<EOPHP
 <?php
 
-if (\PHP_VERSION_ID < $version) {
+if (version_compare(\PHP_VERSION_ID, $version) < 0) {
     echo sprintf("Fatal Error: composer.lock was created for PHP version $platform or higher but the current PHP version is %d.%d.%d.\\n", PHP_MAJOR_VERSION, PHP_MINOR_VERSION, PHP_RELEASE_VERSION);
     exit(1);
 }
