@@ -24,7 +24,32 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
         $this->write('Copying files from recipe');
         $options = array_merge($this->options->toArray(), $options);
 
-        $lock->add($recipe->getName(), ['files' => $this->copyFiles($config, $recipe->getFiles(), $options)]);
+        $files = $this->copyFiles($config, $recipe->getFiles(), $options);
+        $lock->add($recipe->getName(), ['files' => $files]);
+
+        // Remove extra file only on force
+        if (!($options['force'] ?? false)) {
+            return;
+        }
+
+        // Recipe not installed yet
+        if (null === $recipeLock = $options['beforeState']) {
+            return;
+        }
+
+        $lockFiles = $recipeLock['files'] ?? null;
+        if (null === $lockFiles) {
+            return;
+        }
+
+        $lockFiles = array_flip($lockFiles);
+        foreach ($files as $file) {
+            if (isset($lockFiles[$file])) {
+                unset($lockFiles[$file]);
+            }
+        }
+
+        $this->removeFiles($config, $lockFiles, $this->options->get('root-dir'));
     }
 
     public function unconfigure(Recipe $recipe, $config, Lock $lock)

@@ -64,6 +64,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
     private $postInstallOutput = [''];
     private $operations = [];
     private $lock;
+    private $frozenLock;
     private $cacheDirPopulated = false;
     private $displayThanksReminder = 0;
     private $rfs;
@@ -133,6 +134,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $composer->setRepositoryManager($manager);
         $this->configurator = new Configurator($composer, $io, $this->options);
         $this->lock = new Lock(getenv('SYMFONY_LOCKFILE') ?: str_replace('composer.json', 'symfony.lock', Factory::getComposerFile()));
+        $this->frozenLock = $this->lock->all();
 
         $disable = true;
         foreach (array_merge($composer->getPackage()->getRequires() ?? [], $composer->getPackage()->getDevRequires() ?? []) as $link) {
@@ -475,6 +477,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
                     $this->io->writeError(sprintf('  - Configuring %s', $this->formatOrigin($recipe->getOrigin())));
                     $this->configurator->install($recipe, $this->lock, [
                         'force' => $event instanceof UpdateEvent && $event->force(),
+                        'beforeState' => $this->frozenLock[$recipe->getName()] ?? null,
                     ]);
                     $manifest = $recipe->getManifest();
                     if (isset($manifest['post-install-output'])) {

@@ -74,7 +74,7 @@ class CopyFromRecipeConfiguratorTest extends TestCase
             $this->recipe,
             [$this->sourceFileRelativePath => $this->targetFileRelativePath],
             $lock,
-            ['force' => true]
+            ['force' => true, 'beforeState' => null]
         );
         $this->assertFileExists($this->targetFile);
         $this->assertSame('somecontent', file_get_contents($this->targetFile));
