@@ -12,10 +12,10 @@
     "minimum-stability": "dev",
     "require": {
         "php": ">=7.1",
-        "composer-plugin-api": "^1.0"
+        "composer-plugin-api": "^2.0"
     },
     "require-dev": {
-        "composer/composer": "^1.0.2",
+        "composer/composer": "^2.0@dev",
         "symfony/dotenv": "^4.4|^5.0",
         "symfony/phpunit-bridge": "^4.4|^5.0",
         "symfony/process": "^4.4|^5.0"
@@ -27,7 +27,7 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-master": "1.7-dev"
+            "dev-master": "2.0-dev"
         },
         "class": "Symfony\\Flex\\Flex"
     }

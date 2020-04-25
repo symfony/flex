@@ -79,7 +79,7 @@ class CopyDirectoryFromPackageConfiguratorTest extends TestCase
         $this->recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
         $this->recipe->expects($this->exactly(1))->method('getPackage')->willReturn($package);
 
-        $installationManager = $this->getMockBuilder(InstallationManager::class)->getMock();
+        $installationManager = $this->getMockBuilder(InstallationManager::class)->disableOriginalConstructor()->getMock();
         $installationManager->expects($this->exactly(1))
             ->method('getInstallPath')
             ->with($package)

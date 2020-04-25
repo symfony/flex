@@ -19,6 +19,8 @@ use Composer\DependencyResolver\Operation\UpdateOperation;
 use Composer\Downloader\TransportException;
 use Composer\IO\IOInterface;
 use Composer\Json\JsonFile;
+use Composer\Util\HttpDownloader;
+use function React\Promise\all;
 
 /**
  * @author Fabien Potencier <fabien@symfony.com>
@@ -39,7 +41,7 @@ class Downloader
     private $flexId;
     private $enabled = true;
 
-    public function __construct(Composer $composer, IoInterface $io, ParallelDownloader $rfs)
+    public function __construct(Composer $composer, IoInterface $io, HttpDownloader $rfs)
     {
         if (getenv('SYMFONY_CAFILE')) {
             $this->caFile = getenv('SYMFONY_CAFILE');
@@ -85,7 +87,11 @@ class Downloader
      */
     public function getRecipes(array $operations): array
     {
-        $paths = [];
+        if ($this->enabled && self::$DEFAULT_ENDPOINT !== $this->endpoint) {
+            $this->io->writeError('<warning>Using "'.$this->endpoint.'" as the Symfony endpoint</>');
+        }
+
+        $jobs = [];
         $chunk = '';
         foreach ($operations as $i => $operation) {
             $o = 'i';
@@ -117,7 +123,7 @@ class Downloader
                 $path .= ','.$date->format('U');
             }
             if (\strlen($chunk) + \strlen($path) > self::$MAX_LENGTH) {
-                $paths[] = ['/p/'.$chunk];
+                $jobs[] = $this->rfs->add($this->endpoint.'/p/'.$chunk);
                 $chunk = $path;
             } elseif ($chunk) {
                 $chunk .= ';'.$path;
@@ -126,18 +132,17 @@ class Downloader
             }
         }
         if ($chunk) {
-            $paths[] = ['/p/'.$chunk];
+            $jobs[] = $this->rfs->add($this->endpoint.'/p/'.$chunk);
         }
 
-        if ($this->enabled && self::$DEFAULT_ENDPOINT !== $this->endpoint) {
-            $this->io->writeError('<warning>Using "'.$this->endpoint.'" as the Symfony endpoint</>');
-        }
-
+        $this->rfs->wait();
         $bodies = [];
-        $this->rfs->download($paths, function ($path) use (&$bodies) {
-            if ($body = $this->get($path, [], false)->getBody()) {
-                $bodies[] = $body;
+        all($jobs)->then(static function (array $responses) use (&$bodies) {
+            foreach ($responses as $response) {
+                $bodies[] = json_decode($response->getBody(), true);
             }
+        }, function (\Exception $e) {
+            $this->io->writeError('<warning>Failed to download recipes: '.$e->getMessage().'</>');
         });
 
         $data = [];
@@ -189,9 +194,9 @@ class Downloader
         $retries = 3;
         while ($retries--) {
             try {
-                $json = $this->rfs->getContents($this->endpoint, $url, false, $options);
+                $response = $this->rfs->get($url, $options);
 
-                return $this->parseJson($json, $url, $cacheKey, $this->rfs->getLastHeaders());
+                return $this->parseJson($response->getBody(), $url, $cacheKey, $response->getHeaders());
             } catch (\Exception $e) {
                 if ($e instanceof TransportException && 404 === $e->getStatusCode()) {
                     throw $e;
@@ -220,12 +225,12 @@ class Downloader
         $retries = 3;
         while ($retries--) {
             try {
-                $json = $this->rfs->getContents($this->endpoint, $url, false, $options);
-                if (304 === $this->rfs->findStatusCode($this->rfs->getLastHeaders())) {
-                    return new Response('', $this->rfs->getLastHeaders(), 304);
+                $response = $this->rfs->get($url, $options);
+                if (304 === $response->getStatusCode()) {
+                    return new Response($response->getBody(), $response->getHeaders(), 304);
                 }
 
-                return $this->parseJson($json, $url, $cacheKey, $this->rfs->getLastHeaders());
+                return $this->parseJson($response->getBody(), $url, $cacheKey, $response->getHeaders());
             } catch (\Exception $e) {
                 if ($e instanceof TransportException && 404 === $e->getStatusCode()) {
                     throw $e;

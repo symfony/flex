@@ -24,6 +24,7 @@ env:
     
 before_install:
   - ([[ $TRAVIS_PHP_VERSION = nightly ]] && composer config platform.php 7.4.99 || true)
+  - composer self-update --snapshot
   - composer validate
 
 install:

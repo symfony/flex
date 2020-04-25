@@ -30,11 +30,9 @@ class InformationOperation extends SolverOperation
     }
 
     /**
-     * Returns job type.
-     *
-     * @return string
+     * {@inheritdoc}
      */
-    public function getJobType()
+    public function getOperationType()
     {
         return 'information';
     }
@@ -42,8 +40,16 @@ class InformationOperation extends SolverOperation
     /**
      * {@inheritdoc}
      */
+    public function show($lock)
+    {
+        return 'Information '.$this->package->getPrettyName().' ('.$this->package->getFullPrettyVersion().')';
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function __toString()
     {
-        return 'Information '.$this->package->getPrettyName().' ('.$this->formatVersion($this->package).')';
+        return $this->show(false);
     }
 }

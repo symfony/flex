@@ -11,30 +11,73 @@
 
 namespace Symfony\Flex\Tests;
 
+use Composer\IO\NullIO;
+use Composer\Package\CompletePackage;
+use Composer\Package\Loader\ArrayLoader;
+use Composer\Package\PackageInterface;
 use PHPUnit\Framework\TestCase;
-use Symfony\Flex\Cache;
+use Symfony\Flex\PackageFilter;
 
-class CacheTest extends TestCase
+class PackageFilterTest extends TestCase
 {
     /**
-     * @dataProvider provideRemoveLegacyTags
+     * @dataProvider provideRemoveLegacyPackages
      */
-    public function testRemoveLegacyTags(array $expected, array $packages, string $symfonyRequire, array $versions)
+    public function testRemoveLegacyPackages(array $expected, array $packages, string $symfonyRequire, array $versions)
     {
         $downloader = $this->getMockBuilder('Symfony\Flex\Downloader')->disableOriginalConstructor()->getMock();
         $downloader->expects($this->once())
             ->method('getVersions')
             ->willReturn($versions);
-        $cache = (new \ReflectionClass(Cache::class))->newInstanceWithoutConstructor();
-        $cache->setSymfonyRequire($symfonyRequire, $downloader);
+        $filter = new PackageFilter(new NullIO(), $symfonyRequire, $downloader);
 
-        $this->assertSame(['packages' => $expected], $cache->removeLegacyTags(['packages' => $packages]));
+        $configToPackage = static function (array $configs) {
+            $l = new ArrayLoader();
+            $packages = [];
+            foreach ($configs as $name => $versions) {
+                foreach ($versions as $version => $extra) {
+                    $packages[] = $l->load([
+                        'name' => $name,
+                        'version' => $version,
+                    ] + $extra, CompletePackage::class);
+                }
+            }
+
+            return $packages;
+        };
+        $sortPackages = static function (PackageInterface $a, PackageInterface $b) {
+            return [$a->getName(), $a->getVersion()] <=> [$b->getName(), $b->getVersion()];
+        };
+
+        $expected = $configToPackage($expected);
+        $packages = $configToPackage($packages);
+
+        $actual = $filter->removeLegacyPackages($packages);
+
+        usort($expected, $sortPackages);
+        usort($actual, $sortPackages);
+
+        $this->assertEquals($expected, $actual);
     }
 
-    public function provideRemoveLegacyTags()
+    private function configToPackage(array $configs)
     {
-        yield 'no-symfony/symfony' => [[123], [123], '~1', ['splits' => []]];
+        $l = new ArrayLoader();
+        $packages = [];
+        foreach ($configs as $name => $versions) {
+            foreach ($versions as $version => $extra) {
+                $packages[] = $l->load([
+                        'name' => $name,
+                        'version' => $version,
+                ] + $extra, CompletePackage::class);
+            }
+        }
 
+        return $packages;
+    }
+
+    public function provideRemoveLegacyPackages()
+    {
         $branchAlias = function ($versionAlias) {
             return [
                 'extra' => [

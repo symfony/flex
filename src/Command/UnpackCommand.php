@@ -114,14 +114,13 @@ class UnpackCommand extends BaseCommand
         $lockFile->write($lockData);
 
         // force removal of files under vendor/
-        $locker = new Locker($io, $lockFile, $composer->getRepositoryManager(), $composer->getInstallationManager(), file_get_contents($json->getPath()));
+        $locker = new Locker($io, $lockFile, $composer->getInstallationManager(), file_get_contents($json->getPath()));
         $composer->setLocker($locker);
         $install = Installer::create($io, $composer);
         $install
             ->setDevMode(true)
             ->setDumpAutoloader(false)
             ->setRunScripts(false)
-            ->setSkipSuggest(true)
             ->setIgnorePlatformRequirements(true)
         ;
 
