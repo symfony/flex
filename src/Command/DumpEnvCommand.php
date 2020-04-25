@@ -62,7 +62,7 @@ return $vars;
 EOF;
         file_put_contents($path.'.local.php', $vars, LOCK_EX);
 
-        $this->getIO()->writeError('Successfully dumped .env files in <info>.env.local.php</>');
+        $this->getIO()->writeError('Successfully dumped .env files in <info>.env.local.php</info>');
 
         return 0;
     }
