@@ -1,0 +1,308 @@
+---------------------------------------------------------------------------
+
+by andrerom at 2020-04-08T18:35:15Z
+
+I was thinking of proposing this some time ago as well, but I didn’t as I’m kind of expecting Fabien / Nicolas et. all to not want to add all custom bundle composer package types out there.
+
+So I think we are lacking a convention, or something to say ezplatform-bundle is a superset of symfony-bundle
+
+For instance composer should maybe allow type to be array (unlikely) or Flex should also look in composer.json keywords for ‘symfony-bundle’ (more likely), or something else entirely.
+
+---------------------------------------------------------------------------
+
+by SerheyDolgushev at 2020-04-08T18:36:20Z
+
+> I was thinking of adding this some time ago as well, but I didn’t as I’m kind of expecting Fabien / Nicolas et. all to not want to add all custom bundle composer package types out there.
+>
+> So I think we are lacking a convention, or something to say ezplatform-bundle is a superset of symfony-bundle
+>
+> For instance composer should maybe allow type to be array (unlikely) or Flex should also look in composer.json keywords for ‘symfony-bundle’ (more likely), or something else.
+
+@nicolas-grekas what do you think?
+
+---------------------------------------------------------------------------
+
+by alexander-schranz at 2020-04-10T08:50:14Z
+
+Was thinking this days to provide the same for `sulu-bundle`. Maybe we can find a convention. Or maybe use a `extra` field to provide the classes which should be added to the `bundles.php`.
+
+```php
+{
+    "extra": {
+        "symfony": {
+             "flex-bundle-classes": ["My\Bundle\MyBundle"]
+        }
+    }
+}
+```
+
+This would also don't need any hacks for sylius plugins they just say which class should be added to the bundles.php.
+
+---------------------------------------------------------------------------
+
+by SerheyDolgushev at 2020-04-16T15:27:51Z
+
+Talked to @nicolas-grekas on Symfony slack channel and he liked the idea suggested by @alexander-schranz. So this PR introduces `extra.symfony.bundle-classes` config.
+
+When any package is installed, following bundles will be enabled automatically after the installation:
+1. If package type is `symfony-bundle` all bundle classes will be extracted from it (current behavior).
+2. If package has `extra.symfony.bundle-classes` configuration, all the bundle classes will be used from it (implemented in this PR).
+
+Example usage:
+```json
+{
+    "name": "contextualcode/ezplatform-search-binary-extractor",
+    "type": "ezplatform-bundle",
+    ...
+    "extra": {
+        "symfony": {
+            "bundle-classes": ["ContextualCode\\EzPlatformSearchBinaryExtractorBundle\\EzPlatformSearchBinaryExtractorBundle"]
+        }
+    }
+}
+```
+
+---------------------------------------------------------------------------
+
+by alexander-schranz at 2020-04-16T15:33:10Z
+
+@SerheyDolgushev I would also support in which environment the bundle should be registered:
+
+E.g.:
+
+```json
+"symfony": {
+    "bundle-classes": {
+        "ContextualCode\\EzPlatformSearchBinaryExtractorBundle\\EzPlatformSearchBinaryExtractorBundle": {"all": true},
+        "SomeDebugBundle": {"dev": true},
+    }
+}
+```
+
+or what do you think?
+
+---------------------------------------------------------------------------
+
+by SerheyDolgushev at 2020-04-16T15:38:59Z
+
+@alexander-schranz I like this idea. @nicolas-grekas what do you think?
+
+---------------------------------------------------------------------------
+
+by SerheyDolgushev at 2020-04-16T15:40:08Z
+
+Would change it to:
+```
+"symfony": {
+    "bundle-classes": {
+        "ContextualCode\\EzPlatformSearchBinaryExtractorBundle\\EzPlatformSearchBinaryExtractorBundle": ["all"],
+        "SomeDebugBundle": ["dev"]
+    }
+}
+```
+
+---------------------------------------------------------------------------
+
+by alexander-schranz at 2020-04-16T15:42:04Z
+
+@SerheyDolgushev looks good for me 👍
+
+---------------------------------------------------------------------------
+
+by SerheyDolgushev at 2020-04-16T15:42:08Z
+
+And I'm not sure if it worth adding this option for each bundle. I guess in most cases each package contains just one bundle?
+So maybe `symfony.bundle-envs` would make more sense?
+@alexander-schranz what do you think?
+
+---------------------------------------------------------------------------
+
+by alexander-schranz at 2020-04-16T15:43:29Z
+
+@SerheyDolgushev we have a monorepo/package currently for sulu core and not all our bundles will be registred in all environments of sulu so we need to define it per bundle if possible.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2020-04-16T16:02:29Z
+
+> `"SomeDebugBundle": ["dev"]`
+
+Makes total sense yes, same as in `manifest.json` files.
+I'd even suggest renaming the key to just "bundles" for consistency.
+
+---------------------------------------------------------------------------
+
+by SerheyDolgushev at 2020-04-16T16:45:59Z
+
+So `symfony-bundle` packages are handled as they were before. But this PR provides support for:
+```
+    "extra": {
+        "symfony": {
+            "bundles": {
+                "ContextualCode\\CoolBundle1": ["all"],
+                "ContextualCode\\CoolBundle2": ["dev", "tests"]
+            }
+        }
+    }
+```
+
+@alexander-schranz @nicolas-grekas
+
+---------------------------------------------------------------------------
+
+by alexander-schranz at 2020-04-16T16:49:50Z
+
+Looks good for me 👍
+
+---------------------------------------------------------------------------
+
+by fabpot at 2020-04-17T14:46:03Z
+
+Another idea (I've not tried, so it might not work well): we already have many heuristics to find the bundle class, what about looking for a bundle class in **all* packages instead of limiting it to Symfony bundles. That would allow packages that are a lib and a bundle to be auto-detected as well.
+
+---------------------------------------------------------------------------
+
+by SerheyDolgushev at 2020-04-18T19:02:25Z
+
+> Another idea (I've not tried, so it might not work well): we already have many heuristics to find the bundle class, what about looking for a bundle class in *_all_ packages instead of limiting it to Symfony bundles. That would allow packages that are a lib and a bundle to be auto-detected as well.
+
+So seems like you are suggesting to enable all the bundles by default? Handle all the bundles in a way as `symfony-bundle` are handled now? I guess it would be a brilliant change, as it will not require any additional changes for existing bundles, and they will be automatically enabled after the `composer require`.
+
+But also, I think, it make sense to add `extra.symfony.bundles`, just to being able to enable specific bundles in a specific environment.
+
+So the final behavior would be:
+1. Extract bundles from all the packages, but not just `symfony-bundle`.
+2. If the current package is listed under the composers' dev packages, all its bundles will be enabled for `dev` and `test ` environments. Otherwise, they will be enabled for `all ` environments (current behavior).
+3. Extract the list of bundles from `extra.symfony.bundles` and override specified environments for them. It also will work if in some cases the bundles were not extracted during #1.
+
+So this PR will implement the following:
+1. Extracted bundles will be enabled automatically for all packages, but not just `symfony-bundle`.
+2. It will use `extra.symfony.bundles` to change the environments for extracted bundles and for specifying additional bundles that are not extracted automatically by some reason.
+
+Gentlemans @nicolas-grekas @andrerom @alexander-schranz what do you think?
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2020-04-18T19:14:15Z
+
+Sounds good to me, with just one change: if `extra.symfony.bundles` is found, autodiscovery should be disabled. This will provide a way to skip some bundles when appropriate.
+
+---------------------------------------------------------------------------
+
+by SerheyDolgushev at 2020-04-18T19:49:15Z
+
+Just to summarize this PR:
+1. Bundles autodiscovery is now enabled for all the packages, but not only for `symfony-bundle` type packages. And it works in the same way as it worked before. It is disabled only when there is `extra.symfony.bundles` configuration in the package (even if this configuration is an empty array).
+2. New `extra.symfony.bundles` package configuration was introduced. It should contain the list of bundles and the environments where those bundles should be enabled. Example:
+    ```
+    "extra": {
+        "symfony": {
+            "bundles": {
+                "VendorName\\BundleName1": ["all"],
+                "VendorName\\BundleName2": ["dev", "test"]
+            }
+        }
+    }
+    ```
+
+And that is basically all. I tested the latest changes on a few bundles and it worked as expected.
+
+---------------------------------------------------------------------------
+
+by SerheyDolgushev at 2020-04-18T20:11:26Z
+
+I can't mention I was listening to Zaz and Charles Aznavour while I was implementing @nicolas-grekas review.
+
+---------------------------------------------------------------------------
+
+by fabpot at 2020-04-19T06:11:36Z
+
+Can we add some tests? iIRC, we already have quite a few tests on this feature, it might be good to add more to cover the new use cases.
+
+---------------------------------------------------------------------------
+
+by SerheyDolgushev at 2020-04-19T14:18:12Z
+
+@fabpot Please check https://github.com/symfony/flex/blob/bfcc097fb5a7e446da3bd6a8a7440993cfcacbca/tests/FlexExtraBundlesTest.php
+Also, I made minor fixes for some existing tests, as they were failing on my local.
+
+---------------------------------------------------------------------------
+
+by fabpot at 2020-04-19T14:37:31Z
+
+I see that you've added a new test file, I was more expecting new test cases on existing tests.
+
+---------------------------------------------------------------------------
+
+by SerheyDolgushev at 2020-04-19T15:05:52Z
+
+@fabpot Yes, I decided to use a separate file for these tests. In theory, they can be "merged" into https://github.com/symfony/flex/blob/master/tests/FlexTest.php, if it is critical.
+
+---------------------------------------------------------------------------
+
+by fabpot at 2020-04-19T15:16:08Z
+
+I would prefer to keep all tests in the same file, yes.
+
+---------------------------------------------------------------------------
+
+by SerheyDolgushev at 2020-04-19T21:06:43Z
+
+@fabpot done in https://github.com/symfony/flex/pull/612/commits/c7a3fa88d55d8bb229b06e256cc46f3c1b185a0f
+
+---------------------------------------------------------------------------
+
+by natepage at 2020-04-20T02:21:13Z
+
+@fabpot @nicolas-grekas
+
+Hi there, I don't know if it is the right place to discuss this and I'm happy to create a specific issue if required but I think it is related.
+
+Once this PR gets merged, are the validation rules to add recipes to `symfony/recipes-contrib` gonna be updated to accept recipes for packages that are not `symfony-bundle`?
+
+The current PR enables autodiscovery for bundle classes and that's amazing already but if a package has some config to copy, env to create, etc. It still needs to create a recipe for all that to be automated.
+
+Yesterday I've created a PR to `recipes-contrib` for a few packages we're working on, those packages follow the same philosophy which is to implement the core features to be framework agnostic and then create bridges for them:
+
+```
+package/
+-- src/
+---- Bridge/
+------ Laravel/
+------ Symfony/
+-------- PackageBundle.php
+---- ... Core files ...
+```
+
+This allows us to implement feature solving business cases and reuse them across different projects/platforms and make sure it works as expected on each of them centralised in one place.
+
+So yes the package itself is a `library` but it also provides a Symfony bundle and having a recipe for it would make DX amazing!
+
+---------------------------------------------------------------------------
+
+by fabpot at 2020-05-08T07:03:36Z
+
+I think that the `extra.symfony.bundles` feature should be removed from this PR. It is orthogonal to the goal and duplicates what recipes are for, so I'm in favor of adding it.
+
+---------------------------------------------------------------------------
+
+by andrerom at 2020-05-08T08:32:57Z
+
+@fabpot So you only want following change then to be clear? (+test adjustments)
+
+```diff
+- if ($noRecipe && 'symfony-bundle' === $package->getType()) {
++ if ($noRecipe) {
+```
+
+---------------------------------------------------------------------------
+
+by fabpot at 2020-05-08T09:07:13Z
+
+This PR should really just be about bundle auto-discovery for all packages.
+
+---------------------------------------------------------------------------
+
+by SerheyDolgushev at 2020-05-09T11:29:33Z
+
+@fabpot requested changes have been applied. Please review them. I`ll squash commits after your confirmation.
