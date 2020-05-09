@@ -444,7 +444,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
                         }
                         $value = strtolower($value[0]);
                         if (!\in_array($value, ['y', 'n', 'a', 'p'])) {
-                            throw new \InvalidArgumentException('Invalid choice');
+                            throw new \InvalidArgumentException('Invalid choice.');
                         }
 
                         return $value;
@@ -757,18 +757,23 @@ EOPHP
             }
 
             $noRecipe = !isset($manifests[$name]) || (isset($manifests[$name]['not_installable']) && $manifests[$name]['not_installable']);
-            if ($noRecipe && 'symfony-bundle' === $package->getType()) {
-                $manifest = [];
-                $bundle = new SymfonyBundle($this->composer, $package, $job);
+            if ($noRecipe) {
+                $bundles = [];
+
                 if (null === $devPackages) {
                     $devPackages = array_column($this->composer->getLocker()->getLockData()['packages-dev'], 'name');
                 }
                 $envs = \in_array($name, $devPackages) ? ['dev', 'test'] : ['all'];
-                foreach ($bundle->getClassNames() as $class) {
-                    $manifest['manifest']['bundles'][$class] = $envs;
+                $bundle = new SymfonyBundle($this->composer, $package, $job);
+                foreach ($bundle->getClassNames() as $bundleClass) {
+                    $bundles[$bundleClass] = $envs;
                 }
-                if ($manifest) {
-                    $manifest['origin'] = sprintf('%s:%s@auto-generated recipe', $name, $package->getPrettyVersion());
+
+                if ($bundles) {
+                    $manifest = [
+                        'origin' => sprintf('%s:%s@auto-generated recipe', $name, $package->getPrettyVersion()),
+                        'manifest' => ['bundles' => $bundles],
+                    ];
                     $recipes[$name] = new Recipe($package, $name, $job, $manifest);
                 }
             }
