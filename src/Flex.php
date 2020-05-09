@@ -769,10 +769,37 @@ EOPHP
                     $bundles[$bundleClass] = $envs;
                 }
 
-                if ($bundles) {
+                $envVariables = [];
+                $extra = $package->getExtra();
+                if (isset($extra['symfony']['env'])) {
+                    $envVariables = $extra['symfony']['env'];
+                    if (!\is_array($envVariables)) {
+                        throw new \InvalidArgumentException(sprintf('Entry "env" under "extra.symfony" in the composer.json of package "%s" must be an array, "%s" given.', $name, \gettype($envVariables)));
+                    }
+
+                    foreach ($envVariables as $variable => $value) {
+                        if (!\is_string($variable)) {
+                            throw new \InvalidArgumentException(sprintf('Environment variable names under "extra.symfony.env" must be a strings, "%s" given in the composer.json of package "%s".', \gettype($variable), $name));
+                        }
+
+                        if (!\is_string($value)) {
+                            throw new \InvalidArgumentException(sprintf('Environment variable "%s" under "extra.symfony.env" must be a string, "%s" given in the composer.json of package "%s".', $variable, \gettype($value), $name));
+                        }
+                    }
+                }
+
+                if ($bundles || $envVariables) {
+                    $configurations = [];
+                    if ($bundles) {
+                        $configurations['bundles'] = $bundles;
+                    }
+                    if ($envVariables) {
+                        $configurations['env'] = $envVariables;
+                    }
+
                     $manifest = [
                         'origin' => sprintf('%s:%s@auto-generated recipe', $name, $package->getPrettyVersion()),
-                        'manifest' => ['bundles' => $bundles],
+                        'manifest' => $configurations,
                     ];
                     $recipes[$name] = new Recipe($package, $name, $job, $manifest);
                 }
