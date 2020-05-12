@@ -405,8 +405,8 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $this->operations = [];     // Reset the operation after getting recipes
 
         if (2 === $this->displayThanksReminder) {
-            $love = '\\' === \DIRECTORY_SEPARATOR ? 'love' : '💖 ';
-            $star = '\\' === \DIRECTORY_SEPARATOR ? 'star' : '★ ';
+            $love = '\\' === \DIRECTORY_SEPARATOR ? 'love' : '💖';
+            $star = '\\' === \DIRECTORY_SEPARATOR ? 'star' : '★';
 
             $this->io->writeError('');
             $this->io->writeError('What about running <comment>composer global require symfony/thanks && composer thanks</> now?');
