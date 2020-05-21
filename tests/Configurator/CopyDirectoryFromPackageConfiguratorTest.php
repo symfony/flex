@@ -55,7 +55,7 @@ class CopyDirectoryFromPackageConfiguratorTest extends TestCase
         }
     }
 
-    protected function setUp()
+    protected function setUp(): void
     {
         parent::setUp();
 
@@ -94,7 +94,7 @@ class CopyDirectoryFromPackageConfiguratorTest extends TestCase
         $this->cleanUpTargetFiles();
     }
 
-    protected function tearDown()
+    protected function tearDown(): void
     {
         parent::tearDown();
 

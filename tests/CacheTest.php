@@ -65,10 +65,10 @@ class CacheTest extends TestCase
             ],
         ];
 
-        yield 'empty-intersection-ignores' => [$packages, $packages, '~2.0', ['splits' => [
+        yield 'empty-intersection-ignores-2' => [$packages, $packages, '~2.0', ['splits' => [
             'symfony/foo' => ['3.3', '3.4', '3.5'],
         ]]];
-        yield 'empty-intersection-ignores' => [$packages, $packages, '~4.0', ['splits' => [
+        yield 'empty-intersection-ignores-4' => [$packages, $packages, '~4.0', ['splits' => [
             'symfony/foo' => ['3.3', '3.4', '3.5'],
         ]]];
 
