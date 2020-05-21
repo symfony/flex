@@ -123,7 +123,7 @@ class CopyFromPackageConfiguratorTest extends TestCase
         $this->createConfigurator()->unconfigure($this->recipe, [$this->sourceFileRelativePath => $this->targetFileRelativePath], $lock);
     }
 
-    protected function setUp()
+    protected function setUp(): void
     {
         parent::setUp();
 
@@ -156,7 +156,7 @@ class CopyFromPackageConfiguratorTest extends TestCase
         $this->cleanUpTargetFiles();
     }
 
-    protected function tearDown()
+    protected function tearDown(): void
     {
         parent::tearDown();
 

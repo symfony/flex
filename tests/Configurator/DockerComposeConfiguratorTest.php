@@ -101,7 +101,7 @@ YAML;
     /** @var DockerComposeConfigurator */
     private $configurator;
 
-    public function setUp(string $name = null, array $data = [], string $dataName = '')
+    protected function setUp(): void
     {
         @mkdir(FLEX_TEST_DIR);
 
@@ -126,7 +126,7 @@ YAML;
         );
     }
 
-    protected function tearDown()
+    protected function tearDown(): void
     {
         @unlink(FLEX_TEST_DIR.'/docker-compose.yml');
         @unlink(FLEX_TEST_DIR.'/docker-compose.yaml');

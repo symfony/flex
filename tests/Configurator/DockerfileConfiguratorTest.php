@@ -21,12 +21,12 @@ use Symfony\Flex\Recipe;
 
 class DockerfileConfiguratorTest extends TestCase
 {
-    public function setUp()
+    public function setUp(): void
     {
         @mkdir(FLEX_TEST_DIR);
     }
 
-    protected function tearDown()
+    protected function tearDown(): void
     {
         @unlink(FLEX_TEST_DIR.'/Dockerfile');
     }

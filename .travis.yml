@@ -4,12 +4,12 @@ sudo: false
 
 matrix:
   include:
-    - php: 7.0
     - php: 7.1
       env: COMPOSER_FLAGS='--prefer-lowest'
     - php: 7.2
     - php: 7.3
     - php: 7.4
+    - php: nightly
   fast_finish: true
 
 cache:
@@ -20,10 +20,10 @@ cache:
 env:
   global:
     - SYMFONY_PHPUNIT_DIR="$HOME/symfony-bridge/.phpunit"
-    - SYMFONY_PHPUNIT_VERSION="6.1"
     - COMPOSER_FLAGS=''
     
 before_install:
+  - ([[ $TRAVIS_PHP_VERSION = nightly ]] && composer config platform.php 7.4.99 || true)
   - composer validate
 
 install:
