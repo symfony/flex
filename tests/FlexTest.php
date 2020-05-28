@@ -143,6 +143,12 @@ EOF
                     $package->setType($info['type']);
                 }
 
+                if (!$info['bundles']) {
+                    $return[] = [$package, []];
+
+                    continue;
+                }
+
                 $expectedManifest = [
                     'origin' => sprintf('%s:%s@auto-generated recipe', $package->getName(),
                         $package->getPrettyVersion()),
@@ -209,6 +215,14 @@ EOF
                 'autoload' => ['psr-4' => ['Dunglas\\SyliusAcmePlugin\\' => 'src/']],
                 'bundles' => ['Dunglas\\SyliusAcmePlugin\\DunglasSyliusAcmePlugin'],
                 'type' => 'sylius-plugin',
+            ],
+            'composer/ca-bundle' => [
+                'autoload' => ['psr-4' => ['Composer\\CaBundle\\' => ['src/']]],
+                'bundles' => [],
+            ],
+            'symfony/nouse-bundle' => [
+                'autoload' => ['psr-4' => ['Symfony\\Bundle\\NouseBundle\\' => '']],
+                'bundles' => ['Symfony\\Bundle\\NouseBundle\\NouseBundle'],
             ],
         ];
     }
