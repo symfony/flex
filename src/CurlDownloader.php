@@ -168,6 +168,8 @@ class CurlDownloader
             if ($file && !isset($this->exceptions[(int) $ch])) {
                 $fd = fopen($file, 'rb');
             }
+            $progress = array_diff_key(curl_getinfo($ch), self::$timeInfo);
+            $this->finishProgress($ch, $params['notification'], $progress);
             unset($this->jobs[(int) $ch], $this->exceptions[(int) $ch]);
             curl_multi_remove_handle($this->multiHandle, $ch);
             curl_close($ch);
@@ -186,7 +188,7 @@ class CurlDownloader
 
     private function onProgress($ch, callable $notify, array $progress, array $previousProgress)
     {
-        if (300 <= $progress['http_code'] && $progress['http_code'] < 400) {
+        if (300 <= $progress['http_code'] && $progress['http_code'] < 400 || 0 > $progress['download_content_length']) {
             return;
         }
 
@@ -201,6 +203,14 @@ class CurlDownloader
 
         if ($previousProgress['size_download'] < $progress['size_download']) {
             $notify(STREAM_NOTIFY_PROGRESS, STREAM_NOTIFY_SEVERITY_INFO, '', 0, (int) $progress['size_download'], (int) $progress['download_content_length'], false);
+        }
+    }
+
+    private function finishProgress($ch, callable $notify, array $progress)
+    {
+        if ($progress['download_content_length'] < 0) {
+            $notify(STREAM_NOTIFY_FILE_SIZE_IS, STREAM_NOTIFY_SEVERITY_INFO, '', 0, 0, (int) $progress['size_download'], false);
+            $notify(STREAM_NOTIFY_PROGRESS, STREAM_NOTIFY_SEVERITY_INFO, '', 0, (int) $progress['size_download'], (int) $progress['size_download'], false);
         }
     }
 }
