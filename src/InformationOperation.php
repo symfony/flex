@@ -32,6 +32,14 @@ class InformationOperation extends SolverOperation
     /**
      * {@inheritdoc}
      */
+    public function getJobType()
+    {
+        return 'information';
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function getOperationType()
     {
         return 'information';
@@ -42,7 +50,9 @@ class InformationOperation extends SolverOperation
      */
     public function show($lock)
     {
-        return 'Information '.$this->package->getPrettyName().' ('.$this->package->getFullPrettyVersion().')';
+        $pretty = method_exists($this->package, 'getFullPrettyVersion') ? $this->package->getFullPrettyVersion() : $this->formatVersion($this->package);
+
+        return 'Information '.$this->package->getPrettyName().' ('.$pretty.')';
     }
 
     /**

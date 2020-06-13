@@ -21,6 +21,9 @@ use Composer\Package\Link;
 use Composer\Package\Locker;
 use Composer\Package\Package;
 use Composer\Package\RootPackageInterface;
+use Composer\Plugin\PluginInterface;
+use Composer\Repository\RepositoryManager;
+use Composer\Repository\WritableRepositoryInterface;
 use Composer\Script\Event;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -98,6 +101,9 @@ EOF
         $package->method('getRequires')->willReturn([new Link('dummy', 'symfony/flex')]);
 
         $composer = $this->mockComposer($this->mockLocker(), $package, Factory::createConfig($io));
+        if (version_compare('2.0.0', PluginInterface::PLUGIN_API_VERSION, '>')) {
+            $composer->setRepositoryManager($this->mockManager());
+        }
 
         $flex = new Flex();
         $flex->activate($composer, $io);
@@ -298,6 +304,16 @@ EOF
     private function mockFlexEvent(): Event
     {
         return $this->getMockBuilder(Event::class)->disableOriginalConstructor()->getMock();
+    }
+
+    private function mockManager(): RepositoryManager
+    {
+        $manager = $this->getMockBuilder(RepositoryManager::class)->disableOriginalConstructor()->getMock();
+
+        $localRepo = $this->getMockBuilder(WritableRepositoryInterface::class)->disableOriginalConstructor()->getMock();
+        $manager->expects($this->once())->method('getLocalRepository')->willReturn($localRepo);
+
+        return $manager;
     }
 
     private function mockFlex(BufferIO $io, RootPackageInterface $package, Recipe $recipe = null, array $recipes = [], array $lockerData = []): Flex

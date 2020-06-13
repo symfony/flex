@@ -41,7 +41,7 @@ class Downloader
     private $flexId;
     private $enabled = true;
 
-    public function __construct(Composer $composer, IoInterface $io, HttpDownloader $rfs)
+    public function __construct(Composer $composer, IoInterface $io, $rfs)
     {
         if (getenv('SYMFONY_CAFILE')) {
             $this->caFile = getenv('SYMFONY_CAFILE');
@@ -91,7 +91,7 @@ class Downloader
             $this->io->writeError('<warning>Using "'.$this->endpoint.'" as the Symfony endpoint</>');
         }
 
-        $jobs = [];
+        $paths = [];
         $chunk = '';
         foreach ($operations as $i => $operation) {
             $o = 'i';
@@ -123,7 +123,7 @@ class Downloader
                 $path .= ','.$date->format('U');
             }
             if (\strlen($chunk) + \strlen($path) > self::$MAX_LENGTH) {
-                $jobs[] = $this->rfs->add($this->endpoint.'/p/'.$chunk);
+                $paths[] = ['/p/'.$chunk];
                 $chunk = $path;
             } elseif ($chunk) {
                 $chunk .= ';'.$path;
@@ -132,18 +132,30 @@ class Downloader
             }
         }
         if ($chunk) {
-            $jobs[] = $this->rfs->add($this->endpoint.'/p/'.$chunk);
+            $paths[] = ['/p/'.$chunk];
         }
 
-        $this->rfs->wait();
-        $bodies = [];
-        all($jobs)->then(static function (array $responses) use (&$bodies) {
-            foreach ($responses as $response) {
-                $bodies[] = json_decode($response->getBody(), true);
+        if ($this->rfs instanceof HttpDownloader) {
+            $jobs = [];
+            foreach ($paths as $path) {
+                $this->rfs->add($this->endpoint.$path[0]);
             }
-        }, function (\Exception $e) {
-            $this->io->writeError('<warning>Failed to download recipes: '.$e->getMessage().'</>');
-        });
+            $this->rfs->wait();
+            $bodies = [];
+            all($jobs)->then(static function (array $responses) use (&$bodies) {
+                foreach ($responses as $response) {
+                    $bodies[] = json_decode($response->getBody(), true);
+                }
+            }, function (\Exception $e) {
+                $this->io->writeError('<warning>Failed to download recipes: '.$e->getMessage().'</>');
+            });
+        } else {
+            $this->rfs->download($paths, function ($path) use (&$bodies) {
+                if ($body = $this->get($path, [], false)->getBody()) {
+                    $bodies[] = $body;
+                }
+            });
+        }
 
         $data = [];
         foreach ($bodies as $body) {
@@ -194,9 +206,15 @@ class Downloader
         $retries = 3;
         while ($retries--) {
             try {
-                $response = $this->rfs->get($url, $options);
+                if ($this->rfs instanceof HttpDownloader) {
+                    $response = $this->rfs->get($url, $options);
 
-                return $this->parseJson($response->getBody(), $url, $cacheKey, $response->getHeaders());
+                    return $this->parseJson($response->getBody(), $url, $cacheKey, $response->getHeaders());
+                }
+
+                $json = $this->rfs->getContents($this->endpoint, $url, false, $options);
+
+                return $this->parseJson($json, $url, $cacheKey, $this->rfs->getLastHeaders());
             } catch (\Exception $e) {
                 if ($e instanceof TransportException && 404 === $e->getStatusCode()) {
                     throw $e;
@@ -225,12 +243,21 @@ class Downloader
         $retries = 3;
         while ($retries--) {
             try {
-                $response = $this->rfs->get($url, $options);
-                if (304 === $response->getStatusCode()) {
-                    return new Response($response->getBody(), $response->getHeaders(), 304);
+                if ($this->rfs instanceof HttpDownloader) {
+                    $response = $this->rfs->get($url, $options);
+                    if (304 === $response->getStatusCode()) {
+                        return new Response($response->getBody(), $response->getHeaders(), 304);
+                    }
+
+                    return $this->parseJson($response->getBody(), $url, $cacheKey, $response->getHeaders());
                 }
 
-                return $this->parseJson($response->getBody(), $url, $cacheKey, $response->getHeaders());
+                $json = $this->rfs->getContents($this->endpoint, $url, false, $options);
+                if (304 === $this->rfs->findStatusCode($this->rfs->getLastHeaders())) {
+                    return new Response('', $this->rfs->getLastHeaders(), 304);
+                }
+
+                return $this->parseJson($json, $url, $cacheKey, $this->rfs->getLastHeaders());
             } catch (\Exception $e) {
                 if ($e instanceof TransportException && 404 === $e->getStatusCode()) {
                     throw $e;

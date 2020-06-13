@@ -32,7 +32,7 @@ class RecipesCommand extends BaseCommand
     private $symfonyLock;
     private $downloader;
 
-    public function __construct(/* cannot be type-hinted */ $flex, Lock $symfonyLock, HttpDownloader $downloader)
+    public function __construct(/* cannot be type-hinted */ $flex, Lock $symfonyLock, $downloader)
     {
         $this->flex = $flex;
         $this->symfonyLock = $symfonyLock;
@@ -354,8 +354,12 @@ class RecipesCommand extends BaseCommand
 
     private function requestGitHubApi(string $path)
     {
-        $response = $this->downloader->get($path);
+        if ($this->downloader instanceof HttpDownloader) {
+            $contents = $this->downloader->get($path)->getBody();
+        } else {
+            $contents = $this->downloader->getContents('api.github.com', $path, false);
+        }
 
-        return json_decode($response->getBody(), true);
+        return json_decode($contents, true);
     }
 }
