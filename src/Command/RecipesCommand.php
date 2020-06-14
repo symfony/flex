@@ -13,12 +13,12 @@ namespace Symfony\Flex\Command;
 
 use Composer\Command\BaseCommand;
 use Composer\Downloader\TransportException;
+use Composer\Util\HttpDownloader;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Flex\InformationOperation;
 use Symfony\Flex\Lock;
-use Symfony\Flex\ParallelDownloader;
 use Symfony\Flex\Recipe;
 
 /**
@@ -32,7 +32,7 @@ class RecipesCommand extends BaseCommand
     private $symfonyLock;
     private $downloader;
 
-    public function __construct(/* cannot be type-hinted */ $flex, Lock $symfonyLock, ParallelDownloader $downloader)
+    public function __construct(/* cannot be type-hinted */ $flex, Lock $symfonyLock, $downloader)
     {
         $this->flex = $flex;
         $this->symfonyLock = $symfonyLock;
@@ -354,7 +354,11 @@ class RecipesCommand extends BaseCommand
 
     private function requestGitHubApi(string $path)
     {
-        $contents = $this->downloader->getContents('api.github.com', $path, false);
+        if ($this->downloader instanceof HttpDownloader) {
+            $contents = $this->downloader->get($path)->getBody();
+        } else {
+            $contents = $this->downloader->getContents('api.github.com', $path, false);
+        }
 
         return json_decode($contents, true);
     }

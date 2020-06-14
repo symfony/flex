@@ -21,6 +21,7 @@ use Composer\Package\Link;
 use Composer\Package\Locker;
 use Composer\Package\Package;
 use Composer\Package\RootPackageInterface;
+use Composer\Plugin\PluginInterface;
 use Composer\Repository\RepositoryManager;
 use Composer\Repository\WritableRepositoryInterface;
 use Composer\Script\Event;
@@ -100,7 +101,9 @@ EOF
         $package->method('getRequires')->willReturn([new Link('dummy', 'symfony/flex')]);
 
         $composer = $this->mockComposer($this->mockLocker(), $package, Factory::createConfig($io));
-        $composer->setRepositoryManager($this->mockManager());
+        if (version_compare('2.0.0', PluginInterface::PLUGIN_API_VERSION, '>')) {
+            $composer->setRepositoryManager($this->mockManager());
+        }
 
         $flex = new Flex();
         $flex->activate($composer, $io);
