@@ -120,7 +120,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
                 $this->filter = new PackageFilter($io, $symfonyRequire, $this->downloader);
             }
 
-            $setRepositories = function () {};
+            $setRepositories = null;
         } else {
             $rfs = Factory::createRemoteFilesystem($this->io, $this->config);
             $this->rfs = new ParallelDownloader($this->io, $this->config, $rfs->getOptions(), $rfs->isTlsDisabled());
@@ -222,7 +222,9 @@ class Flex implements PluginInterface, EventSubscriberInterface
                 $this->displayThanksReminder = 1;
             } elseif ('outdated' === $command) {
                 $symfonyRequire = null;
-                $setRepositories($manager);
+                if ($setRepositories) {
+                    $setRepositories($manager);
+                }
             }
 
             if (isset(self::$aliasResolveCommands[$command])) {
@@ -845,7 +847,7 @@ EOPHP
     private function formatOrigin(string $origin): string
     {
         // symfony/translation:3.3@github.com/symfony/recipes:master
-        if (!preg_match('/^([^\:]+?)\:([^\@]+)@(.+)$/', $origin, $matches)) {
+        if (!preg_match('/^([^:]++):([^@]++)@(.+)$/', $origin, $matches)) {
             return $origin;
         }
 

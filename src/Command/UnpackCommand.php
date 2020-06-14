@@ -18,6 +18,7 @@ use Composer\Installer;
 use Composer\Json\JsonFile;
 use Composer\Package\Locker;
 use Composer\Package\Version\VersionParser;
+use Composer\Plugin\PluginInterface;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -28,6 +29,8 @@ use Symfony\Flex\Unpacker;
 
 class UnpackCommand extends BaseCommand
 {
+    private $resolver;
+
     public function __construct(PackageResolver $resolver)
     {
         $this->resolver = $resolver;

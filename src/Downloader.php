@@ -138,7 +138,7 @@ class Downloader
         if ($this->rfs instanceof HttpDownloader) {
             $jobs = [];
             foreach ($paths as $path) {
-                $this->rfs->add($this->endpoint.$path[0]);
+                $jobs[] = $this->rfs->add($this->endpoint.$path[0]);
             }
             $this->rfs->wait();
             $bodies = [];
@@ -150,6 +150,7 @@ class Downloader
                 $this->io->writeError('<warning>Failed to download recipes: '.$e->getMessage().'</>');
             });
         } else {
+            $bodies = [];
             $this->rfs->download($paths, function ($path) use (&$bodies) {
                 if ($body = $this->get($path, [], false)->getBody()) {
                     $bodies[] = $body;
