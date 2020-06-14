@@ -74,7 +74,7 @@ class Response implements \JsonSerializable
     {
         $values = [];
         foreach (array_reverse($headers) as $header) {
-            if (preg_match('{^([^\:]+):\s*(.+?)\s*$}i', $header, $match)) {
+            if (preg_match('{^([^:]++):\s*(.+?)\s*$}i', $header, $match)) {
                 $values[strtolower($match[1])][] = $match[2];
             } elseif (preg_match('{^HTTP/}i', $header)) {
                 break;

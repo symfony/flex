@@ -47,7 +47,7 @@ class ContainerConfigurator extends AbstractConfigurator
         $lines = [];
         foreach (file($target) as $i => $line) {
             $lines[] = $line;
-            if (!$isParameters && !preg_match('/^parameters\:/', $line)) {
+            if (!$isParameters && !preg_match('/^parameters:/', $line)) {
                 continue;
             }
             if (!$isParameters) {
