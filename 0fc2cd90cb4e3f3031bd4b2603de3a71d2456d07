@@ -1,0 +1,70 @@
+---------------------------------------------------------------------------
+
+by maxhelias at 2020-05-01T15:06:00Z
+
+@jderusse for the command instances, I think we can declare the flex class itself as the command provider. This would allow us to keep the injection of the configuration and flex
+
+---------------------------------------------------------------------------
+
+by jderusse at 2020-05-01T17:58:43Z
+
+That's a good idea @maxhelias , I totally missed that feature I implemented ^^
+
+Unfortunaly, it does not works for some command (require, install, update). Composer prevent overriding internal methods (https://github.com/composer/composer/blob/master/src/Composer/Console/Application.php#L180)
+
+One solution could be to declare the command with name "symfony:require" and alias "require" (aliases are not (yet) checked, and will override the composer's command)
+WDYT @nicolas-grekas
+
+side note: Composer improved a lots dependencies resolution. TruncatedPackage is maybe not needed anymore? Do you have good project to benchmark?
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2020-05-01T18:35:15Z
+
+> Unfortunaly, it does not works for some command (require, install, update)
+
+yep, that's why we used this technic. Then, better have the same strategy for all commands.
+
+> TruncatedPackage is maybe not needed anymore? Do you have good project to benchmark?
+
+it's not only for performance, but to enforce the version of nested dependencies. So yes, it's needed.
+
+---------------------------------------------------------------------------
+
+by k0d3r1s at 2020-05-16T16:01:22Z
+
+hey, what's happening with this one? any eta?
+
+---------------------------------------------------------------------------
+
+by stof at 2020-05-18T10:52:01Z
+
+Well, as I discussed in the issue, enforcing constraints should be doable with a listener on the pool building in Composer 2. This would remove the need for TruncatedPackageRepository.
+
+And for commands, adding support for aliases in `require`, `update` and `remove` should be doable by manipulating the arguments using the symmfony/console `console.command` event instead.
+
+---------------------------------------------------------------------------
+
+by jderusse at 2020-05-19T21:22:55Z
+
+> Well, as I discussed in the issue, enforcing constraints should be doable with a listener on the pool building in Composer 2. This would remove the need for TruncatedPackageRepository.
+
+The `TruncatedPackageRepository`is already removed, and replaced by a listener on `PluginEvents::PRE_POOL_CREATE`
+
+> And for commands, adding support for aliases in require, update and remove should be doable by manipulating the arguments using the symmfony/console console.command event instead
+
+Hmm composer does not inject the EventDispatcher in `BaseApplication`,  (bu can be doable in the backtrace hack). And command override is not only about alias (ie. adding option `unpack` in `require`). I afraid we still have to replace original's commandes and keep the hack.
+
+PR rebased
+
+---------------------------------------------------------------------------
+
+by vasilvestre at 2020-05-20T07:27:10Z
+
+This is needed for PHP 8 on Symfony Flex (and so in all other versions of Symfony). https://github.com/symfony/flex/pull/624
+
+---------------------------------------------------------------------------
+
+by vasilvestre at 2020-05-22T08:30:10Z
+
+@jderusse could you please rebase ?
