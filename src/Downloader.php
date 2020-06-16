@@ -20,7 +20,7 @@ use Composer\Downloader\TransportException;
 use Composer\IO\IOInterface;
 use Composer\Json\JsonFile;
 use Composer\Util\HttpDownloader;
-use function React\Promise\all;
+use Composer\Util\Loop;
 
 /**
  * @author Fabien Potencier <fabien@symfony.com>
@@ -136,19 +136,17 @@ class Downloader
         }
 
         if ($this->rfs instanceof HttpDownloader) {
+            $loop = new Loop($this->rfs);
+            $bodies = [];
             $jobs = [];
             foreach ($paths as $path) {
-                $jobs[] = $this->rfs->add($this->endpoint.$path[0]);
-            }
-            $this->rfs->wait();
-            $bodies = [];
-            all($jobs)->then(static function (array $responses) use (&$bodies) {
-                foreach ($responses as $response) {
+                $jobs[] = $this->rfs->add($this->endpoint.$path[0])->then(static function ($response) use (&$bodies) {
                     $bodies[] = json_decode($response->getBody(), true);
-                }
-            }, function (\Exception $e) {
-                $this->io->writeError('<warning>Failed to download recipes: '.$e->getMessage().'</>');
-            });
+                }, function (\Exception $e) {
+                    $this->io->writeError('<warning>Failed to download recipe: '.$e->getMessage().'</>');
+                });
+            }
+            $loop->wait($jobs);
         } else {
             $bodies = [];
             $this->rfs->download($paths, function ($path) use (&$bodies) {
