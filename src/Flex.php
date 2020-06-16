@@ -123,7 +123,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             $setRepositories = null;
         } else {
             $rfs = Factory::createRemoteFilesystem($this->io, $this->config);
-            $this->rfs = new ParallelDownloader($this->io, $this->config, $rfs->getOptions(), $rfs->isTlsDisabled());
+            $this->rfs = $rfs = new ParallelDownloader($this->io, $this->config, $rfs->getOptions(), $rfs->isTlsDisabled());
 
             $symfonyRequire = getenv('SYMFONY_REQUIRE') ?: ($composer->getPackage()->getExtra()['symfony']['require'] ?? null);
             $this->downloader = $downloader = new Downloader($composer, $io, $this->rfs);
