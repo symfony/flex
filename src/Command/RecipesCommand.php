@@ -19,6 +19,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Flex\InformationOperation;
 use Symfony\Flex\Lock;
+use Symfony\Flex\ParallelDownloader;
 use Symfony\Flex\Recipe;
 
 /**
@@ -32,7 +33,7 @@ class RecipesCommand extends BaseCommand
     private $symfonyLock;
     private $downloader;
 
-    public function __construct(/* cannot be type-hinted */ $flex, Lock $symfonyLock, $downloader)
+    public function __construct(/* cannot be type-hinted */ $flex, Lock $symfonyLock, ParallelDownloader $downloader)
     {
         $this->flex = $flex;
         $this->symfonyLock = $symfonyLock;
