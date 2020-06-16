@@ -219,7 +219,12 @@ class Flex implements PluginInterface, EventSubscriberInterface
                 }
                 $populateRepoCacheDir = $populateRepoCacheDir && !$input->hasOption('remove-vcs');
             } elseif ('update' === $command) {
-                $this->displayThanksReminder = 1;
+                $extra = $this->composer->getPackage()->getExtra();
+                if (!isset($extra['symfony']['thanks'])) {
+                    $this->displayThanksReminder = 1;
+                } else {
+                    $this->displayThanksReminder = (int)$extra['symfony']['thanks'];
+                }
             } elseif ('outdated' === $command) {
                 $symfonyRequire = null;
                 if ($setRepositories) {
