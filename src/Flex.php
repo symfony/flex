@@ -223,7 +223,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
                 if (!isset($extra['symfony']['thanks'])) {
                     $this->displayThanksReminder = 1;
                 } else {
-                    $this->displayThanksReminder = (int)$extra['symfony']['thanks'];
+                    $this->displayThanksReminder = (int) $extra['symfony']['thanks'];
                 }
             } elseif ('outdated' === $command) {
                 $symfonyRequire = null;
