@@ -22,6 +22,7 @@ use Composer\Semver\VersionParser;
 class PackageFilter
 {
     private $versions;
+    private $versionParser;
     private $symfonyRequire;
     private $symfonyConstraints;
     private $downloader;
@@ -29,8 +30,9 @@ class PackageFilter
 
     public function __construct(IOInterface $io, string $symfonyRequire, Downloader $downloader)
     {
+        $this->versionParser = new VersionParser();
         $this->symfonyRequire = $symfonyRequire;
-        $this->symfonyConstraints = (new VersionParser())->parseConstraints($symfonyRequire);
+        $this->symfonyConstraints = $this->versionParser->parseConstraints($symfonyRequire);
         $this->downloader = $downloader;
         $this->io = $io;
     }
@@ -42,7 +44,7 @@ class PackageFilter
      */
     public function removeLegacyPackages(array $data): array
     {
-        if (!$this->symfonyConstraints || empty($data)) {
+        if (!$this->symfonyConstraints || !$data) {
             return $data;
         }
 
@@ -53,28 +55,24 @@ class PackageFilter
         foreach ($data as $package) {
             $name = $package->getName();
             $version = $package->getVersion();
-            if ('symfony/symfony' !== $name) {
-                if (!isset($knownVersions['splits'][$name])) {
-                    $filteredPackages[] = $package;
-                    continue;
-                }
-
-                if ($this->symfonyConstraints->matches(new Constraint('==', $version))) {
-                    $filteredPackages[] = $package;
-                    continue;
-                }
-            } else {
-                if ($this->symfonyConstraints->matches(new Constraint('==', $version))) {
-                    $filteredPackages[] = $package;
-                    $oneSymfony = true;
-
-                    continue;
-                }
-
-                $symfonyPackages[] = $package;
+            if ('symfony/symfony' !== $name && !isset($knownVersions['splits'][$name])) {
+                $filteredPackages[] = $package;
+                continue;
             }
 
-            if (null !== $this->io) {
+            if (null !== $alias = $package->getExtra()['branch-alias'][$version] ?? null) {
+                $version = $this->versionParser->normalize($alias);
+            }
+
+            if ($this->symfonyConstraints->matches(new Constraint('==', $version))) {
+                $filteredPackages[] = $package;
+                $oneSymfony = $oneSymfony || 'symfony/symfony' === $name;
+                continue;
+            }
+
+            if ('symfony/symfony' === $name) {
+                $symfonyPackages[] = $package;
+            } elseif (null !== $this->io) {
                 $this->io->writeError(sprintf('<info>Restricting packages listed in "symfony/symfony" to "%s"</>', $this->symfonyRequire));
                 $this->io = null;
             }
