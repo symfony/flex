@@ -73,7 +73,7 @@ class Recipe
             return '';
         }
 
-        // symfony/translation:3.3@github.com/symfony/recipes:master
+        // symfony/translation:3.3@github.com/symfony/recipes:branch
         if (!preg_match('/^([^:]++):([^@]++)@([^:]++):(.+)$/', $this->data['origin'], $matches)) {
             // that excludes auto-generated recipes, which is what we want
             return '';

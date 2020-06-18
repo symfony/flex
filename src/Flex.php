@@ -846,7 +846,7 @@ EOPHP
 
     private function formatOrigin(string $origin): string
     {
-        // symfony/translation:3.3@github.com/symfony/recipes:master
+        // symfony/translation:3.3@github.com/symfony/recipes:branch
         if (!preg_match('/^([^:]++):([^@]++)@(.+)$/', $origin, $matches)) {
             return $origin;
         }

@@ -110,6 +110,15 @@ class Downloader
                 $branchAliases = $package->getExtra()['branch-alias'];
                 if (
                     (isset($branchAliases[$version]) && $alias = $branchAliases[$version]) ||
+                    (isset($branchAliases['dev-main']) && $alias = $branchAliases['dev-main']) ||
+                    (isset($branchAliases['dev-trunk']) && $alias = $branchAliases['dev-trunk']) ||
+                    (isset($branchAliases['dev-develop']) && $alias = $branchAliases['dev-develop']) ||
+                    (isset($branchAliases['dev-default']) && $alias = $branchAliases['dev-default']) ||
+                    (isset($branchAliases['dev-latest']) && $alias = $branchAliases['dev-latest']) ||
+                    (isset($branchAliases['dev-next']) && $alias = $branchAliases['dev-next']) ||
+                    (isset($branchAliases['dev-current']) && $alias = $branchAliases['dev-current']) ||
+                    (isset($branchAliases['dev-support']) && $alias = $branchAliases['dev-support']) ||
+                    (isset($branchAliases['dev-tip']) && $alias = $branchAliases['dev-tip']) ||
                     (isset($branchAliases['dev-master']) && $alias = $branchAliases['dev-master'])
                 ) {
                     $version = $alias;
