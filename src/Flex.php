@@ -233,7 +233,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
                     $input->setArgument('packages', $resolver->resolve($input->getArgument('packages'), self::$aliasResolveCommands[$command]));
                 }
 
-                if ($input->hasOption('no-suggest')) {
+                if (version_compare('2.0.0', PluginInterface::PLUGIN_API_VERSION, '>') && $input->hasOption('no-suggest')) {
                     $input->setOption('no-suggest', true);
                 }
             }
