@@ -34,8 +34,9 @@ class Unpacker
         $result = new Result();
         $json = new JsonFile(Factory::getComposerFile());
         $manipulator = new JsonManipulator(file_get_contents($json->getPath()));
+        $localRepo = $this->composer->getRepositoryManager()->getLocalRepository();
         foreach ($op->getPackages() as $package) {
-            $pkg = $this->composer->getRepositoryManager()->getLocalRepository()->findPackage($package['name'], $package['version'] ?: '*');
+            $pkg = $localRepo->findPackage($package['name'], $package['version'] ?: '*');
             $pkg = $pkg ?? $this->composer->getRepositoryManager()->findPackage($package['name'], $package['version'] ?: '*');
 
             // not unpackable or no --unpack flag or empty packs (markers)
@@ -58,6 +59,11 @@ class Unpacker
 
                 $constraint = $link->getPrettyConstraint();
                 $constraint = substr($this->resolver->parseVersion($link->getTarget(), $constraint, !$package['dev']), 1) ?: $constraint;
+
+                if ('*' === $constraint && $subPkg = $localRepo->findPackage($link->getTarget(), '*')) {
+                    $version = explode('.', $subPkg->getVersion());
+                    $constraint = "^{$version[0]}.{$version[1]}";
+                }
 
                 if (!$manipulator->addLink($package['dev'] ? 'require-dev' : 'require', $link->getTarget(), $constraint, $op->shouldSort())) {
                     throw new \RuntimeException(sprintf('Unable to unpack package "%s".', $link->getTarget()));
