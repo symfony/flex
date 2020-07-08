@@ -13,6 +13,7 @@ namespace Symfony\Flex\Command;
 
 use Composer\Command\RequireCommand as BaseRequireCommand;
 use Composer\Package\Version\VersionParser;
+use Composer\Plugin\PluginInterface;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -61,7 +62,7 @@ class RequireCommand extends BaseRequireCommand
             return 1;
         }
 
-        if ($input->hasOption('no-suggest')) {
+        if (version_compare('2.0.0', PluginInterface::PLUGIN_API_VERSION, '>') && $input->hasOption('no-suggest')) {
             $input->setOption('no-suggest', true);
         }
 
