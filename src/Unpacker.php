@@ -12,10 +12,15 @@
 namespace Symfony\Flex;
 
 use Composer\Composer;
+use Composer\Config\JsonConfigSource;
 use Composer\DependencyResolver\Pool;
 use Composer\Factory;
+use Composer\IO\IOInterface;
+use Composer\Json\JsonFile;
 use Composer\Json\JsonManipulator;
+use Composer\Package\Locker;
 use Composer\Package\Version\VersionSelector;
+use Composer\Plugin\PluginInterface;
 use Composer\Repository\CompositeRepository;
 use Composer\Repository\RepositorySet;
 use Symfony\Flex\Unpack\Operation;
@@ -105,5 +110,44 @@ class Unpacker
         }
 
         return $result;
+    }
+
+    public function updateLock(Result $result, IOInterface $io): void
+    {
+        $json = new JsonFile(Factory::getComposerFile());
+        $manipulator = new JsonConfigSource($json);
+        $locker = $this->composer->getLocker();
+        $lockData = $locker->getLockData();
+
+        foreach ($result->getUnpacked() as $package) {
+            $manipulator->removeLink('require-dev', $package->getName());
+            foreach ($lockData['packages-dev'] as $i => $pkg) {
+                if ($package->getName() === $pkg['name']) {
+                    unset($lockData['packages-dev'][$i]);
+                }
+            }
+            $manipulator->removeLink('require', $package->getName());
+            foreach ($lockData['packages'] as $i => $pkg) {
+                if ($package->getName() === $pkg['name']) {
+                    unset($lockData['packages'][$i]);
+                }
+            }
+        }
+        $lockData['packages'] = array_values($lockData['packages']);
+        $lockData['packages-dev'] = array_values($lockData['packages-dev']);
+        $lockData['content-hash'] = $locker->getContentHash(file_get_contents($json->getPath()));
+        $lockFile = new JsonFile(substr($json->getPath(), 0, -4).'lock', null, $io);
+
+        if (!$this->dryRun) {
+            $lockFile->write($lockData);
+        }
+
+        // force removal of files under vendor/
+        if (version_compare('2.0.0', PluginInterface::PLUGIN_API_VERSION, '>')) {
+            $locker = new Locker($io, $lockFile, $this->composer->getRepositoryManager(), $this->composer->getInstallationManager(), file_get_contents($json->getPath()));
+        } else {
+            $locker = new Locker($io, $lockFile, $this->composer->getInstallationManager(), file_get_contents($json->getPath()));
+        }
+        $this->composer->setLocker($locker);
     }
 }

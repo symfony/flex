@@ -47,6 +47,7 @@ use Composer\Script\Event;
 use Composer\Script\ScriptEvents;
 use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Flex\Event\UpdateEvent;
+use Symfony\Flex\Unpack\Operation;
 use Symfony\Thanks\Thanks;
 
 /**
@@ -389,10 +390,12 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
 
         $sortPackages = $this->composer->getConfig()->get('sort-packages');
+        $unpackOp = new Operation(true, $sortPackages);
 
         foreach (['require', 'require-dev'] as $type) {
             if (isset($json['flex-'.$type])) {
                 foreach ($json['flex-'.$type] as $package => $constraint) {
+                    $unpackOp->addPackage($package, $constraint, 'require-dev' === $type);
                     $manipulator->addLink($type, $package, $constraint, $sortPackages);
                 }
 
@@ -411,6 +414,10 @@ class Flex implements PluginInterface, EventSubscriberInterface
             $this->repositoryManager = $rm;
         }, $this->installer, $this->installer)();
         $this->composer->getEventDispatcher()->__construct($this->composer, $this->io);
+
+        $unpacker = new Unpacker($this->composer, new PackageResolver($this->downloader), $this->dryRun);
+        $result = $unpacker->unpack($unpackOp);
+        $unpacker->updateLock($result, $this->io);
 
         $status = $this->installer->run();
         if (0 !== $status) {
