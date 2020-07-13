@@ -12,9 +12,13 @@
 namespace Symfony\Flex;
 
 use Composer\Composer;
+use Composer\DependencyResolver\Pool;
 use Composer\Factory;
 use Composer\Json\JsonFile;
 use Composer\Json\JsonManipulator;
+use Composer\Package\Version\VersionSelector;
+use Composer\Repository\CompositeRepository;
+use Composer\Repository\RepositorySet;
 use Symfony\Flex\Unpack\Operation;
 use Symfony\Flex\Unpack\Result;
 
@@ -51,6 +55,7 @@ class Unpacker
                 continue;
             }
 
+            $versionSelector = null;
             $result->addUnpacked($pkg);
             foreach ($pkg->getRequires() as $link) {
                 if ('php' === $link->getTarget()) {
@@ -61,8 +66,14 @@ class Unpacker
                 $constraint = substr($this->resolver->parseVersion($link->getTarget(), $constraint, !$package['dev']), 1) ?: $constraint;
 
                 if ('*' === $constraint && $subPkg = $localRepo->findPackage($link->getTarget(), '*')) {
-                    $version = explode('.', $subPkg->getVersion());
-                    $constraint = "^{$version[0]}.{$version[1]}";
+                    if (null === $versionSelector) {
+                        $pool = class_exists(RepositorySet::class) ? RepositorySet::class : Pool::class;
+                        $pool = new $pool($this->composer->getPackage()->getMinimumStability(), $this->composer->getPackage()->getStabilityFlags());
+                        $pool->addRepository(new CompositeRepository($this->composer->getRepositoryManager()->getRepositories()));
+                        $versionSelector = new VersionSelector($pool);
+                    }
+
+                    $constraint = $versionSelector->findRecommendedRequireVersion($subPkg);
                 }
 
                 if (!$manipulator->addLink($package['dev'] ? 'require-dev' : 'require', $link->getTarget(), $constraint, $op->shouldSort())) {

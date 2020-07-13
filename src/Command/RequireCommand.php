@@ -53,7 +53,7 @@ class RequireCommand extends BaseRequireCommand
 
         $ret = parent::execute($input, $output) ?? 0;
 
-        if (0 !== $ret || !$unpack) {
+        if (0 !== $ret || $input->getOption('no-unpack') || $input->getOption('no-update')) {
             return $ret;
         }
 
