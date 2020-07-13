@@ -115,11 +115,12 @@ class UnpackCommand extends BaseCommand
         $lockData['content-hash'] = $locker->getContentHash(file_get_contents($json->getPath()));
         $lockFile = new JsonFile(substr($json->getPath(), 0, -4).'lock', null, $io);
 
-        if (!$input->getOption('dry-run')) {
+        $dryRun = $input->hasOption('dry-run') && !$input->getOption('dry-run');
+        if ($dryRun) {
             $lockFile->write($lockData);
         }
 
-        if ($input->getOption('no-install')) {
+        if ($input->hasOption('no-install') && $input->getOption('no-install')) {
             return 0;
         }
 
@@ -132,7 +133,7 @@ class UnpackCommand extends BaseCommand
         $composer->setLocker($locker);
         $install = Installer::create($io, $composer);
         $install
-            ->setDryRun($input->getOption('dry-run') ?? false)
+            ->setDryRun($dryRun)
             ->setDevMode(true)
             ->setDumpAutoloader(false)
             ->setRunScripts(false)
