@@ -89,7 +89,7 @@ class UnpackCommand extends BaseCommand
         if (!$result->getUnpacked()) {
             $io->writeError('<info>Nothing to unpack</>');
 
-            return 1;
+            return 0;
         }
 
         foreach ($result->getUnpacked() as $pkg) {
@@ -114,7 +114,14 @@ class UnpackCommand extends BaseCommand
         $lockData['packages-dev'] = array_values($lockData['packages-dev']);
         $lockData['content-hash'] = $locker->getContentHash(file_get_contents($json->getPath()));
         $lockFile = new JsonFile(substr($json->getPath(), 0, -4).'lock', null, $io);
-        $lockFile->write($lockData);
+
+        if (!$input->getOption('dry-run')) {
+            $lockFile->write($lockData);
+        }
+
+        if ($input->getOption('no-install')) {
+            return 0;
+        }
 
         // force removal of files under vendor/
         if (version_compare('2.0.0', PluginInterface::PLUGIN_API_VERSION, '>')) {
@@ -125,6 +132,7 @@ class UnpackCommand extends BaseCommand
         $composer->setLocker($locker);
         $install = Installer::create($io, $composer);
         $install
+            ->setDryRun($input->getOption('dry-run') ?? false)
             ->setDevMode(true)
             ->setDumpAutoloader(false)
             ->setRunScripts(false)
