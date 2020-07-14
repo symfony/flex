@@ -14,7 +14,6 @@ namespace Symfony\Flex;
 use Composer\Composer;
 use Composer\DependencyResolver\Pool;
 use Composer\Factory;
-use Composer\Json\JsonFile;
 use Composer\Json\JsonManipulator;
 use Composer\Package\Version\VersionSelector;
 use Composer\Repository\CompositeRepository;
@@ -26,18 +25,25 @@ class Unpacker
 {
     private $composer;
     private $resolver;
+    private $dryRun;
+    private $jsonPath;
+    private $manipulator;
 
-    public function __construct(Composer $composer, PackageResolver $resolver)
+    public function __construct(Composer $composer, PackageResolver $resolver, bool $dryRun)
     {
         $this->composer = $composer;
         $this->resolver = $resolver;
+        $this->dryRun = $dryRun;
     }
 
-    public function unpack(Operation $op): Result
+    public function unpack(Operation $op, Result $result = null): Result
     {
-        $result = new Result();
-        $json = new JsonFile(Factory::getComposerFile());
-        $manipulator = new JsonManipulator(file_get_contents($json->getPath()));
+        if (null === $result) {
+            $result = new Result();
+            $this->jsonPath = Factory::getComposerFile();
+            $this->manipulator = new JsonManipulator(file_get_contents($this->jsonPath));
+        }
+
         $localRepo = $this->composer->getRepositoryManager()->getLocalRepository();
         foreach ($op->getPackages() as $package) {
             $pkg = $localRepo->findPackage($package['name'], $package['version'] ?: '*');
@@ -55,8 +61,11 @@ class Unpacker
                 continue;
             }
 
+            if (!$result->addUnpacked($pkg)) {
+                continue;
+            }
+
             $versionSelector = null;
-            $result->addUnpacked($pkg);
             foreach ($pkg->getRequires() as $link) {
                 if ('php' === $link->getTarget()) {
                     continue;
@@ -65,24 +74,35 @@ class Unpacker
                 $constraint = $link->getPrettyConstraint();
                 $constraint = substr($this->resolver->parseVersion($link->getTarget(), $constraint, !$package['dev']), 1) ?: $constraint;
 
-                if ('*' === $constraint && $subPkg = $localRepo->findPackage($link->getTarget(), '*')) {
-                    if (null === $versionSelector) {
-                        $pool = class_exists(RepositorySet::class) ? RepositorySet::class : Pool::class;
-                        $pool = new $pool($this->composer->getPackage()->getMinimumStability(), $this->composer->getPackage()->getStabilityFlags());
-                        $pool->addRepository(new CompositeRepository($this->composer->getRepositoryManager()->getRepositories()));
-                        $versionSelector = new VersionSelector($pool);
+                if ($subPkg = $localRepo->findPackage($link->getTarget(), '*')) {
+                    if ('symfony-pack' === $subPkg->getType()) {
+                        $subOp = new Operation(true, $op->shouldSort());
+                        $subOp->addPackage($subPkg->getName(), $constraint, $package['dev']);
+                        $result = $this->unpack($subOp, $result);
+                        continue;
                     }
 
-                    $constraint = $versionSelector->findRecommendedRequireVersion($subPkg);
+                    if ('*' === $constraint) {
+                        if (null === $versionSelector) {
+                            $pool = class_exists(RepositorySet::class) ? RepositorySet::class : Pool::class;
+                            $pool = new $pool($this->composer->getPackage()->getMinimumStability(), $this->composer->getPackage()->getStabilityFlags());
+                            $pool->addRepository(new CompositeRepository($this->composer->getRepositoryManager()->getRepositories()));
+                            $versionSelector = new VersionSelector($pool);
+                        }
+
+                        $constraint = $versionSelector->findRecommendedRequireVersion($subPkg);
+                    }
                 }
 
-                if (!$manipulator->addLink($package['dev'] ? 'require-dev' : 'require', $link->getTarget(), $constraint, $op->shouldSort())) {
+                if (!$this->manipulator->addLink($package['dev'] ? 'require-dev' : 'require', $link->getTarget(), $constraint, $op->shouldSort())) {
                     throw new \RuntimeException(sprintf('Unable to unpack package "%s".', $link->getTarget()));
                 }
             }
         }
 
-        file_put_contents($json->getPath(), $manipulator->getContents());
+        if (!$this->dryRun && 1 === \func_num_args()) {
+            file_put_contents($this->jsonPath, $this->manipulator->getContents());
+        }
 
         return $result;
     }

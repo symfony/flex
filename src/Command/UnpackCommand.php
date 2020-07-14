@@ -61,6 +61,7 @@ class UnpackCommand extends BaseCommand
         $lockData = $locker->getLockData();
         $installedRepo = $composer->getRepositoryManager()->getLocalRepository();
         $versionParser = new VersionParser();
+        $dryRun = $input->hasOption('dry-run') && $input->getOption('dry-run');
 
         $op = new Operation(true, $input->getOption('sort-packages') || $composer->getConfig()->get('sort-packages'));
         foreach ($versionParser->parseNameVersionPairs($packages) as $package) {
@@ -82,7 +83,7 @@ class UnpackCommand extends BaseCommand
             $op->addPackage($pkg->getName(), $pkg->getVersion(), $dev);
         }
 
-        $unpacker = new Unpacker($composer, $this->resolver);
+        $unpacker = new Unpacker($composer, $this->resolver, $dryRun);
         $result = $unpacker->unpack($op);
 
         // remove the packages themselves
@@ -115,8 +116,7 @@ class UnpackCommand extends BaseCommand
         $lockData['content-hash'] = $locker->getContentHash(file_get_contents($json->getPath()));
         $lockFile = new JsonFile(substr($json->getPath(), 0, -4).'lock', null, $io);
 
-        $dryRun = $input->hasOption('dry-run') && !$input->getOption('dry-run');
-        if ($dryRun) {
+        if (!$dryRun) {
             $lockFile->write($lockData);
         }
 

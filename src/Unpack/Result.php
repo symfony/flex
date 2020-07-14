@@ -18,9 +18,17 @@ class Result
     private $unpacked = [];
     private $required = [];
 
-    public function addUnpacked(PackageInterface $package)
+    public function addUnpacked(PackageInterface $package): bool
     {
-        $this->unpacked[] = $package;
+        $name = $package->getName();
+
+        if (!isset($this->unpacked[$name])) {
+            $this->unpacked[$name] = $package;
+
+            return true;
+        }
+
+        return false;
     }
 
     /**
