@@ -1,0 +1,11 @@
+---------------------------------------------------------------------------
+
+by stof at 2020-07-10T12:46:47Z
+
+This will make `composer require` and `composer require --unpack` being exactly the same, with only `composer require --unpack=false` skipping it. This is a confusing API IMO. A `--no-unpack` flag would be easier to understand.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2020-07-10T13:19:25Z
+
+@stof updated. This requires deprecating `--unpack`.
