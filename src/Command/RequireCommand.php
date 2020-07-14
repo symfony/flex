@@ -32,19 +32,19 @@ class RequireCommand extends BaseRequireCommand
     protected function configure()
     {
         parent::configure();
-        $this->addOption('unpack', null, InputOption::VALUE_NONE, 'Unpack Symfony packs in composer.json.');
+        $this->addOption('no-unpack', null, InputOption::VALUE_NONE, 'Disable unpacking Symfony packs in composer.json.');
+        $this->addOption('unpack', null, InputOption::VALUE_NONE, '[DEPRECATED] Unpacking is now enabled by default.');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $unpack = $input->getOption('unpack');
+        if ($input->getOption('unpack')) {
+            $this->getIO()->writeError('<warning>The "--unpack" command line option is deprecated; unpacking is now enabled by default.</warning>');
+        }
+
         $packages = $this->resolver->resolve($input->getArgument('packages'), true);
         if ($packages) {
             $input->setArgument('packages', $this->resolver->resolve($input->getArgument('packages'), true));
-        } elseif ($unpack) {
-            $this->getIO()->writeError('<error>--unpack is incompatible with the interactive mode.</>');
-
-            return 1;
         }
 
         if (version_compare('2.0.0', PluginInterface::PLUGIN_API_VERSION, '>') && $input->hasOption('no-suggest')) {
@@ -53,7 +53,7 @@ class RequireCommand extends BaseRequireCommand
 
         $ret = parent::execute($input, $output) ?? 0;
 
-        if (0 !== $ret || $input->getOption('no-update')) {
+        if (0 !== $ret || $input->getOption('no-unpack') || $input->getOption('no-update')) {
             return $ret;
         }
 
