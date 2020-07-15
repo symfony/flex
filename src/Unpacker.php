@@ -135,7 +135,7 @@ class Unpacker
         }
         $lockData['packages'] = array_values($lockData['packages']);
         $lockData['packages-dev'] = array_values($lockData['packages-dev']);
-        $lockData['content-hash'] = $locker->getContentHash(file_get_contents($json->getPath()));
+        $lockData['content-hash'] = Locker::getContentHash(file_get_contents($json->getPath()));
         $lockFile = new JsonFile(substr($json->getPath(), 0, -4).'lock', null, $io);
 
         if (!$this->dryRun) {
