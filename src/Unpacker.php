@@ -133,9 +133,10 @@ class Unpacker
                 }
             }
         }
+        $jsonContent = file_get_contents($json->getPath());
         $lockData['packages'] = array_values($lockData['packages']);
         $lockData['packages-dev'] = array_values($lockData['packages-dev']);
-        $lockData['content-hash'] = $locker->getContentHash(file_get_contents($json->getPath()));
+        $lockData['content-hash'] = $locker->getContentHash($jsonContent);
         $lockFile = new JsonFile(substr($json->getPath(), 0, -4).'lock', null, $io);
 
         if (!$this->dryRun) {
@@ -144,9 +145,9 @@ class Unpacker
 
         // force removal of files under vendor/
         if (version_compare('2.0.0', PluginInterface::PLUGIN_API_VERSION, '>')) {
-            $locker = new Locker($io, $lockFile, $this->composer->getRepositoryManager(), $this->composer->getInstallationManager(), file_get_contents($json->getPath()));
+            $locker = new Locker($io, $lockFile, $this->composer->getRepositoryManager(), $this->composer->getInstallationManager(), $jsonContent);
         } else {
-            $locker = new Locker($io, $lockFile, $this->composer->getInstallationManager(), file_get_contents($json->getPath()));
+            $locker = new Locker($io, $lockFile, $this->composer->getInstallationManager(), $jsonContent);
         }
         $this->composer->setLocker($locker);
     }
