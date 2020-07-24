@@ -22,4 +22,27 @@ class PathTest extends TestCase
 
         $this->assertEquals('c:\\my-project/src/kernel.php', $path->concatenate(['c:\\my-project', 'src/', 'kernel.php']));
     }
+
+    /**
+     * @dataProvider providePathsForConcatenation
+     */
+    public function testConcatenate($part1, $part2, $expectedPath)
+    {
+        $path = new Path('');
+
+        $actualPath = $path->concatenate([$part1, $part2]);
+
+        $this->assertEquals($expectedPath, $actualPath);
+    }
+
+    public function providePathsForConcatenation()
+    {
+        return [
+            [__DIR__, 'foo/bar.txt', __DIR__.'/foo/bar.txt'],
+            [__DIR__, '/foo/bar.txt', __DIR__.'/foo/bar.txt'],
+            ['', 'foo/bar.txt', '/foo/bar.txt'],
+            ['', '/foo/bar.txt', '/foo/bar.txt'],
+            ['.', 'foo/bar.txt', './foo/bar.txt'],
+        ];
+    }
 }
