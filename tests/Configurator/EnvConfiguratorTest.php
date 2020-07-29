@@ -26,6 +26,7 @@ class EnvConfiguratorTest extends TestCase
         $configurator = new EnvConfigurator(
             $this->getMockBuilder(Composer::class)->getMock(),
             $this->getMockBuilder(IOInterface::class)->getMock(),
+            $this->getMockBuilder('Symfony\Flex\FilesManager')->disableOriginalConstructor()->getMock(),
             new Options(['root-dir' => FLEX_TEST_DIR])
         );
         $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
@@ -155,6 +156,7 @@ EOF
         $configurator = new EnvConfigurator(
             $this->getMockBuilder(Composer::class)->getMock(),
             $this->getMockBuilder(IOInterface::class)->getMock(),
+            $this->getMockBuilder('Symfony\Flex\FilesManager')->disableOriginalConstructor()->getMock(),
             new Options(['root-dir' => FLEX_TEST_DIR])
         );
         $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
@@ -202,6 +204,7 @@ EOF
         $configurator = new EnvConfigurator(
             $this->getMockBuilder(Composer::class)->getMock(),
             $this->getMockBuilder(IOInterface::class)->getMock(),
+            $this->getMockBuilder('Symfony\Flex\FilesManager')->disableOriginalConstructor()->getMock(),
             new Options(['root-dir' => FLEX_TEST_DIR])
         );
 

@@ -70,6 +70,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
     private $config;
     private $options;
+    private $filesManager;
     private $configurator;
     private $downloader;
     private $installer;
@@ -159,8 +160,9 @@ class Flex implements PluginInterface, EventSubscriberInterface
             $composer->setRepositoryManager($manager);
         }
 
-        $this->configurator = new Configurator($composer, $io, $this->options);
         $this->lock = new Lock(getenv('SYMFONY_LOCKFILE') ?: str_replace('composer.json', 'symfony.lock', Factory::getComposerFile()));
+        $this->filesManager = new FilesManager($io, $this->lock, $this->options->get('root-dir'));
+        $this->configurator = new Configurator($composer, $io, $this->filesManager, $this->options);
 
         $disable = true;
         foreach (array_merge($composer->getPackage()->getRequires() ?? [], $composer->getPackage()->getDevRequires() ?? []) as $link) {
@@ -877,7 +879,7 @@ EOPHP
             'root-dir' => $extra['symfony']['root-dir'] ?? '.',
         ], $extra);
 
-        return new Options($options, $this->io);
+        return new Options($options);
     }
 
     private function getFlexId()

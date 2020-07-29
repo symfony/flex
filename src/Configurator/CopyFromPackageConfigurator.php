@@ -94,7 +94,7 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
     public function copyFile(string $source, string $target, array $options)
     {
         $overwrite = $options['force'] ?? false;
-        if (!$this->options->shouldWriteFile($target, $overwrite)) {
+        if (!$this->filesManager->shouldWriteFile($target, $overwrite)) {
             return;
         }
 

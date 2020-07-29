@@ -122,6 +122,7 @@ YAML;
         $this->configurator = new DockerComposeConfigurator(
             $composer,
             $this->getMockBuilder(IOInterface::class)->getMock(),
+            $this->getMockBuilder('Symfony\Flex\FilesManager')->disableOriginalConstructor()->getMock(),
             new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
         );
     }

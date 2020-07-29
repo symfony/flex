@@ -13,6 +13,7 @@ namespace Symfony\Flex\Configurator;
 
 use Composer\Composer;
 use Composer\IO\IOInterface;
+use Symfony\Flex\FilesManager;
 use Symfony\Flex\Lock;
 use Symfony\Flex\Options;
 use Symfony\Flex\Path;
@@ -25,13 +26,15 @@ abstract class AbstractConfigurator
 {
     protected $composer;
     protected $io;
+    protected $filesManager;
     protected $options;
     protected $path;
 
-    public function __construct(Composer $composer, IOInterface $io, Options $options)
+    public function __construct(Composer $composer, IOInterface $io, FilesManager $filesManager, Options $options)
     {
         $this->composer = $composer;
         $this->io = $io;
+        $this->filesManager = $filesManager;
         $this->options = $options;
         $this->path = new Path($options->get('root-dir'));
     }

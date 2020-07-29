@@ -17,6 +17,7 @@ use Composer\IO\IOInterface;
 use Composer\Package\PackageInterface;
 use PHPUnit\Framework\TestCase;
 use Symfony\Flex\Configurator\CopyFromPackageConfigurator;
+use Symfony\Flex\FilesManager;
 use Symfony\Flex\Lock;
 use Symfony\Flex\Options;
 use Symfony\Flex\Recipe;
@@ -106,7 +107,7 @@ class CopyDirectoryFromPackageConfiguratorTest extends TestCase
 
     private function createConfigurator(): CopyFromPackageConfigurator
     {
-        return new CopyFromPackageConfigurator($this->composer, $this->io, new Options(['root-dir' => FLEX_TEST_DIR]));
+        return new CopyFromPackageConfigurator($this->composer, $this->io, new FilesManager($this->io, $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock(), FLEX_TEST_DIR), new Options(['root-dir' => FLEX_TEST_DIR]));
     }
 
     private function cleanUpTargetFiles()
