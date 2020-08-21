@@ -65,7 +65,7 @@ class Options
             return true;
         }
 
-        exec('git status --short --ignored -- '.ProcessExecutor::escape($file).' 2>&1', $output, $status);
+        exec('git status --short --ignored --untracked-files=all -- '.ProcessExecutor::escape($file).' 2>&1', $output, $status);
 
         if (0 !== $status) {
             return (bool) $this->io && $this->io->askConfirmation(sprintf('Cannot determine the state of the "%s" file, overwrite anyway? [y/N] ', $file), false);
