@@ -324,6 +324,10 @@ class Flex implements PluginInterface, EventSubscriberInterface
             return;
         }
 
+        // Remove LICENSE (which do not apply to the user project)
+        @unlink('LICENSE');
+
+        // Update composer.json (project is proprietary by default)
         $json = new JsonFile(Factory::getComposerFile());
         $contents = file_get_contents($json->getPath());
         $manipulator = new JsonManipulator($contents);
