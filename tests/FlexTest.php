@@ -85,8 +85,6 @@ class FlexTest extends TestCase
         $this->assertSame(
             <<<EOF
 
-Run composer recipes at any time to see the status of your Symfony recipes.
-
 Symfony operations: 1 recipe ()
   - Configuring dummy/dummy (>=1.0): From github.com/symfony/recipes:master
 
@@ -257,7 +255,7 @@ EOF
         $downloader = $this->getMockBuilder(Downloader::class)->disableOriginalConstructor()->getMock();
 
         $downloader->expects($this->once())->method('getRecipes')->willReturn($recipes);
-        $downloader->expects($this->exactly(2))->method('isEnabled')->willReturn(true);
+        $downloader->expects($this->any())->method('isEnabled')->willReturn(true);
 
         return $downloader;
     }
