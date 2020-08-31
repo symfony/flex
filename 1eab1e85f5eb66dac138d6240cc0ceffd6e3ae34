@@ -1,0 +1,108 @@
+---------------------------------------------------------------------------
+
+by renanbr at 2020-08-26T20:37:33Z
+
+- CI with new test (fail) : https://travis-ci.org/github/symfony/flex/builds/721476581
+- CI with new test and fix (pass): https://travis-ci.org/github/symfony/flex/builds/721477335
+
+---------------------------------------------------------------------------
+
+by weaverryan at 2020-08-27T17:46:29Z
+
+Hey @renanbr!
+
+I'm also interested in this fix :). But I tested the PR and it doesn't work yet. I actually used your exact instructions from #597 (stopping after `composer require flex` to paste in your patched `Unpacker`). The result is the same: I have `symfony/twig-bundle` in both `require` and `require-dev`.
+
+Is this patch working for you?
+
+Related: I'm also interested in 2 related things:
+
+1) If an existing package is already in `composer.json` (e.g. under `require`) then we should duplicate it. That's the aim of this PR. But we should go one tiny step further (and maybe your PR already aims to do this): if a package already exists in `composer.json`, we should make sure to *not* update its version. For example, imagine you already have `"symfony/twig-bundle": "5.0.*",` and then you run `composer require profiler` (pretend we do it without `--dev`). Obviously, we shouldn't duplicate `symfony/twig-bundle`, but I think we should also not *change the `5.0.*` version constraint - it should remain. Currently, the version is replaced with the "latest" one if the package already exists.
+
+2) Imagine your situation for #597 is reversed (the order of installing packages):
+
+```
+mkdir project
+cd project
+composer init -n
+composer require symfony/flex
+composer require --unpack --dev profiler
+composer require --unpack twig
+cat composer.json
+```
+
+Where should `symfony/twig-bundle` live? In `require` or `require-dev`? Based on the order, it would be added to `require-dev` first. But, I think that it should be *moved* to `require` when `composer require --unpack twig` is called. The idea is this: if you install *any* pack that needs `twig` to be under `require`, then that should take precedence.
+
+Let me know what you think about the current state of the PR and if you're able to also fit in any of these ideas. Sorry for the distraction ;)
+
+Cheers!
+
+---------------------------------------------------------------------------
+
+by renanbr at 2020-08-28T10:53:00Z
+
+@weaverryan thanks for the feedback
+
+---
+
+> Is this patch working for you?
+
+No it didn't, but it's working now.
+
+Could you retry using the fresh Unpack.php code?
+
+---
+
+I do think the related subjects should be treated in this PR.
+
+I based new changed on them,
+for each real package found in unpack process:
+
+- If it's already present in "require" section:
+    - unpacker does nothing
+- If it's already present in the "require-dev" section but not in the "require" one, then:
+    - it removes the dependency from the "require-dev" section; and
+    - puts it in the "require" using the version present in the "require-dev" section
+- If it's not present in the file:
+    - unpacker put the data as-is
+
+I think this approach covers all cases you mentioned.
+
+WDYT?
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2020-08-28T11:04:20Z
+
+When composer 2 is used, we could even compute the intersection of the two constraints, thanks to [`Intervals::compactConstraints()`](https://github.com/composer/semver/blob/master/src/Intervals.php#L139)
+Would you like to have a look?
+
+---------------------------------------------------------------------------
+
+by renanbr at 2020-08-28T17:03:29Z
+
+@nicolas-grekas, I didn't know `compactConstraints()`, nice, let me know if this commit is what you have in mind: 5ec74aff16c1e59574b766ffd9bb71d44249f059
+
+---------------------------------------------------------------------------
+
+by weaverryan at 2020-08-29T15:00:06Z
+
+Hey @renanbr!
+
+Awesome! Thank for your fast work on this! I just tried the latest version:
+
+A) `composer require twig` and then `composer require profiler --dev` worked as expected: `symfony/twig-bundle` was *only* in `require` at the end.
+
+B) But the opposite - `composer require profiler --dev` and then `composer require twig` resulted in a duplicated `symfony/twig-bundle` - it was still in both `require` and `require-dev` (expected is that it would only be in `require` - it would effectively be moved from `require-dev` to `require`).
+
+C) Running `composer require twig` (which gives you `symfony/twig-bundle: "^5.1"`) then *changing* the version of `symfony/twig-bundle` to something else (e.g. 5.0.*) and then running `composer require profiler --dev` correctly did *not* change the version back to `^5.1: it allowed the user's custom version to take precedence.
+
+So, I think we're close - only case (B) was not quite right.
+
+Thanks!
+
+---------------------------------------------------------------------------
+
+by fabpot at 2020-08-31T14:35:28Z
+
+Merging as is. More tests welcome in another PR.
