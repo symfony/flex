@@ -41,13 +41,11 @@ class Unpacker
         $this->dryRun = $dryRun;
     }
 
-    public function unpack(Operation $op, Result $result = null): Result
+    public function unpack(Operation $op, Result $result = null, &$links = []): Result
     {
         if (null === $result) {
             $result = new Result();
         }
-
-        $links = [];
 
         $localRepo = $this->composer->getRepositoryManager()->getLocalRepository();
         foreach ($op->getPackages() as $package) {
@@ -83,7 +81,7 @@ class Unpacker
                     if ('symfony-pack' === $subPkg->getType()) {
                         $subOp = new Operation(true, $op->shouldSort());
                         $subOp->addPackage($subPkg->getName(), $constraint, $package['dev']);
-                        $result = $this->unpack($subOp, $result);
+                        $result = $this->unpack($subOp, $result, $links);
                         continue;
                     }
 
@@ -115,6 +113,10 @@ class Unpacker
                     ];
                 }
             }
+        }
+
+        if ($this->dryRun || 1 < \func_num_args()) {
+            return $result;
         }
 
         $jsonPath = Factory::getComposerFile();
@@ -150,9 +152,7 @@ class Unpacker
             }
         }
 
-        if (!$this->dryRun && 1 === \func_num_args()) {
-            file_put_contents($jsonPath, $jsonManipulator->getContents());
-        }
+        file_put_contents($jsonPath, $jsonManipulator->getContents());
 
         return $result;
     }
