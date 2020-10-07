@@ -102,9 +102,10 @@ class Unpacker
 
                 $linkName = $link->getTarget();
                 $linkType = $package['dev'] ? 'require-dev' : 'require';
+                $constraint = $this->versionParser->parseConstraints($constraint);
 
                 if (isset($links[$linkName])) {
-                    $links[$linkName]['constraints'][] = $this->versionParser->parseConstraints($constraint);
+                    $links[$linkName]['constraints'][] = $constraint;
                     if ('require' === $linkType) {
                         $links[$linkName]['type'] = 'require';
                     }
