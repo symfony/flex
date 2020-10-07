@@ -7,6 +7,7 @@ use Composer\Package\Link;
 use Composer\Package\Package;
 use Composer\Repository\InstalledArrayRepository;
 use Composer\Repository\RepositoryManager;
+use Composer\Semver\Constraint\MatchAllConstraint;
 use PHPUnit\Framework\TestCase;
 use Symfony\Flex\PackageResolver;
 use Symfony\Flex\Unpack\Operation;
@@ -44,7 +45,7 @@ class UnpackerTest extends TestCase
         // Setup packages
 
         $realPkg = new Package('real', '1.0.0', '1.0.0');
-        $realPkgLink = new Link('lorem', 'real', null, 'wraps', '1.0.0');
+        $realPkgLink = new Link('lorem', 'real', class_exists(MatchAllConstraint::class) ? new MatchAllConstraint() : null, 'wraps', '1.0.0');
 
         $virtualPkgFoo = new Package('pack_foo', '1.0.0', '1.0.0');
         $virtualPkgFoo->setType('symfony-pack');
