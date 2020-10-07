@@ -25,6 +25,7 @@ use Composer\Plugin\PluginInterface;
 use Composer\Repository\RepositoryManager;
 use Composer\Repository\WritableRepositoryInterface;
 use Composer\Script\Event;
+use Composer\Semver\Constraint\MatchAllConstraint;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Flex\Configurator;
@@ -99,7 +100,7 @@ EOF
         $io = new BufferIO('', OutputInterface::VERBOSITY_VERBOSE);
 
         $package = $this->mockRootPackage(['symfony' => ['allow-contrib' => true]]);
-        $package->method('getRequires')->willReturn([new Link('dummy', 'symfony/flex')]);
+        $package->method('getRequires')->willReturn([new Link('dummy', 'symfony/flex', class_exists(MatchAllConstraint::class) ? new MatchAllConstraint() : null)]);
 
         $composer = $this->mockComposer($this->mockLocker(), $package, Factory::createConfig($io));
         if (version_compare('2.0.0', PluginInterface::PLUGIN_API_VERSION, '>')) {
