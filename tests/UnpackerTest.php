@@ -12,6 +12,16 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Flex\PackageResolver;
 use Symfony\Flex\Unpack\Operation;
 use Symfony\Flex\Unpacker;
+use function class_exists;
+use function file_get_contents;
+use function file_put_contents;
+use function getenv;
+use function json_decode;
+use function mkdir;
+use function putenv;
+use function unlink;
+use function var_dump;
+use const FLEX_TEST_DIR;
 
 class UnpackerTest extends TestCase
 {
@@ -84,6 +94,160 @@ class UnpackerTest extends TestCase
         $this->assertArrayHasKey('require', $composerJson);
         $this->assertArrayHasKey('real', $composerJson['require']);
         $this->assertArrayNotHasKey('require-dev', $composerJson);
+
+        // Restore
+
+        putenv('COMPOSER='.$originalEnvComposer);
+        @unlink($composerJsonPath);
+    }
+
+    /**
+     * Replaces are added from the packs into the main composer.json
+     *
+     * Context:
+     *
+     *   - There are two packs: "pack_foo" and "pack_bar"
+     *   - Both points to a package named "real"
+     *   - "pack_foo" is present in the "require" section
+     *   - "pack_bar" is present in the "replace" section
+     *
+     * Expected result:
+     *
+     *   - "real" package MUST be present ONLY in "replace" section
+     */
+    public function testReplacesAreAdded(): void
+    {
+        // Setup project
+
+        $composerJsonPath = FLEX_TEST_DIR.'/composer.json';
+
+        @mkdir(FLEX_TEST_DIR);
+        @unlink($composerJsonPath);
+        file_put_contents($composerJsonPath, '{}');
+
+        $originalEnvComposer = getenv('COMPOSER');
+        putenv('COMPOSER='.$composerJsonPath);
+
+        // Setup packages
+
+        $realPkg = new Package('real', '1.0.0', '1.0.0');
+        $realPkgLink = new Link('lorem', 'real', class_exists(MatchAllConstraint::class) ? new MatchAllConstraint() : null, 'wraps', '1.0.0');
+
+        $virtualPkgFoo = new Package('pack_foo', '1.0.0', '1.0.0');
+        $virtualPkgFoo->setType('symfony-pack');
+        $virtualPkgFoo->setRequires([$realPkgLink]);
+
+        $virtualPkgBar = new Package('pack_bar', '1.0.0', '1.0.0');
+        $virtualPkgBar->setType('symfony-pack');
+        $virtualPkgBar->setReplaces([$realPkgLink]);
+
+        $packages = [$realPkg, $virtualPkgFoo, $virtualPkgBar];
+
+        // Setup Composer
+
+        $repManager = $this->getMockBuilder(RepositoryManager::class)->disableOriginalConstructor()->getMock();
+        $repManager->expects($this->any())->method('getLocalRepository')->willReturn(new InstalledArrayRepository($packages));
+
+        $composer = new Composer();
+        $composer->setRepositoryManager($repManager);
+
+        // Unpack
+
+        $resolver = $this->getMockBuilder(PackageResolver::class)->disableOriginalConstructor()->getMock();
+
+        $unpacker = new Unpacker($composer, $resolver, false);
+
+        $operation = new Operation(true, false);
+        $operation->addPackage('pack_foo', '*', false);
+        $operation->addPackage('pack_bar', '*', false);
+
+        $unpacker->unpack($operation);
+
+        // Check
+
+        $composerJson = json_decode(file_get_contents($composerJsonPath), true);
+
+        $this->assertArrayHasKey('replace', $composerJson);
+        $this->assertArrayHasKey('real', $composerJson['replace']);
+        $this->assertArrayNotHasKey('require-dev', $composerJson);
+        $this->assertArrayNotHasKey('require', $composerJson);
+
+        // Restore
+
+        putenv('COMPOSER='.$originalEnvComposer);
+        @unlink($composerJsonPath);
+    }
+
+    /**
+     * Replaces from dev dependencies are not added
+     *
+     * Context:
+     *
+     *   - There are two packs: "pack_foo" and "pack_bar"
+     *   - Both points to a package named "real"
+     *   - "pack_foo" is present in the "require" section
+     *   - "pack_bar" is present in the "replace" section
+     *
+     * Expected result:
+     *
+     *   - "real" package MUST be present ONLY in "require" section
+     */
+    public function testReplacesAreNotAddedForDevDependencies(): void
+    {
+        // Setup project
+
+        $composerJsonPath = FLEX_TEST_DIR.'/composer.json';
+
+        @mkdir(FLEX_TEST_DIR);
+        @unlink($composerJsonPath);
+        file_put_contents($composerJsonPath, '{}');
+
+        $originalEnvComposer = getenv('COMPOSER');
+        putenv('COMPOSER='.$composerJsonPath);
+
+        // Setup packages
+
+        $realPkg = new Package('real', '1.0.0', '1.0.0');
+        $realPkgLink = new Link('lorem', 'real', class_exists(MatchAllConstraint::class) ? new MatchAllConstraint() : null, 'wraps', '1.0.0');
+
+        $virtualPkgFoo = new Package('pack_foo', '1.0.0', '1.0.0');
+        $virtualPkgFoo->setType('symfony-pack');
+        $virtualPkgFoo->setRequires([$realPkgLink]);
+
+        $virtualPkgBar = new Package('pack_bar', '1.0.0', '1.0.0');
+        $virtualPkgBar->setType('symfony-pack');
+        $virtualPkgBar->setReplaces([$realPkgLink]);
+
+        $packages = [$realPkg, $virtualPkgFoo, $virtualPkgBar];
+
+        // Setup Composer
+
+        $repManager = $this->getMockBuilder(RepositoryManager::class)->disableOriginalConstructor()->getMock();
+        $repManager->expects($this->any())->method('getLocalRepository')->willReturn(new InstalledArrayRepository($packages));
+
+        $composer = new Composer();
+        $composer->setRepositoryManager($repManager);
+
+        // Unpack
+
+        $resolver = $this->getMockBuilder(PackageResolver::class)->disableOriginalConstructor()->getMock();
+
+        $unpacker = new Unpacker($composer, $resolver, false);
+
+        $operation = new Operation(true, false);
+        $operation->addPackage('pack_foo', '*', false);
+        $operation->addPackage('pack_bar', '*', true);
+
+        $unpacker->unpack($operation);
+
+        // Check
+
+        $composerJson = json_decode(file_get_contents($composerJsonPath), true);
+
+        $this->assertArrayHasKey('require', $composerJson);
+        $this->assertArrayHasKey('real', $composerJson['require']);
+        $this->assertArrayNotHasKey('require-dev', $composerJson);
+        $this->assertArrayNotHasKey('replace', $composerJson);
 
         // Restore
 

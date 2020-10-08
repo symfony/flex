@@ -18,6 +18,7 @@ use Composer\Factory;
 use Composer\IO\IOInterface;
 use Composer\Json\JsonFile;
 use Composer\Json\JsonManipulator;
+use Composer\Package\Link;
 use Composer\Package\Locker;
 use Composer\Package\Version\VersionSelector;
 use Composer\Plugin\PluginInterface;
@@ -60,7 +61,7 @@ class Unpacker
                 null === $pkg ||
                 'symfony-pack' !== $pkg->getType() ||
                 !$op->shouldUnpack() ||
-                0 === \count($pkg->getRequires()) + \count($pkg->getDevRequires())
+                0 === \count($pkg->getRequires()) + \count($pkg->getDevRequires()) + \count($pkg->getReplaces()) + \count($pkg->getReplaces())
             ) {
                 $result->addRequired($package['name'].($package['version'] ? ':'.$package['version'] : ''));
 
@@ -72,6 +73,21 @@ class Unpacker
             }
 
             $versionSelector = null;
+
+            foreach ($pkg->getReplaces() as $link) {
+                if ($package['dev']) {
+                    break;
+                }
+                $this->addLinks($link, $links, 'replace');
+            }
+
+            foreach ($pkg->getProvides() as $link) {
+                if ($package['dev']) {
+                    break;
+                }
+                $this->addLinks($link, $links, 'provide');
+            }
+
             foreach ($pkg->getRequires() as $link) {
                 if ('php' === $link->getTarget()) {
                     continue;
@@ -106,7 +122,7 @@ class Unpacker
 
                 if (isset($links[$linkName])) {
                     $links[$linkName]['constraints'][] = $constraint;
-                    if ('require' === $linkType) {
+                    if ('require' === $linkType && !in_array($links['linkName']['type'],['replace', 'provide'])) {
                         $links[$linkName]['type'] = 'require';
                     }
                 } else {
@@ -199,5 +215,21 @@ class Unpacker
             $locker = new Locker($io, $lockFile, $this->composer->getInstallationManager(), $jsonContent);
         }
         $this->composer->setLocker($locker);
+    }
+
+
+    private function addLinks(Link $link, array &$links, string $linkType): void
+    {
+        $constraint = $link->getPrettyConstraint();
+        $constraint = substr($this->resolver->parseVersion($link->getTarget(), $constraint, false), 1) ?: $constraint;
+
+        $linkName = $link->getTarget();
+        $constraint = $this->versionParser->parseConstraints($constraint);
+
+        $links[$linkName] = [
+            'type' => $linkType,
+            'name' => $linkName,
+            'constraints' => [$constraint],
+        ];
     }
 }
