@@ -74,18 +74,13 @@ class Unpacker
 
             $versionSelector = null;
 
-            foreach ($pkg->getReplaces() as $link) {
-                if ($package['dev']) {
-                    break;
+            if(!$package['dev']) {
+                foreach ($pkg->getReplaces() as $link) {
+                    $this->addLinks($link, $links, 'replace');
                 }
-                $this->addLinks($link, $links, 'replace');
-            }
-
-            foreach ($pkg->getProvides() as $link) {
-                if ($package['dev']) {
-                    break;
+                foreach ($pkg->getProvides() as $link) {
+                    $this->addLinks($link, $links, 'provide');
                 }
-                $this->addLinks($link, $links, 'provide');
             }
 
             foreach ($pkg->getRequires() as $link) {
