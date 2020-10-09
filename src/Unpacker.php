@@ -74,7 +74,7 @@ class Unpacker
 
             $versionSelector = null;
 
-            if(!$package['dev']) {
+            if (!$package['dev']) {
                 foreach ($pkg->getReplaces() as $link) {
                     $this->addLinks($link, $links, 'replace');
                 }
@@ -117,7 +117,7 @@ class Unpacker
 
                 if (isset($links[$linkName])) {
                     $links[$linkName]['constraints'][] = $constraint;
-                    if ('require' === $linkType && !in_array($links['linkName']['type'],['replace', 'provide'])) {
+                    if ('require' === $linkType && !\in_array($links['linkName']['type'],['replace', 'provide'])) {
                         $links[$linkName]['type'] = 'require';
                     }
                 } else {

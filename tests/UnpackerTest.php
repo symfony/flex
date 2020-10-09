@@ -12,16 +12,6 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Flex\PackageResolver;
 use Symfony\Flex\Unpack\Operation;
 use Symfony\Flex\Unpacker;
-use function class_exists;
-use function file_get_contents;
-use function file_put_contents;
-use function getenv;
-use function json_decode;
-use function mkdir;
-use function putenv;
-use function unlink;
-use function var_dump;
-use const FLEX_TEST_DIR;
 
 class UnpackerTest extends TestCase
 {
@@ -102,7 +92,7 @@ class UnpackerTest extends TestCase
     }
 
     /**
-     * Replaces are added from the packs into the main composer.json
+     * Replaces are added from the packs into the main composer.json.
      *
      * Context:
      *
@@ -179,7 +169,7 @@ class UnpackerTest extends TestCase
     }
 
     /**
-     * Replaces from dev dependencies are not added
+     * Replaces from dev dependencies are not added.
      *
      * Context:
      *
