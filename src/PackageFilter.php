@@ -99,9 +99,10 @@ class PackageFilter
             foreach ($vers as $i => $v) {
                 if (!isset($okVersions[$v])) {
                     $okVersions[$v] = false;
+                    $w = '.x' === substr($v, -2) ? $versions['next'] : $v;
 
                     for ($j = 0; $j < 60; ++$j) {
-                        if ($this->symfonyConstraints->matches(new Constraint('==', $v.'.'.$j.'.0'))) {
+                        if ($this->symfonyConstraints->matches(new Constraint('==', $w.'.'.$j.'.0'))) {
                             $okVersions[$v] = true;
                             break;
                         }
