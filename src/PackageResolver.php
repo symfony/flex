@@ -20,7 +20,7 @@ use Composer\Repository\PlatformRepository;
  */
 class PackageResolver
 {
-    private static $SYMFONY_VERSIONS = ['lts', 'previous', 'stable', 'next'];
+    private static $SYMFONY_VERSIONS = ['lts', 'previous', 'stable', 'next', 'dev'];
     private static $aliases;
     private $downloader;
 
@@ -100,6 +100,8 @@ class PackageResolver
                 }
             }
             $version = $config['extra']['symfony']['require'] ?? $config['require']['symfony/framework-bundle'];
+        } elseif ('dev' === $version) {
+            $version = '^'.$versions['dev-name'].'@dev';
         } elseif ('next' === $version) {
             $version = '^'.$versions[$version].'@dev';
         } elseif (\in_array($version, self::$SYMFONY_VERSIONS, true)) {
