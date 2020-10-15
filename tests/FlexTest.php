@@ -49,7 +49,7 @@ class FlexTest extends TestCase
                             'Symfony\\Bundle\\FrameworkBundle\\FrameworkBundle' => ['all'],
                         ],
                     ],
-                    'origin' => 'dummy/dummy:1.0@github.com/symfony/recipes:master',
+                    'origin' => 'dummy/dummy:1.0@github.com/symfony/recipes:main',
                 ],
             ],
             'locks' => [
@@ -87,7 +87,7 @@ class FlexTest extends TestCase
             <<<EOF
 
 Symfony operations: 1 recipe ()
-  - Configuring dummy/dummy (>=1.0): From github.com/symfony/recipes:master
+  - Configuring dummy/dummy (>=1.0): From github.com/symfony/recipes:main
 
 EOF
             ,

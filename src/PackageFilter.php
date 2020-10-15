@@ -40,13 +40,22 @@ class PackageFilter
 
     /**
      * @param PackageInterface[] $data
+     * @param PackageInterface[] $lockedPackages
      *
      * @return PackageInterface[]
      */
-    public function removeLegacyPackages(array $data): array
+    public function removeLegacyPackages(array $data, array $lockedPackages): array
     {
         if (!$this->symfonyConstraints || !$data) {
             return $data;
+        }
+
+        $lockedVersions = [];
+        foreach ($lockedPackages as $package) {
+            $lockedVersions[$package->getName()] = [$package->getVersion()];
+            if ($package instanceof AliasPackage) {
+                $lockedVersions[$package->getName()][] = $package->getAliasOf()->getVersion();
+            }
         }
 
         $knownVersions = $this->getVersions();
@@ -59,7 +68,7 @@ class PackageFilter
             if ($package instanceof AliasPackage) {
                 $versions[] = $package->getAliasOf()->getVersion();
             }
-            if ('symfony/symfony' !== $name && !isset($knownVersions['splits'][$name])) {
+            if ('symfony/symfony' !== $name && (!isset($knownVersions['splits'][$name]) || array_intersect($versions, $lockedVersions[$name] ?? []))) {
                 $filteredPackages[] = $package;
                 continue;
             }

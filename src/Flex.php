@@ -863,7 +863,7 @@ EOPHP
         if (!$this->filter) {
             return;
         }
-        $event->setPackages($this->filter->removeLegacyPackages($event->getPackages()));
+        $event->setPackages($this->filter->removeLegacyPackages($event->getPackages(), $event->getRequest()->getFixedOrLockedPackages()));
     }
 
     private function initOptions(): Options
