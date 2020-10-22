@@ -17,6 +17,7 @@
     "require-dev": {
         "composer/composer": "^1.0.2|^2.0",
         "symfony/dotenv": "^4.4|^5.0",
+        "symfony/filesystem": "^4.4|^5.0",
         "symfony/phpunit-bridge": "^4.4|^5.0",
         "symfony/process": "^3.4|^4.4|^5.0"
     },

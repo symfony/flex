@@ -1,0 +1,14 @@
+{
+    "controllers": {
+        "@symfony/existing-package": {
+            "mock": {
+                "enabled": false,
+                "webpackMode": "eager",
+                "autoimport": {
+                    "@symfony/existing-package/dist/style.css": false
+                }
+            }
+        }
+    },
+    "entrypoints": []
+}
