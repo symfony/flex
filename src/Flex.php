@@ -140,8 +140,9 @@ class Flex implements PluginInterface, EventSubscriberInterface
             $this->downloader = $downloader = new Downloader($composer, $io, $this->rfs);
             $this->downloader->setFlexId($this->getFlexId());
 
+            $rootPackage = $composer->getPackage();
             $manager = RepositoryFactory::manager($this->io, $this->config, $composer->getEventDispatcher(), $this->rfs);
-            $setRepositories = \Closure::bind(function (RepositoryManager $manager) use (&$symfonyRequire, $downloader) {
+            $setRepositories = \Closure::bind(function (RepositoryManager $manager) use (&$symfonyRequire, $rootPackage, $downloader) {
                 $manager->repositoryClasses = $this->repositoryClasses;
                 $manager->setRepositoryClass('composer', TruncatedComposerRepository::class);
                 $manager->repositories = $this->repositories;
@@ -149,7 +150,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
                 foreach (RepositoryFactory::defaultRepos(null, $this->config, $manager) as $repo) {
                     $manager->repositories[$i++] = $repo;
                     if ($repo instanceof TruncatedComposerRepository && $symfonyRequire) {
-                        $repo->setSymfonyRequire($symfonyRequire, $downloader, $this->io);
+                        $repo->setSymfonyRequire($symfonyRequire, $rootPackage, $downloader, $this->io);
                     }
                 }
                 $manager->setLocalRepository($this->getLocalRepository());
@@ -863,7 +864,11 @@ EOPHP
         if (!$this->filter) {
             return;
         }
-        $event->setPackages($this->filter->removeLegacyPackages($event->getPackages(), $event->getRequest()->getFixedOrLockedPackages()));
+
+        $rootPackage = $this->composer->getPackage();
+        $lockedPackages = $event->getRequest()->getFixedOrLockedPackages();
+
+        $event->setPackages($this->filter->removeLegacyPackages($event->getPackages(), $rootPackage, $lockedPackages));
     }
 
     private function initOptions(): Options

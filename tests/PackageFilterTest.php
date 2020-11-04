@@ -13,11 +13,17 @@ namespace Symfony\Flex\Tests;
 
 use Composer\IO\NullIO;
 use Composer\Package\CompletePackage;
+use Composer\Package\Link;
 use Composer\Package\Loader\ArrayLoader;
 use Composer\Package\PackageInterface;
+use Composer\Package\RootPackage;
+use Composer\Semver\Constraint\Constraint;
 use PHPUnit\Framework\TestCase;
 use Symfony\Flex\PackageFilter;
 
+/**
+ * @requires function \Composer\Plugin\PrePoolCreateEvent::__construct
+ */
 class PackageFilterTest extends TestCase
 {
     /**
@@ -52,8 +58,12 @@ class PackageFilterTest extends TestCase
         $expected = $configToPackage($expected);
         $packages = $configToPackage($packages);
         $lockedPackages = $configToPackage($lockedPackages);
+        $rootPackage = new RootPackage('test/test', '1.0.0.0', '1.0');
+        $rootPackage->setRequires([
+            'symfony/bar' => new Link('__root__', 'symfony/bar', new Constraint('>=', '3.0.0.0')),
+        ]);
 
-        $actual = $filter->removeLegacyPackages($packages, $lockedPackages);
+        $actual = $filter->removeLegacyPackages($packages, $rootPackage, $lockedPackages);
 
         usort($expected, $sortPackages);
         usort($actual, $sortPackages);
@@ -183,5 +193,18 @@ class PackageFilterTest extends TestCase
         yield 'locked-packages-are-preserved' => [$packages, $packages, '~2.8', ['splits' => [
             'symfony/foo' => ['2.8', '3.0'],
         ]], $lockedPackages];
+
+        $packages = [
+            'symfony/symfony' => [
+                '3.0.0' => ['version_normalized' => '3.0.0.0'],
+            ],
+            'symfony/bar' => [
+                '3.0.0' => ['version_normalized' => '3.0.0.0'],
+            ],
+        ];
+
+        yield 'root-constraints-are-preserved' => [$packages, $packages, '~2.8', ['splits' => [
+            'symfony/bar' => ['2.8', '3.0'],
+        ]]];
     }
 }

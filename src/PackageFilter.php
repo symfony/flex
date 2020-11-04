@@ -14,7 +14,9 @@ namespace Symfony\Flex;
 use Composer\IO\IOInterface;
 use Composer\Package\AliasPackage;
 use Composer\Package\PackageInterface;
+use Composer\Package\RootPackageInterface;
 use Composer\Semver\Constraint\Constraint;
+use Composer\Semver\Intervals;
 use Composer\Semver\VersionParser;
 
 /**
@@ -44,7 +46,7 @@ class PackageFilter
      *
      * @return PackageInterface[]
      */
-    public function removeLegacyPackages(array $data, array $lockedPackages): array
+    public function removeLegacyPackages(array $data, RootPackageInterface $rootPackage, array $lockedPackages): array
     {
         if (!$this->symfonyConstraints || !$data) {
             return $data;
@@ -58,6 +60,11 @@ class PackageFilter
             }
         }
 
+        $rootConstraints = [];
+        foreach ($rootPackage->getRequires() + $rootPackage->getDevRequires() as $name => $link) {
+            $rootConstraints[$name] = $link->getConstraint();
+        }
+
         $knownVersions = $this->getVersions();
         $filteredPackages = [];
         $symfonyPackages = [];
@@ -68,7 +75,12 @@ class PackageFilter
             if ($package instanceof AliasPackage) {
                 $versions[] = $package->getAliasOf()->getVersion();
             }
-            if ('symfony/symfony' !== $name && (!isset($knownVersions['splits'][$name]) || array_intersect($versions, $lockedVersions[$name] ?? []))) {
+
+            if ('symfony/symfony' !== $name && (
+                !isset($knownVersions['splits'][$name])
+                || array_intersect($versions, $lockedVersions[$name] ?? [])
+                || (isset($rootConstraints[$name]) && !Intervals::haveIntersections($this->symfonyConstraints, $rootConstraints[$name]))
+            )) {
                 $filteredPackages[] = $package;
                 continue;
             }
