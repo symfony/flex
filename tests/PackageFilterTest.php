@@ -23,7 +23,7 @@ class PackageFilterTest extends TestCase
     /**
      * @dataProvider provideRemoveLegacyPackages
      */
-    public function testRemoveLegacyPackages(array $expected, array $packages, string $symfonyRequire, array $versions)
+    public function testRemoveLegacyPackages(array $expected, array $packages, string $symfonyRequire, array $versions, array $lockedPackages = [])
     {
         $downloader = $this->getMockBuilder('Symfony\Flex\Downloader')->disableOriginalConstructor()->getMock();
         $downloader->expects($this->once())
@@ -51,8 +51,9 @@ class PackageFilterTest extends TestCase
 
         $expected = $configToPackage($expected);
         $packages = $configToPackage($packages);
+        $lockedPackages = $configToPackage($lockedPackages);
 
-        $actual = $filter->removeLegacyPackages($packages);
+        $actual = $filter->removeLegacyPackages($packages, $lockedPackages);
 
         usort($expected, $sortPackages);
         usort($actual, $sortPackages);
@@ -82,7 +83,7 @@ class PackageFilterTest extends TestCase
             return [
                 'extra' => [
                     'branch-alias' => [
-                        'dev-master' => $versionAlias.'-dev',
+                        'dev-main' => $versionAlias.'-dev',
                     ],
                 ],
             ];
@@ -93,18 +94,14 @@ class PackageFilterTest extends TestCase
                 '1.0.0' => [],
             ],
             'symfony/symfony' => [
-                '3.3.0' => [
-                    'version_normalized' => '3.3.0.0',
-                ],
-                '3.4.0' => [
-                    'version_normalized' => '3.4.0.0',
-                ],
-                'dev-master' => $branchAlias('3.5'),
+                '3.3.0' => ['version_normalized' => '3.3.0.0'],
+                '3.4.0' => ['version_normalized' => '3.4.0.0'],
+                'dev-main' => $branchAlias('3.5'),
             ],
             'symfony/foo' => [
                 '3.3.0' => ['version_normalized' => '3.3.0.0'],
                 '3.4.0' => ['version_normalized' => '3.4.0.0'],
-                'dev-master' => $branchAlias('3.5'),
+                'dev-main' => $branchAlias('3.5'),
             ],
         ];
 
@@ -126,19 +123,17 @@ class PackageFilterTest extends TestCase
         unset($expected['symfony/symfony']['3.4.0']);
         unset($expected['symfony/foo']['3.4.0']);
 
-        yield 'master-only' => [$expected, $packages, '~3.5', ['splits' => [
+        yield 'main-only' => [$expected, $packages, '~3.5', ['splits' => [
             'symfony/foo' => ['3.4', '3.5'],
         ]]];
 
         $packages = [
             'symfony/symfony' => [
-                '2.8.0' => [
-                    'version_normalized' => '2.8.0.0',
-                ],
+                '2.8.0' => ['version_normalized' => '2.8.0.0'],
             ],
             'symfony/legacy' => [
                 '2.8.0' => ['version_normalized' => '2.8.0.0'],
-                'dev-master' => $branchAlias('2.8'),
+                'dev-main' => $branchAlias('2.8'),
             ],
         ];
 
@@ -149,27 +144,44 @@ class PackageFilterTest extends TestCase
 
         $packages = [
             'symfony/symfony' => [
-                '2.8.0' => [
-                    'version_normalized' => '2.8.0.0',
-                ],
-                'dev-master' => $branchAlias('3.0'),
+                '2.8.0' => ['version_normalized' => '2.8.0.0'],
+                'dev-main' => $branchAlias('3.0'),
             ],
             'symfony/foo' => [
                 '2.8.0' => ['version_normalized' => '2.8.0.0'],
-                'dev-master' => $branchAlias('3.0'),
+                'dev-main' => $branchAlias('3.0'),
             ],
             'symfony/new' => [
-                'dev-master' => $branchAlias('3.0'),
+                'dev-main' => $branchAlias('3.0'),
             ],
         ];
 
         $expected = $packages;
-        unset($expected['symfony/symfony']['dev-master']);
-        unset($expected['symfony/foo']['dev-master']);
+        unset($expected['symfony/symfony']['dev-main']);
+        unset($expected['symfony/foo']['dev-main']);
 
-        yield 'master-is-filtered-only-when-in-range' => [$expected, $packages, '~2.8', ['splits' => [
+        yield 'main-is-filtered-only-when-in-range' => [$expected, $packages, '~2.8', ['splits' => [
             'symfony/foo' => ['2.8', '3.0'],
             'symfony/new' => ['3.0'],
         ]]];
+
+        $packages = [
+            'symfony/symfony' => [
+                '3.0.0' => ['version_normalized' => '3.0.0.0'],
+            ],
+            'symfony/foo' => [
+                '3.0.0' => ['version_normalized' => '3.0.0.0'],
+            ],
+        ];
+
+        $lockedPackages = [
+            'symfony/foo' => [
+                '3.0.0' => ['version_normalized' => '3.0.0.0'],
+            ],
+        ];
+
+        yield 'locked-packages-are-preserved' => [$packages, $packages, '~2.8', ['splits' => [
+            'symfony/foo' => ['2.8', '3.0'],
+        ]], $lockedPackages];
     }
 }

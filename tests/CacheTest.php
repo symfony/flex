@@ -39,7 +39,7 @@ class CacheTest extends TestCase
             return [
                 'extra' => [
                     'branch-alias' => [
-                        'dev-master' => $versionAlias.'-dev',
+                        'dev-main' => $versionAlias.'-dev',
                     ],
                 ],
             ];
@@ -50,18 +50,14 @@ class CacheTest extends TestCase
                 '1.0.0' => [],
             ],
             'symfony/symfony' => [
-                '3.3.0' => [
-                    'version_normalized' => '3.3.0.0',
-                ],
-                '3.4.0' => [
-                    'version_normalized' => '3.4.0.0',
-                ],
-                'dev-master' => $branchAlias('3.5'),
+                '3.3.0' => ['version_normalized' => '3.3.0.0'],
+                '3.4.0' => ['version_normalized' => '3.4.0.0'],
+                'dev-main' => $branchAlias('3.5'),
             ],
             'symfony/foo' => [
                 '3.3.0' => ['version_normalized' => '3.3.0.0'],
                 '3.4.0' => ['version_normalized' => '3.4.0.0'],
-                'dev-master' => $branchAlias('3.5'),
+                'dev-main' => $branchAlias('3.5'),
             ],
         ];
 
@@ -83,19 +79,17 @@ class CacheTest extends TestCase
         unset($expected['symfony/symfony']['3.4.0']);
         unset($expected['symfony/foo']['3.4.0']);
 
-        yield 'master-only' => [$expected, $packages, '~3.5', ['splits' => [
+        yield 'main-only' => [$expected, $packages, '~3.5', ['splits' => [
             'symfony/foo' => ['3.4', '3.5'],
         ]]];
 
         $packages = [
             'symfony/symfony' => [
-                '2.8.0' => [
-                    'version_normalized' => '2.8.0.0',
-                ],
+                '2.8.0' => ['version_normalized' => '2.8.0.0'],
             ],
             'symfony/legacy' => [
                 '2.8.0' => ['version_normalized' => '2.8.0.0'],
-                'dev-master' => $branchAlias('2.8'),
+                'dev-main' => $branchAlias('2.8'),
             ],
         ];
 
@@ -106,25 +100,23 @@ class CacheTest extends TestCase
 
         $packages = [
             'symfony/symfony' => [
-                '2.8.0' => [
-                    'version_normalized' => '2.8.0.0',
-                ],
-                'dev-master' => $branchAlias('3.0'),
+                '2.8.0' => ['version_normalized' => '2.8.0.0'],
+                'dev-main' => $branchAlias('3.0'),
             ],
             'symfony/foo' => [
                 '2.8.0' => ['version_normalized' => '2.8.0.0'],
-                'dev-master' => $branchAlias('3.0'),
+                'dev-main' => $branchAlias('3.0'),
             ],
             'symfony/new' => [
-                'dev-master' => $branchAlias('3.0'),
+                'dev-main' => $branchAlias('3.0'),
             ],
         ];
 
         $expected = $packages;
-        unset($expected['symfony/symfony']['dev-master']);
-        unset($expected['symfony/foo']['dev-master']);
+        unset($expected['symfony/symfony']['dev-main']);
+        unset($expected['symfony/foo']['dev-main']);
 
-        yield 'master-is-filtered-only-when-in-range' => [$expected, $packages, '~2.8', ['splits' => [
+        yield 'main-is-filtered-only-when-in-range' => [$expected, $packages, '~2.8', ['splits' => [
             'symfony/foo' => ['2.8', '3.0'],
             'symfony/new' => ['3.0'],
         ]]];
