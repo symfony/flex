@@ -11,6 +11,9 @@
 
 namespace Symfony\Flex\Tests;
 
+use Composer\Package\Link;
+use Composer\Package\RootPackage;
+use Composer\Semver\Constraint\Constraint;
 use PHPUnit\Framework\TestCase;
 use Symfony\Flex\Cache;
 
@@ -25,8 +28,14 @@ class CacheTest extends TestCase
         $downloader->expects($this->once())
             ->method('getVersions')
             ->willReturn($versions);
+
+        $rootPackage = new RootPackage('test/test', '1.0.0.0', '1.0');
+        $rootPackage->setRequires([
+            'symfony/bar' => new Link('__root__', 'symfony/bar', new Constraint('>=', '3.0.0.0')),
+        ]);
+
         $cache = (new \ReflectionClass(Cache::class))->newInstanceWithoutConstructor();
-        $cache->setSymfonyRequire($symfonyRequire, $downloader);
+        $cache->setSymfonyRequire($symfonyRequire, $rootPackage, $downloader);
 
         $this->assertSame(['packages' => $expected], $cache->removeLegacyTags(['packages' => $packages]));
     }
@@ -119,6 +128,19 @@ class CacheTest extends TestCase
         yield 'main-is-filtered-only-when-in-range' => [$expected, $packages, '~2.8', ['splits' => [
             'symfony/foo' => ['2.8', '3.0'],
             'symfony/new' => ['3.0'],
+        ]]];
+
+        $packages = [
+            'symfony/symfony' => [
+                '3.0.0' => ['version_normalized' => '3.0.0.0'],
+            ],
+            'symfony/bar' => [
+                '3.0.0' => ['version_normalized' => '3.0.0.0'],
+            ],
+        ];
+
+        yield 'root-constraints-are-preserved' => [$packages, $packages, '~2.8', ['splits' => [
+            'symfony/bar' => ['2.8', '3.0'],
         ]]];
     }
 }
