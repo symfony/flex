@@ -16,6 +16,7 @@ use Composer\Downloader\TransportException;
 use Composer\Util\HttpDownloader;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Flex\InformationOperation;
 use Symfony\Flex\Lock;
@@ -49,6 +50,7 @@ class RecipesCommand extends BaseCommand
             ->setDefinition([
                 new InputArgument('package', InputArgument::OPTIONAL, 'Package to inspect, if not provided all packages are.'),
             ])
+            ->addOption('outdated', 'o', InputOption::VALUE_NONE, 'Show only recipes that are outdated')
         ;
     }
 
@@ -96,35 +98,51 @@ class RecipesCommand extends BaseCommand
             return 0;
         }
 
-        // display a resume of all packages
-        $write = [
-            '',
-            '<bg=blue;fg=white>                      </>',
-            '<bg=blue;fg=white> Available recipes.   </>',
-            '<bg=blue;fg=white>                      </>',
-            '',
-        ];
+        $outdated = $input->getOption('outdated');
 
+        $write = [];
+        $hasOutdatedRecipes = false;
         /** @var Recipe $recipe */
         foreach ($recipes as $name => $recipe) {
             $lockRef = $this->symfonyLock->get($name)['recipe']['ref'] ?? null;
 
-            $additional = '';
+            $additional = null;
             if (null === $lockRef && null !== $recipe->getRef()) {
                 $additional = '<comment>(recipe not installed)</comment>';
             } elseif ($recipe->getRef() !== $lockRef) {
                 $additional = '<comment>(update available)</comment>';
             }
+
+            if ($outdated && null === $additional) {
+                continue;
+            }
+
+            $hasOutdatedRecipes = true;
             $write[] = sprintf(' * %s %s', $name, $additional);
         }
 
-        $write[] = '';
-        $write[] = 'Run:';
-        $write[] = ' * <info>composer recipes vendor/package</info> to see details about a recipe.';
-        $write[] = ' * <info>composer recipes:install vendor/package --force -v</info> to update that recipe.';
-        $write[] = '';
+        // Nothing to display
+        if (!$hasOutdatedRecipes) {
+            return 0;
+        }
 
-        $this->getIO()->write($write);
+        $this->getIO()->write(array_merge([
+            '',
+            '<bg=blue;fg=white>                      </>',
+            sprintf('<bg=blue;fg=white> %s recipes.   </>', $outdated ? ' Outdated' : 'Available'),
+            '<bg=blue;fg=white>                      </>',
+            '',
+        ], $write, [
+            '',
+            'Run:',
+            ' * <info>composer recipes vendor/package</info> to see details about a recipe.',
+            ' * <info>composer recipes:install vendor/package --force -v</info> to update that recipe.',
+            '',
+        ]));
+
+        if ($outdated) {
+            return 1;
+        }
 
         return 0;
     }
