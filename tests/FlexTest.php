@@ -200,10 +200,6 @@ EOF
                 'bundles' => ['Symfony\\Cmf\\Bundle\\RoutingBundle\\CmfRoutingBundle'],
             ],
             'easycorp/easy-deploy-bundle' => [
-                'autoload' => ['psr-4' => ['EasyCorp\\Bundle\\EasyDeployBundle\\' => 'src/']],
-                'bundles' => ['EasyCorp\\Bundle\\EasyDeployBundle\\EasyDeployBundle'],
-            ],
-            'easycorp/easy-deploy-bundle' => [
                 'autoload' => ['psr-4' => ['EasyCorp\\Bundle\\EasyDeployBundle\\' => ['src', 'tests']]],
                 'bundles' => ['EasyCorp\\Bundle\\EasyDeployBundle\\EasyDeployBundle'],
             ],
