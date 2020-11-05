@@ -1,0 +1,11 @@
+---------------------------------------------------------------------------
+
+by Seldaek at 2020-11-04T22:59:50Z
+
+Looks good to me for v2 that is, I'd say people should upgrade anyway but I am biased.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2020-11-05T10:21:58Z
+
+OK, support for Composer 1 wasn't that hard, pushed :)
