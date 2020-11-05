@@ -41,7 +41,7 @@ class InstallRecipesCommand extends BaseCommand
             ->setAliases(['recipes:install', 'symfony:sync-recipes', 'sync-recipes', 'fix-recipes'])
             ->setDescription('Installs or reinstalls recipes for already installed packages.')
             ->addArgument('packages', InputArgument::IS_ARRAY | InputArgument::OPTIONAL, 'Recipes that should be installed.')
-            ->addOption('force', null, InputOption::VALUE_NONE, 'Ignore the "symfony.lock" file and overwrite existing files')
+            ->addOption('force', null, InputOption::VALUE_NONE, 'Overwrite existing files when a new version of a recipe is available')
         ;
     }
 
