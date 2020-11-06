@@ -15,6 +15,7 @@ use Composer\Composer;
 use Composer\IO\IOInterface;
 use Composer\Package\Package;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Flex\Configurator\DockerComposeConfigurator;
 use Symfony\Flex\Lock;
 use Symfony\Flex\Options;
@@ -103,6 +104,9 @@ YAML;
     /** @var Lock|\PHPUnit\Framework\MockObject\MockObject */
     private $lock;
 
+    /** @var Composer|\PHPUnit\Framework\MockObject\MockObject */
+    private $composer;
+
     /** @var DockerComposeConfigurator */
     private $configurator;
 
@@ -121,11 +125,11 @@ YAML;
         $package = new Package('dummy/dummy', '1.0.0', '1.0.0');
         $package->setExtra(['symfony' => ['docker' => true]]);
 
-        $composer = $this->getMockBuilder(Composer::class)->getMock();
-        $composer->method('getPackage')->willReturn($package);
+        $this->composer = $this->getMockBuilder(Composer::class)->getMock();
+        $this->composer->method('getPackage')->willReturn($package);
 
         $this->configurator = new DockerComposeConfigurator(
-            $composer,
+            $this->composer,
             $this->getMockBuilder(IOInterface::class)->getMock(),
             new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
         );
@@ -133,9 +137,15 @@ YAML;
 
     protected function tearDown(): void
     {
-        @unlink(FLEX_TEST_DIR.'/docker-compose.yml');
-        @unlink(FLEX_TEST_DIR.'/docker-compose.override.yml');
-        @unlink(FLEX_TEST_DIR.'/docker-compose.yaml');
+        unset($_SERVER['COMPOSE_FILE']);
+
+        (new Filesystem())->remove([
+            FLEX_TEST_DIR.'/docker-compose.yml',
+            FLEX_TEST_DIR.'/docker-compose.override.yml',
+            FLEX_TEST_DIR.'/docker-compose.yaml',
+            FLEX_TEST_DIR.'/child/docker-compose.override.yaml',
+            FLEX_TEST_DIR.'/child',
+        ]);
     }
 
     public function testConfigure()
@@ -429,5 +439,93 @@ YAML
         $this->configurator->unconfigure($this->recipeDb, self::CONFIG_DB_MULTIPLE_FILES, $this->lock);
         $this->assertStringEqualsFile($dockerComposeFile, self::ORIGINAL_CONTENT);
         $this->assertStringEqualsFile($dockerComposeOverrideFile, self::ORIGINAL_CONTENT);
+    }
+
+    public function testConfigureEnvVar()
+    {
+        @mkdir(FLEX_TEST_DIR.'/child/');
+        $dockerComposeFile = FLEX_TEST_DIR.'/child/docker-compose.yml';
+        file_put_contents($dockerComposeFile, self::ORIGINAL_CONTENT);
+        $dockerComposeOverrideFile = FLEX_TEST_DIR.'/child/docker-compose.override.yml';
+        file_put_contents($dockerComposeOverrideFile, self::ORIGINAL_CONTENT);
+
+        $sep = '\\' === \DIRECTORY_SEPARATOR ? ';' : ':';
+        $_SERVER['COMPOSE_FILE'] = $dockerComposeFile.$sep.$dockerComposeOverrideFile;
+
+        $this->configurator->configure($this->recipeDb, self::CONFIG_DB_MULTIPLE_FILES, $this->lock);
+
+        foreach ([$dockerComposeFile, $dockerComposeOverrideFile] as $file) {
+            $this->assertStringEqualsFile($file, self::ORIGINAL_CONTENT.<<<'YAML'
+
+###> doctrine/doctrine-bundle ###
+  db:
+    image: mariadb:10.3
+    environment:
+      - MYSQL_DATABASE=symfony
+      # You should definitely change the password in production
+      - MYSQL_PASSWORD=password
+      - MYSQL_RANDOM_ROOT_PASSWORD=true
+      - MYSQL_USER=symfony
+    volumes:
+      - db-data:/var/lib/mysql:rw
+      # You may use a bind-mounted host directory instead, so that it is harder to accidentally remove the volume and lose all your data!
+      # - ./docker/db/data:/var/lib/mysql:rw
+###< doctrine/doctrine-bundle ###
+
+volumes:
+###> doctrine/doctrine-bundle ###
+  db-data: {}
+###< doctrine/doctrine-bundle ###
+
+YAML
+                );
+        }
+
+        $this->configurator->unconfigure($this->recipeDb, self::CONFIG_DB_MULTIPLE_FILES, $this->lock);
+        $this->assertStringEqualsFile($dockerComposeFile, self::ORIGINAL_CONTENT);
+        $this->assertStringEqualsFile($dockerComposeOverrideFile, self::ORIGINAL_CONTENT);
+    }
+
+    public function testConfigureFileInParentDir()
+    {
+        $this->configurator = new DockerComposeConfigurator(
+            $this->composer,
+            $this->getMockBuilder(IOInterface::class)->getMock(),
+            new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR.'/child'])
+        );
+
+        @mkdir(FLEX_TEST_DIR.'/child');
+        $dockerComposeFile = FLEX_TEST_DIR.'/docker-compose.yaml';
+        file_put_contents($dockerComposeFile, self::ORIGINAL_CONTENT);
+
+        $this->configurator->configure($this->recipeDb, self::CONFIG_DB, $this->lock);
+
+        $this->assertStringEqualsFile($dockerComposeFile, self::ORIGINAL_CONTENT.<<<'YAML'
+
+###> doctrine/doctrine-bundle ###
+  db:
+    image: mariadb:10.3
+    environment:
+      - MYSQL_DATABASE=symfony
+      # You should definitely change the password in production
+      - MYSQL_PASSWORD=password
+      - MYSQL_RANDOM_ROOT_PASSWORD=true
+      - MYSQL_USER=symfony
+    volumes:
+      - db-data:/var/lib/mysql:rw
+      # You may use a bind-mounted host directory instead, so that it is harder to accidentally remove the volume and lose all your data!
+      # - ./docker/db/data:/var/lib/mysql:rw
+###< doctrine/doctrine-bundle ###
+
+volumes:
+###> doctrine/doctrine-bundle ###
+  db-data: {}
+###< doctrine/doctrine-bundle ###
+
+YAML
+        );
+
+        $this->configurator->unconfigure($this->recipeDb, self::CONFIG_DB, $this->lock);
+        $this->assertEquals(self::ORIGINAL_CONTENT, file_get_contents($dockerComposeFile));
     }
 }
