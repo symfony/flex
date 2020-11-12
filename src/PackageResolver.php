@@ -119,7 +119,7 @@ class PackageResolver
         $alternatives = [];
         foreach (self::$aliases as $alias => $package) {
             $lev = levenshtein($argument, $alias);
-            if ($lev <= \strlen($argument) / 3 || false !== strpos($alias, $argument)) {
+            if ($lev <= \strlen($argument) / 3 || ('' !== $argument && false !== strpos($alias, $argument))) {
                 $alternatives[$package][] = $alias;
             }
         }
