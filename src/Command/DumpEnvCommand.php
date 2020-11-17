@@ -39,7 +39,7 @@ class DumpEnvCommand extends BaseCommand
             ->setAliases(['dump-env'])
             ->setDescription('Compiles .env files to .env.local.php.')
             ->setDefinition([
-                new InputArgument('env', InputArgument::REQUIRED, 'The application environment to dump .env files for - e.g. "prod".'),
+                new InputArgument('env', InputArgument::OPTIONAL, 'The application environment to dump .env files for - e.g. "prod".'),
             ])
             ->addOption('empty', null, InputOption::VALUE_NONE, 'Ignore the content of .env files')
         ;
@@ -47,10 +47,21 @@ class DumpEnvCommand extends BaseCommand
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $_SERVER['APP_ENV'] = $env = $input->getArgument('env');
+        if ($env = $input->getArgument('env')) {
+            $_SERVER['APP_ENV'] = $env;
+        }
+
         $path = $this->options->get('root-dir').'/.env';
 
-        $vars = $input->getOption('empty') ? ['APP_ENV' => $env] : $this->loadEnv($path, $env);
+        if (!$env || !$input->getOption('empty')) {
+            $vars = $this->loadEnv($path, $env);
+            $env = $vars['APP_ENV'];
+        }
+
+        if ($input->getOption('empty')) {
+            $vars = ['APP_ENV' => $env];
+        }
+
         $vars = var_export($vars, true);
         $vars = <<<EOF
 <?php
@@ -67,7 +78,7 @@ EOF;
         return 0;
     }
 
-    private function loadEnv(string $path, string $env): array
+    private function loadEnv(string $path, ?string $env): array
     {
         if (!file_exists($autoloadFile = $this->config->get('vendor-dir').'/autoload.php')) {
             throw new \RuntimeException(sprintf('Please run "composer install" before running this command: "%s" not found.', $autoloadFile));
@@ -88,6 +99,14 @@ EOF;
                 $dotenv = new Dotenv();
             } else {
                 $dotenv = new Dotenv(false);
+            }
+
+            if (!$env && file_exists($p = "$path.local")) {
+                $env = $_ENV['APP_ENV'] = $dotenv->parse(file_get_contents($p), $p)['APP_ENV'] ?? null;
+            }
+
+            if (!$env) {
+                throw new \RuntimeException('Please provide the name of the environment either by using the "--env" command line argument or by defining the "APP_ENV" variable in the ".env.local" file.');
             }
 
             if (method_exists($dotenv, 'loadEnv')) {
