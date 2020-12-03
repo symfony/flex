@@ -1,0 +1,14 @@
+{
+    "symfony": {
+        "controllers": {
+            "new": {
+                "enabled": true,
+                "webpackMode": "lazy",
+                "autoimport": {
+                    "@symfony/new-package/dist/style.css": true
+                }
+            }
+        },
+        "entrypoints": ["admin.js"]
+    }
+}
