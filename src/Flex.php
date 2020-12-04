@@ -591,7 +591,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
             $this->io->writeError('<info>Synchronizing package.json with PHP packages</>');
             $synchronizer->synchronize($packagesNames);
-            $this->io->writeError('Don\'t forget to run <comment>npm install --force</> or <comment>yarn install --force</> to refresh your Javascript dependencies!');
+            $this->io->writeError('Don\'t forget to run <comment>npm install --force</> or <comment>yarn install --force</> to refresh your JavaScript dependencies!');
         }
     }
 
