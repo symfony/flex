@@ -11,7 +11,11 @@
 
 namespace Symfony\Flex\Configurator;
 
+use Composer\Composer;
+use Composer\IO\IOInterface;
+use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Flex\Lock;
+use Symfony\Flex\Options;
 use Symfony\Flex\Recipe;
 
 /**
@@ -21,6 +25,15 @@ use Symfony\Flex\Recipe;
  */
 class DockerComposeConfigurator extends AbstractConfigurator
 {
+    private $filesystem;
+
+    public function __construct(Composer $composer, IOInterface $io, Options $options)
+    {
+        parent::__construct($composer, $io, $options);
+
+        $this->filesystem = new Filesystem();
+    }
+
     public function configure(Recipe $recipe, $config, Lock $lock, array $options = [])
     {
         $installDocker = $this->composer->getPackage()->getExtra()['symfony']['docker'] ?? false;
@@ -30,17 +43,14 @@ class DockerComposeConfigurator extends AbstractConfigurator
 
         $rootDir = $this->options->get('root-dir');
         foreach ($this->normalizeConfig($config) as $file => $extra) {
-            $dockerComposeFile = sprintf('%s/%s', $rootDir, $file);
-
-            // Test with the ".yaml" extension if the file doesn't end up with ".yml".
             if (
-                (!file_exists($dockerComposeFile) && !file_exists($dockerComposeFile = substr($dockerComposeFile, 0, -2).'aml')) ||
+                (null === $dockerComposeFile = $this->findDockerComposeFile($rootDir, $file)) ||
                 $this->isFileMarked($recipe, $dockerComposeFile)
             ) {
                 continue;
             }
 
-            $this->write(sprintf('Adding Docker Compose entries to "%s"', $dockerComposeFile));
+            $this->write(sprintf('Adding Docker Compose definitions to "%s"', $dockerComposeFile));
 
             $offset = 8;
             $node = null;
@@ -83,14 +93,15 @@ class DockerComposeConfigurator extends AbstractConfigurator
 
             file_put_contents($dockerComposeFile, implode('', $lines));
         }
+
+        $this->write('Docker Compose definitions have been modified. Please run "docker-compose up --build" again to apply the changes.');
     }
 
     public function unconfigure(Recipe $recipe, $config, Lock $lock)
     {
         $rootDir = $this->options->get('root-dir');
         foreach ($this->normalizeConfig($config) as $file => $extra) {
-            $dockerComposeFile = sprintf('%s/%s', $rootDir, $file);
-            if (!file_exists($dockerComposeFile) && !file_exists($dockerComposeFile = substr($dockerComposeFile, 0, -2).'aml')) {
+            if (null === $dockerComposeFile = $this->findDockerComposeFile($rootDir, $file)) {
                 continue;
             }
 
@@ -110,6 +121,8 @@ class DockerComposeConfigurator extends AbstractConfigurator
             $this->write(sprintf('Removing Docker Compose entries from "%s"', $dockerComposeFile));
             file_put_contents($dockerComposeFile, ltrim($contents, "\n"));
         }
+
+        $this->write('Docker Compose definitions have been modified. Please run "docker-compose up" again to apply the changes.');
     }
 
     /**
@@ -123,6 +136,49 @@ class DockerComposeConfigurator extends AbstractConfigurator
         }
 
         return $config;
+    }
+
+    /**
+     * Finds the Docker Compose file according to these rules: https://docs.docker.com/compose/reference/envvars/#compose_file.
+     */
+    private function findDockerComposeFile(string $rootDir, string $file): ?string
+    {
+        if (isset($_SERVER['COMPOSE_FILE'])) {
+            $separator = $_SERVER['COMPOSE_PATH_SEPARATOR'] ?? ('\\' === \DIRECTORY_SEPARATOR ? ';' : ':');
+
+            $files = explode($separator, $_SERVER['COMPOSE_FILE']);
+            foreach ($files as $f) {
+                if ($file !== basename($f)) {
+                    continue;
+                }
+
+                if (!$this->filesystem->isAbsolutePath($f)) {
+                    $f = realpath(sprintf('%s/%s', $rootDir, $f));
+                }
+
+                if ($this->filesystem->exists($f)) {
+                    return $f;
+                }
+            }
+        }
+
+        // COMPOSE_FILE not set, or doesn't contain the file we're looking for
+        $dir = $rootDir;
+        $previousDir = null;
+        do {
+            // Test with the ".yaml" extension if the file doesn't end up with ".yml".
+            if (
+                $this->filesystem->exists($dockerComposeFile = sprintf('%s/%s', $dir, $file)) ||
+                $this->filesystem->exists($dockerComposeFile = substr($dockerComposeFile, 0, -2).'aml')
+            ) {
+                return $dockerComposeFile;
+            }
+
+            $previousDir = $dir;
+            $dir = \dirname($dir);
+        } while ($dir !== $previousDir);
+
+        return null;
     }
 
     private function parse($level, $indent, $services): string
