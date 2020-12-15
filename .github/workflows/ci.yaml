@@ -1,0 +1,74 @@
+name: "CI"
+
+on:
+    pull_request:
+    push:
+        branches:
+            - 'main'
+
+env:
+    SYMFONY_PHPUNIT_DIR: "$HOME/symfony-bridge/.phpunit"
+
+jobs:
+    tests:
+        name: "PHP ${{ matrix.php-version }} + ${{ matrix.dependencies }}"
+
+        runs-on: ubuntu-latest
+
+        strategy:
+            fail-fast: false
+            matrix:
+                php-version:
+                    - '7.1'
+                    - '7.2'
+                    - '7.3'
+                    - '7.4'
+                    - '8.0'
+                dependencies:
+                    - 'highest'
+                include:
+                    - php-version: '7.1'
+                      dependencies: 'lowest'
+
+        steps:
+            - name: "Checkout code"
+              uses: actions/checkout@v2.3.3
+
+            - name: "Install PHP with extensions"
+              uses: shivammathur/setup-php@2.7.0
+              with:
+                  coverage: "none"
+                  php-version: ${{ matrix.php-version }}
+                  tools: composer:v2
+
+            - name: "Validate composer.json"
+              run: "composer validate --strict --no-check-lock"
+
+            - name: "Add PHPUnit matcher"
+              run: echo "::add-matcher::${{ runner.tool_cache }}/phpunit.json"
+
+            - run: composer require --no-update composer/composer:^1.0.2
+
+            - uses: "ramsey/composer-install@v1"
+              with:
+                  dependency-versions: "${{ matrix.dependencies }}"
+
+            - name: "Install PHPUnit"
+              run: vendor/bin/simple-phpunit install
+
+            - name: "PHPUnit version"
+              run: vendor/bin/simple-phpunit --version
+
+            - run: vendor/bin/simple-phpunit
+
+            - run: composer require --no-update composer/composer:^2
+
+            - uses: "ramsey/composer-install@v1"
+              with:
+                  dependency-versions: "${{ matrix.dependencies }}"
+
+            - run: vendor/bin/simple-phpunit
+
+            - if: matrix.php-version == '7.1'
+              name: "Lint PHP files"
+              run: find src/ -name '*.php' | xargs -n1 php -l
