@@ -120,6 +120,50 @@ EOF;
         unlink($envLocal);
     }
 
+    public function testRequiresToSpecifyEnvArgumentWhenLocalFileDoesNotSpecifyAppEnv()
+    {
+        @mkdir(FLEX_TEST_DIR);
+        $env = FLEX_TEST_DIR.'/.env';
+        $envLocal = FLEX_TEST_DIR.'/.env.local';
+
+        file_put_contents($env, 'APP_ENV=dev');
+        file_put_contents($envLocal, '');
+
+        $command = $this->createCommandDumpEnv();
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Please provide the name of the environment either by using the "--env" command line argument or by defining the "APP_ENV" variable in the ".env.local" file.');
+
+        try {
+            $command->execute([]);
+        } finally {
+            unlink($env);
+            unlink($envLocal);
+        }
+    }
+
+    public function testDoesNotRequireToSpecifyEnvArgumentWhenLocalFileIsPresent()
+    {
+        @mkdir(FLEX_TEST_DIR);
+        $env = FLEX_TEST_DIR.'/.env';
+        $envLocal = FLEX_TEST_DIR.'/.env.local';
+        $envLocalPhp = FLEX_TEST_DIR.'/.env.local.php';
+        @unlink($envLocalPhp);
+
+        file_put_contents($env, 'APP_ENV=dev');
+        file_put_contents($envLocal, 'APP_ENV=staging');
+
+        $command = $this->createCommandDumpEnv();
+        $command->execute([]);
+
+        $this->assertFileExists($envLocalPhp);
+
+        $this->assertSame(['APP_ENV' => 'staging'], require $envLocalPhp);
+
+        unlink($env);
+        unlink($envLocal);
+        unlink($envLocalPhp);
+    }
+
     private function createCommandDumpEnv()
     {
         $command = new DumpEnvCommand(
