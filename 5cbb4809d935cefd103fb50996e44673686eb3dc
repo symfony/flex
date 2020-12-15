@@ -1,0 +1,7 @@
+---------------------------------------------------------------------------
+
+by symfonyaml at 2020-11-12T10:52:55Z
+
+> Could you, please, add a test for this?
+
+Just added a test for the case we call it this way `lts:`
