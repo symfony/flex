@@ -63,6 +63,15 @@ class PackageJsonSynchronizer
         }
     }
 
+    private static function sortPackages(JsonManipulator $manipulator, $subNode)
+    {
+        $content = json_decode($manipulator->getContents(), true);
+        $subNodeContent = $content[$subNode];
+        ksort($subNodeContent);
+
+        return json_encode([$subNode => $subNodeContent]);
+    }
+
     private function addPackageJsonLink(string $phpPackage)
     {
         if (!$assetsDir = $this->resolveAssetsDir($phpPackage)) {
@@ -71,7 +80,7 @@ class PackageJsonSynchronizer
 
         $manipulator = new JsonManipulator(file_get_contents($this->rootDir.'/package.json'));
         $manipulator->addSubNode('devDependencies', '@'.$phpPackage, 'file:vendor/'.$phpPackage.$assetsDir);
-        file_put_contents($this->rootDir.'/package.json', $manipulator->getContents());
+        file_put_contents($this->rootDir.'/package.json', self::sortPackages($manipulator, 'devDependencies'));
     }
 
     private function registerWebpackResources(array $phpPackages)

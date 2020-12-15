@@ -65,9 +65,9 @@ class PackageJsonSynchronizerTest extends TestCase
         $this->assertSame(
             [
                 'devDependencies' => [
+                    '@symfony/existing-package' => 'file:vendor/symfony/existing-package/Resources/assets',
                     '@symfony/stimulus-bridge' => '^1.0.0',
                     'stimulus' => '^1.1.1',
-                    '@symfony/existing-package' => 'file:vendor/symfony/existing-package/Resources/assets',
                 ],
             ],
             json_decode(file_get_contents($this->tempDir.'/package.json'), true)
@@ -101,10 +101,10 @@ class PackageJsonSynchronizerTest extends TestCase
         $this->assertSame(
             [
                 'devDependencies' => [
-                    '@symfony/stimulus-bridge' => '^1.0.0',
-                    'stimulus' => '^1.1.1',
                     '@symfony/existing-package' => 'file:vendor/symfony/existing-package/Resources/assets',
                     '@symfony/new-package' => 'file:vendor/symfony/new-package/assets',
+                    '@symfony/stimulus-bridge' => '^1.0.0',
+                    'stimulus' => '^1.1.1',
                 ],
             ],
             json_decode(file_get_contents($this->tempDir.'/package.json'), true)
