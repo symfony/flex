@@ -79,10 +79,13 @@ class PackageResolverTest extends TestCase
                 ['cli', '2.3', 'consale'],
                 "\"consale\" is not a valid alias. Did you mean this:\n  \"symfony/console\", supported aliases: \"console\"",
             ],
-
             [
                 ['qwerty'],
                 '"qwerty" is not a valid alias.',
+            ],
+            [
+                ['lts:'],
+                'Could not parse version constraint "".',
             ],
         ];
     }
