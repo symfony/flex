@@ -1,0 +1,17 @@
+---------------------------------------------------------------------------
+
+by stof at 2021-02-01T10:27:28Z
+
+if you want to avoid a hard break, you could actually set both keys in Flex. stimulus-bridge will ignore the key it does not need.
+
+---------------------------------------------------------------------------
+
+by weaverryan at 2021-02-01T14:23:56Z
+
+> if you want to avoid a hard break, you could actually set both keys in Flex. stimulus-bridge will ignore the key it does not need
+
+I've just done that 👍 https://github.com/symfony/ux/pull/53
+
+> We could maybe make flex turn existing webpackMode entries into fetch?
+
+👍 It indeed does this :)
