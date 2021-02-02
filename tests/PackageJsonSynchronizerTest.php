@@ -40,6 +40,7 @@ class PackageJsonSynchronizerTest extends TestCase
         // Should remove existing package references as it has been removed from the lock
         $this->assertSame(
             [
+                'name' => 'symfony/fixture',
                 'devDependencies' => [
                     '@symfony/stimulus-bridge' => '^1.0.0',
                     'stimulus' => '^1.1.1',
@@ -64,6 +65,7 @@ class PackageJsonSynchronizerTest extends TestCase
         // Should keep existing package references and config
         $this->assertSame(
             [
+                'name' => 'symfony/fixture',
                 'devDependencies' => [
                     '@symfony/existing-package' => 'file:vendor/symfony/existing-package/Resources/assets',
                     '@symfony/stimulus-bridge' => '^1.0.0',
@@ -98,17 +100,18 @@ class PackageJsonSynchronizerTest extends TestCase
     {
         $this->synchronizer->synchronize(['symfony/existing-package', 'symfony/new-package']);
 
-        // Should keep existing package references and config and add the new package
+        // Should keep existing package references and config and add the new package, while keeping the formatting
         $this->assertSame(
-            [
-                'devDependencies' => [
-                    '@symfony/existing-package' => 'file:vendor/symfony/existing-package/Resources/assets',
-                    '@symfony/new-package' => 'file:vendor/symfony/new-package/assets',
-                    '@symfony/stimulus-bridge' => '^1.0.0',
-                    'stimulus' => '^1.1.1',
-                ],
-            ],
-            json_decode(file_get_contents($this->tempDir.'/package.json'), true)
+            '{
+   "name": "symfony/fixture",
+   "devDependencies": {
+      "@symfony/existing-package": "file:vendor/symfony/existing-package/Resources/assets",
+      "@symfony/new-package": "file:vendor/symfony/new-package/assets",
+      "@symfony/stimulus-bridge": "^1.0.0",
+      "stimulus": "^1.1.1"
+   }
+}',
+            file_get_contents($this->tempDir.'/package.json')
         );
 
         $this->assertSame(
