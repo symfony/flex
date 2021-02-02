@@ -112,7 +112,7 @@ class PackageJsonSynchronizer
                 if (!isset($previousControllersJson['controllers']['@'.$phpPackage][$controllerName])) {
                     $config = [];
                     $config['enabled'] = $defaultConfig['enabled'];
-                    $config['webpackMode'] = $defaultConfig['webpackMode'];
+                    $config['fetch'] = $defaultConfig['fetch'] ?? 'eager';
 
                     if (isset($defaultConfig['autoimport'])) {
                         $config['autoimport'] = $defaultConfig['autoimport'];
@@ -128,7 +128,7 @@ class PackageJsonSynchronizer
 
                 $config = [];
                 $config['enabled'] = $previousConfig['enabled'];
-                $config['webpackMode'] = $previousConfig['webpackMode'];
+                $config['fetch'] = $previousConfig['fetch'] ?? 'eager';
 
                 if (isset($defaultConfig['autoimport'])) {
                     $config['autoimport'] = [];
@@ -149,7 +149,7 @@ class PackageJsonSynchronizer
             }
         }
 
-        file_put_contents($controllersJsonPath, json_encode($newControllersJson, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)."\n");
+        file_put_contents($controllersJsonPath, json_encode($newControllersJson, \JSON_PRETTY_PRINT | \JSON_UNESCAPED_SLASHES)."\n");
     }
 
     private function resolveAssetsDir(string $phpPackage)

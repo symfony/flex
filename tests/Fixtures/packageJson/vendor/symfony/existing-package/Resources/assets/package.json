@@ -3,7 +3,7 @@
         "controllers": {
             "mock": {
                 "enabled": true,
-                "webpackMode": "eager",
+                "fetch": "eager",
                 "autoimport": {
                     "@symfony/existing-package/dist/style.css": true,
                     "@symfony/existing-package/dist/new-style.css": true

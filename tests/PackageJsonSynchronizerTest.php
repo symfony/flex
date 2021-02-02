@@ -20,7 +20,7 @@ class PackageJsonSynchronizerTest extends TestCase
     private $tempDir;
     private $synchronizer;
 
-    public function setUp(): void
+    protected function setUp(): void
     {
         $this->tempDir = sys_get_temp_dir().'/flex-package-json-'.substr(md5(uniqid('', true)), 0, 6);
         (new Filesystem())->mirror(__DIR__.'/Fixtures/packageJson', $this->tempDir);
@@ -28,7 +28,7 @@ class PackageJsonSynchronizerTest extends TestCase
         $this->synchronizer = new PackageJsonSynchronizer($this->tempDir);
     }
 
-    public function tearDown(): void
+    protected function tearDown(): void
     {
         (new Filesystem())->remove($this->tempDir);
     }
@@ -79,7 +79,8 @@ class PackageJsonSynchronizerTest extends TestCase
                     '@symfony/existing-package' => [
                         'mock' => [
                             'enabled' => false,
-                            'webpackMode' => 'eager',
+                            // the "fetch" replaces the old "webpackMode"
+                            'fetch' => 'eager',
                             'autoimport' => [
                                 '@symfony/existing-package/dist/style.css' => false,
                                 '@symfony/existing-package/dist/new-style.css' => true,
@@ -116,7 +117,7 @@ class PackageJsonSynchronizerTest extends TestCase
                     '@symfony/existing-package' => [
                         'mock' => [
                             'enabled' => false,
-                            'webpackMode' => 'eager',
+                            'fetch' => 'eager',
                             'autoimport' => [
                                 '@symfony/existing-package/dist/style.css' => false,
                                 '@symfony/existing-package/dist/new-style.css' => true,
@@ -126,7 +127,7 @@ class PackageJsonSynchronizerTest extends TestCase
                     '@symfony/new-package' => [
                         'new' => [
                             'enabled' => true,
-                            'webpackMode' => 'lazy',
+                            'fetch' => 'lazy',
                             'autoimport' => [
                                 '@symfony/new-package/dist/style.css' => true,
                             ],
