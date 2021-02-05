@@ -585,10 +585,9 @@ class Flex implements PluginInterface, EventSubscriberInterface
     private function synchronizePackageJson(?string $rootDir)
     {
         $synchronizer = new PackageJsonSynchronizer($rootDir);
+        $packagesNames = array_column($this->composer->getLocker()->getLockData()['packages'] ?? [], 'name');
 
-        if ($synchronizer->shouldSynchronize()) {
-            $packagesNames = array_column($this->composer->getLocker()->getLockData()['packages'] ?? [], 'name');
-
+        if ($synchronizer->shouldSynchronize($packagesNames)) {
             $this->io->writeError('<info>Synchronizing package.json with PHP packages</>');
             $synchronizer->synchronize($packagesNames);
             $this->io->writeError('Don\'t forget to run <comment>npm install --force</> or <comment>yarn install --force</> to refresh your JavaScript dependencies!');

@@ -1,0 +1,8 @@
+{
+   "name": "symfony/fixture",
+   "devDependencies": {
+      "@symfony/stimulus-bridge": "^1.0.0",
+      "stimulus": "^1.1.1",
+      "@symfony/existing-package": "file:vendor/symfony/existing-package/Resources/assets"
+   }
+}

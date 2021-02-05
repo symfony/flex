@@ -27,9 +27,29 @@ class PackageJsonSynchronizer
         $this->rootDir = $rootDir;
     }
 
-    public function shouldSynchronize(): bool
+    public function shouldSynchronize(array $packagesNames): bool
     {
-        return $this->rootDir && file_exists($this->rootDir.'/package.json');
+        if (!$this->rootDir || !file_exists($this->rootDir.'/package.json')) {
+            return false;
+        }
+
+        foreach ($packagesNames as $packageName) {
+            if (!$this->resolveAssetsDir($packageName)) {
+                continue;
+            }
+
+            if (!file_exists($this->rootDir.'/vendor/'.$packageName.'/composer.json')) {
+                continue;
+            }
+
+            $package = @json_decode(file_get_contents($this->rootDir.'/vendor/'.$packageName.'/composer.json'), true);
+
+            if (is_array($package) && in_array('symfony-ux', $package['keywords'] ?? [], true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function synchronize(array $packagesNames)

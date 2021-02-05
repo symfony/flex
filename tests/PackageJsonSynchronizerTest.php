@@ -23,7 +23,7 @@ class PackageJsonSynchronizerTest extends TestCase
     protected function setUp(): void
     {
         $this->tempDir = sys_get_temp_dir().'/flex-package-json-'.substr(md5(uniqid('', true)), 0, 6);
-        (new Filesystem())->mirror(__DIR__.'/Fixtures/packageJson', $this->tempDir);
+        (new Filesystem())->mirror(__DIR__.'/Fixtures/packageJson/synchronize', $this->tempDir);
 
         $this->synchronizer = new PackageJsonSynchronizer($this->tempDir);
     }
@@ -31,6 +31,24 @@ class PackageJsonSynchronizerTest extends TestCase
     protected function tearDown(): void
     {
         (new Filesystem())->remove($this->tempDir);
+    }
+
+    public function testShouldNotSynchronizeNoPackageJson()
+    {
+        $synchronizer = new PackageJsonSynchronizer(__DIR__.'/Fixtures/packageJson/shouldSynchronize/no-package-json');
+        $this->assertFalse($synchronizer->shouldSynchronize(['symfony/package']));
+    }
+
+    public function testShouldNotSynchronizeNoUxPackage()
+    {
+        $synchronizer = new PackageJsonSynchronizer(__DIR__.'/Fixtures/packageJson/shouldSynchronize/no-ux-package');
+        $this->assertFalse($synchronizer->shouldSynchronize(['symfony/package']));
+    }
+
+    public function testShouldSynchronizeValid()
+    {
+        $synchronizer = new PackageJsonSynchronizer(__DIR__.'/Fixtures/packageJson/shouldSynchronize/valid');
+        $this->assertTrue($synchronizer->shouldSynchronize(['symfony/package']));
     }
 
     public function testSynchronizeNoPackage()
