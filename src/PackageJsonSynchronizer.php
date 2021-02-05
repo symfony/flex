@@ -21,10 +21,12 @@ use Composer\Json\JsonManipulator;
 class PackageJsonSynchronizer
 {
     private $rootDir;
+    private $vendorDirname;
 
-    public function __construct(?string $rootDir)
+    public function __construct(string $rootDir, string $vendorDirname)
     {
         $this->rootDir = $rootDir;
+        $this->vendorDirname = $vendorDirname;
     }
 
     public function shouldSynchronize(array $packagesNames): bool
@@ -38,11 +40,11 @@ class PackageJsonSynchronizer
                 continue;
             }
 
-            if (!file_exists($this->rootDir.'/vendor/'.$packageName.'/composer.json')) {
+            if (!file_exists($this->rootDir.'/'.$this->vendorDirname.'/'.$packageName.'/composer.json')) {
                 continue;
             }
 
-            $package = @json_decode(file_get_contents($this->rootDir.'/vendor/'.$packageName.'/composer.json'), true);
+            $package = @json_decode(file_get_contents($this->rootDir.'/'.$this->vendorDirname.'/'.$packageName.'/composer.json'), true);
 
             if (\is_array($package) && \in_array('symfony-ux', $package['keywords'] ?? [], true)) {
                 return true;
@@ -90,7 +92,7 @@ class PackageJsonSynchronizer
         }
 
         $manipulator = new JsonManipulator(file_get_contents($this->rootDir.'/package.json'));
-        $manipulator->addSubNode('devDependencies', '@'.$phpPackage, 'file:vendor/'.$phpPackage.$assetsDir);
+        $manipulator->addSubNode('devDependencies', '@'.$phpPackage, 'file:'.$this->vendorDirname.'/'.$phpPackage.$assetsDir);
 
         $content = json_decode($manipulator->getContents(), true);
 
@@ -118,7 +120,7 @@ class PackageJsonSynchronizer
                 continue;
             }
 
-            if (!file_exists($packageJsonPath = $this->rootDir.'/vendor/'.$phpPackage.$assetsDir.'/package.json')) {
+            if (!file_exists($packageJsonPath = $this->rootDir.'/'.$this->vendorDirname.'/'.$phpPackage.$assetsDir.'/package.json')) {
                 continue;
             }
 
@@ -173,7 +175,7 @@ class PackageJsonSynchronizer
     private function resolveAssetsDir(string $phpPackage)
     {
         foreach (['/assets', '/Resources/assets'] as $subdir) {
-            if (file_exists($this->rootDir.'/vendor/'.$phpPackage.$subdir.'/package.json')) {
+            if (file_exists($this->rootDir.'/'.$this->vendorDirname.'/'.$phpPackage.$subdir.'/package.json')) {
                 return $subdir;
             }
         }

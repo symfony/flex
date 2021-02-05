@@ -48,6 +48,7 @@ use Composer\Script\Event;
 use Composer\Script\ScriptEvents;
 use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Flex\Event\UpdateEvent;
 use Symfony\Flex\Unpack\Operation;
 use Symfony\Thanks\Thanks;
@@ -584,9 +585,16 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
     private function synchronizePackageJson(?string $rootDir)
     {
-        $synchronizer = new PackageJsonSynchronizer($rootDir);
-        $packagesNames = array_column($this->composer->getLocker()->getLockData()['packages'] ?? [], 'name');
+        if (!$rootDir) {
+            return;
+        }
 
+        $rootDir = realpath($rootDir);
+        $vendorDir = trim((new Filesystem())->makePathRelative($this->config->get('vendor-dir'), $rootDir), \DIRECTORY_SEPARATOR);
+
+        $synchronizer = new PackageJsonSynchronizer($rootDir, $vendorDir);
+
+        $packagesNames = array_column($this->composer->getLocker()->getLockData()['packages'] ?? [], 'name');
         if ($synchronizer->shouldSynchronize($packagesNames)) {
             $this->io->writeError('<info>Synchronizing package.json with PHP packages</>');
             $synchronizer->synchronize($packagesNames);
