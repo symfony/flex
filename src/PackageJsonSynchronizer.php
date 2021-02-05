@@ -44,7 +44,7 @@ class PackageJsonSynchronizer
 
             $package = @json_decode(file_get_contents($this->rootDir.'/vendor/'.$packageName.'/composer.json'), true);
 
-            if (is_array($package) && in_array('symfony-ux', $package['keywords'] ?? [], true)) {
+            if (\is_array($package) && \in_array('symfony-ux', $package['keywords'] ?? [], true)) {
                 return true;
             }
         }
