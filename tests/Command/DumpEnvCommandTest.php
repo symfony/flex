@@ -164,6 +164,36 @@ EOF;
         unlink($envLocalPhp);
     }
 
+    public function testEnvFileCanBeSpecified()
+    {
+        @mkdir(FLEX_TEST_DIR);
+        $env = FLEX_TEST_DIR.'/.env.custom';
+        $envLocalPhp = FLEX_TEST_DIR.'/.env.custom.local.php';
+        @unlink($envLocalPhp);
+
+        $envContent = <<<EOF
+APP_ENV=prod
+APP_SECRET=abcdefgh1234567
+EOF;
+        file_put_contents($env, $envContent);
+
+        $command = $this->createCommandDumpEnv();
+        $command->execute([
+            'env' => 'prod',
+            '--env-file' => '.env.custom',
+        ]);
+
+        $this->assertFileExists($envLocalPhp);
+
+        $this->assertSame([
+            'APP_ENV' => 'prod',
+            'APP_SECRET' => 'abcdefgh1234567',
+        ], require $envLocalPhp);
+
+        unlink($env);
+        unlink($envLocalPhp);
+    }
+
     private function createCommandDumpEnv()
     {
         $command = new DumpEnvCommand(

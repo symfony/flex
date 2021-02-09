@@ -42,6 +42,7 @@ class DumpEnvCommand extends BaseCommand
                 new InputArgument('env', InputArgument::OPTIONAL, 'The application environment to dump .env files for - e.g. "prod".'),
             ])
             ->addOption('empty', null, InputOption::VALUE_NONE, 'Ignore the content of .env files')
+            ->addOption('env-file', null, InputOption::VALUE_REQUIRED, 'The name of the .env files to be dumped, relative to the project root dir.', '.env')
         ;
     }
 
@@ -51,7 +52,8 @@ class DumpEnvCommand extends BaseCommand
             $_SERVER['APP_ENV'] = $env;
         }
 
-        $path = $this->options->get('root-dir').'/.env';
+        $envFile = $input->getOption('env-file');
+        $path = $this->options->get('root-dir').'/'.$envFile;
 
         if (!$env || !$input->getOption('empty')) {
             $vars = $this->loadEnv($path, $env);
@@ -73,7 +75,7 @@ return $vars;
 EOF;
         file_put_contents($path.'.local.php', $vars, LOCK_EX);
 
-        $this->getIO()->writeError('Successfully dumped .env files in <info>.env.local.php</>');
+        $this->getIO()->writeError('Successfully dumped '.$envFile.' files in <info>'.$envFile.'.local.php</>');
 
         return 0;
     }
