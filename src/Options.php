@@ -65,6 +65,9 @@ class Options
             return true;
         }
 
+        if (!file_exists('.git')) {
+            return true;
+        }
         exec('git status --short --ignored --untracked-files=all -- '.ProcessExecutor::escape($file).' 2>&1', $output, $status);
 
         if (0 !== $status) {
