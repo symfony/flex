@@ -71,7 +71,7 @@ class DumpEnvCommand extends BaseCommand
 return $vars;
 
 EOF;
-        file_put_contents($path.'.local.php', $vars, LOCK_EX);
+        file_put_contents($path.'.local.php', $vars, \LOCK_EX);
 
         $this->getIO()->writeError('Successfully dumped .env files in <info>.env.local.php</>');
 
@@ -83,6 +83,8 @@ EOF;
         if (!file_exists($autoloadFile = $this->config->get('vendor-dir').'/autoload.php')) {
             throw new \RuntimeException(sprintf('Please run "composer install" before running this command: "%s" not found.', $autoloadFile));
         }
+
+        require $autoloadFile;
 
         if (!class_exists(Dotenv::class)) {
             throw new \RuntimeException('Please run "composer require symfony/dotenv" to load the ".env" files configuring the application.');
