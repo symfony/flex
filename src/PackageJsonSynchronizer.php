@@ -76,9 +76,9 @@ class PackageJsonSynchronizer
 
         $devDependencies = $content['devDependencies'];
         uksort($devDependencies, 'strnatcmp');
-        $content['devDependencies'] = $devDependencies;
+        $manipulator->addMainKey('devDependencies', $devDependencies);
 
-        file_put_contents($this->rootDir.'/package.json', $manipulator->format($content, -1));
+        file_put_contents($this->rootDir.'/package.json', $manipulator->getContents());
     }
 
     private function registerWebpackResources(array $phpPackages)
