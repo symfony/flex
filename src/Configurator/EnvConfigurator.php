@@ -69,7 +69,7 @@ class EnvConfigurator extends AbstractConfigurator
             $data = $this->markData($recipe, $data);
 
             if (!$this->updateData($env, $data)) {
-                file_put_contents($env, $data, FILE_APPEND);
+                file_put_contents($env, $data, \FILE_APPEND);
             }
         }
     }

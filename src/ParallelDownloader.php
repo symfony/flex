@@ -75,7 +75,7 @@ class ParallelDownloader extends RemoteFilesystem
 
             $note = '';
             if ($this->io->isDecorated()) {
-                $note = '\\' === \DIRECTORY_SEPARATOR ? '' : (false !== stripos(PHP_OS, 'darwin') ? '🎵' : '🎶');
+                $note = '\\' === \DIRECTORY_SEPARATOR ? '' : (false !== stripos(\PHP_OS, 'darwin') ? '🎵' : '🎶');
                 $note .= $this->downloader ? ('\\' !== \DIRECTORY_SEPARATOR ? ' 💨' : '') : '';
             }
 
@@ -158,7 +158,7 @@ class ParallelDownloader extends RemoteFilesystem
      */
     public function callbackGet($notificationCode, $severity, $message, $messageCode, $bytesTransferred, $bytesMax, $nativeDownload = true)
     {
-        if (!$nativeDownload && STREAM_NOTIFY_SEVERITY_ERR === $severity) {
+        if (!$nativeDownload && \STREAM_NOTIFY_SEVERITY_ERR === $severity) {
             throw new TransportException($message, $messageCode);
         }
 
@@ -168,12 +168,12 @@ class ParallelDownloader extends RemoteFilesystem
             return;
         }
 
-        if (STREAM_NOTIFY_FILE_SIZE_IS === $notificationCode) {
+        if (\STREAM_NOTIFY_FILE_SIZE_IS === $notificationCode) {
             ++$state->bytesMaxCount;
             $state->bytesMax += $bytesMax;
         }
 
-        if (!$bytesMax || STREAM_NOTIFY_PROGRESS !== $notificationCode) {
+        if (!$bytesMax || \STREAM_NOTIFY_PROGRESS !== $notificationCode) {
             if ($state->nextArgs && !$nativeDownload) {
                 $this->getNext();
             }

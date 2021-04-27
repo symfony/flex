@@ -118,7 +118,7 @@ class ScriptExecutor
         $arguments = $phpFinder->findArguments();
 
         if ($env = (string) (getenv('COMPOSER_ORIGINAL_INIS'))) {
-            $paths = explode(PATH_SEPARATOR, $env);
+            $paths = explode(\PATH_SEPARATOR, $env);
             $ini = array_shift($paths);
         } else {
             $ini = php_ini_loaded_file();
