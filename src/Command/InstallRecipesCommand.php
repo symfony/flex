@@ -50,7 +50,7 @@ class InstallRecipesCommand extends BaseCommand
         $win = '\\' === \DIRECTORY_SEPARATOR;
         $force = $input->getOption('force');
 
-        if ($force && !@is_executable(strtok(exec($win ? 'where git' : 'command -v git'), PHP_EOL))) {
+        if ($force && !@is_executable(strtok(exec($win ? 'where git' : 'command -v git'), \PHP_EOL))) {
             throw new RuntimeException('Cannot run "sync-recipes --force": git not found.');
         }
 

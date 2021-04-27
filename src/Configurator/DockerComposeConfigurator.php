@@ -107,7 +107,7 @@ class DockerComposeConfigurator extends AbstractConfigurator
 
             $name = $recipe->getName();
             // Remove recipe and add break line
-            $contents = preg_replace(sprintf('{%s+###> %s ###.*?###< %s ###%s+}s', "\n", $name, $name, "\n"), PHP_EOL.PHP_EOL, file_get_contents($dockerComposeFile), -1, $count);
+            $contents = preg_replace(sprintf('{%s+###> %s ###.*?###< %s ###%s+}s', "\n", $name, $name, "\n"), \PHP_EOL.\PHP_EOL, file_get_contents($dockerComposeFile), -1, $count);
             if (!$count) {
                 return;
             }

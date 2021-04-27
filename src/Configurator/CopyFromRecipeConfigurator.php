@@ -147,7 +147,7 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
         @unlink($to);
         $this->write(sprintf('  Removed <fg=green>"%s"</>', $this->path->relativize($to)));
 
-        if (0 === \count(glob(\dirname($to).'/*', GLOB_NOSORT))) {
+        if (0 === \count(glob(\dirname($to).'/*', \GLOB_NOSORT))) {
             @rmdir(\dirname($to));
         }
     }

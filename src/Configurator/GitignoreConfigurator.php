@@ -36,7 +36,7 @@ class GitignoreConfigurator extends AbstractConfigurator
         $data = "\n".ltrim($this->markData($recipe, $data), "\r\n");
 
         if (!$this->updateData($gitignore, $data)) {
-            file_put_contents($gitignore, $data, FILE_APPEND);
+            file_put_contents($gitignore, $data, \FILE_APPEND);
         }
     }
 

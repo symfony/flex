@@ -50,7 +50,7 @@ EOF
         }
 
         if (!$this->updateData($makefile, $data)) {
-            file_put_contents($makefile, $data, FILE_APPEND);
+            file_put_contents($makefile, $data, \FILE_APPEND);
         }
     }
 

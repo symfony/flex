@@ -21,7 +21,7 @@ use Symfony\Flex\Recipe;
 
 class DockerfileConfiguratorTest extends TestCase
 {
-    public function setUp(): void
+    protected function setUp(): void
     {
         @mkdir(FLEX_TEST_DIR);
     }
