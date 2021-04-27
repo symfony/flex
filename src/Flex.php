@@ -126,7 +126,6 @@ class Flex implements PluginInterface, EventSubscriberInterface
             $rfs = Factory::createHttpDownloader($this->io, $this->config);
 
             $this->downloader = $downloader = new Downloader($composer, $io, $rfs);
-            $this->downloader->setFlexId($this->getFlexId());
 
             if ($symfonyRequire) {
                 $this->filter = new PackageFilter($io, $symfonyRequire, $this->downloader);
@@ -138,7 +137,6 @@ class Flex implements PluginInterface, EventSubscriberInterface
             $this->rfs = $rfs = new ParallelDownloader($this->io, $this->config, $rfs->getOptions(), $rfs->isTlsDisabled());
 
             $this->downloader = $downloader = new Downloader($composer, $io, $this->rfs);
-            $this->downloader->setFlexId($this->getFlexId());
 
             $rootPackage = $composer->getPackage();
             $manager = RepositoryFactory::manager($this->io, $this->config, $composer->getEventDispatcher(), $this->rfs);
@@ -741,24 +739,6 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
     }
 
-    public function generateFlexId()
-    {
-        if ($this->getFlexId()) {
-            return;
-        }
-
-        if (!$this->downloader->isEnabled()) {
-            throw new \LogicException('Cannot generate project id when "symfony/flex" is not found in the root composer.json.');
-        }
-
-        $json = new JsonFile(Factory::getComposerFile());
-        $manipulator = new JsonManipulator(file_get_contents($json->getPath()));
-        $manipulator->addSubNode('extra', 'symfony.id', $this->downloader->get('/ulid')->getBody()['ulid']);
-        file_put_contents($json->getPath(), $manipulator->getContents());
-
-        $this->updateComposerLock();
-    }
-
     public function updateAutoloadFile()
     {
         if (!$platform = $this->lock->get('php')['version'] ?? null) {
@@ -902,13 +882,6 @@ EOPHP
         ], $extra);
 
         return new Options($options, $this->io);
-    }
-
-    private function getFlexId()
-    {
-        $extra = $this->composer->getPackage()->getExtra();
-
-        return $extra['symfony']['id'] ?? null;
     }
 
     private function formatOrigin(string $origin): string
