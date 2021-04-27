@@ -1,0 +1,5 @@
+---------------------------------------------------------------------------
+
+by stof at 2021-04-27T10:51:20Z
+
+I think you need to bump the min version of `symfony/phpunit-bridge`
