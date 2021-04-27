@@ -38,7 +38,6 @@ class Downloader
     private $degradedMode = false;
     private $endpoint;
     private $caFile;
-    private $flexId;
     private $enabled = true;
 
     public function __construct(Composer $composer, IoInterface $io, $rfs)
@@ -58,11 +57,6 @@ class Downloader
     public function getSessionId(): string
     {
         return $this->sess;
-    }
-
-    public function setFlexId(string $id = null)
-    {
-        $this->flexId = $id;
     }
 
     public function isEnabled()
@@ -313,10 +307,6 @@ class Downloader
     private function getOptions(array $headers): array
     {
         $options = ['http' => ['header' => $headers]];
-
-        if ($this->flexId) {
-            $options['http']['header'][] = 'Project: '.$this->flexId;
-        }
 
         if (null !== $this->caFile) {
             $options['ssl']['cafile'] = $this->caFile;
