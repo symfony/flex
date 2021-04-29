@@ -59,6 +59,11 @@ class Downloader
         return $this->sess;
     }
 
+    public function setFlexId(string $id = null)
+    {
+        // No-op to support downgrading to v1.12.x
+    }
+
     public function isEnabled()
     {
         return $this->enabled;
