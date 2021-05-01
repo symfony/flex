@@ -1,0 +1,28 @@
+---------------------------------------------------------------------------
+
+by rosier at 2021-04-30T18:30:42Z
+
+Composer also fails during the downgrade of symfony/flex
+```
+$ composer create-project symfony/skeleton flex && cd flex
+$ composer require symfony/flex dev-main --no-plugins --no-scripts
+$ composer require symfony/flex
+Using version ^1.12 for symfony/flex
+./composer.json has been updated
+Running composer update symfony/flex
+Loading composer repositories with package information
+Updating dependencies
+Lock file operations: 0 installs, 1 update, 0 removals
+  - Upgrading symfony/flex (dev-main 4d7970f => v1.12.2)
+Writing lock file
+Installing dependencies from lock file (including require-dev)
+Package operations: 0 installs, 1 update, 0 removals
+  - Upgrading symfony/flex (dev-main 4d7970f => v1.12.2): Extracting archive
+PHP Fatal error:  Uncaught Error: Call to undefined method Symfony\Flex\Downloader::setFlexId() in phar:///usr/local/bin/composer/src/Composer/Plugin/PluginManager.php(213) : eval()'d code:129
+Stack trace:
+#0 phar:///usr/local/bin/composer/src/Composer/Plugin/PluginManager.php(320): Symfony\Flex\Flex_composer_tmp1->activate(Object(Composer\Composer), Object(Composer\IO\ConsoleIO))
+#1 phar:///usr/local/bin/composer/src/Composer/Plugin/PluginManager.php(224): Composer\Plugin\PluginManager->addPlugin(Object(Symfony\Flex\Flex_composer_tmp1), false)
+#2 phar:///usr/local/bin/composer/src/Composer/Installer/PluginInstaller.php(100): Composer\Plugin\PluginManager->registerPackage(Object(Composer\Package\CompletePackage), true)
+#3 [internal function]: Composer\Installer\PluginInstaller->Composer\Installer\{closure}(NULL)
+#4 phar:///usr/local/bin/composer/vendor/react/promise/src/React/Promise/FulfilledPromise.php(20): call_user_func(Object(Closure), NULL)
+#5 phar:///usr/local/bin/composer/vendor/react/promise/src/React/Promise/Deferred in phar:///usr/local/bin/composer/src/Composer/Plugin/PluginManager.php(213) : eval()'d code on line 129
