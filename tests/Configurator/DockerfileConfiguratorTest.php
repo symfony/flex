@@ -116,6 +116,7 @@ EOF;
         $configurator = new DockerfileConfigurator(
             $composer,
             $this->getMockBuilder(IOInterface::class)->getMock(),
+            $this->getMockBuilder('Symfony\Flex\FilesManager')->disableOriginalConstructor()->getMock(),
             new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
         );
         $configurator->configure($recipe, ['RUN docker-php-ext-install pdo_mysql'], $lock);

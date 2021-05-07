@@ -26,6 +26,7 @@ class GitignoreConfiguratorTest extends TestCase
         $configurator = new GitignoreConfigurator(
             $this->getMockBuilder(Composer::class)->getMock(),
             $this->getMockBuilder(IOInterface::class)->getMock(),
+            $this->getMockBuilder('Symfony\Flex\FilesManager')->disableOriginalConstructor()->getMock(),
             new Options(['public-dir' => 'public', 'root-dir' => FLEX_TEST_DIR])
         );
         $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
@@ -86,6 +87,7 @@ EOF;
         $configurator = new GitignoreConfigurator(
             $this->getMockBuilder(Composer::class)->getMock(),
             $this->getMockBuilder(IOInterface::class)->getMock(),
+            $this->getMockBuilder('Symfony\Flex\FilesManager')->disableOriginalConstructor()->getMock(),
             new Options(['public-dir' => 'public', 'root-dir' => FLEX_TEST_DIR])
         );
 

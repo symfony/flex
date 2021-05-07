@@ -39,6 +39,7 @@ EOF
         $configurator = new ContainerConfigurator(
             $this->getMockBuilder(Composer::class)->getMock(),
             $this->getMockBuilder(IOInterface::class)->getMock(),
+            $this->getMockBuilder('Symfony\Flex\FilesManager')->disableOriginalConstructor()->getMock(),
             new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
         );
         $configurator->configure($recipe, ['locale' => 'en'], $lock);
@@ -78,6 +79,7 @@ EOF
         $configurator = new ContainerConfigurator(
             $this->getMockBuilder(Composer::class)->getMock(),
             $this->getMockBuilder(IOInterface::class)->getMock(),
+            $this->getMockBuilder('Symfony\Flex\FilesManager')->disableOriginalConstructor()->getMock(),
             new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
         );
         $configurator->configure($recipe, ['locale' => 'en'], $lock);
@@ -118,6 +120,7 @@ EOF
         $configurator = new ContainerConfigurator(
             $this->getMockBuilder(Composer::class)->getMock(),
             $this->getMockBuilder(IOInterface::class)->getMock(),
+            $this->getMockBuilder('Symfony\Flex\FilesManager')->disableOriginalConstructor()->getMock(),
             new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
         );
         $configurator->configure($recipe, ['locale' => 'en'], $lock);
@@ -162,6 +165,7 @@ EOF
         $configurator = new ContainerConfigurator(
             $this->getMockBuilder(Composer::class)->getMock(),
             $this->getMockBuilder(IOInterface::class)->getMock(),
+            $this->getMockBuilder('Symfony\Flex\FilesManager')->disableOriginalConstructor()->getMock(),
             new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
         );
         $configurator->configure($recipe, ['locale' => 'en', 'foobar' => 'baz'], $lock);
@@ -212,6 +216,7 @@ EOF
         $configurator = new ContainerConfigurator(
             $this->getMockBuilder(Composer::class)->getMock(),
             $this->getMockBuilder(IOInterface::class)->getMock(),
+            $this->getMockBuilder('Symfony\Flex\FilesManager')->disableOriginalConstructor()->getMock(),
             new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
         );
         $configurator->configure($recipe, ['locale' => 'en', 'foobar' => 'baz', 'array' => ['key1' => 'value', 'key2' => "Escape ' one quote"], 'key1' => 'Keep It'], $lock);
@@ -262,6 +267,7 @@ EOF
         $configurator = new ContainerConfigurator(
             $this->getMockBuilder(Composer::class)->getMock(),
             $this->getMockBuilder(IOInterface::class)->getMock(),
+            $this->getMockBuilder('Symfony\Flex\FilesManager')->disableOriginalConstructor()->getMock(),
             new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
         );
         $configurator->configure($recipe, ['env(APP_ENV)' => ''], $lock);

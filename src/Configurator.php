@@ -22,14 +22,16 @@ class Configurator
 {
     private $composer;
     private $io;
+    private $filesManager;
     private $options;
     private $configurators;
     private $cache;
 
-    public function __construct(Composer $composer, IOInterface $io, Options $options)
+    public function __construct(Composer $composer, IOInterface $io, FilesManager $filesManager, Options $options)
     {
         $this->composer = $composer;
         $this->io = $io;
+        $this->filesManager = $filesManager;
         $this->options = $options;
         // ordered list of configurators
         $this->configurators = [
@@ -78,6 +80,6 @@ class Configurator
 
         $class = $this->configurators[$key];
 
-        return $this->cache[$key] = new $class($this->composer, $this->io, $this->options);
+        return $this->cache[$key] = new $class($this->composer, $this->io, $this->filesManager, $this->options);
     }
 }

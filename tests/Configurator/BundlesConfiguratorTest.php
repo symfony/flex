@@ -26,6 +26,7 @@ class BundlesConfiguratorTest extends TestCase
         $configurator = new BundlesConfigurator(
             $this->getMockBuilder('Composer\Composer')->getMock(),
             $this->getMockBuilder('Composer\IO\IOInterface')->getMock(),
+            $this->getMockBuilder('Symfony\Flex\FilesManager')->disableOriginalConstructor()->getMock(),
             new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
         );
 
@@ -64,6 +65,7 @@ EOF
         $configurator = new BundlesConfigurator(
             $this->getMockBuilder('Composer\Composer')->getMock(),
             $this->getMockBuilder('Composer\IO\IOInterface')->getMock(),
+            $this->getMockBuilder('Symfony\Flex\FilesManager')->disableOriginalConstructor()->getMock(),
             new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
         );
 
