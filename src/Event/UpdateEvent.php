@@ -12,6 +12,7 @@
 namespace Symfony\Flex\Event;
 
 use Composer\Script\Event;
+use Composer\Script\ScriptEvents;
 
 class UpdateEvent extends Event
 {
@@ -19,6 +20,7 @@ class UpdateEvent extends Event
 
     public function __construct(bool $force)
     {
+        $this->name = ScriptEvents::POST_UPDATE_CMD;
         $this->force = $force;
     }
 
