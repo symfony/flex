@@ -10,5 +10,9 @@
                 }
             }
         }
+    },
+    "peerDependencies": {
+        "@hotcookies": "^1.1|^2",
+        "@hotdogs": "^2"
     }
 }

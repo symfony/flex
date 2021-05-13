@@ -13,6 +13,9 @@ namespace Symfony\Flex;
 
 use Composer\Json\JsonFile;
 use Composer\Json\JsonManipulator;
+use Composer\Semver\Constraint\ConstraintInterface;
+use Composer\Semver\Intervals;
+use Composer\Semver\VersionParser;
 
 /**
  * Synchronize package.json files detected in installed PHP packages with
@@ -40,6 +43,8 @@ class PackageJsonSynchronizer
         foreach ($packagesNames as $packageName) {
             $this->addPackageJsonLink($packageName);
         }
+
+        $this->registerPeerDependencies($packagesNames);
 
         // Register controllers and entrypoints in controllers.json
         $this->registerWebpackResources($packagesNames);
@@ -98,11 +103,8 @@ class PackageJsonSynchronizer
                 continue;
             }
 
-            if (!file_exists($packageJsonPath = $this->rootDir.'/vendor/'.$phpPackage.$assetsDir.'/package.json')) {
-                continue;
-            }
-
             // Register in config
+            $packageJsonPath = $this->rootDir.'/vendor/'.$phpPackage.$assetsDir.'/package.json';
             $packageJson = (new JsonFile($packageJsonPath))->read();
 
             foreach ($packageJson['symfony']['controllers'] ?? [] as $controllerName => $defaultConfig) {
@@ -150,6 +152,41 @@ class PackageJsonSynchronizer
         file_put_contents($controllersJsonPath, json_encode($newControllersJson, \JSON_PRETTY_PRINT | \JSON_UNESCAPED_SLASHES)."\n");
     }
 
+    public function registerPeerDependencies(array $phpPackages)
+    {
+        $peerDependencies = [];
+
+        foreach ($phpPackages as $phpPackage) {
+            if (!$assetsDir = $this->resolveAssetsDir($phpPackage)) {
+                continue;
+            }
+
+            $packageJsonPath = $this->rootDir.'/vendor/'.$phpPackage.$assetsDir.'/package.json';
+            $packageJson = (new JsonFile($packageJsonPath))->read();
+            $versionParser = new VersionParser();
+
+            foreach ($packageJson['peerDependencies'] ?? [] as $peerDependency => $constraint) {
+                $peerDependencies[$peerDependency][$constraint] = $versionParser->parseConstraints($constraint);
+            }
+        }
+
+        if (!$peerDependencies) {
+            return;
+        }
+
+        $manipulator = new JsonManipulator(file_get_contents($this->rootDir.'/package.json'));
+        $content = json_decode($manipulator->getContents(), true);
+        $devDependencies = $content['devDependencies'] ?? [];
+
+        foreach ($peerDependencies as $peerDependency => $constraints) {
+            $devDependencies[$peerDependency] = $this->compactConstraints($constraints);
+        }
+        uksort($devDependencies, 'strnatcmp');
+        $manipulator->addMainKey('devDependencies', $devDependencies);
+
+        file_put_contents($this->rootDir.'/package.json', $manipulator->getContents());
+    }
+
     private function resolveAssetsDir(string $phpPackage)
     {
         foreach (['/assets', '/Resources/assets'] as $subdir) {
@@ -159,5 +196,29 @@ class PackageJsonSynchronizer
         }
 
         return null;
+    }
+
+    /**
+     * @param ConstraintInterface[] $constraints
+     */
+    private function compactConstraints(array $constraints): string
+    {
+        if (method_exists(Intervals::class, 'isSubsetOf')) {
+            foreach ($constraints as $k1 => $constraint1) {
+                foreach ($constraints as $k2 => $constraint2) {
+                    if ($k1 !== $k2 && Intervals::isSubsetOf($constraint1, $constraint2)) {
+                        unset($constraints[$k2]);
+                    }
+                }
+            }
+        }
+
+        uksort($constraints, 'strnatcmp');
+
+        foreach ($constraints as $k => $constraint) {
+            $constraints[$k] = \count($constraints) > 1 && false !== strpos($k, '|') ? '('.$k.')' : $k;
+        }
+
+        return implode(',', $constraints);
     }
 }
