@@ -131,7 +131,7 @@ EOF;
 
         $command = $this->createCommandDumpEnv();
         $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('Please provide the name of the environment either by using the "--env" command line argument or by defining the "APP_ENV" variable in the ".env.local" file.');
+        $this->expectExceptionMessage('Please provide the name of the environment either by passing it as command line argument or by defining the "APP_ENV" variable in the ".env.local" file.');
 
         try {
             $command->execute([]);
