@@ -483,7 +483,9 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $this->io->writeError('');
 
         if (!$recipes) {
-            $this->synchronizePackageJson($rootDir);
+            if (ScriptEvents::POST_UPDATE_CMD === $event->getName()) {
+                $this->synchronizePackageJson($rootDir);
+            }
             $this->lock->write();
 
             if ($this->downloader->isEnabled()) {
