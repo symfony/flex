@@ -45,6 +45,9 @@ class PackageJsonSynchronizerTest extends TestCase
                     '@symfony/stimulus-bridge' => '^1.0.0',
                     'stimulus' => '^1.1.1',
                 ],
+                'browserslist' => [
+                    'defaults',
+                ],
             ],
             json_decode(file_get_contents($this->tempDir.'/package.json'), true)
         );
@@ -70,6 +73,9 @@ class PackageJsonSynchronizerTest extends TestCase
                     '@symfony/existing-package' => 'file:vendor/symfony/existing-package/Resources/assets',
                     '@symfony/stimulus-bridge' => '^1.0.0',
                     'stimulus' => '^1.1.1',
+                ],
+                'browserslist' => [
+                    'defaults',
                 ],
             ],
             json_decode(file_get_contents($this->tempDir.'/package.json'), true)
@@ -109,9 +115,12 @@ class PackageJsonSynchronizerTest extends TestCase
       "@symfony/new-package": "file:vendor/symfony/new-package/assets",
       "@symfony/stimulus-bridge": "^1.0.0",
       "stimulus": "^1.1.1"
-   }
+   },
+   "browserslist": [
+      "defaults"
+   ]
 }',
-            file_get_contents($this->tempDir.'/package.json')
+            trim(file_get_contents($this->tempDir.'/package.json'))
         );
 
         $this->assertSame(
@@ -140,6 +149,27 @@ class PackageJsonSynchronizerTest extends TestCase
                 'entrypoints' => ['admin.js'],
             ],
             json_decode(file_get_contents($this->tempDir.'/assets/controllers.json'), true)
+        );
+    }
+
+    public function testArrayFormattingHasNotChanged()
+    {
+        $this->synchronizer->synchronize(['symfony/existing-package']);
+
+        // Should keep existing array formatting
+        $this->assertSame(
+            '{
+   "name": "symfony/fixture",
+   "devDependencies": {
+      "@symfony/existing-package": "file:vendor/symfony/existing-package/Resources/assets",
+      "@symfony/stimulus-bridge": "^1.0.0",
+      "stimulus": "^1.1.1"
+   },
+   "browserslist": [
+      "defaults"
+   ]
+}',
+            trim(file_get_contents($this->tempDir.'/package.json'))
         );
     }
 }
