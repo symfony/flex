@@ -55,6 +55,50 @@ class CopyDirectoryFromPackageConfiguratorTest extends TestCase
         }
     }
 
+    /**
+     * @dataProvider providerTestConfigureDirectoryWithExistingFiles
+     */
+    public function testConfigureDirectoryWithExistingFiles(bool $force, string $sourceFileContent, string $existingTargetFileContent, string $expectedFinalTargetFileContent)
+    {
+        if (!is_dir($this->sourceDirectory)) {
+            mkdir($this->sourceDirectory, 0777, true);
+        }
+        foreach ($this->sourceFiles as $sourceFile) {
+            if (!file_exists($sourceFile)) {
+                file_put_contents($sourceFile, $sourceFileContent);
+            }
+        }
+
+        if (!is_dir($this->targetDirectory)) {
+            mkdir($this->targetDirectory, 0777, true);
+        }
+
+        foreach ($this->targetFiles as $targetFile) {
+            file_put_contents($targetFile, $existingTargetFileContent);
+        }
+
+        $this->createConfigurator()->configure(
+            $this->recipe,
+            [$this->sourceFileRelativePath => $this->targetFileRelativePath],
+            $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock(),
+            ['force' => $force]
+        );
+
+        foreach ($this->targetFiles as $targetFile) {
+            $this->assertFileExists($targetFile);
+            $content = file_get_contents($targetFile);
+            $this->assertEquals($expectedFinalTargetFileContent, $content);
+        }
+    }
+
+    public function providerTestConfigureDirectoryWithExistingFiles(): array
+    {
+        return [
+            [true, 'NEW_CONTENT', 'OLD_CONTENT', 'NEW_CONTENT'],
+            [false, 'NEW_CONTENT', 'OLD_CONTENT', 'OLD_CONTENT'],
+        ];
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -74,6 +118,7 @@ class CopyDirectoryFromPackageConfiguratorTest extends TestCase
         ];
 
         $this->io = $this->getMockBuilder(IOInterface::class)->getMock();
+        $this->io->method('askConfirmation')->willReturn(true);
 
         $package = $this->getMockBuilder(PackageInterface::class)->getMock();
         $this->recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
@@ -106,7 +151,7 @@ class CopyDirectoryFromPackageConfiguratorTest extends TestCase
 
     private function createConfigurator(): CopyFromPackageConfigurator
     {
-        return new CopyFromPackageConfigurator($this->composer, $this->io, new Options(['root-dir' => FLEX_TEST_DIR]));
+        return new CopyFromPackageConfigurator($this->composer, $this->io, new Options(['root-dir' => FLEX_TEST_DIR], $this->io));
     }
 
     private function cleanUpTargetFiles()
