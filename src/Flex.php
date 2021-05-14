@@ -483,7 +483,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $this->io->writeError('');
 
         if (!$recipes) {
-            if (ScriptEvents::POST_UPDATE_CMD === $event->getName()) {
+            if (null !== $event && ScriptEvents::POST_UPDATE_CMD === $event->getName()) {
                 $this->synchronizePackageJson($rootDir);
             }
             $this->lock->write();
