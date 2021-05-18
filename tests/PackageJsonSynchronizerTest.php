@@ -64,7 +64,12 @@ class PackageJsonSynchronizerTest extends TestCase
 
     public function testSynchronizeExistingPackage()
     {
-        $this->synchronizer->synchronize(['symfony/existing-package']);
+        $this->synchronizer->synchronize([
+            [
+                'name' => 'symfony/existing-package',
+                'keywords' => ['symfony-ux'],
+            ],
+        ]);
 
         // Should keep existing package references and config
         $this->assertSame(
@@ -107,7 +112,16 @@ class PackageJsonSynchronizerTest extends TestCase
 
     public function testSynchronizeNewPackage()
     {
-        $this->synchronizer->synchronize(['symfony/existing-package', 'symfony/new-package']);
+        $this->synchronizer->synchronize([
+            [
+                'name' => 'symfony/existing-package',
+                'keywords' => ['symfony-ux'],
+            ],
+            [
+                'name' => 'symfony/new-package',
+                'keywords' => ['symfony-ux'],
+            ],
+        ]);
 
         // Should keep existing package references and config and add the new package, while keeping the formatting
         $this->assertSame(
@@ -159,7 +173,12 @@ class PackageJsonSynchronizerTest extends TestCase
 
     public function testArrayFormattingHasNotChanged()
     {
-        $this->synchronizer->synchronize(['symfony/existing-package']);
+        $this->synchronizer->synchronize([
+            [
+                'name' => 'symfony/existing-package',
+                'keywords' => ['symfony-ux'],
+            ],
+        ]);
 
         // Should keep existing array formatting
         $this->assertSame(

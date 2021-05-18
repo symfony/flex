@@ -18,10 +18,9 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 class GenerateIdCommand extends Command
 {
-    public function __construct(/* cannot be type-hinted */ $flex = null)
+    public function __construct()
     {
         // No-op to support downgrading to v1.12.x
-
         parent::__construct();
     }
 

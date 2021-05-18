@@ -593,9 +593,9 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $synchronizer = new PackageJsonSynchronizer($rootDir, $vendorDir);
 
         if ($synchronizer->shouldSynchronize()) {
-            $packagesNames = array_column($this->composer->getLocker()->getLockData()['packages'] ?? [], 'name');
+            $lockData = $this->composer->getLocker()->getLockData();
 
-            if ($synchronizer->synchronize($packagesNames)) {
+            if ($synchronizer->synchronize($lockData['packages'] ?? []) || $synchronizer->synchronize($lockData['packages-dev'] ?? [])) {
                 $this->io->writeError('<info>Synchronizing package.json with PHP packages</>');
                 $this->io->writeError('<warning>Don\'t forget to run npm install --force or yarn install --force to refresh your JavaScript dependencies!</>');
                 $this->io->writeError('');
@@ -774,8 +774,8 @@ class Flex implements PluginInterface, EventSubscriberInterface
         file_put_contents($autoloadFile, <<<EOPHP
 <?php
 
-if (\PHP_VERSION_ID < $version) {
-    echo sprintf("Fatal Error: composer.lock was created for PHP version $platform or higher but the current PHP version is %d.%d.%d.\\n", PHP_MAJOR_VERSION, PHP_MINOR_VERSION, PHP_RELEASE_VERSION);
+if (PHP_VERSION_ID < $version) {
+    echo sprintf("Fatal Error: composer.lock was created for PHP version $platform or higher but the current PHP version is %d.%d.%s.\\n", PHP_MAJOR_VERSION, PHP_MINOR_VERSION, PHP_RELEASE_VERSION);
     exit(1);
 }
 $code
