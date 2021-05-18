@@ -32,21 +32,24 @@ class PackageJsonSynchronizer
         return $this->rootDir && file_exists($this->rootDir.'/package.json');
     }
 
-    public function synchronize(array $packagesNames)
+    public function synchronize(array $packagesNames): bool
     {
         // Remove all links and add again only the existing packages
-        $this->removePackageJsonLinks((new JsonFile($this->rootDir.'/package.json'))->read());
+        $didAddLink = $this->removePackageJsonLinks((new JsonFile($this->rootDir.'/package.json'))->read());
 
         foreach ($packagesNames as $packageName) {
-            $this->addPackageJsonLink($packageName);
+            $didAddLink = $this->addPackageJsonLink($packageName) || $didAddLink;
         }
 
         // Register controllers and entrypoints in controllers.json
         $this->registerWebpackResources($packagesNames);
+
+        return $didAddLink;
     }
 
-    private function removePackageJsonLinks(array $packageJson)
+    private function removePackageJsonLinks(array $packageJson): bool
     {
+        $didRemoveLink = false;
         $jsDependencies = $packageJson['dependencies'] ?? [];
         $jsDevDependencies = $packageJson['devDependencies'] ?? [];
 
@@ -59,14 +62,17 @@ class PackageJsonSynchronizer
                 $manipulator = new JsonManipulator(file_get_contents($this->rootDir.'/package.json'));
                 $manipulator->removeSubNode('devDependencies', $name);
                 file_put_contents($this->rootDir.'/package.json', $manipulator->getContents());
+                $didRemoveLink = true;
             }
         }
+
+        return $didRemoveLink;
     }
 
-    private function addPackageJsonLink(string $phpPackage)
+    private function addPackageJsonLink(string $phpPackage): bool
     {
         if (!$assetsDir = $this->resolveAssetsDir($phpPackage)) {
-            return;
+            return false;
         }
 
         $manipulator = new JsonManipulator(file_get_contents($this->rootDir.'/package.json'));
@@ -79,6 +85,8 @@ class PackageJsonSynchronizer
         $manipulator->addMainKey('devDependencies', $devDependencies);
 
         file_put_contents($this->rootDir.'/package.json', $manipulator->getContents());
+
+        return true;
     }
 
     private function registerWebpackResources(array $phpPackages)
