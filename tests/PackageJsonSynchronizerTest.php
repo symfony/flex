@@ -26,7 +26,7 @@ class PackageJsonSynchronizerTest extends TestCase
         $this->tempDir = sys_get_temp_dir().'/flex-package-json-'.substr(md5(uniqid('', true)), 0, 6);
         (new Filesystem())->mirror(__DIR__.'/Fixtures/packageJson', $this->tempDir);
 
-        $this->synchronizer = new PackageJsonSynchronizer($this->tempDir);
+        $this->synchronizer = new PackageJsonSynchronizer($this->tempDir, 'vendor');
     }
 
     protected function tearDown(): void

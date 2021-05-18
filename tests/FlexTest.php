@@ -325,12 +325,13 @@ EOF
         return \Closure::bind(function () use ($composer, $io, $configurator, $downloader, $lock) {
             $flex = new Flex();
             $flex->composer = $composer;
+            $flex->config = $composer->getConfig();
             $flex->io = $io;
             $flex->configurator = $configurator;
             $flex->downloader = $downloader;
             $flex->runningCommand = function () {
             };
-            $flex->options = new Options(['config-dir' => 'config', 'var-dir' => 'var']);
+            $flex->options = new Options(['config-dir' => 'config', 'var-dir' => 'var', 'root-dir' => '.']);
             $flex->lock = $lock;
 
             return $flex;

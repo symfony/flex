@@ -24,10 +24,12 @@ use Composer\Semver\VersionParser;
 class PackageJsonSynchronizer
 {
     private $rootDir;
+    private $vendorDirname;
 
-    public function __construct(?string $rootDir)
+    public function __construct(string $rootDir, string $vendorDirname)
     {
         $this->rootDir = $rootDir;
+        $this->vendorDirname = $vendorDirname;
     }
 
     public function shouldSynchronize(): bool
@@ -81,7 +83,7 @@ class PackageJsonSynchronizer
         }
 
         $manipulator = new JsonManipulator(file_get_contents($this->rootDir.'/package.json'));
-        $manipulator->addSubNode('devDependencies', '@'.$phpPackage, 'file:vendor/'.$phpPackage.$assetsDir);
+        $manipulator->addSubNode('devDependencies', '@'.$phpPackage, 'file:'.$this->vendorDirname.'/'.$phpPackage.$assetsDir);
 
         $content = json_decode($manipulator->getContents(), true);
 
@@ -112,7 +114,7 @@ class PackageJsonSynchronizer
             }
 
             // Register in config
-            $packageJsonPath = $this->rootDir.'/vendor/'.$phpPackage.$assetsDir.'/package.json';
+            $packageJsonPath = $this->rootDir.'/'.$this->vendorDirname.'/'.$phpPackage.$assetsDir.'/package.json';
             $packageJson = (new JsonFile($packageJsonPath))->read();
 
             foreach ($packageJson['symfony']['controllers'] ?? [] as $controllerName => $defaultConfig) {
@@ -169,7 +171,7 @@ class PackageJsonSynchronizer
                 continue;
             }
 
-            $packageJsonPath = $this->rootDir.'/vendor/'.$phpPackage.$assetsDir.'/package.json';
+            $packageJsonPath = $this->rootDir.'/'.$this->vendorDirname.'/'.$phpPackage.$assetsDir.'/package.json';
             $packageJson = (new JsonFile($packageJsonPath))->read();
             $versionParser = new VersionParser();
 
@@ -198,7 +200,7 @@ class PackageJsonSynchronizer
     private function resolveAssetsDir(string $phpPackage)
     {
         foreach (['/assets', '/Resources/assets'] as $subdir) {
-            if (file_exists($this->rootDir.'/vendor/'.$phpPackage.$subdir.'/package.json')) {
+            if (file_exists($this->rootDir.'/'.$this->vendorDirname.'/'.$phpPackage.$subdir.'/package.json')) {
                 return $subdir;
             }
         }
