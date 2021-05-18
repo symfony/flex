@@ -78,12 +78,12 @@ class PackageJsonSynchronizer
 
     private function addPackageJsonLink(string $phpPackage): bool
     {
-        if (!$assetsDir = $this->resolveAssetsDir($phpPackage)) {
+        if (!$packageJson = $this->resolvePackageJson($phpPackage)) {
             return false;
         }
 
         $manipulator = new JsonManipulator(file_get_contents($this->rootDir.'/package.json'));
-        $manipulator->addSubNode('devDependencies', '@'.$phpPackage, 'file:'.$this->vendorDirname.'/'.$phpPackage.$assetsDir);
+        $manipulator->addSubNode('devDependencies', '@'.$phpPackage, 'file:'.substr($packageJson->getPath(), 1 + \strlen($this->rootDir), -13));
 
         $content = json_decode($manipulator->getContents(), true);
 
@@ -109,15 +109,11 @@ class PackageJsonSynchronizer
         ];
 
         foreach ($phpPackages as $phpPackage) {
-            if (!$assetsDir = $this->resolveAssetsDir($phpPackage)) {
+            if (!$packageJson = $this->resolvePackageJson($phpPackage)) {
                 continue;
             }
 
-            // Register in config
-            $packageJsonPath = $this->rootDir.'/'.$this->vendorDirname.'/'.$phpPackage.$assetsDir.'/package.json';
-            $packageJson = (new JsonFile($packageJsonPath))->read();
-
-            foreach ($packageJson['symfony']['controllers'] ?? [] as $controllerName => $defaultConfig) {
+            foreach ($packageJson->read()['symfony']['controllers'] ?? [] as $controllerName => $defaultConfig) {
                 // If the package has just been added (no config), add the default config provided by the package
                 if (!isset($previousControllersJson['controllers']['@'.$phpPackage][$controllerName])) {
                     $config = [];
@@ -152,7 +148,7 @@ class PackageJsonSynchronizer
                 $newControllersJson['controllers']['@'.$phpPackage][$controllerName] = $config;
             }
 
-            foreach ($packageJson['symfony']['entrypoints'] ?? [] as $entrypoint => $filename) {
+            foreach ($packageJson->read()['symfony']['entrypoints'] ?? [] as $entrypoint => $filename) {
                 if (!isset($newControllersJson['entrypoints'][$entrypoint])) {
                     $newControllersJson['entrypoints'][$entrypoint] = $filename;
                 }
@@ -167,15 +163,13 @@ class PackageJsonSynchronizer
         $peerDependencies = [];
 
         foreach ($phpPackages as $phpPackage) {
-            if (!$assetsDir = $this->resolveAssetsDir($phpPackage)) {
+            if (!$packageJson = $this->resolvePackageJson($phpPackage)) {
                 continue;
             }
 
-            $packageJsonPath = $this->rootDir.'/'.$this->vendorDirname.'/'.$phpPackage.$assetsDir.'/package.json';
-            $packageJson = (new JsonFile($packageJsonPath))->read();
             $versionParser = new VersionParser();
 
-            foreach ($packageJson['peerDependencies'] ?? [] as $peerDependency => $constraint) {
+            foreach ($packageJson->read()['peerDependencies'] ?? [] as $peerDependency => $constraint) {
                 $peerDependencies[$peerDependency][$constraint] = $versionParser->parseConstraints($constraint);
             }
         }
@@ -197,12 +191,22 @@ class PackageJsonSynchronizer
         file_put_contents($this->rootDir.'/package.json', $manipulator->getContents());
     }
 
-    private function resolveAssetsDir(string $phpPackage)
+    private function resolvePackageJson(string $phpPackage): ?JsonFile
     {
+        $packageDir = $this->rootDir.'/'.$this->vendorDirname.'/'.$phpPackage;
+
+        if (!\in_array('symfony-ux', json_decode(file_get_contents($packageDir.'/composer.json'), true)['keywords'] ?? [], true)) {
+            return null;
+        }
+
         foreach (['/assets', '/Resources/assets'] as $subdir) {
-            if (file_exists($this->rootDir.'/'.$this->vendorDirname.'/'.$phpPackage.$subdir.'/package.json')) {
-                return $subdir;
+            $packageJsonPath = $packageDir.$subdir.'/package.json';
+
+            if (!file_exists($packageJsonPath)) {
+                continue;
             }
+
+            return new JsonFile($packageJsonPath);
         }
 
         return null;
