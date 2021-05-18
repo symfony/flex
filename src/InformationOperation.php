@@ -27,9 +27,6 @@ class InformationOperation implements OperationInterface
         return $this->package;
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getJobType()
     {
         return 'information';

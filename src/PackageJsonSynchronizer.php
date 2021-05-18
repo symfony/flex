@@ -37,19 +37,19 @@ class PackageJsonSynchronizer
         return $this->rootDir && file_exists($this->rootDir.'/package.json');
     }
 
-    public function synchronize(array $packagesNames): bool
+    public function synchronize(array $phpPackages): bool
     {
         // Remove all links and add again only the existing packages
         $didAddLink = $this->removePackageJsonLinks((new JsonFile($this->rootDir.'/package.json'))->read());
 
-        foreach ($packagesNames as $packageName) {
-            $didAddLink = $this->addPackageJsonLink($packageName) || $didAddLink;
+        foreach ($phpPackages as $phpPackage) {
+            $didAddLink = $this->addPackageJsonLink($phpPackage) || $didAddLink;
         }
 
-        $this->registerPeerDependencies($packagesNames);
+        $this->registerPeerDependencies($phpPackages);
 
         // Register controllers and entrypoints in controllers.json
-        $this->registerWebpackResources($packagesNames);
+        $this->registerWebpackResources($phpPackages);
 
         return $didAddLink;
     }
@@ -76,14 +76,14 @@ class PackageJsonSynchronizer
         return $didRemoveLink;
     }
 
-    private function addPackageJsonLink(string $phpPackage): bool
+    private function addPackageJsonLink(array $phpPackage): bool
     {
         if (!$packageJson = $this->resolvePackageJson($phpPackage)) {
             return false;
         }
 
         $manipulator = new JsonManipulator(file_get_contents($this->rootDir.'/package.json'));
-        $manipulator->addSubNode('devDependencies', '@'.$phpPackage, 'file:'.substr($packageJson->getPath(), 1 + \strlen($this->rootDir), -13));
+        $manipulator->addSubNode('devDependencies', '@'.$phpPackage['name'], 'file:'.substr($packageJson->getPath(), 1 + \strlen($this->rootDir), -13));
 
         $content = json_decode($manipulator->getContents(), true);
 
@@ -112,10 +112,11 @@ class PackageJsonSynchronizer
             if (!$packageJson = $this->resolvePackageJson($phpPackage)) {
                 continue;
             }
+            $name = '@'.$phpPackage['name'];
 
             foreach ($packageJson->read()['symfony']['controllers'] ?? [] as $controllerName => $defaultConfig) {
                 // If the package has just been added (no config), add the default config provided by the package
-                if (!isset($previousControllersJson['controllers']['@'.$phpPackage][$controllerName])) {
+                if (!isset($previousControllersJson['controllers'][$name][$controllerName])) {
                     $config = [];
                     $config['enabled'] = $defaultConfig['enabled'];
                     $config['fetch'] = $defaultConfig['fetch'] ?? 'eager';
@@ -124,13 +125,13 @@ class PackageJsonSynchronizer
                         $config['autoimport'] = $defaultConfig['autoimport'];
                     }
 
-                    $newControllersJson['controllers']['@'.$phpPackage][$controllerName] = $config;
+                    $newControllersJson['controllers'][$name][$controllerName] = $config;
 
                     continue;
                 }
 
                 // Otherwise, the package exists: merge new config with uer config
-                $previousConfig = $previousControllersJson['controllers']['@'.$phpPackage][$controllerName];
+                $previousConfig = $previousControllersJson['controllers'][$name][$controllerName];
 
                 $config = [];
                 $config['enabled'] = $previousConfig['enabled'];
@@ -145,7 +146,7 @@ class PackageJsonSynchronizer
                     }
                 }
 
-                $newControllersJson['controllers']['@'.$phpPackage][$controllerName] = $config;
+                $newControllersJson['controllers'][$name][$controllerName] = $config;
             }
 
             foreach ($packageJson->read()['symfony']['entrypoints'] ?? [] as $entrypoint => $filename) {
@@ -191,11 +192,11 @@ class PackageJsonSynchronizer
         file_put_contents($this->rootDir.'/package.json', $manipulator->getContents());
     }
 
-    private function resolvePackageJson(string $phpPackage): ?JsonFile
+    private function resolvePackageJson(array $phpPackage): ?JsonFile
     {
-        $packageDir = $this->rootDir.'/'.$this->vendorDirname.'/'.$phpPackage;
+        $packageDir = $this->rootDir.'/'.$this->vendorDirname.'/'.$phpPackage['name'];
 
-        if (!\in_array('symfony-ux', json_decode(file_get_contents($packageDir.'/composer.json'), true)['keywords'] ?? [], true)) {
+        if (!\in_array('symfony-ux', $phpPackage['keywords'] ?? [], true)) {
             return null;
         }
 
