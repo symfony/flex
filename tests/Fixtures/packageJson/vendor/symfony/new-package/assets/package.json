@@ -10,5 +10,8 @@
             }
         },
         "entrypoints": ["admin.js"]
+    },
+    "peerDependencies": {
+        "@hotcookies": "^1.1"
     }
 }

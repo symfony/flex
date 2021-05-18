@@ -11,6 +11,7 @@
 
 namespace Symfony\Flex\Tests;
 
+use Composer\Semver\Intervals;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Flex\PackageJsonSynchronizer;
@@ -70,6 +71,8 @@ class PackageJsonSynchronizerTest extends TestCase
             [
                 'name' => 'symfony/fixture',
                 'devDependencies' => [
+                    '@hotcookies' => '^1.1|^2',
+                    '@hotdogs' => '^2',
                     '@symfony/existing-package' => 'file:vendor/symfony/existing-package/Resources/assets',
                     '@symfony/stimulus-bridge' => '^1.0.0',
                     'stimulus' => '^1.1.1',
@@ -111,6 +114,8 @@ class PackageJsonSynchronizerTest extends TestCase
             '{
    "name": "symfony/fixture",
    "devDependencies": {
+      "@hotcookies": "'.(method_exists(Intervals::class, 'isSubsetOf') ? '^1.1' : '^1.1,(^1.1|^2)').'",
+      "@hotdogs": "^2",
       "@symfony/existing-package": "file:vendor/symfony/existing-package/Resources/assets",
       "@symfony/new-package": "file:vendor/symfony/new-package/assets",
       "@symfony/stimulus-bridge": "^1.0.0",
@@ -161,6 +166,8 @@ class PackageJsonSynchronizerTest extends TestCase
             '{
    "name": "symfony/fixture",
    "devDependencies": {
+      "@hotcookies": "^1.1|^2",
+      "@hotdogs": "^2",
       "@symfony/existing-package": "file:vendor/symfony/existing-package/Resources/assets",
       "@symfony/stimulus-bridge": "^1.0.0",
       "stimulus": "^1.1.1"
