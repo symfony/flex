@@ -28,7 +28,7 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-main": "1.12-dev"
+            "dev-main": "1.13-dev"
         },
         "class": "Symfony\\Flex\\Flex"
     }
