@@ -24,12 +24,12 @@ use Composer\Semver\VersionParser;
 class PackageJsonSynchronizer
 {
     private $rootDir;
-    private $vendorDirname;
+    private $vendorDir;
 
-    public function __construct(string $rootDir, string $vendorDirname)
+    public function __construct(string $rootDir, string $vendorDir = 'vendor')
     {
         $this->rootDir = $rootDir;
-        $this->vendorDirname = $vendorDirname;
+        $this->vendorDir = $vendorDir;
     }
 
     public function shouldSynchronize(): bool
@@ -42,7 +42,14 @@ class PackageJsonSynchronizer
         // Remove all links and add again only the existing packages
         $didAddLink = $this->removePackageJsonLinks((new JsonFile($this->rootDir.'/package.json'))->read());
 
-        foreach ($phpPackages as $phpPackage) {
+        foreach ($phpPackages as $k => $phpPackage) {
+            if (\is_string($phpPackage)) {
+                // support for smooth upgrades from older flex versions
+                $phpPackages[$k] = $phpPackage = [
+                    'name' => $phpPackage,
+                    'keywords' => ['symfony-ux'],
+                ];
+            }
             $didAddLink = $this->addPackageJsonLink($phpPackage) || $didAddLink;
         }
 
@@ -194,7 +201,7 @@ class PackageJsonSynchronizer
 
     private function resolvePackageJson(array $phpPackage): ?JsonFile
     {
-        $packageDir = $this->rootDir.'/'.$this->vendorDirname.'/'.$phpPackage['name'];
+        $packageDir = $this->rootDir.'/'.$this->vendorDir.'/'.$phpPackage['name'];
 
         if (!\in_array('symfony-ux', $phpPackage['keywords'] ?? [], true)) {
             return null;
