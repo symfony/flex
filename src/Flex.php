@@ -602,7 +602,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
                 $lockData['packages-dev'] = array_column($lockData['packages-dev'] ?? [], 'name');
             }
 
-            if ($synchronizer->synchronize($lockData['packages'] ?? []) || $synchronizer->synchronize($lockData['packages-dev'] ?? [])) {
+            if ($synchronizer->synchronize(array_merge($lockData['packages'] ?? [], $lockData['packages-dev'] ?? []))) {
                 $this->io->writeError('<info>Synchronizing package.json with PHP packages</>');
                 $this->io->writeError('<warning>Don\'t forget to run npm install --force or yarn install --force to refresh your JavaScript dependencies!</>');
                 $this->io->writeError('');
