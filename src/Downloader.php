@@ -31,6 +31,7 @@ class Downloader
     private static $MAX_LENGTH = 1000;
     private static $versions;
 
+    private $composerConfig;
     private $io;
     private $sess;
     private $cache;
@@ -48,9 +49,9 @@ class Downloader
 
         $this->endpoint = rtrim(getenv('SYMFONY_ENDPOINT') ?: ($composer->getPackage()->getExtra()['symfony']['endpoint'] ?? self::$DEFAULT_ENDPOINT), '/');
         $this->io = $io;
-        $config = $composer->getConfig();
+        $this->composerConfig = $composer->getConfig();
         $this->rfs = $rfs;
-        $this->cache = new ComposerCache($io, $config->get('cache-repo-dir').'/'.preg_replace('{[^a-z0-9.]}i', '-', $this->endpoint));
+        $this->cache = new ComposerCache($io, $this->composerConfig->get('cache-repo-dir').'/'.preg_replace('{[^a-z0-9.]}i', '-', $this->endpoint));
         $this->sess = bin2hex(random_bytes(16));
     }
 
@@ -90,6 +91,7 @@ class Downloader
             $this->io->writeError('<warning>Using "'.$this->endpoint.'" as the Symfony endpoint</>');
         }
 
+        $localManifestPaths = [];
         $paths = [];
         $chunk = '';
         foreach ($operations as $i => $operation) {
@@ -123,6 +125,14 @@ class Downloader
                     $version = $alias;
                 }
             }
+
+            $localPackagePath = sprintf(
+                '%s/%s',
+                $this->composerConfig->get('vendor-dir'),
+                $package->getName()
+            );
+
+            $localManifestPaths[$package->getName()] = sprintf('%s/recipe/manifest.json', $localPackagePath);
 
             // FIXME: Multi name with getNames()
             $name = str_replace('/', ',', $package->getName());
@@ -162,6 +172,22 @@ class Downloader
                     $bodies[] = $body;
                 }
             });
+        }
+
+        foreach ($localManifestPaths as $name => $manifestPath) {
+            if (!file_exists($manifestPath)) {
+                continue;
+            }
+
+            $content = json_decode(file_get_contents($manifestPath), true);
+
+            $bodies[] = [
+                'manifests' => [
+                    $name => [
+                        'manifest' => $content
+                    ]
+                ]
+            ];
         }
 
         $data = [];
