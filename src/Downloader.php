@@ -293,7 +293,7 @@ class Downloader
         }
 
         $response = new Response($data, $lastHeaders);
-        if ($response->getHeader('last-modified')) {
+        if ($response->getHeader('last-modified') && $cacheKey) {
             $this->cache->write($cacheKey, json_encode($response));
         }
 
