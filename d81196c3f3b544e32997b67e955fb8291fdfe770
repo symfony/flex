@@ -1,0 +1,19 @@
+---------------------------------------------------------------------------
+
+by skripka at 2021-08-02T15:26:41Z
+
+We are seeing same issue. @themasch thanks for the fix!
+
+---------------------------------------------------------------------------
+
+by tmarly at 2021-08-02T17:31:21Z
+
+same pb on my side, thanks @themasch
+
+As a workaround, waiting this PR to be included in master or for older versions, I'm using the `--no-cache` option with `composer install`
+
+---------------------------------------------------------------------------
+
+by themasch at 2021-08-02T18:37:07Z
+
+Can confirm that disabling the cache (--no-cache or COMPOSER_CACHE_DIR=/dev/null) works as a workaround.
