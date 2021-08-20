@@ -11,7 +11,6 @@
 
 namespace Symfony\Flex\Configurator;
 
-use LogicException;
 use Symfony\Flex\Lock;
 use Symfony\Flex\Recipe;
 
@@ -101,7 +100,7 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
         }
 
         if (!file_exists($source)) {
-            throw new LogicException(sprintf('File "%s" does not exist!', $source));
+            throw new \LogicException(sprintf('File "%s" does not exist!', $source));
         }
 
         file_put_contents($target, $this->options->expandTargetDir(file_get_contents($source)));
