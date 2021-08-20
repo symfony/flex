@@ -806,6 +806,8 @@ EOPHP
             'symfony/flex' => null,
             'symfony/framework-bundle' => null,
         ];
+        $packRecipes = [];
+
         foreach ($operations as $i => $operation) {
             if ($operation instanceof UpdateOperation) {
                 $package = $operation->getTargetPackage();
@@ -843,7 +845,11 @@ EOPHP
             }
 
             if (isset($manifests[$name])) {
-                $recipes[$name] = new Recipe($package, $name, $job, $manifests[$name], $locks[$name] ?? []);
+                if ('symfony-pack' === $package->getType()) {
+                    $packRecipes[$name] = new Recipe($package, $name, $job, $manifests[$name], $locks[$name] ?? []);
+                } else {
+                    $recipes[$name] = new Recipe($package, $name, $job, $manifests[$name], $locks[$name] ?? []);
+                }
             }
 
             $noRecipe = !isset($manifests[$name]) || (isset($manifests[$name]['not_installable']) && $manifests[$name]['not_installable']);
@@ -869,7 +875,7 @@ EOPHP
             }
         }
 
-        return array_filter($recipes);
+        return array_merge($packRecipes, array_filter($recipes));
     }
 
     public function truncatePackages(PrePoolCreateEvent $event)
