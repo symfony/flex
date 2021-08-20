@@ -86,8 +86,9 @@ class UnpackCommand extends BaseCommand
             return 0;
         }
 
+        $io->writeError('<info>Unpacking Symfony packs</>');
         foreach ($result->getUnpacked() as $pkg) {
-            $io->writeError(sprintf('<info>Unpacked %s dependencies</>', $pkg->getName()));
+            $io->writeError(sprintf('  - Unpacked <info>%s</>', $pkg->getName()));
         }
 
         $unpacker->updateLock($result, $io);
