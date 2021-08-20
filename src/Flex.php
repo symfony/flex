@@ -28,7 +28,6 @@ use Composer\Installer\NoopInstaller;
 use Composer\Installer\PackageEvent;
 use Composer\Installer\PackageEvents;
 use Composer\Installer\SuggestedPackagesReporter;
-use Composer\IO\ConsoleIO;
 use Composer\IO\IOInterface;
 use Composer\IO\NullIO;
 use Composer\Json\JsonFile;
@@ -47,7 +46,6 @@ use Composer\Repository\RepositoryManager;
 use Composer\Script\Event;
 use Composer\Script\ScriptEvents;
 use Symfony\Component\Console\Input\ArgvInput;
-use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Flex\Event\UpdateEvent;
 use Symfony\Flex\Unpack\Operation;
@@ -443,21 +441,28 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $result = $unpacker->unpack($unpackOp);
         $unpacker->updateLock($result, $this->io);
 
-        if ($this->io instanceof ConsoleIO) {
-            \Closure::bind(function () {
-                $this->output->setVerbosity(OutputInterface::VERBOSITY_QUIET);
-            }, $this->io, $this->io)();
+        $io = new NullIO();
+        $composer = Factory::create($io, null, true);
+        $installer = Installer::create($io, $composer);
+        $installer
+            ->setDevMode($this->dryRun)
+            ->setDumpAutoloader(false)
+            ->setIgnorePlatformRequirements(true)
+            ->setUpdate(true)
+            ->setUpdateAllowList(['php'])
+        ;
+
+        if (method_exists($composer->getEventDispatcher(), 'setRunScripts')) {
+            $composer->getEventDispatcher()->setRunScripts(false);
+        } else {
+            $installer->setRunScripts(false);
         }
 
-        \Closure::bind(function ($locker) {
-            $this->locker = $locker;
-            $this->dumpAutoloader = false;
-            $this->runScripts = false;
-            $this->ignorePlatformReqs = true;
-            $this->update = false;
-        }, $this->installer, $this->installer)($this->composer->getLocker());
+        if (method_exists($installer, 'setSkipSuggest')) {
+            $installer->setSkipSuggest(true);
+        }
 
-        $this->installer->run();
+        $installer->run();
     }
 
     public function install(Event $event = null)
