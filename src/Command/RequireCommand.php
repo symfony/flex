@@ -12,6 +12,9 @@
 namespace Symfony\Flex\Command;
 
 use Composer\Command\RequireCommand as BaseRequireCommand;
+use Composer\Factory;
+use Composer\Json\JsonFile;
+use Composer\Json\JsonManipulator;
 use Composer\Plugin\PluginInterface;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -51,15 +54,35 @@ class RequireCommand extends BaseRequireCommand
             $input->setOption('no-suggest', true);
         }
 
-        $ret = parent::execute($input, $output) ?? 0;
+        $file = Factory::getComposerFile();
+        $contents = file_get_contents($file);
+        $json = JsonFile::parseJson($contents);
 
-        if (0 !== $ret || $input->getOption('no-unpack') || $input->getOption('no-update')) {
-            return $ret;
+        if (\array_key_exists('require-dev', $json) && !$json['require-dev'] && (new JsonManipulator($contents))->removeMainKey('require-dev')) {
+            $manipulator = new JsonManipulator($contents);
+            $manipulator->addLink('require-dev', 'php', '*');
+            file_put_contents($file, $manipulator->getContents());
+        } else {
+            $file = null;
         }
+        unset($contents, $json, $manipulator);
 
-        $unpackCommand = new UnpackCommand($this->resolver);
-        $unpackCommand->setApplication($this->getApplication());
+        try {
+            $ret = parent::execute($input, $output) ?? 0;
 
-        return $unpackCommand->execute($input, $output);
+            if (0 !== $ret || $input->getOption('no-unpack') || $input->getOption('no-update')) {
+                return $ret;
+            }
+
+            $unpackCommand = new UnpackCommand($this->resolver);
+            $unpackCommand->setApplication($this->getApplication());
+
+            return $unpackCommand->execute($input, $output);
+        } finally {
+            if (null !== $file) {
+                $manipulator = new JsonManipulator(file_get_contents($file));
+                $manipulator->removeSubNode('require-dev', 'php');
+            }
+        }
     }
 }
