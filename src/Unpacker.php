@@ -50,7 +50,7 @@ class Unpacker
 
         $localRepo = $this->composer->getRepositoryManager()->getLocalRepository();
         foreach ($op->getPackages() as $package) {
-            $pkg = $localRepo->findPackage($package['name'], $package['version'] ?: '*');
+            $pkg = $localRepo->findPackage($package['name'], '*');
             $pkg = $pkg ?? $this->composer->getRepositoryManager()->findPackage($package['name'], $package['version'] ?: '*');
 
             // not unpackable or no --unpack flag or empty packs (markers)
