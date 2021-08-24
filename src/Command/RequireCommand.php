@@ -35,12 +35,16 @@ class RequireCommand extends BaseRequireCommand
     protected function configure()
     {
         parent::configure();
-        $this->addOption('no-unpack', null, InputOption::VALUE_NONE, 'Disable unpacking Symfony packs in composer.json.');
+        $this->addOption('no-unpack', null, InputOption::VALUE_NONE, '[DEPRECATED] Disable unpacking Symfony packs in composer.json.');
         $this->addOption('unpack', null, InputOption::VALUE_NONE, '[DEPRECATED] Unpacking is now enabled by default.');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        if ($input->getOption('no-unpack')) {
+            $this->getIO()->writeError('<warning>The "--unpack" command line option is deprecated; unpacking is now enabled by default.</warning>');
+        }
+
         if ($input->getOption('unpack')) {
             $this->getIO()->writeError('<warning>The "--unpack" command line option is deprecated; unpacking is now enabled by default.</warning>');
         }
@@ -68,16 +72,7 @@ class RequireCommand extends BaseRequireCommand
         unset($contents, $json, $manipulator);
 
         try {
-            $ret = parent::execute($input, $output) ?? 0;
-
-            if (0 !== $ret || $input->getOption('no-unpack') || $input->getOption('no-update')) {
-                return $ret;
-            }
-
-            $unpackCommand = new UnpackCommand($this->resolver);
-            $unpackCommand->setApplication($this->getApplication());
-
-            return $unpackCommand->execute($input, $output);
+            return parent::execute($input, $output) ?? 0;
         } finally {
             if (null !== $file) {
                 $manipulator = new JsonManipulator(file_get_contents($file));

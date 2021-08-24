@@ -23,6 +23,9 @@ use Symfony\Flex\PackageResolver;
 use Symfony\Flex\Unpack\Operation;
 use Symfony\Flex\Unpacker;
 
+/**
+ * @deprecated since Flex 1.4
+ */
 class UnpackCommand extends BaseCommand
 {
     private $resolver;
@@ -38,7 +41,7 @@ class UnpackCommand extends BaseCommand
     {
         $this->setName('symfony:unpack')
             ->setAliases(['unpack'])
-            ->setDescription('Unpacks a Symfony pack.')
+            ->setDescription('[DEPRECATED] Unpacks a Symfony pack.')
             ->setDefinition([
                 new InputArgument('packages', InputArgument::IS_ARRAY | InputArgument::REQUIRED, 'Installed packages to unpack.'),
                 new InputOption('sort-packages', null, InputOption::VALUE_NONE, 'Sorts packages'),
@@ -55,6 +58,8 @@ class UnpackCommand extends BaseCommand
         $installedRepo = $composer->getRepositoryManager()->getLocalRepository();
         $versionParser = new VersionParser();
         $dryRun = $input->hasOption('dry-run') && $input->getOption('dry-run');
+
+        $io->writeError('<warning>Command "symfony:unpack" is deprecated, Symfony packs are always unpacked now.</>');
 
         $op = new Operation(true, $input->getOption('sort-packages') || $composer->getConfig()->get('sort-packages'));
         foreach ($versionParser->parseNameVersionPairs($packages) as $package) {
