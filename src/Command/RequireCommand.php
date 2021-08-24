@@ -77,6 +77,7 @@ class RequireCommand extends BaseRequireCommand
             if (null !== $file) {
                 $manipulator = new JsonManipulator(file_get_contents($file));
                 $manipulator->removeSubNode('require-dev', 'php');
+                file_put_contents($file, $manipulator->getContents());
             }
         }
     }
