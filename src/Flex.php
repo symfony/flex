@@ -271,7 +271,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
                 $this->populateRepoCacheDir();
             }
 
-            $app->add(new Command\RequireCommand($resolver));
+            $app->add(new Command\RequireCommand($resolver, \Closure::fromCallable([$this, 'updateComposerLock'])));
             $app->add(new Command\UpdateCommand($resolver));
             $app->add(new Command\RemoveCommand($resolver));
             $app->add(new Command\UnpackCommand($resolver));

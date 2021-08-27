@@ -24,10 +24,12 @@ use Symfony\Flex\PackageResolver;
 class RequireCommand extends BaseRequireCommand
 {
     private $resolver;
+    private $updateComposerLock;
 
-    public function __construct(PackageResolver $resolver)
+    public function __construct(PackageResolver $resolver, \Closure $updateComposerLock = null)
     {
         $this->resolver = $resolver;
+        $this->updateComposerLock = $updateComposerLock;
 
         parent::__construct();
     }
@@ -78,6 +80,10 @@ class RequireCommand extends BaseRequireCommand
                 $manipulator = new JsonManipulator(file_get_contents($file));
                 $manipulator->removeSubNode('require-dev', 'php');
                 file_put_contents($file, $manipulator->getContents());
+
+                if ($this->updateComposerLock) {
+                    ($this->updateComposerLock)();
+                }
             }
         }
     }
