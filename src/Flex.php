@@ -744,7 +744,7 @@ EOPHP
             'symfony/flex' => null,
             'symfony/framework-bundle' => null,
         ];
-        $packRecipes = [];
+        $metaRecipes = [];
 
         foreach ($operations as $operation) {
             if ($operation instanceof UpdateOperation) {
@@ -783,8 +783,8 @@ EOPHP
             }
 
             if (isset($manifests[$name])) {
-                if ('symfony-pack' === $package->getType()) {
-                    $packRecipes[$name] = new Recipe($package, $name, $job, $manifests[$name], $locks[$name] ?? []);
+                if ('metapackage' === $package->getType()) {
+                    $metaRecipes[$name] = new Recipe($package, $name, $job, $manifests[$name], $locks[$name] ?? []);
                 } else {
                     $recipes[$name] = new Recipe($package, $name, $job, $manifests[$name], $locks[$name] ?? []);
                 }
@@ -813,7 +813,7 @@ EOPHP
             }
         }
 
-        return array_merge($packRecipes, array_filter($recipes));
+        return array_merge($metaRecipes, array_filter($recipes));
     }
 
     public function truncatePackages(PrePoolCreateEvent $event)
