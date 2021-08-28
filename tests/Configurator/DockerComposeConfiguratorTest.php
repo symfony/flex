@@ -528,4 +528,41 @@ YAML
         $this->configurator->unconfigure($this->recipeDb, self::CONFIG_DB, $this->lock);
         $this->assertEquals(self::ORIGINAL_CONTENT, file_get_contents($dockerComposeFile));
     }
+
+    public function testConfigureWithoutExistingDockerComposeFiles()
+    {
+        $dockerComposeFile = FLEX_TEST_DIR.'/docker-compose.yaml';
+        $defaultContent = "version: '3'\n";
+
+        $this->configurator->configure($this->recipeDb, self::CONFIG_DB, $this->lock);
+
+        $this->assertStringEqualsFile($dockerComposeFile, $defaultContent.<<<'YAML'
+
+services:
+###> doctrine/doctrine-bundle ###
+  db:
+    image: mariadb:10.3
+    environment:
+      - MYSQL_DATABASE=symfony
+      # You should definitely change the password in production
+      - MYSQL_PASSWORD=password
+      - MYSQL_RANDOM_ROOT_PASSWORD=true
+      - MYSQL_USER=symfony
+    volumes:
+      - db-data:/var/lib/mysql:rw
+      # You may use a bind-mounted host directory instead, so that it is harder to accidentally remove the volume and lose all your data!
+      # - ./docker/db/data:/var/lib/mysql:rw
+###< doctrine/doctrine-bundle ###
+
+volumes:
+###> doctrine/doctrine-bundle ###
+  db-data: {}
+###< doctrine/doctrine-bundle ###
+
+YAML
+            );
+
+        $this->configurator->unconfigure($this->recipeDb, self::CONFIG_DB, $this->lock);
+        $this->assertEquals(trim($defaultContent), file_get_contents($dockerComposeFile));
+    }
 }
