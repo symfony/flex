@@ -491,6 +491,8 @@ class Flex implements PluginInterface, EventSubscriberInterface
                     ]);
                     $manifest = $recipe->getManifest();
                     if (isset($manifest['post-install-output'])) {
+                        $this->postInstallOutput[] = sprintf('<bg=yellow;fg=white> %s </> instructions:', $recipe->getName());
+                        $this->postInstallOutput[] = '';
                         foreach ($manifest['post-install-output'] as $line) {
                             $this->postInstallOutput[] = $this->options->expandTargetDir($line);
                         }
@@ -509,8 +511,11 @@ class Flex implements PluginInterface, EventSubscriberInterface
         if (null !== $manifest) {
             array_unshift(
                 $this->postInstallOutput,
+                '<bg=blue;fg=white>              </>',
+                '<bg=blue;fg=white> What\'s next? </>',
+                '<bg=blue;fg=white>              </>',
                 '',
-                '<info>Some files may have been created or updated to configure your new packages.</>',
+                '<info>Some files have been created and/or updated to configure your new packages.</>',
                 'Please <comment>review</>, <comment>edit</> and <comment>commit</> them: these files are <comment>yours</>.'
             );
         }
@@ -728,6 +733,9 @@ EOPHP
         );
     }
 
+    /**
+     * @return Recipe[]
+     */
     public function fetchRecipes(array $operations): array
     {
         if (!$this->downloader->isEnabled()) {
