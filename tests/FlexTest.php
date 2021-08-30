@@ -70,9 +70,14 @@ class FlexTest extends TestCase
         $flex->install($this->mockFlexEvent());
 
         $expected = [
+            '<bg=blue;fg=white>              </>',
+            '<bg=blue;fg=white> What\'s next? </>',
+            '<bg=blue;fg=white>              </>',
             '',
-            '<info>Some files may have been created or updated to configure your new packages.</>',
+            '<info>Some files have been created and/or updated to configure your new packages.</>',
             'Please <comment>review</>, <comment>edit</> and <comment>commit</> them: these files are <comment>yours</>.',
+            '',
+            '<bg=yellow;fg=white> dummy/dummy </> instructions:',
             '',
             'line 1 config',
             'line 2 var',
