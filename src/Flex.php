@@ -579,6 +579,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
 
         $this->io->write($this->postInstallOutput);
+        $this->postInstallOutput = [];
     }
 
     public function populateProvidersCacheDir(InstallerEvent $event)
@@ -992,6 +993,7 @@ EOPHP
         $installer->run();
 
         $this->io->write($this->postInstallOutput);
+        $this->postInstallOutput = [];
     }
 
     public static function getSubscribedEvents(): array
