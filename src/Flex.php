@@ -982,6 +982,8 @@ EOPHP
         }
 
         $installer->run();
+
+        $this->io->write($this->postInstallOutput);
     }
 
     public static function getSubscribedEvents(): array
