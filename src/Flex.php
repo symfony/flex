@@ -396,7 +396,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
 
         // Execute missing recipes
-        $recipes = ScriptEvents::POST_UPDATE_CMD === $event->getName() ? $this->fetchRecipes($this->operations) : [];
+        $recipes = ScriptEvents::POST_UPDATE_CMD === $event->getName() ? $this->fetchRecipes($this->operations, $event instanceof UpdateEvent && $event->reset()) : [];
         $this->operations = [];     // Reset the operation after getting recipes
 
         if (2 === $this->displayThanksReminder) {
@@ -692,7 +692,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
     /**
      * @return Recipe[]
      */
-    public function fetchRecipes(array $operations): array
+    public function fetchRecipes(array $operations, bool $reset): array
     {
         if (!$this->downloader->isEnabled()) {
             $this->io->writeError('<warning>Symfony recipes are disabled: "symfony/flex" not found in the root composer.json</>');
@@ -735,7 +735,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
             if ($operation instanceof InstallOperation && isset($locks[$name])) {
                 $ref = $this->lock->get($name)['recipe']['ref'] ?? null;
-                if ($ref && ($locks[$name]['recipe']['ref'] ?? null) === $ref) {
+                if (!$reset && $ref && ($locks[$name]['recipe']['ref'] ?? null) === $ref) {
                     continue;
                 }
                 $this->lock->set($name, $locks[$name]);
