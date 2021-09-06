@@ -407,7 +407,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
 
         // Execute missing recipes
-        $recipes = $this->fetchRecipes($this->operations);
+        $recipes = ScriptEvents::POST_UPDATE_CMD === $event->getName() ? $this->fetchRecipes($this->operations) : [];
         $this->operations = [];     // Reset the operation after getting recipes
 
         if (2 === $this->displayThanksReminder) {
@@ -422,10 +422,10 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $this->io->writeError('');
 
         if (!$recipes) {
-            if (null !== $event && ScriptEvents::POST_UPDATE_CMD === $event->getName()) {
+            if (ScriptEvents::POST_UPDATE_CMD === $event->getName()) {
                 $this->synchronizePackageJson($rootDir);
+                $this->lock->write();
             }
-            $this->lock->write();
 
             if ($this->downloader->isEnabled()) {
                 $this->io->writeError('Run <comment>composer recipes</> at any time to see the status of your Symfony recipes.');
