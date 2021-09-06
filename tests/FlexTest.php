@@ -25,6 +25,7 @@ use Composer\Plugin\PluginInterface;
 use Composer\Repository\RepositoryManager;
 use Composer\Repository\WritableRepositoryInterface;
 use Composer\Script\Event;
+use Composer\Script\ScriptEvents;
 use Composer\Semver\Constraint\MatchAllConstraint;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -306,7 +307,10 @@ EOF
 
     private function mockFlexEvent(): Event
     {
-        return $this->getMockBuilder(Event::class)->disableOriginalConstructor()->getMock();
+        $event = $this->getMockBuilder(Event::class)->disableOriginalConstructor()->getMock();
+        $event->expects($this->any())->method('getName')->willReturn(ScriptEvents::POST_UPDATE_CMD);
+
+        return $event;
     }
 
     private function mockManager(): RepositoryManager
