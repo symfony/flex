@@ -32,6 +32,10 @@ class PackageResolverTest extends TestCase
                 ['symfony/console'],
             ],
             [
+                ['cli', 'symfony/workflow'],
+                ['symfony/console', 'symfony/workflow'],
+            ],
+            [
                 ['console', 'validator', 'translation'],
                 ['symfony/console', 'symfony/validator', 'symfony/translation'],
             ],
@@ -42,6 +46,10 @@ class PackageResolverTest extends TestCase
             [
                 ['cli:lts', 'validator=3.2', 'translation', 'next'],
                 ['symfony/console:^3.4', 'symfony/validator:3.2', 'symfony/translation:^4.0@dev'],
+            ],
+            [
+                ['cli:dev-feature/abc'],
+                ['symfony/console:dev-feature/abc'],
             ],
             [
                 ['php'],
@@ -82,10 +90,6 @@ class PackageResolverTest extends TestCase
             [
                 ['qwerty'],
                 '"qwerty" is not a valid alias.',
-            ],
-            [
-                ['lts:'],
-                'Could not parse version constraint "".',
             ],
         ];
     }
