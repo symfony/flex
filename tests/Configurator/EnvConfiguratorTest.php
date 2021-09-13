@@ -181,19 +181,19 @@ EOF
         ], $lock);
 
         $envContents = file_get_contents($env);
-        $this->assertRegExp('/#TRUSTED_SECRET_1=[a-z0-9]{64}/', $envContents);
-        $this->assertRegExp('/#TRUSTED_SECRET_2=[a-z0-9]{64}/', $envContents);
-        $this->assertRegExp('/#TRUSTED_SECRET_3=[a-z0-9]{64}/', $envContents);
-        $this->assertRegExp('/APP_SECRET=[a-z0-9]{32}/', $envContents);
+        $this->assertMatchesRegularExpression('/#TRUSTED_SECRET_1=[a-z0-9]{64}/', $envContents);
+        $this->assertMatchesRegularExpression('/#TRUSTED_SECRET_2=[a-z0-9]{64}/', $envContents);
+        $this->assertMatchesRegularExpression('/#TRUSTED_SECRET_3=[a-z0-9]{64}/', $envContents);
+        $this->assertMatchesRegularExpression('/APP_SECRET=[a-z0-9]{32}/', $envContents);
         @unlink($env);
 
         foreach ([$phpunitDist, $phpunit] as $file) {
             $fileContents = file_get_contents($file);
 
-            $this->assertRegExp('/<!-- env name="TRUSTED_SECRET_1" value="[a-z0-9]{64}" -->/', $fileContents);
-            $this->assertRegExp('/<!-- env name="TRUSTED_SECRET_2" value="[a-z0-9]{64}" -->/', $fileContents);
-            $this->assertRegExp('/<!-- env name="TRUSTED_SECRET_3" value="[a-z0-9]{64}" -->/', $fileContents);
-            $this->assertRegExp('/<env name="APP_SECRET" value="[a-z0-9]{32}"\/>/', $fileContents);
+            $this->assertMatchesRegularExpression('/<!-- env name="TRUSTED_SECRET_1" value="[a-z0-9]{64}" -->/', $fileContents);
+            $this->assertMatchesRegularExpression('/<!-- env name="TRUSTED_SECRET_2" value="[a-z0-9]{64}" -->/', $fileContents);
+            $this->assertMatchesRegularExpression('/<!-- env name="TRUSTED_SECRET_3" value="[a-z0-9]{64}" -->/', $fileContents);
+            $this->assertMatchesRegularExpression('/<env name="APP_SECRET" value="[a-z0-9]{32}"\/>/', $fileContents);
         }
     }
 

@@ -11,25 +11,22 @@ env:
 
 jobs:
     tests:
-        name: "PHP ${{ matrix.php-version }} + ${{ matrix.dependencies }}"
+        name: "PHP ${{ matrix.php }} ${{ matrix.mode }}"
 
         runs-on: ubuntu-latest
 
         strategy:
             fail-fast: false
             matrix:
-                php-version:
-                    - '7.1'
-                    - '7.2'
-                    - '7.3'
-                    - '7.4'
-                    - '8.0'
-                    - '8.1'
-                dependencies:
-                    - 'highest'
                 include:
-                    - php-version: '7.1'
-                      dependencies: 'lowest'
+                  - php: '7.1'
+                  - php: '7.2'
+                  - php: '7.3'
+                  - php: '7.4'
+                  - php: '8.0'
+                  - php: '8.1'
+                  - php: '7.4'
+                    mode: low-deps
 
         steps:
             - name: "Checkout code"
@@ -39,37 +36,37 @@ jobs:
               uses: shivammathur/setup-php@2.7.0
               with:
                   coverage: "none"
-                  php-version: ${{ matrix.php-version }}
+                  php-version: ${{ matrix.php }}
                   tools: composer:v2
 
             - name: "Validate composer.json"
               run: "composer validate --strict --no-check-lock"
 
-            - name: "Add PHPUnit matcher"
-              run: echo "::add-matcher::${{ runner.tool_cache }}/phpunit.json"
+            - run: |
+                composer require --no-update composer/composer:^1.0.2 --ansi
 
-            - run: composer require --no-update composer/composer:^1.0.2
-
-            - uses: "ramsey/composer-install@v1"
-              with:
-                  dependency-versions: "${{ matrix.dependencies }}"
+                if [[ "${{ matrix.mode }}" = low-deps ]]; then
+                    composer u --prefer-lowest --prefer-stable --ansi
+                else
+                    composer u --ansi
+                fi
 
             - name: "Install PHPUnit"
               run: vendor/bin/simple-phpunit install
 
-            - name: "PHPUnit version"
-              run: vendor/bin/simple-phpunit --version
+            - run: vendor/bin/simple-phpunit
+
+            - run: |
+                composer require --no-update composer/composer:^2 --ansi
+
+                if [[ "${{ matrix.mode }}" = low-deps ]]; then
+                    composer u --prefer-lowest --prefer-stable --ansi
+                else
+                    composer u --ansi
+                fi
 
             - run: vendor/bin/simple-phpunit
 
-            - run: composer require --no-update composer/composer:^2
-
-            - uses: "ramsey/composer-install@v1"
-              with:
-                  dependency-versions: "${{ matrix.dependencies }}"
-
-            - run: vendor/bin/simple-phpunit
-
-            - if: matrix.php-version == '7.1'
+            - if: matrix.php == '7.1'
               name: "Lint PHP files"
               run: find src/ -name '*.php' | xargs -n1 php -l

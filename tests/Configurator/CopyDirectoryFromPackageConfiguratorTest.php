@@ -44,7 +44,7 @@ class CopyDirectoryFromPackageConfiguratorTest extends TestCase
         }
 
         foreach ($this->targetFiles as $targetFile) {
-            $this->assertFileNotExists($targetFile);
+            $this->assertFileDoesNotExist($targetFile);
         }
         $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
         $this->createConfigurator()->configure($this->recipe, [

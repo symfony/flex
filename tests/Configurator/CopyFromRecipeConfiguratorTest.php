@@ -85,7 +85,7 @@ class CopyFromRecipeConfiguratorTest extends TestCase
         $this->io->expects($this->at(0))->method('writeError')->with(['    Copying files from recipe']);
         $this->io->expects($this->at(1))->method('writeError')->with(['      Created <fg=green>"./config/file"</>']);
 
-        $this->assertFileNotExists($this->targetFile);
+        $this->assertFileDoesNotExist($this->targetFile);
         $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
         $this->createConfigurator()->configure(
             $this->recipe,
@@ -123,12 +123,12 @@ class CopyFromRecipeConfiguratorTest extends TestCase
         $this->assertFileExists($this->targetFile);
         $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
         $this->createConfigurator()->unconfigure($this->recipe, [$this->targetFileRelativePath], $lock);
-        $this->assertFileNotExists($this->targetFile);
+        $this->assertFileDoesNotExist($this->targetFile);
     }
 
     public function testNoFilesRemoved()
     {
-        $this->assertFileNotExists($this->targetFile);
+        $this->assertFileDoesNotExist($this->targetFile);
         $this->io->expects($this->exactly(1))->method('writeError')->with(['    Removing files from recipe']);
         $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
         $this->createConfigurator()->unconfigure($this->recipe, [$this->sourceFileRelativePath => $this->targetFileRelativePath], $lock);
