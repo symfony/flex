@@ -122,7 +122,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $this->config = $composer->getConfig();
         $this->options = $this->initOptions();
 
-        $symfonyRequire = preg_replace('/\.x$/', '.x-dev', getenv('SYMFONY_REQUIRE') ?: ($composer->getPackage()->getExtra()['symfony']['require'] ?? null));
+        $symfonyRequire = preg_replace('/\.x$/', '.x-dev', getenv('SYMFONY_REQUIRE') ?: ($composer->getPackage()->getExtra()['symfony']['require'] ?? ''));
 
         if ($composer2 = version_compare('2.0.0', PluginInterface::PLUGIN_API_VERSION, '<=')) {
             $rfs = Factory::createHttpDownloader($this->io, $this->config);
