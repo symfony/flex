@@ -21,7 +21,6 @@ use Composer\Repository\PlatformRepository;
 class PackageResolver
 {
     private static $SYMFONY_VERSIONS = ['lts', 'previous', 'stable', 'next', 'dev'];
-    private static $aliases;
     private $downloader;
 
     public function __construct(Downloader $downloader)
@@ -87,16 +86,14 @@ class PackageResolver
 
     private function resolvePackageName(string $argument, int $position): string
     {
-        if (false !== strpos($argument, '/') || preg_match(PlatformRepository::PLATFORM_PACKAGE_REGEX, $argument) || preg_match('{(?<=[a-z0-9_/-])\*|\*(?=[a-z0-9_/-])}i', $argument) || \in_array($argument, ['mirrors', 'nothing'])) {
+        if (false !== strpos($argument, '/') || preg_match(PlatformRepository::PLATFORM_PACKAGE_REGEX, $argument) || preg_match('{(?<=[a-z0-9_/-])\*|\*(?=[a-z0-9_/-])}i', $argument) || \in_array($argument, ['lock', 'mirrors', 'nothing', ''])) {
             return $argument;
         }
 
-        if (null === self::$aliases) {
-            self::$aliases = $this->downloader->get('/aliases.json')->getBody();
-        }
+        $aliases = $this->downloader->getAliases();
 
-        if (isset(self::$aliases[$argument])) {
-            $argument = self::$aliases[$argument];
+        if (isset($aliases[$argument])) {
+            $argument = $aliases[$argument];
         } else {
             // is it a version or an alias that does not exist?
             try {
@@ -119,7 +116,7 @@ class PackageResolver
     private function throwAlternatives(string $argument, int $position)
     {
         $alternatives = [];
-        foreach (self::$aliases as $alias => $package) {
+        foreach ($this->downloader->getAliases() as $alias => $package) {
             $lev = levenshtein($argument, $alias);
             if ($lev <= \strlen($argument) / 3 || ('' !== $argument && false !== strpos($alias, $argument))) {
                 $alternatives[$package][] = $alias;

@@ -799,8 +799,7 @@ EOPHP
                 }
             }
 
-            $noRecipe = !isset($manifests[$name]) || (isset($manifests[$name]['not_installable']) && $manifests[$name]['not_installable']);
-            if ($noRecipe) {
+            if (!isset($manifests[$name])) {
                 $bundles = [];
 
                 if (null === $devPackages) {
