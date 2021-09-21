@@ -520,7 +520,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
     private function synchronizePackageJson(string $rootDir)
     {
         $rootDir = realpath($rootDir);
-        $vendorDir = trim((new Filesystem())->makePathRelative($this->config->get('vendor-dir'), $rootDir), \DIRECTORY_SEPARATOR);
+        $vendorDir = trim((new Filesystem())->makePathRelative($this->config->get('vendor-dir'), $rootDir), '/');
 
         $synchronizer = new PackageJsonSynchronizer($rootDir, $vendorDir);
 
