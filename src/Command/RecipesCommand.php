@@ -81,7 +81,7 @@ class RecipesCommand extends BaseCommand
             $operations[] = new InformationOperation($pkg);
         }
 
-        $recipes = $this->flex->fetchRecipes($operations);
+        $recipes = $this->flex->fetchRecipes($operations, false);
         ksort($recipes);
 
         $nbRecipe = \count($recipes);
