@@ -183,9 +183,9 @@ class RecipesCommand extends BaseCommand
         }
 
         $io->write('<info>name</info>             : '.$recipe->getName());
-        $io->write('<info>version</info>          : '.$recipeLock['version']);
+        $io->write('<info>version</info>          : '.($recipeLock['version'] ?? 'n/a'));
         $io->write('<info>status</info>           : '.$status);
-        if (!$recipe->isAuto()) {
+        if (!$recipe->isAuto() && isset($recipeLock['version'])) {
             $recipeUrl = sprintf(
                 'https://%s/tree/%s/%s/%s',
                 $lockRepo,
@@ -200,7 +200,9 @@ class RecipesCommand extends BaseCommand
 
         if ($lockRef !== $recipe->getRef()) {
             $io->write('<info>latest recipe</info>    : '.$recipe->getURL());
+        }
 
+        if ($lockRef !== $recipe->getRef() && isset($recipeLock['version'])) {
             $historyUrl = sprintf(
                 'https://%s/commits/%s/%s',
                 $lockRepo,
