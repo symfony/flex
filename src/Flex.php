@@ -307,17 +307,6 @@ class Flex implements PluginInterface, EventSubscriberInterface
         return $backtrace;
     }
 
-    public function lockPlatform()
-    {
-        if (!$this->downloader->isEnabled()) {
-            return; // "symfony/flex" not found in the root composer.json - don't create the symfony.lock file
-        }
-
-        $this->lock->set('php', [
-            'version' => $this->config->get('platform')['php'] ?? (\PHP_MAJOR_VERSION.'.'.\PHP_MINOR_VERSION),
-        ]);
-    }
-
     public function configureProject(Event $event)
     {
         if (!$this->downloader->isEnabled()) {
@@ -700,40 +689,6 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
     }
 
-    public function updateAutoloadFile()
-    {
-        if (!$platform = $this->lock->get('php')['version'] ?? null) {
-            return;
-        }
-
-        $autoloadFile = $this->config->get('vendor-dir').'/autoload.php';
-
-        if (!file_exists($autoloadFile)) {
-            return;
-        }
-
-        $code = file_get_contents($autoloadFile);
-        $code = substr($code, \strlen("<?php\n"));
-
-        if (false !== strpos($code, 'PHP_VERSION_ID')) {
-            return;
-        }
-
-        $platform = preg_replace('/[^-+.~_\w]/', '', $platform);
-        $version = sprintf('%d%02d00', ...explode('.', $platform.'.0'));
-
-        file_put_contents($autoloadFile, <<<EOPHP
-<?php
-
-if (PHP_VERSION_ID < $version) {
-    echo sprintf("Fatal Error: composer.lock was created for PHP version $platform or higher but the current PHP version is %d.%d.%s.\\n", PHP_MAJOR_VERSION, PHP_MINOR_VERSION, PHP_RELEASE_VERSION);
-    exit(1);
-}
-$code
-EOPHP
-        );
-    }
-
     /**
      * @return Recipe[]
      */
@@ -1010,14 +965,13 @@ EOPHP
             ScriptEvents::POST_INSTALL_CMD => 'install',
             ScriptEvents::PRE_UPDATE_CMD => 'configureInstaller',
             ScriptEvents::POST_UPDATE_CMD => 'update',
-            ScriptEvents::POST_AUTOLOAD_DUMP => 'updateAutoloadFile',
             'auto-scripts' => 'executeAutoScripts',
         ];
 
         if (version_compare('2.0.0', PluginInterface::PLUGIN_API_VERSION, '>')) {
             $events += [
                 InstallerEvents::PRE_DEPENDENCIES_SOLVING => [['populateProvidersCacheDir', \PHP_INT_MAX]],
-                InstallerEvents::POST_DEPENDENCIES_SOLVING => [['populateFilesCacheDir', \PHP_INT_MAX], ['lockPlatform']],
+                InstallerEvents::POST_DEPENDENCIES_SOLVING => [['populateFilesCacheDir', \PHP_INT_MAX]],
                 PackageEvents::PRE_PACKAGE_INSTALL => [['populateFilesCacheDir', ~\PHP_INT_MAX]],
                 PackageEvents::PRE_PACKAGE_UPDATE => [['populateFilesCacheDir', ~\PHP_INT_MAX]],
                 PluginEvents::PRE_FILE_DOWNLOAD => 'onFileDownload',
