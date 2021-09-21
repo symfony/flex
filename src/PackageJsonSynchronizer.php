@@ -69,7 +69,7 @@ class PackageJsonSynchronizer
 
         foreach (['dependencies' => $jsDependencies, 'devDependencies' => $jsDevDependencies] as $key => $packages) {
             foreach ($packages as $name => $version) {
-                if ('@' !== $name[0] || 0 !== strpos($version, 'file:')) {
+                if ('@' !== $name[0] || 0 !== strpos($version, 'file:') || false === strpos($version, '/assets')) {
                     continue;
                 }
 
