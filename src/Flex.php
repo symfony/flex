@@ -20,6 +20,7 @@ use Composer\DependencyResolver\Operation\UpdateOperation;
 use Composer\DependencyResolver\Pool;
 use Composer\Downloader\FileDownloader;
 use Composer\EventDispatcher\EventSubscriberInterface;
+use Composer\EventDispatcher\ScriptExecutionException;
 use Composer\Factory;
 use Composer\Installer;
 use Composer\Installer\InstallerEvent;
@@ -564,7 +565,11 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
         $executor = new ScriptExecutor($this->composer, $this->io, $this->options);
         foreach ($jsonContents['scripts']['auto-scripts'] as $cmd => $type) {
-            $executor->execute($type, $cmd);
+            try {
+                $executor->execute($type, $cmd);
+            } catch (ScriptExecutionException $e) {
+                break;
+            }
         }
 
         $this->io->write($this->postInstallOutput);
