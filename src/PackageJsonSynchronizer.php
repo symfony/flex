@@ -207,7 +207,7 @@ class PackageJsonSynchronizer
             return null;
         }
 
-        foreach (['/assets', '/Resources/assets'] as $subdir) {
+        foreach (['/assets', '/Resources/assets', '/src/Resources/assets'] as $subdir) {
             $packageJsonPath = $packageDir.$subdir.'/package.json';
 
             if (!file_exists($packageJsonPath)) {
