@@ -56,10 +56,13 @@ class Downloader
             $this->caFile = getenv('SYMFONY_CAFILE');
         }
 
-        if (!filter_var(getenv('FLEX_SERVERLESS'), \FILTER_VALIDATE_BOOLEAN)) {
-            $this->legacyEndpoint = 'https://flex.symfony.com';
-        } elseif (null === $endpoint = $composer->getPackage()->getExtra()['symfony']['endpoint'] ?? null) {
+        if (null === $endpoint = $composer->getPackage()->getExtra()['symfony']['endpoint'] ?? null) {
             $this->endpoints = self::DEFAULT_ENDPOINTS;
+
+            if (!filter_var(getenv('FLEX_SERVERLESS'), \FILTER_VALIDATE_BOOLEAN)) {
+                $this->endpoints = null;
+                $this->legacyEndpoint = 'https://flex.symfony.com';
+            }
         } elseif (\is_array($endpoint) || false !== strpos($endpoint, '.json')) {
             $this->endpoints = array_fill_keys((array) $endpoint, []);
         } else {
