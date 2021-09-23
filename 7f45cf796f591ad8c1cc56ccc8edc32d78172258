@@ -1,0 +1,42 @@
+---------------------------------------------------------------------------
+
+by fabpot at 2021-09-20T17:30:10Z
+
+... and that removes a SPoF, which is always nice :)
+
+---------------------------------------------------------------------------
+
+by herzmut at 2021-09-21T13:24:58Z
+
+While I always appreciate the technological economization of any ecosystem by removing weak technological dependencies, such as one operated by a company, and moving to community-accepted conventions, such as foundations or any other kind of common place,
+
+how is this PR removing a single point of failure if all it does is replacing `flex.symfony.com` with GitHub as the source?
+
+---------------------------------------------------------------------------
+
+by fabpot at 2021-09-21T13:26:18Z
+
+SPoF == servers as you mention, but it's also about the number of people maintaining the server/code.
+
+---------------------------------------------------------------------------
+
+by icanhazstring at 2021-09-21T15:46:04Z
+
+Does this make sense to have something similar to composer repositories?
+
+Where I can add a certain in-house hosted flex recipe server which holds proprietary recipes before looking into the default one?
+
+Or is this change exactly this?
+Couldn't figure out using the source.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2021-09-21T15:47:26Z
+
+@icanhazstring yep, that's what the code does already: define `extra.symfony.endpoint` in the root `composer.json` to the list of endpoints you want for your app (~you'll have to duplicate the default endpoints, but they're stable so that should be OK~ use `flex://defaults` in that list if wanted)
+
+---------------------------------------------------------------------------
+
+by icanhazstring at 2021-09-21T15:48:17Z
+
+Nice. Good solution. Thank you 💪
