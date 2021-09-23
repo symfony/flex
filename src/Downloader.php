@@ -16,27 +16,37 @@ use Composer\Composer;
 use Composer\DependencyResolver\Operation\OperationInterface;
 use Composer\DependencyResolver\Operation\UninstallOperation;
 use Composer\DependencyResolver\Operation\UpdateOperation;
-use Composer\Downloader\TransportException;
 use Composer\IO\IOInterface;
 use Composer\Json\JsonFile;
+use Composer\Util\Http\Response as ComposerResponse;
 use Composer\Util\HttpDownloader;
 use Composer\Util\Loop;
 
 /**
  * @author Fabien Potencier <fabien@symfony.com>
+ * @author Nicolas Grekas <p@tchwork.com>
  */
 class Downloader
 {
-    private static $DEFAULT_ENDPOINT = 'https://flex.symfony.com';
-    private static $MAX_LENGTH = 1000;
+    private const DEFAULT_ENDPOINTS = [
+        'https://api.github.com/repos/symfony/recipes/contents/index.json?ref=flex/main' => [],
+        'https://api.github.com/repos/symfony/recipes-contrib/contents/index.json?ref=flex/main' => [],
+    ];
+    private const MAX_LENGTH = 1000;
+
     private static $versions;
+    private static $aliases;
 
     private $io;
     private $sess;
     private $cache;
+
+    /** @var HttpDownloader|ParallelDownloader */
     private $rfs;
     private $degradedMode = false;
-    private $endpoint;
+    private $endpoints;
+    private $index;
+    private $legacyEndpoint;
     private $caFile;
     private $enabled = true;
 
@@ -46,11 +56,35 @@ class Downloader
             $this->caFile = getenv('SYMFONY_CAFILE');
         }
 
-        $this->endpoint = rtrim(getenv('SYMFONY_ENDPOINT') ?: ($composer->getPackage()->getExtra()['symfony']['endpoint'] ?? self::$DEFAULT_ENDPOINT), '/');
+        if (!filter_var(getenv('FLEX_SERVERLESS'), \FILTER_VALIDATE_BOOLEAN)) {
+            $this->legacyEndpoint = 'https://flex.symfony.com';
+        } elseif (null === $endpoint = $composer->getPackage()->getExtra()['symfony']['endpoint'] ?? null) {
+            $this->endpoints = self::DEFAULT_ENDPOINTS;
+        } elseif (\is_array($endpoint) || false !== strpos($endpoint, '.json')) {
+            $this->endpoints = array_fill_keys((array) $endpoint, []);
+        } else {
+            $this->legacyEndpoint = rtrim($endpoint, '/');
+        }
+
+        if (false === $endpoint = getenv('SYMFONY_ENDPOINT')) {
+            // no-op
+        } elseif (false !== strpos($endpoint, '.json')) {
+            $this->endpoints ?? $this->endpoints = self::DEFAULT_ENDPOINTS;
+            $this->endpoints = [$endpoint => []] + $this->endpoints;
+            $this->legacyEndpoint = null;
+        } else {
+            $this->endpoints = null;
+            $this->legacyEndpoint = rtrim($endpoint, '/');
+        }
+
+        if (null !== $this->endpoints && false !== $i = array_search('flex://defaults', $this->endpoints, true)) {
+            array_splice($this->endpoints, $i, 1, self::DEFAULT_ENDPOINTS);
+        }
+
         $this->io = $io;
         $config = $composer->getConfig();
         $this->rfs = $rfs;
-        $this->cache = new ComposerCache($io, $config->get('cache-repo-dir').'/'.preg_replace('{[^a-z0-9.]}i', '-', $this->endpoint));
+        $this->cache = new ComposerCache($io, $config->get('cache-repo-dir').'/flex');
         $this->sess = bin2hex(random_bytes(16));
     }
 
@@ -76,7 +110,16 @@ class Downloader
 
     public function getVersions()
     {
-        return self::$versions ?? self::$versions = $this->get('/versions.json')->getBody();
+        $this->initialize();
+
+        return self::$versions ?? self::$versions = current($this->get([$this->legacyEndpoint.'/versions.json']));
+    }
+
+    public function getAliases()
+    {
+        $this->initialize();
+
+        return self::$aliases ?? self::$aliases = current($this->get([$this->legacyEndpoint.'/aliases.json']));
     }
 
     /**
@@ -86,13 +129,12 @@ class Downloader
      */
     public function getRecipes(array $operations): array
     {
-        if ($this->enabled && self::$DEFAULT_ENDPOINT !== $this->endpoint) {
-            $this->io->writeError('<warning>Using "'.$this->endpoint.'" as the Symfony endpoint</>');
-        }
+        $this->initialize();
 
-        $paths = [];
+        $data = [];
+        $urls = [];
         $chunk = '';
-        foreach ($operations as $i => $operation) {
+        foreach ($operations as $operation) {
             $o = 'i';
             if ($operation instanceof UpdateOperation) {
                 $package = $operation->getTargetPackage();
@@ -124,14 +166,40 @@ class Downloader
                 }
             }
 
+            if ($recipeVersions = $this->index[$package->getName()] ?? null) {
+                $version = explode('.', preg_replace('/^dev-|^v|\.x-dev$|-dev$/', '', $version));
+                $version = $version[0].'.'.($version[1] ?? '9999999');
+
+                foreach (array_reverse($recipeVersions) as $v => $endpoint) {
+                    if (version_compare($version, $v, '>=')) {
+                        $data['locks'][$package->getName()]['version'] = $version;
+                        $data['locks'][$package->getName()]['recipe']['version'] = $v;
+                        $urls[] = strtr($this->endpoints[$endpoint]['_links']['recipe_template'], [
+                            '{package_dotted}' => str_replace('/', '.', $package->getName()),
+                            '{package}' => $package->getName(),
+                            '{version}' => $v,
+                        ]);
+
+                        break;
+                    }
+                }
+
+                continue;
+            }
+
+            if (null !== $this->endpoints) {
+                $data['locks'][$package->getName()]['version'] = $version;
+                continue;
+            }
+
             // FIXME: Multi name with getNames()
             $name = str_replace('/', ',', $package->getName());
             $path = sprintf('%s,%s%s', $name, $o, $version);
             if ($date = $package->getReleaseDate()) {
                 $path .= ','.$date->format('U');
             }
-            if (\strlen($chunk) + \strlen($path) > self::$MAX_LENGTH) {
-                $paths[] = ['/p/'.$chunk];
+            if (\strlen($chunk) + \strlen($path) > self::MAX_LENGTH) {
+                $urls[] = $this->legacyEndpoint.'/p/'.$chunk;
                 $chunk = $path;
             } elseif ($chunk) {
                 $chunk .= ';'.$path;
@@ -140,37 +208,48 @@ class Downloader
             }
         }
         if ($chunk) {
-            $paths[] = ['/p/'.$chunk];
+            $urls[] = $this->legacyEndpoint.'/p/'.$chunk;
         }
 
-        if ($this->rfs instanceof HttpDownloader) {
-            $loop = new Loop($this->rfs);
-            $bodies = [];
-            $jobs = [];
-            foreach ($paths as $path) {
-                $jobs[] = $this->rfs->add($this->endpoint.$path[0])->then(static function ($response) use (&$bodies) {
-                    $bodies[] = json_decode($response->getBody(), true);
-                }, function (\Exception $e) {
-                    $this->io->writeError('<warning>Failed to download recipe: '.$e->getMessage().'</>');
-                });
-            }
-            $loop->wait($jobs);
-        } else {
-            $bodies = [];
-            $this->rfs->download($paths, function ($path) use (&$bodies) {
-                if ($body = $this->get($path, [], false)->getBody()) {
-                    $bodies[] = $body;
+        if (null === $this->endpoints) {
+            foreach ($this->get($urls, true) as $body) {
+                foreach ($body['manifests'] ?? [] as $name => $manifest) {
+                    $data['manifests'][$name] = $manifest;
                 }
-            });
-        }
-
-        $data = [];
-        foreach ($bodies as $body) {
-            foreach ($body['manifests'] as $name => $manifest) {
-                $data['manifests'][$name] = $manifest;
+                foreach ($body['locks'] ?? [] as $name => $lock) {
+                    $data['locks'][$name] = $lock;
+                }
             }
-            foreach ($body['locks'] ?? [] as $name => $lock) {
-                $data['locks'][$name] = $lock;
+        } else {
+            foreach ($this->get($urls, true) as $body) {
+                foreach ($body['manifests'] ?? [] as $name => $manifest) {
+                    if (null === $version = $data['locks'][$name]['recipe']['version'] ?? null) {
+                        continue;
+                    }
+                    $endpoint = $this->endpoints[$this->index[$name][$version]];
+
+                    $data['locks'][$name]['recipe'] = [
+                        'repo' => $endpoint['_links']['repository'],
+                        'branch' => $endpoint['branch'],
+                        'version' => $version,
+                        'ref' => $manifest['ref'],
+                    ];
+
+                    foreach ($manifest['files'] ?? [] as $i => $file) {
+                        $manifest['files'][$i]['contents'] = \is_array($file['contents']) ? implode("\n", $file['contents']) : base64_decode($file['contents']);
+                    }
+
+                    $data['manifests'][$name] = $manifest + [
+                        'repository' => $endpoint['_links']['repository'],
+                        'package' => $name,
+                        'version' => $version,
+                        'origin' => strtr($endpoint['_links']['origin_template'], [
+                            '{package}' => $name,
+                            '{version}' => $version,
+                        ]),
+                        'is_contrib' => $endpoint['is_contrib'] ?? false,
+                    ];
+                }
             }
         }
 
@@ -178,108 +257,90 @@ class Downloader
     }
 
     /**
-     * Decodes a JSON HTTP response body.
-     *
-     * @param string $path    The path to get on the server
-     * @param array  $headers An array of HTTP headers
+     * Fetches and decodes JSON HTTP response bodies.
      */
-    public function get(string $path, array $headers = [], $cache = true): Response
+    private function get(array $urls, bool $isRecipe = false, int $try = 3): array
     {
-        if (!$this->enabled && '/versions.json' !== $path) {
-            return new Response([]);
-        }
-        $headers[] = 'Package-Session: '.$this->sess;
-        $url = $this->endpoint.'/'.ltrim($path, '/');
-        $cacheKey = $cache ? ltrim($path, '/') : '';
+        $responses = [];
+        $retries = [];
+        $options = [];
 
-        if ($cacheKey && $contents = $this->cache->read($cacheKey)) {
-            $cachedResponse = Response::fromJson(json_decode($contents, true));
-            if ($lastModified = $cachedResponse->getHeader('last-modified')) {
-                $response = $this->fetchFileIfLastModified($url, $cacheKey, $lastModified, $headers);
-                if (304 === $response->getStatusCode()) {
-                    $response = new Response($cachedResponse->getBody(), $response->getOrigHeaders(), 304);
-                }
+        foreach ($urls as $url) {
+            $cacheKey = preg_replace('{[^a-z0-9.]}i', '-', $url);
+            $headers = [];
 
-                return $response;
+            if (preg_match('{^https?://api\.github\.com/}', $url)) {
+                $headers[] = 'Accept: application/vnd.github.v3.raw';
+            } elseif ($this->legacyEndpoint) {
+                $headers[] = 'Package-Session: '.$this->sess;
             }
+
+            if ($contents = $this->cache->read($cacheKey)) {
+                $cachedResponse = Response::fromJson(json_decode($contents, true));
+                if ($lastModified = $cachedResponse->getHeader('last-modified')) {
+                    $headers[] = 'If-Modified-Since: '.$lastModified;
+                }
+                if ($eTag = $cachedResponse->getHeader('etag')) {
+                    $headers[] = 'If-None-Match: '.$eTag;
+                }
+                $responses[$url] = $cachedResponse->getBody();
+            }
+
+            $options[$url] = $this->getOptions($headers);
         }
 
-        return $this->fetchFile($url, $cacheKey, $headers);
-    }
-
-    private function fetchFile(string $url, string $cacheKey, array $headers): Response
-    {
-        $options = $this->getOptions($headers);
-        $retries = 3;
-        while ($retries--) {
-            try {
-                if ($this->rfs instanceof HttpDownloader) {
-                    $response = $this->rfs->get($url, $options);
-
-                    return $this->parseJson($response->getBody(), $url, $cacheKey, $response->getHeaders());
+        if ($this->rfs instanceof HttpDownloader) {
+            $loop = new Loop($this->rfs);
+            $jobs = [];
+            foreach ($urls as $url) {
+                $jobs[] = $this->rfs->add($url, $options[$url])->then(function (ComposerResponse $response) use ($url, &$responses) {
+                    if (200 === $response->getStatusCode()) {
+                        $cacheKey = preg_replace('{[^a-z0-9.]}i', '-', $url);
+                        $responses[$url] = $this->parseJson($response->getBody(), $url, $cacheKey, $response->getHeaders())->getBody();
+                    }
+                }, function (\Exception $e) use ($url, &$retries) {
+                    $retries[] = [$url, $e];
+                });
+            }
+            $loop->wait($jobs);
+        } else {
+            foreach ($urls as $i => $url) {
+                $urls[$i] = [$url];
+            }
+            $this->rfs->download($urls, function ($url) use ($options, &$responses, &$retries, &$error) {
+                try {
+                    $cacheKey = preg_replace('{[^a-z0-9.]}i', '-', $url);
+                    $json = $this->rfs->getContents($this->rfs::getOrigin($url), $url, false, $options[$url]);
+                    if (200 === $this->rfs->findStatusCode($this->rfs->getLastHeaders())) {
+                        $responses[$url] = $this->parseJson($json, $url, $cacheKey, $this->rfs->getLastHeaders())->getBody();
+                    }
+                } catch (\Exception $e) {
+                    $retries[] = [$url, $e];
                 }
+            });
+        }
 
-                $json = $this->rfs->getContents($this->endpoint, $url, false, $options);
+        if (!$retries) {
+            return $responses;
+        }
 
-                return $this->parseJson($json, $url, $cacheKey, $this->rfs->getLastHeaders());
-            } catch (\Exception $e) {
-                if ($e instanceof TransportException && 404 === $e->getStatusCode()) {
-                    throw $e;
-                }
+        if (0 < --$try) {
+            usleep(100000);
 
-                if ($retries) {
-                    usleep(100000);
-                    continue;
-                }
+            return $this->get(array_column($retries, 0), $isRecipe, $try) + $responses;
+        }
 
-                if ($cacheKey && $contents = $this->cache->read($cacheKey)) {
-                    $this->switchToDegradedMode($e, $url);
-
-                    return Response::fromJson(JsonFile::parseJson($contents, $this->cache->getRoot().$cacheKey));
-                }
-
+        foreach ($retries as [$url, $e]) {
+            if (isset($responses[$url])) {
+                $this->switchToDegradedMode($e, $url);
+            } elseif ($isRecipe) {
+                $this->io->writeError('<warning>Failed to download recipe: '.$e->getMessage().'</>');
+            } else {
                 throw $e;
             }
         }
-    }
 
-    private function fetchFileIfLastModified(string $url, string $cacheKey, string $lastModifiedTime, array $headers): Response
-    {
-        $headers[] = 'If-Modified-Since: '.$lastModifiedTime;
-        $options = $this->getOptions($headers);
-        $retries = 3;
-        while ($retries--) {
-            try {
-                if ($this->rfs instanceof HttpDownloader) {
-                    $response = $this->rfs->get($url, $options);
-                    if (304 === $response->getStatusCode()) {
-                        return new Response($response->getBody(), $response->getHeaders(), 304);
-                    }
-
-                    return $this->parseJson($response->getBody(), $url, $cacheKey, $response->getHeaders());
-                }
-
-                $json = $this->rfs->getContents($this->endpoint, $url, false, $options);
-                if (304 === $this->rfs->findStatusCode($this->rfs->getLastHeaders())) {
-                    return new Response('', $this->rfs->getLastHeaders(), 304);
-                }
-
-                return $this->parseJson($json, $url, $cacheKey, $this->rfs->getLastHeaders());
-            } catch (\Exception $e) {
-                if ($e instanceof TransportException && 404 === $e->getStatusCode()) {
-                    throw $e;
-                }
-
-                if ($retries) {
-                    usleep(100000);
-                    continue;
-                }
-
-                $this->switchToDegradedMode($e, $url);
-
-                return new Response('', [], 304);
-            }
-        }
+        return $responses;
     }
 
     private function parseJson(string $json, string $url, string $cacheKey, array $lastHeaders): Response
@@ -293,7 +354,7 @@ class Downloader
         }
 
         $response = new Response($data, $lastHeaders);
-        if ($response->getHeader('last-modified') && $cacheKey) {
+        if ($cacheKey && ($response->getHeader('last-modified') || $response->getHeader('etag'))) {
             $this->cache->write($cacheKey, json_encode($response));
         }
 
@@ -318,5 +379,31 @@ class Downloader
         }
 
         return $options;
+    }
+
+    private function initialize()
+    {
+        if (null !== $this->index || null === $this->endpoints) {
+            $this->index ?? $this->index = [];
+
+            return;
+        }
+
+        $indexes = self::$versions = self::$aliases = [];
+
+        foreach ($this->get(array_keys($this->endpoints)) as $endpoint => $index) {
+            $indexes[$endpoint] = $index;
+        }
+
+        foreach ($this->endpoints as $endpoint => $config) {
+            $config = $indexes[$endpoint] ?? [];
+            foreach ($config['recipes'] ?? [] as $package => $versions) {
+                $this->index[$package] = $this->index[$package] ?? array_fill_keys($versions, $endpoint);
+            }
+            self::$versions += $config['versions'] ?? [];
+            self::$aliases += $config['aliases'] ?? [];
+            unset($config['recipes'], $config['versions'], $config['aliases']);
+            $this->endpoints[$endpoint] = $config;
+        }
     }
 }
