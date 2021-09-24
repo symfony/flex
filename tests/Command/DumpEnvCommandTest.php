@@ -164,6 +164,46 @@ EOF;
         unlink($envLocalPhp);
     }
 
+    public function testLoadLocalEnvWhenTestEnvIsNotEqual()
+    {
+        @mkdir(FLEX_TEST_DIR);
+        $env = FLEX_TEST_DIR.'/.env';
+        $envLocal = FLEX_TEST_DIR.'/.env.local';
+        $envLocalPhp = FLEX_TEST_DIR.'/.env.local.php';
+        $composer = __DIR__.'/../../composer.json';
+        @unlink($envLocalPhp);
+
+        file_put_contents($env, 'APP_ENV=dev');
+        $envContent = <<<EOF
+APP_ENV=test
+APP_SECRET=abcdefgh123456789
+EOF;
+        file_put_contents($envLocal, $envContent);
+
+        copy($composer, FLEX_TEST_DIR.'/composer-backup.json');
+        $composerContent = @json_decode(file_get_contents($composer), true);
+        $composerContent['extra']['runtime']['test_envs'] = [];
+        file_put_contents($composer, json_encode($composerContent));
+
+        $command = $this->createCommandDumpEnv();
+        $command->execute([
+            'env' => 'test',
+        ]);
+
+        $this->assertFileExists($envLocalPhp);
+
+        $vars = require $envLocalPhp;
+        $this->assertSame([
+            'APP_ENV' => 'test',
+            'APP_SECRET' => 'abcdefgh123456789',
+        ], $vars);
+
+        unlink($env);
+        unlink($envLocal);
+        unlink($envLocalPhp);
+        copy(FLEX_TEST_DIR.'/composer-backup.json', $composer);
+    }
+
     private function createCommandDumpEnv()
     {
         $command = new DumpEnvCommand(
