@@ -13,6 +13,7 @@ namespace Symfony\Flex\Command;
 
 use Composer\Command\BaseCommand;
 use Composer\Config;
+use Composer\Factory;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -112,7 +113,13 @@ EOF;
             }
 
             if (method_exists($dotenv, 'loadEnv')) {
-                $dotenv->loadEnv($path);
+                $config = @json_decode(file_get_contents(Factory::getComposerFile()), true);
+                $dotenv->loadEnv(
+                    $path,
+                    null,
+                    'dev',
+                    $config['extra']['runtime']['test_envs'] ?? ['test']
+                );
             } else {
                 // fallback code in case your Dotenv component is not 4.2 or higher (when loadEnv() was added)
                 $dotenv->load(file_exists($path) || !file_exists($p = "$path.dist") ? $path : $p);
