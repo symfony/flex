@@ -313,7 +313,8 @@ class Downloader
             $this->rfs->download($urls, function ($url) use ($options, &$responses, &$retries, &$error) {
                 try {
                     $cacheKey = preg_replace('{[^a-z0-9.]}i', '-', $url);
-                    $json = $this->rfs->getContents($this->rfs::getOrigin($url), $url, false, $options[$url]);
+                    $origin = method_exists($this->rfs, 'getOrigin') ? $this->rfs::getOrigin($url) : parse_url($url, \PHP_URL_HOST);
+                    $json = $this->rfs->getContents($origin, $url, false, $options[$url]);
                     if (200 === $this->rfs->findStatusCode($this->rfs->getLastHeaders())) {
                         $responses[$url] = $this->parseJson($json, $url, $cacheKey, $this->rfs->getLastHeaders())->getBody();
                     }
