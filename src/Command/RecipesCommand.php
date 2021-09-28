@@ -109,7 +109,7 @@ class RecipesCommand extends BaseCommand
             $additional = null;
             if (null === $lockRef && null !== $recipe->getRef()) {
                 $additional = '<comment>(recipe not installed)</comment>';
-            } elseif ($recipe->getRef() !== $lockRef) {
+            } elseif ($recipe->getRef() !== $lockRef && !$recipe->isAuto()) {
                 $additional = '<comment>(update available)</comment>';
             }
 
