@@ -65,6 +65,9 @@ class Downloader
             }
         } elseif (\is_array($endpoint) || false !== strpos($endpoint, '.json') || 'flex://defaults' === $endpoint) {
             $this->endpoints = array_values((array) $endpoint);
+            if (\is_string($endpoint) && false !== strpos($endpoint, '.json')) {
+                $this->endpoints[] = 'flex://defaults';
+            }
         } else {
             $this->legacyEndpoint = rtrim($endpoint, '/');
         }
