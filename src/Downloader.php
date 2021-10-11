@@ -58,11 +58,6 @@ class Downloader
 
         if (null === $endpoint = $composer->getPackage()->getExtra()['symfony']['endpoint'] ?? null) {
             $this->endpoints = self::DEFAULT_ENDPOINTS;
-
-            if (!filter_var(getenv('FLEX_SERVERLESS'), \FILTER_VALIDATE_BOOLEAN)) {
-                $this->endpoints = null;
-                $this->legacyEndpoint = 'https://flex.symfony.com';
-            }
         } elseif (\is_array($endpoint) || false !== strpos($endpoint, '.json') || 'flex://defaults' === $endpoint) {
             $this->endpoints = array_values((array) $endpoint);
             if (\is_string($endpoint) && false !== strpos($endpoint, '.json')) {
