@@ -38,13 +38,13 @@ class PackageJsonSynchronizerTest extends TestCase
     {
         $this->synchronizer->synchronize([]);
 
-        // Should remove existing package references as it has been removed from the lock
         $this->assertSame(
             [
                 'name' => 'symfony/fixture',
                 'devDependencies' => [
                     '@symfony/stimulus-bridge' => '^1.0.0',
                     'stimulus' => '^1.1.1',
+                    '@symfony/existing-package' => 'file:vendor/symfony/existing-package/Resources/assets',
                 ],
                 'browserslist' => [
                     'defaults',
@@ -59,6 +59,23 @@ class PackageJsonSynchronizerTest extends TestCase
                 'entrypoints' => [],
             ],
             json_decode(file_get_contents($this->tempDir.'/assets/controllers.json'), true)
+        );
+
+        unlink($this->tempDir.'/vendor/symfony/existing-package/Resources/assets/package.json');
+        $this->synchronizer->synchronize([]);
+
+        $this->assertSame(
+            [
+                'name' => 'symfony/fixture',
+                'devDependencies' => [
+                    '@symfony/stimulus-bridge' => '^1.0.0',
+                    'stimulus' => '^1.1.1',
+                ],
+                'browserslist' => [
+                    'defaults',
+                ],
+            ],
+            json_decode(file_get_contents($this->tempDir.'/package.json'), true)
         );
     }
 
