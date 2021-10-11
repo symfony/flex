@@ -112,10 +112,10 @@ EOF;
                 throw new \RuntimeException('Please provide the name of the environment either by passing it as command line argument or by defining the "APP_ENV" variable in the ".env.local" file.');
             }
 
+            $config = @json_decode(file_get_contents(Factory::getComposerFile()), true);
             $testEnvs = $config['extra']['runtime']['test_envs'] ?? ['test'];
 
             if (method_exists($dotenv, 'loadEnv')) {
-                $config = @json_decode(file_get_contents(Factory::getComposerFile()), true);
                 $dotenv->loadEnv($path, 'APP_ENV', 'dev', $testEnvs);
             } else {
                 // fallback code in case your Dotenv component is not 4.2 or higher (when loadEnv() was added)
