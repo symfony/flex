@@ -531,7 +531,7 @@ YAML
 
     public function testConfigureWithoutExistingDockerComposeFiles()
     {
-        $dockerComposeFile = FLEX_TEST_DIR.'/docker-compose.yaml';
+        $dockerComposeFile = FLEX_TEST_DIR.'/docker-compose.yml';
         $defaultContent = "version: '3'\n";
 
         $this->configurator->configure($this->recipeDb, self::CONFIG_DB, $this->lock);
