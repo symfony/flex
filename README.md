@@ -6,8 +6,5 @@
 simple micro-style projects to the more complex ones with dozens of
 dependencies.
 
-[Discover][3] the available recipes.
-
 [1]: https://symfony.com/doc/current/setup/flex.html
 [2]: https://symfony.com
-[3]: https://flex.symfony.com
