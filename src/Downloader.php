@@ -271,7 +271,7 @@ class Downloader
         $options = [];
 
         foreach ($urls as $url) {
-            $cacheKey = preg_replace('{[^a-z0-9.]}i', '-', $url);
+            $cacheKey = self::generateCacheKey($url);
             $headers = [];
 
             if (preg_match('{^https?://api\.github\.com/}', $url)) {
@@ -300,7 +300,7 @@ class Downloader
             foreach ($urls as $url) {
                 $jobs[] = $this->rfs->add($url, $options[$url])->then(function (ComposerResponse $response) use ($url, &$responses) {
                     if (200 === $response->getStatusCode()) {
-                        $cacheKey = preg_replace('{[^a-z0-9.]}i', '-', $url);
+                        $cacheKey = self::generateCacheKey($url);
                         $responses[$url] = $this->parseJson($response->getBody(), $url, $cacheKey, $response->getHeaders())->getBody();
                     }
                 }, function (\Exception $e) use ($url, &$retries) {
@@ -314,7 +314,7 @@ class Downloader
             }
             $this->rfs->download($urls, function ($url) use ($options, &$responses, &$retries, &$error) {
                 try {
-                    $cacheKey = preg_replace('{[^a-z0-9.]}i', '-', $url);
+                    $cacheKey = self::generateCacheKey($url);
                     $origin = method_exists($this->rfs, 'getOrigin') ? $this->rfs::getOrigin($url) : parse_url($url, \PHP_URL_HOST);
                     $json = $this->rfs->getContents($origin, $url, false, $options[$url]);
                     if (200 === $this->rfs->findStatusCode($this->rfs->getLastHeaders())) {
@@ -411,5 +411,12 @@ class Downloader
             unset($config['recipes'], $config['versions'], $config['aliases']);
             $this->endpoints[$endpoint] = $config;
         }
+    }
+
+    private static function generateCacheKey(string $url): string
+    {
+        $url = preg_replace('{^https://api.github.com/repos/([^/]++/[^/]++)/contents/}', '$1/', $url);
+
+        return preg_replace('{[^a-z0-9.]}i', '-', $url);
     }
 }
