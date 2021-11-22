@@ -40,6 +40,9 @@ class UnpackerTest extends TestCase
         file_put_contents($composerJsonPath, '{}');
 
         $originalEnvComposer = getenv('COMPOSER');
+        $originalEnvComposer = $_SERVER['COMPOSER'];
+        $_SERVER['COMPOSER'] = $composerJsonPath;
+        // composer 2.1 and lower support
         putenv('COMPOSER='.$composerJsonPath);
 
         // Setup packages
@@ -49,11 +52,11 @@ class UnpackerTest extends TestCase
 
         $virtualPkgFoo = new Package('pack_foo', '1.0.0', '1.0.0');
         $virtualPkgFoo->setType('symfony-pack');
-        $virtualPkgFoo->setRequires([$realPkgLink]);
+        $virtualPkgFoo->setRequires(['real' => $realPkgLink]);
 
         $virtualPkgBar = new Package('pack_bar', '1.0.0', '1.0.0');
         $virtualPkgBar->setType('symfony-pack');
-        $virtualPkgBar->setRequires([$realPkgLink]);
+        $virtualPkgBar->setRequires(['real' => $realPkgLink]);
 
         $packages = [$realPkg, $virtualPkgFoo, $virtualPkgBar];
 
@@ -87,6 +90,12 @@ class UnpackerTest extends TestCase
 
         // Restore
 
+        if ($originalEnvComposer) {
+            $_SERVER['COMPOSER'] = $originalEnvComposer;
+        } else {
+            unset($_SERVER['COMPOSER']);
+        }
+        // composer 2.1 and lower support
         putenv('COMPOSER='.$originalEnvComposer);
         @unlink($composerJsonPath);
     }
