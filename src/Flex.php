@@ -97,7 +97,6 @@ class Flex implements PluginInterface, EventSubscriberInterface
         'remove' => false,
         'unpack' => true,
     ];
-    private $shouldUpdateComposerLock = false;
     private $filter;
 
     public function activate(Composer $composer, IOInterface $io)
@@ -427,10 +426,11 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $this->io->writeError(sprintf('<info>Symfony operations: %d recipe%s (%s)</>', \count($recipes), \count($recipes) > 1 ? 's' : '', $this->downloader->getSessionId()));
         $installContribs = $this->composer->getPackage()->getExtra()['symfony']['allow-contrib'] ?? false;
         $manifest = null;
+        $originalComposerJsonHash = $this->getComposerJsonHash();
         foreach ($recipes as $recipe) {
             if ('install' === $recipe->getJob() && !$installContribs && $recipe->isContrib()) {
                 $warning = $this->io->isInteractive() ? 'WARNING' : 'IGNORING';
-                $this->io->writeError(sprintf('  - <warning> %s </> %s', $warning, $this->formatOrigin($recipe->getOrigin())));
+                $this->io->writeError(sprintf('  - <warning> %s </> %s', $warning, $recipe->getFormattedOrigin()));
                 $question = sprintf('    The recipe for this package comes from the "contrib" repository, which is open to community contributions.
     Review the recipe at %s
 
@@ -468,13 +468,12 @@ class Flex implements PluginInterface, EventSubscriberInterface
                     $manipulator = new JsonManipulator(file_get_contents($json->getPath()));
                     $manipulator->addSubNode('extra', 'symfony.allow-contrib', true);
                     file_put_contents($json->getPath(), $manipulator->getContents());
-                    $this->shouldUpdateComposerLock = true;
                 }
             }
 
             switch ($recipe->getJob()) {
                 case 'install':
-                    $this->io->writeError(sprintf('  - Configuring %s', $this->formatOrigin($recipe->getOrigin())));
+                    $this->io->writeError(sprintf('  - Configuring %s', $recipe->getFormattedOrigin()));
                     $this->configurator->install($recipe, $this->lock, [
                         'force' => $event instanceof UpdateEvent && $event->force(),
                     ]);
@@ -491,7 +490,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
                 case 'update':
                     break;
                 case 'uninstall':
-                    $this->io->writeError(sprintf('  - Unconfiguring %s', $this->formatOrigin($recipe->getOrigin())));
+                    $this->io->writeError(sprintf('  - Unconfiguring %s', $recipe->getFormattedOrigin()));
                     $this->configurator->unconfigure($recipe, $this->lock);
                     break;
             }
@@ -512,7 +511,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $this->synchronizePackageJson($rootDir);
         $this->lock->write();
 
-        if ($this->shouldUpdateComposerLock) {
+        if ($this->getComposerJsonHash() !== $originalComposerJsonHash) {
             $this->updateComposerLock();
         }
     }
@@ -808,16 +807,6 @@ class Flex implements PluginInterface, EventSubscriberInterface
         return new Options($options, $this->io);
     }
 
-    private function formatOrigin(string $origin): string
-    {
-        // symfony/translation:3.3@github.com/symfony/recipes:branch
-        if (!preg_match('/^([^:]++):([^@]++)@(.+)$/', $origin, $matches)) {
-            return $origin;
-        }
-
-        return sprintf('<info>%s</> (<comment>>=%s</>): From %s', $matches[1], $matches[2], 'auto-generated recipe' === $matches[3] ? '<comment>'.$matches[3].'</>' : $matches[3]);
-    }
-
     private function shouldRecordOperation(PackageEvent $event): bool
     {
         $operation = $event->getOperation();
@@ -980,5 +969,10 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
 
         return $events;
+    }
+
+    private function getComposerJsonHash(): string
+    {
+        return md5_file(Factory::getComposerFile());
     }
 }

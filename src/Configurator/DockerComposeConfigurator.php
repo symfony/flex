@@ -12,7 +12,10 @@
 namespace Symfony\Flex\Configurator;
 
 use Composer\Composer;
+use Composer\Factory;
 use Composer\IO\IOInterface;
+use Composer\Json\JsonFile;
+use Composer\Json\JsonManipulator;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Flex\Lock;
 use Symfony\Flex\Options;
@@ -27,6 +30,8 @@ class DockerComposeConfigurator extends AbstractConfigurator
 {
     private $filesystem;
 
+    public static $configureDockerRecipes = null;
+
     public function __construct(Composer $composer, IOInterface $io, Options $options)
     {
         parent::__construct($composer, $io, $options);
@@ -36,8 +41,7 @@ class DockerComposeConfigurator extends AbstractConfigurator
 
     public function configure(Recipe $recipe, $config, Lock $lock, array $options = [])
     {
-        $installDocker = $this->composer->getPackage()->getExtra()['symfony']['docker'] ?? true;
-        if (!$installDocker) {
+        if (!self::shouldConfigureDockerRecipe($this->composer, $this->io, $recipe)) {
             return;
         }
 
@@ -126,6 +130,72 @@ class DockerComposeConfigurator extends AbstractConfigurator
         }
 
         $this->write('Docker Compose definitions have been modified. Please run "docker-compose up" again to apply the changes.');
+    }
+
+    public static function shouldConfigureDockerRecipe(Composer $composer, IOInterface $io, Recipe $recipe): bool
+    {
+        if (null !== self::$configureDockerRecipes) {
+            return self::$configureDockerRecipes;
+        }
+
+        if (null !== $dockerPreference = $composer->getPackage()->getExtra()['symfony']['docker'] ?? null) {
+            self::$configureDockerRecipes = $dockerPreference;
+
+            return self::$configureDockerRecipes;
+        }
+
+        if ('install' !== $recipe->getJob()) {
+            // default to not configuring
+            return false;
+        }
+
+        $warning = $io->isInteractive() ? 'WARNING' : 'IGNORING';
+        $io->writeError(sprintf('  - <warning> %s </> %s', $warning, $recipe->getFormattedOrigin()));
+        $question = '    The recipe for this package contains some Docker configuration.
+
+    This may create/update <comment>docker-compose.yml</comment> or update <comment>Dockerfile</comment> (if it exists).
+
+    Do you want to include Docker configuration from recipes?
+    [<comment>y</>] Yes
+    [<comment>n</>] No
+    [<comment>p</>] Yes permanently, never ask again for this project
+    [<comment>x</>] No permanently, never ask again for this project
+    (defaults to <comment>y</>): ';
+        $answer = $io->askAndValidate(
+            $question,
+            function ($value) {
+                if (null === $value) {
+                    return 'y';
+                }
+                $value = strtolower($value[0]);
+                if (!\in_array($value, ['y', 'n', 'p', 'x'], true)) {
+                    throw new \InvalidArgumentException('Invalid choice.');
+                }
+
+                return $value;
+            },
+            null,
+            'y'
+        );
+        if ('n' === $answer) {
+            self::$configureDockerRecipes = false;
+
+            return self::$configureDockerRecipes;
+        }
+        if ('y' === $answer) {
+            self::$configureDockerRecipes = true;
+
+            return self::$configureDockerRecipes;
+        }
+
+        // yes or no permanently
+        self::$configureDockerRecipes = 'p' === $answer;
+        $json = new JsonFile(Factory::getComposerFile());
+        $manipulator = new JsonManipulator(file_get_contents($json->getPath()));
+        $manipulator->addSubNode('extra', 'symfony.docker', self::$configureDockerRecipes);
+        file_put_contents($json->getPath(), $manipulator->getContents());
+
+        return self::$configureDockerRecipes;
     }
 
     /**
