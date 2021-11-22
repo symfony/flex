@@ -13,14 +13,12 @@ namespace Symfony\Flex;
 
 use Composer\Composer;
 use Composer\Config\JsonConfigSource;
-use Composer\DependencyResolver\Pool;
 use Composer\Factory;
 use Composer\IO\IOInterface;
 use Composer\Json\JsonFile;
 use Composer\Json\JsonManipulator;
 use Composer\Package\Locker;
 use Composer\Package\Version\VersionSelector;
-use Composer\Plugin\PluginInterface;
 use Composer\Repository\CompositeRepository;
 use Composer\Repository\RepositorySet;
 use Composer\Semver\VersionParser;
@@ -105,8 +103,7 @@ class Unpacker
 
                         if ('*' === $constraint) {
                             if (null === $versionSelector) {
-                                $pool = class_exists(RepositorySet::class) ? RepositorySet::class : Pool::class;
-                                $pool = new $pool($this->composer->getPackage()->getMinimumStability(), $this->composer->getPackage()->getStabilityFlags());
+                                $pool = new RepositorySet($this->composer->getPackage()->getMinimumStability(), $this->composer->getPackage()->getStabilityFlags());
                                 $pool->addRepository(new CompositeRepository($this->composer->getRepositoryManager()->getRepositories()));
                                 $versionSelector = new VersionSelector($pool);
                             }
@@ -205,11 +202,7 @@ class Unpacker
         }
 
         // force removal of files under vendor/
-        if (version_compare('2.0.0', PluginInterface::PLUGIN_API_VERSION, '>')) {
-            $locker = new Locker($io, $lockFile, $this->composer->getRepositoryManager(), $this->composer->getInstallationManager(), $jsonContent);
-        } else {
-            $locker = new Locker($io, $lockFile, $this->composer->getInstallationManager(), $jsonContent);
-        }
+        $locker = new Locker($io, $lockFile, $this->composer->getInstallationManager(), $jsonContent);
         $this->composer->setLocker($locker);
     }
 }

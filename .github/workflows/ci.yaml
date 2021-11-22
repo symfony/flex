@@ -19,13 +19,8 @@ jobs:
             fail-fast: false
             matrix:
                 include:
-                  - php: '7.1'
-                  - php: '7.2'
-                  - php: '7.3'
-                  - php: '7.4'
                   - php: '8.0'
                   - php: '8.1'
-                  - php: '7.4'
                     mode: low-deps
 
         steps:
@@ -42,9 +37,8 @@ jobs:
             - name: "Validate composer.json"
               run: "composer validate --strict --no-check-lock"
 
-            - run: |
-                composer require --no-update composer/composer:^1.0.2 --ansi
-
+            - name: "Install dependencies"
+              run: |
                 if [[ "${{ matrix.mode }}" = low-deps ]]; then
                     composer u --prefer-lowest --prefer-stable --ansi
                 else
@@ -56,17 +50,6 @@ jobs:
 
             - run: vendor/bin/simple-phpunit
 
-            - run: |
-                composer require --no-update composer/composer:^2 --ansi
-
-                if [[ "${{ matrix.mode }}" = low-deps ]]; then
-                    composer u --prefer-lowest --prefer-stable --ansi
-                else
-                    composer u --ansi
-                fi
-
-            - run: vendor/bin/simple-phpunit
-
-            - if: matrix.php == '7.1'
+            - if: matrix.php == '8.0'
               name: "Lint PHP files"
               run: find src/ -name '*.php' | xargs -n1 php -l

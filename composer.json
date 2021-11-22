@@ -11,25 +11,28 @@
     ],
     "minimum-stability": "dev",
     "require": {
-        "php": ">=7.1",
-        "composer-plugin-api": "^1.0|^2.0"
+        "php": ">=8.0",
+        "composer-plugin-api": "^2.1"
     },
     "require-dev": {
-        "composer/composer": "^1.0.2|^2.0",
-        "symfony/dotenv": "^4.4|^5.0|^6.0",
-        "symfony/filesystem": "^4.4|^5.0|^6.0",
-        "symfony/phpunit-bridge": "^4.4.12|^5.0|^6.0",
-        "symfony/process": "^4.4|^5.0|^6.0"
+        "composer/composer": "^2.1",
+        "symfony/dotenv": "^5.4|^6.0",
+        "symfony/filesystem": "^5.4|^6.0",
+        "symfony/phpunit-bridge": "^5.4|^6.0",
+        "symfony/process": "^5.4|^6.0"
     },
     "autoload": {
         "psr-4": {
             "Symfony\\Flex\\": "src"
         }
     },
+    "replace": {
+        "symfony/polyfill-php72": "*",
+        "symfony/polyfill-php73": "*",
+        "symfony/polyfill-php74": "*",
+        "symfony/polyfill-php80": "*"
+    },
     "extra": {
-        "branch-alias": {
-            "dev-main": "1.17-dev"
-        },
         "class": "Symfony\\Flex\\Flex"
     }
 }
