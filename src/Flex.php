@@ -356,7 +356,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $contents = file_get_contents($file);
         $json = JsonFile::parseJson($contents);
 
-        if (!isset($json['flex-require']) && !isset($json['flex-require'])) {
+        if (!isset($json['flex-require']) && !isset($json['flex-require-dev'])) {
             $this->unpack($event);
 
             return;
