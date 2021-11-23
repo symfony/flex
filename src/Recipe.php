@@ -113,6 +113,6 @@ class Recipe
 
     public function getVersion(): string
     {
-        return $this->lock['version'];
+        return $this->lock['recipe']['version'] ?? $this->lock['version'];
     }
 }

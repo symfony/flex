@@ -156,6 +156,7 @@ class RecipesCommand extends BaseCommand
         $lockRepo = $recipeLock['recipe']['repo'] ?? null;
         $lockFiles = $recipeLock['files'] ?? null;
         $lockBranch = $recipeLock['recipe']['branch'] ?? null;
+        $lockVersion = $recipeLock['recipe']['version'] ?? $recipeLock['version'] ?? null;
 
         $status = '<comment>up to date</comment>';
         if ($recipe->isAuto()) {
@@ -174,7 +175,7 @@ class RecipesCommand extends BaseCommand
                     $recipe->getName(),
                     $lockRepo,
                     $lockBranch ?? '',
-                    $recipeLock['version'],
+                    $lockVersion,
                     $lockRef
                 );
             } catch (TransportException $exception) {
@@ -183,16 +184,16 @@ class RecipesCommand extends BaseCommand
         }
 
         $io->write('<info>name</info>             : '.$recipe->getName());
-        $io->write('<info>version</info>          : '.($recipeLock['version'] ?? 'n/a'));
+        $io->write('<info>version</info>          : '.($lockVersion ?? 'n/a'));
         $io->write('<info>status</info>           : '.$status);
-        if (!$recipe->isAuto() && isset($recipeLock['version'])) {
+        if (!$recipe->isAuto() && null !== $lockVersion) {
             $recipeUrl = sprintf(
                 'https://%s/tree/%s/%s/%s',
                 $lockRepo,
                 // if something fails, default to the branch as the closest "sha"
                 $gitSha ?? $lockBranch,
                 $recipe->getName(),
-                $recipeLock['version']
+                $lockVersion
             );
 
             $io->write('<info>installed recipe</info> : '.$recipeUrl);
@@ -202,7 +203,7 @@ class RecipesCommand extends BaseCommand
             $io->write('<info>latest recipe</info>    : '.$recipe->getURL());
         }
 
-        if ($lockRef !== $recipe->getRef() && isset($recipeLock['version'])) {
+        if ($lockRef !== $recipe->getRef() && null !== $lockVersion) {
             $historyUrl = sprintf(
                 'https://%s/commits/%s/%s',
                 $lockRepo,
