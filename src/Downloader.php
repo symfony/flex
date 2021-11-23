@@ -29,8 +29,8 @@ use Composer\Util\Loop;
 class Downloader
 {
     private const DEFAULT_ENDPOINTS = [
-        'https://api.github.com/repos/symfony/recipes/contents/index.json?ref=flex/main',
-        'https://api.github.com/repos/symfony/recipes-contrib/contents/index.json?ref=flex/main',
+        'https://raw.githubusercontent.com/symfony/recipes/flex/main/index.json',
+        'https://raw.githubusercontent.com/symfony/recipes-contrib/flex/main/index.json',
     ];
     private const MAX_LENGTH = 1000;
 
@@ -416,6 +416,7 @@ class Downloader
     private static function generateCacheKey(string $url): string
     {
         $url = preg_replace('{^https://api.github.com/repos/([^/]++/[^/]++)/contents/}', '$1/', $url);
+        $url = preg_replace('{^https://raw.githubusercontent.com/([^/]++/[^/]++)/}', '$1/', $url);
 
         return preg_replace('{[^a-z0-9.]}i', '-', $url);
     }
