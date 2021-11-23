@@ -67,6 +67,20 @@ class Recipe
         return $this->data['origin'] ?? '';
     }
 
+    public function getFormattedOrigin(): string
+    {
+        if (!$this->getOrigin()) {
+            return '';
+        }
+
+        // symfony/translation:3.3@github.com/symfony/recipes:branch
+        if (!preg_match('/^([^:]++):([^@]++)@(.+)$/', $this->getOrigin(), $matches)) {
+            return $this->getOrigin();
+        }
+
+        return sprintf('<info>%s</> (<comment>>=%s</>): From %s', $matches[1], $matches[2], 'auto-generated recipe' === $matches[3] ? '<comment>'.$matches[3].'</>' : $matches[3]);
+    }
+
     public function getURL(): string
     {
         if (!$this->data['origin']) {
@@ -99,6 +113,6 @@ class Recipe
 
     public function getVersion(): string
     {
-        return $this->lock['version'];
+        return $this->lock['recipe']['version'] ?? $this->lock['version'];
     }
 }

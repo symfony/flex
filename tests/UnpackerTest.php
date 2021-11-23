@@ -39,7 +39,6 @@ class UnpackerTest extends TestCase
         @unlink($composerJsonPath);
         file_put_contents($composerJsonPath, '{}');
 
-        $originalEnvComposer = getenv('COMPOSER');
         $originalEnvComposer = $_SERVER['COMPOSER'];
         $_SERVER['COMPOSER'] = $composerJsonPath;
         // composer 2.1 and lower support

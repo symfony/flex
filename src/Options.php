@@ -68,7 +68,7 @@ class Options
         exec('git status --short --ignored --untracked-files=all -- '.ProcessExecutor::escape($file).' 2>&1', $output, $status);
 
         if (0 !== $status) {
-            return (bool) $this->io && $this->io->askConfirmation(sprintf('Cannot determine the state of the "%s" file, overwrite anyway? [y/N] ', $file), false);
+            return $this->io && $this->io->askConfirmation(sprintf('Cannot determine the state of the "%s" file, overwrite anyway? [y/N] ', $file), false);
         }
 
         if (empty($output[0]) || preg_match('/^[ AMDRCU][ D][ \t]/', $output[0])) {
@@ -78,7 +78,7 @@ class Options
         $name = basename($file);
         $name = \strlen($output[0]) - \strlen($name) === strrpos($output[0], $name) ? substr($output[0], 3) : $name;
 
-        return (bool) $this->io && $this->io->askConfirmation(sprintf('File "%s" has uncommitted changes, overwrite? [y/N] ', $name), false);
+        return $this->io && $this->io->askConfirmation(sprintf('File "%s" has uncommitted changes, overwrite? [y/N] ', $name), false);
     }
 
     public function toArray(): array

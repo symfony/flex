@@ -107,12 +107,28 @@ YAML;
     /** @var Composer|\PHPUnit\Framework\MockObject\MockObject */
     private $composer;
 
+    /** @var IOInterface|\PHPUnit\Framework\MockObject\MockObject */
+    private $io;
+
     /** @var DockerComposeConfigurator */
     private $configurator;
+
+    /** @var Package */
+    private $package;
+
+    private $originalEnvComposer;
 
     protected function setUp(): void
     {
         @mkdir(FLEX_TEST_DIR);
+
+        $this->originalEnvComposer = $_SERVER['COMPOSER'] ?? null;
+        $_SERVER['COMPOSER'] = FLEX_TEST_DIR.'/composer.json';
+        // composer 2.1 and lower support
+        putenv('COMPOSER='.FLEX_TEST_DIR.'/composer.json');
+
+        // reset state
+        DockerComposeConfigurator::$configureDockerRecipes = null;
 
         // Recipe
         $this->recipeDb = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
@@ -122,15 +138,17 @@ YAML;
         $this->lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
 
         // Configurator
-        $package = new Package('dummy/dummy', '1.0.0', '1.0.0');
-        $package->setExtra(['symfony' => ['docker' => true]]);
+        $this->package = new Package('dummy/dummy', '1.0.0', '1.0.0');
+        $this->package->setExtra(['symfony' => ['docker' => true]]);
 
         $this->composer = $this->getMockBuilder(Composer::class)->getMock();
-        $this->composer->method('getPackage')->willReturn($package);
+        $this->composer->method('getPackage')->willReturn($this->package);
+
+        $this->io = $this->getMockBuilder(IOInterface::class)->getMock();
 
         $this->configurator = new DockerComposeConfigurator(
             $this->composer,
-            $this->getMockBuilder(IOInterface::class)->getMock(),
+            $this->io,
             new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
         );
     }
@@ -138,11 +156,19 @@ YAML;
     protected function tearDown(): void
     {
         unset($_SERVER['COMPOSE_FILE']);
+        if ($this->originalEnvComposer) {
+            $_SERVER['COMPOSER'] = $this->originalEnvComposer;
+        } else {
+            unset($_SERVER['COMPOSER']);
+        }
+        // composer 2.1 and lower support
+        putenv('COMPOSER='.$this->originalEnvComposer);
 
         (new Filesystem())->remove([
             FLEX_TEST_DIR.'/docker-compose.yml',
             FLEX_TEST_DIR.'/docker-compose.override.yml',
             FLEX_TEST_DIR.'/docker-compose.yaml',
+            FLEX_TEST_DIR.'/composer.json',
             FLEX_TEST_DIR.'/child/docker-compose.override.yaml',
             FLEX_TEST_DIR.'/child',
         ]);
@@ -182,6 +208,52 @@ YAML
 
         $this->configurator->unconfigure($this->recipeDb, self::CONFIG_DB, $this->lock);
         $this->assertEquals(self::ORIGINAL_CONTENT, file_get_contents($dockerComposeFile));
+    }
+
+    public function testNotConfiguredIfConfigSet()
+    {
+        $this->package->setExtra(['symfony' => ['docker' => false]]);
+        $this->configurator->configure($this->recipeDb, self::CONFIG_DB, $this->lock);
+
+        $this->assertFileDoesNotExist(FLEX_TEST_DIR.'/docker-compose.yml');
+    }
+
+    /**
+     * @dataProvider getInteractiveDockerPreferenceTests
+     */
+    public function testPreferenceAskedInteractively(string $userInput, bool $expectedIsConfigured, bool $expectedIsComposerJsonUpdated)
+    {
+        $composerJsonPath = FLEX_TEST_DIR.'/composer.json';
+        file_put_contents($composerJsonPath, json_encode(['name' => 'test/app']));
+
+        $this->package->setExtra(['symfony' => []]);
+        $this->recipeDb->method('getJob')->willReturn('install');
+        $this->io->method('isInteractive')->willReturn(true);
+        $this->io->expects($this->once())->method('askAndValidate')->willReturn($userInput);
+
+        $this->configurator->configure($this->recipeDb, self::CONFIG_DB, $this->lock);
+
+        if ($expectedIsConfigured) {
+            $this->assertFileExists(FLEX_TEST_DIR.'/docker-compose.yml');
+        } else {
+            $this->assertFileDoesNotExist(FLEX_TEST_DIR.'/docker-compose.yml');
+        }
+
+        $composerJsonData = json_decode(file_get_contents($composerJsonPath), true);
+        if ($expectedIsComposerJsonUpdated) {
+            $this->assertArrayHasKey('extra', $composerJsonData);
+            $this->assertSame($expectedIsConfigured, $composerJsonData['extra']['symfony']['docker']);
+        } else {
+            $this->assertArrayNotHasKey('extra', $composerJsonData);
+        }
+    }
+
+    public function getInteractiveDockerPreferenceTests()
+    {
+        yield 'yes_once' => ['y', true, false];
+        yield 'no_once' => ['n', false, false];
+        yield 'yes_forever' => ['p', true, true];
+        yield 'no_forever' => ['x', false, true];
     }
 
     public function testConfigureFileWithExistingVolumes()
