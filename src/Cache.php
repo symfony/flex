@@ -130,6 +130,9 @@ class Cache extends BaseCache
         $this->downloader = null;
         $okVersions = [];
 
+        if (!isset($versions['splits'])) {
+            throw new \LogicException('The Flex index is missing a "splits" entry. Did you forget to add "flex://defaults" in the "extra.symfony.endpoint" array of your composer.json?');
+        }
         foreach ($versions['splits'] as $name => $vers) {
             foreach ($vers as $i => $v) {
                 if (!isset($okVersions[$v])) {
