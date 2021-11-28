@@ -1,0 +1,60 @@
+---------------------------------------------------------------------------
+
+by Nyholm at 2021-11-22T18:22:26Z
+
+Except for "remove legacy code", is there reason to release a new major version?
+
+---------------------------------------------------------------------------
+
+by weaverryan at 2021-11-22T18:23:52Z
+
+Should the branch be called `2.x`?
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2021-11-22T18:25:28Z
+
+Since Symfony 6 is already requiring composer >= 2.1, I think it's just the right timing to fade out this legacy code yes. Eg I don't want to maintain the CurlDownloader anylonger, and keeping it alive in maintained version is a :bomb: waiting to explode on my free time :) The earlier the better.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2021-11-22T18:26:06Z
+
+> Should the branch be called 2.x?
+
+then we'd drop `main`? could be
+
+---------------------------------------------------------------------------
+
+by weaverryan at 2021-11-22T18:38:25Z
+
+> then we'd drop main? could be
+
+That's what I was thinking. The `main` branch feels more and more of an "odd ball" to me compared to `1.x`, `2.x` branches anyways.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2021-11-22T18:43:02Z
+
+`main` dropped, welcome `2.x` :)
+
+---------------------------------------------------------------------------
+
+by GromNaN at 2021-11-22T20:24:22Z
+
+How long do you think the branch 1.x should be supported? PHP 7.4 EOL is in 1 year, and Symfony 5.4 EOL (with PHP 7.2 support) is in 4 years.
+
+If we want to push adoption in order to not maintain legacy code, I think PHP requirements should stay to 7.4 max for now. PHP 8 has several breaking changes that make some projects hard to update.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2021-11-23T09:00:52Z
+
+> How long do you think the branch 1.x should be supported? PHP 7.4 EOL is in 1 year, and Symfony 5.4 EOL (with PHP 7.2 support) is in 4 years.
+
+With 5.4 the latest, earlier if possible. [Stats](https://packagist.org/packages/symfony/flex/stats#major/1) might help decide.
+We should continue merging new features in `1.x` of course, since flex is the way to push better DX to our ecosystem.
+
+> If we want to push adoption in order to not maintain legacy code, I think PHP requirements should stay to 7.4 max for now. PHP 8 has several breaking changes that make some projects hard to update.
+
+Symfony 6 is already for PHP8, there is no point in having flex use different versions than both 5.4 and 6.0 to me.
