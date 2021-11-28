@@ -15,7 +15,6 @@ use Composer\Command\RequireCommand as BaseRequireCommand;
 use Composer\Factory;
 use Composer\Json\JsonFile;
 use Composer\Json\JsonManipulator;
-use Composer\Plugin\PluginInterface;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -54,10 +53,6 @@ class RequireCommand extends BaseRequireCommand
         $packages = $this->resolver->resolve($input->getArgument('packages'), true);
         if ($packages) {
             $input->setArgument('packages', $this->resolver->resolve($input->getArgument('packages'), true));
-        }
-
-        if (version_compare('2.0.0', PluginInterface::PLUGIN_API_VERSION, '>') && $input->hasOption('no-suggest')) {
-            $input->setOption('no-suggest', true);
         }
 
         $file = Factory::getComposerFile();

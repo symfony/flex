@@ -228,12 +228,10 @@ class PackageJsonSynchronizer
      */
     private function compactConstraints(array $constraints): string
     {
-        if (method_exists(Intervals::class, 'isSubsetOf')) {
-            foreach ($constraints as $k1 => $constraint1) {
-                foreach ($constraints as $k2 => $constraint2) {
-                    if ($k1 !== $k2 && Intervals::isSubsetOf($constraint1, $constraint2)) {
-                        unset($constraints[$k2]);
-                    }
+        foreach ($constraints as $k1 => $constraint1) {
+            foreach ($constraints as $k2 => $constraint2) {
+                if ($k1 !== $k2 && Intervals::isSubsetOf($constraint1, $constraint2)) {
+                    unset($constraints[$k2]);
                 }
             }
         }

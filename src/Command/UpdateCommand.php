@@ -12,7 +12,6 @@
 namespace Symfony\Flex\Command;
 
 use Composer\Command\UpdateCommand as BaseUpdateCommand;
-use Composer\Plugin\PluginInterface;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Flex\PackageResolver;
@@ -31,10 +30,6 @@ class UpdateCommand extends BaseUpdateCommand
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $input->setArgument('packages', $this->resolver->resolve($input->getArgument('packages')));
-
-        if (version_compare('2.0.0', PluginInterface::PLUGIN_API_VERSION, '>') && $input->hasOption('no-suggest')) {
-            $input->setOption('no-suggest', true);
-        }
 
         return parent::execute($input, $output);
     }
