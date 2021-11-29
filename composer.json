@@ -26,12 +26,6 @@
             "Symfony\\Flex\\": "src"
         }
     },
-    "replace": {
-        "symfony/polyfill-php72": "*",
-        "symfony/polyfill-php73": "*",
-        "symfony/polyfill-php74": "*",
-        "symfony/polyfill-php80": "*"
-    },
     "extra": {
         "class": "Symfony\\Flex\\Flex"
     }
