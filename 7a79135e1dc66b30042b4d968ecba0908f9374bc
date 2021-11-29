@@ -1,0 +1,24 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2021-11-28T17:39:58Z
+
+Hmm, on the other side, an endpoint that doesn't declare splits is likely broken as that means the `extra.symfony.require` entry will not work.
+Maybe we should throw instead?
+
+---------------------------------------------------------------------------
+
+by gnito-org at 2021-11-28T18:55:13Z
+
+Which specific exception would be the most appropriate to throw?
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2021-11-28T18:55:58Z
+
+A LogicException would be fine to me.
+
+---------------------------------------------------------------------------
+
+by gnito-org at 2021-11-28T19:06:12Z
+
+I changed the PR to throw a LogicException.
