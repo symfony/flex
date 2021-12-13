@@ -20,13 +20,14 @@ use Symfony\Flex\Configurator\DockerComposeConfigurator;
 use Symfony\Flex\Lock;
 use Symfony\Flex\Options;
 use Symfony\Flex\Recipe;
+use Symfony\Flex\Update\RecipeUpdate;
 
 /**
  * @author Kévin Dunglas <dunglas@gmail.com>
  */
 class DockerComposeConfiguratorTest extends TestCase
 {
-    const ORIGINAL_CONTENT = <<<'YAML'
+    public const ORIGINAL_CONTENT = <<<'YAML'
 version: '3.4'
 
 services:
@@ -75,7 +76,7 @@ services:
 
 YAML;
 
-    const CONFIG_DB = [
+    public const CONFIG_DB = [
         'services' => [
             'db:',
             '  image: mariadb:10.3',
@@ -93,7 +94,7 @@ YAML;
         'volumes' => ['db-data: {}'],
     ];
 
-    const CONFIG_DB_MULTIPLE_FILES = [
+    public const CONFIG_DB_MULTIPLE_FILES = [
         'docker-compose.yml' => self::CONFIG_DB,
         'docker-compose.override.yml' => self::CONFIG_DB,
     ];
@@ -636,5 +637,177 @@ YAML
 
         $this->configurator->unconfigure($this->recipeDb, self::CONFIG_DB, $this->lock);
         $this->assertEquals(trim($defaultContent), file_get_contents($dockerComposeFile));
+    }
+
+    public function testUpdate()
+    {
+        $recipe = $this->createMock(Recipe::class);
+        $recipe->method('getName')
+            ->willReturn('doctrine/doctrine-bundle');
+
+        $recipeUpdate = new RecipeUpdate(
+            $recipe,
+            $recipe,
+            $this->createMock(Lock::class),
+            FLEX_TEST_DIR
+        );
+
+        @mkdir(FLEX_TEST_DIR);
+        file_put_contents(
+            FLEX_TEST_DIR.'/docker-compose.yml',
+            <<<EOF
+version: '3'
+
+services:
+###> doctrine/doctrine-bundle ###
+  database:
+    image: postgres:13-alpine
+    environment:
+      POSTGRES_DB: app
+      POSTGRES_PASSWORD: CUSTOMIZED_PASSWORD
+      POSTGRES_USER: CUSTOMIZED_USER
+    volumes:
+      - db-data:/var/lib/postgresql/data:rw
+###< doctrine/doctrine-bundle ###
+
+###> symfony/mercure-bundle ###
+  mercure:
+    image: dunglas/mercure
+    restart: unless-stopped
+    # Comment the following line to disable the development mode
+    command: /usr/bin/caddy run -config /etc/caddy/Caddyfile.dev
+    volumes:
+      - mercure_data:/data
+      - mercure_config:/config
+###< symfony/mercure-bundle ###
+
+volumes:
+###> doctrine/doctrine-bundle ###
+  db-data:
+###< doctrine/doctrine-bundle ###
+
+###> symfony/mercure-bundle ###
+  mercure_data:
+  mercure_config:
+###< symfony/mercure-bundle ###
+
+EOF
+        );
+
+        $this->configurator->update(
+            $recipeUpdate,
+            [
+                'docker-compose.yml' => [
+                    'services' => [
+                        'database:',
+                        '  image: postgres:13-alpine',
+                        '  environment:',
+                        '    POSTGRES_DB: app',
+                        '    POSTGRES_PASSWORD: ChangeMe',
+                        '    POSTGRES_USER: symfony',
+                        '  volumes:',
+                        '    - db-data:/var/lib/postgresql/data:rw',
+                    ],
+                    'volumes' => [
+                        'db-data:',
+                    ],
+                ],
+            ],
+            [
+                'docker-compose.yml' => [
+                    'services' => [
+                        'database:',
+                        '  image: postgres:13-alpine',
+                        '  environment:',
+                        '    POSTGRES_DB: app',
+                        '    POSTGRES_PASSWORD: ChangeMe',
+                        '    POSTGRES_USER: symfony',
+                        '  volumes:',
+                        '    - MY_DATABASE-data:/var/lib/postgresql/data:rw',
+                    ],
+                    'volumes' => [
+                        'MY_DATABASE:',
+                    ],
+                ],
+            ]
+        );
+
+        $this->assertSame(['docker-compose.yml' => <<<EOF
+version: '3'
+
+services:
+###> doctrine/doctrine-bundle ###
+  database:
+    image: postgres:13-alpine
+    environment:
+      POSTGRES_DB: app
+      POSTGRES_PASSWORD: ChangeMe
+      POSTGRES_USER: symfony
+    volumes:
+      - db-data:/var/lib/postgresql/data:rw
+###< doctrine/doctrine-bundle ###
+
+###> symfony/mercure-bundle ###
+  mercure:
+    image: dunglas/mercure
+    restart: unless-stopped
+    # Comment the following line to disable the development mode
+    command: /usr/bin/caddy run -config /etc/caddy/Caddyfile.dev
+    volumes:
+      - mercure_data:/data
+      - mercure_config:/config
+###< symfony/mercure-bundle ###
+
+volumes:
+###> doctrine/doctrine-bundle ###
+  db-data:
+###< doctrine/doctrine-bundle ###
+
+###> symfony/mercure-bundle ###
+  mercure_data:
+  mercure_config:
+###< symfony/mercure-bundle ###
+
+EOF
+        ], $recipeUpdate->getOriginalFiles());
+
+        $this->assertSame(['docker-compose.yml' => <<<EOF
+version: '3'
+
+services:
+###> doctrine/doctrine-bundle ###
+  database:
+    image: postgres:13-alpine
+    environment:
+      POSTGRES_DB: app
+      POSTGRES_PASSWORD: ChangeMe
+      POSTGRES_USER: symfony
+    volumes:
+      - MY_DATABASE-data:/var/lib/postgresql/data:rw
+###< doctrine/doctrine-bundle ###
+
+###> symfony/mercure-bundle ###
+  mercure:
+    image: dunglas/mercure
+    restart: unless-stopped
+    # Comment the following line to disable the development mode
+    command: /usr/bin/caddy run -config /etc/caddy/Caddyfile.dev
+    volumes:
+      - mercure_data:/data
+      - mercure_config:/config
+###< symfony/mercure-bundle ###
+
+volumes:
+###> doctrine/doctrine-bundle ###
+  MY_DATABASE:
+###< doctrine/doctrine-bundle ###
+
+###> symfony/mercure-bundle ###
+  mercure_data:
+  mercure_config:
+###< symfony/mercure-bundle ###
+
+EOF
+        ], $recipeUpdate->getNewFiles());
     }
 }

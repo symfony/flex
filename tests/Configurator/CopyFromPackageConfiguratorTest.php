@@ -73,8 +73,7 @@ class CopyFromPackageConfiguratorTest extends TestCase
 
     public function testSourceFileNotExist()
     {
-        $this->io->expects($this->at(0))->method('writeError')->with(['    Copying files from package']);
-        $this->io->expects($this->at(1))->method('writeError')->with(['      Created <fg=green>"./public/"</>']);
+        $this->io->expects($this->once())->method('writeError')->with(['    Copying files from package']);
         $this->expectException(LogicException::class);
         $this->expectExceptionMessage(sprintf('File "%s" does not exist!', $this->sourceFile));
         $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();

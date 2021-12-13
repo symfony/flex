@@ -1,0 +1,13 @@
+{
+    "type": "project",
+    "license": "proprietary",
+    "require": {
+        "php": ">=7.1",
+        "symfony/console": "5.4.*"
+    },
+    "config": {
+        "allow-plugins": {
+            "symfony/flex": true
+        }
+    }
+}

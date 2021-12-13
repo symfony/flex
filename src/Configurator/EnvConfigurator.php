@@ -13,6 +13,7 @@ namespace Symfony\Flex\Configurator;
 
 use Symfony\Flex\Lock;
 use Symfony\Flex\Recipe;
+use Symfony\Flex\Update\RecipeUpdate;
 
 /**
  * @author Fabien Potencier <fabien@symfony.com>
@@ -35,6 +36,17 @@ class EnvConfigurator extends AbstractConfigurator
         $this->unconfigurePhpUnit($recipe, $vars);
     }
 
+    public function update(RecipeUpdate $recipeUpdate, array $originalConfig, array $newConfig): void
+    {
+        $recipeUpdate->addOriginalFiles(
+            $this->getContentsAfterApplyingRecipe($recipeUpdate->getRootDir(), $recipeUpdate->getOriginalRecipe(), $originalConfig)
+        );
+
+        $recipeUpdate->addNewFiles(
+            $this->getContentsAfterApplyingRecipe($recipeUpdate->getRootDir(), $recipeUpdate->getNewRecipe(), $newConfig)
+        );
+    }
+
     private function configureEnvDist(Recipe $recipe, $vars, bool $update)
     {
         foreach (['.env.dist', '.env'] as $file) {
@@ -49,7 +61,8 @@ class EnvConfigurator extends AbstractConfigurator
 
             $data = '';
             foreach ($vars as $key => $value) {
-                $value = $this->evaluateValue($value);
+                $existingValue = $update ? $this->findExistingValue($key, $env, $recipe) : null;
+                $value = $this->evaluateValue($value, $existingValue);
                 if ('#' === $key[0] && is_numeric(substr($key, 1))) {
                     if ('' === $value) {
                         $data .= "#\n";
@@ -154,12 +167,26 @@ class EnvConfigurator extends AbstractConfigurator
         }
     }
 
-    private function evaluateValue($value)
+    /**
+     * Evaluates expressions like %generate(secret)%.
+     *
+     * If $originalValue is passed, and the value contains an expression.
+     * the $originalValue is used.
+     */
+    private function evaluateValue($value, string $originalValue = null)
     {
         if ('%generate(secret)%' === $value) {
+            if (null !== $originalValue) {
+                return $originalValue;
+            }
+
             return $this->generateRandomBytes();
         }
         if (preg_match('~^%generate\(secret,\s*([0-9]+)\)%$~', $value, $matches)) {
+            if (null !== $originalValue) {
+                return $originalValue;
+            }
+
             return $this->generateRandomBytes($matches[1]);
         }
 
@@ -169,5 +196,77 @@ class EnvConfigurator extends AbstractConfigurator
     private function generateRandomBytes($length = 16)
     {
         return bin2hex(random_bytes($length));
+    }
+
+    private function getContentsAfterApplyingRecipe(string $rootDir, Recipe $recipe, array $vars): array
+    {
+        $files = ['.env', '.env.dist', 'phpunit.xml.dist', 'phpunit.xml'];
+
+        if (0 === \count($vars)) {
+            return array_fill_keys($files, null);
+        }
+
+        $originalContents = [];
+        foreach ($files as $file) {
+            $originalContents[$file] = file_exists($rootDir.'/'.$file) ? file_get_contents($rootDir.'/'.$file) : null;
+        }
+
+        $this->configureEnvDist(
+            $recipe,
+            $vars,
+            true
+        );
+
+        if (!file_exists($rootDir.'/.env.test')) {
+            $this->configurePhpUnit(
+                $recipe,
+                $vars,
+                true
+            );
+        }
+
+        $updatedContents = [];
+        foreach ($files as $file) {
+            $updatedContents[$file] = file_exists($rootDir.'/'.$file) ? file_get_contents($rootDir.'/'.$file) : null;
+        }
+
+        foreach ($originalContents as $file => $contents) {
+            if (null === $contents) {
+                if (file_exists($rootDir.'/'.$file)) {
+                    unlink($rootDir.'/'.$file);
+                }
+            } else {
+                file_put_contents($rootDir.'/'.$file, $contents);
+            }
+        }
+
+        return $updatedContents;
+    }
+
+    /**
+     * Attempts to find the existing value of an environment variable.
+     */
+    private function findExistingValue(string $var, string $filename, Recipe $recipe): ?string
+    {
+        if (!file_exists($filename)) {
+            return null;
+        }
+
+        $contents = file_get_contents($filename);
+        $section = $this->extractSection($recipe, $contents);
+        if (!$section) {
+            return null;
+        }
+
+        $lines = explode("\n", $section);
+        foreach ($lines as $line) {
+            if (0 !== strpos($line, sprintf('%s=', $var))) {
+                continue;
+            }
+
+            return trim(substr($line, \strlen($var) + 1));
+        }
+
+        return null;
     }
 }

@@ -18,6 +18,7 @@ use Symfony\Flex\Configurator\CopyFromRecipeConfigurator;
 use Symfony\Flex\Lock;
 use Symfony\Flex\Options;
 use Symfony\Flex\Recipe;
+use Symfony\Flex\Update\RecipeUpdate;
 
 class CopyFromRecipeConfiguratorTest extends TestCase
 {
@@ -33,7 +34,7 @@ class CopyFromRecipeConfiguratorTest extends TestCase
     public function testNoFilesCopied()
     {
         if (!file_exists($this->targetDirectory)) {
-            mkdir($this->targetDirectory);
+            @mkdir($this->targetDirectory, 0777, true);
         }
         file_put_contents($this->targetFile, '');
         $this->io->expects($this->exactly(1))->method('writeError')->with(['    Copying files from recipe']);
@@ -132,6 +133,61 @@ class CopyFromRecipeConfiguratorTest extends TestCase
         $this->io->expects($this->exactly(1))->method('writeError')->with(['    Removing files from recipe']);
         $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
         $this->createConfigurator()->unconfigure($this->recipe, [$this->sourceFileRelativePath => $this->targetFileRelativePath], $lock);
+    }
+
+    public function testUpdate()
+    {
+        $configurator = $this->createConfigurator();
+
+        $lock = $this->createMock(Lock::class);
+        $lock->expects($this->once())
+            ->method('add')
+            ->with('test-package', ['files' => ['config/packages/webpack_encore.yaml', 'config/packages/new.yaml']]);
+
+        $originalRecipeFiles = [
+            'config/packages/webpack_encore.yaml' => '... encore',
+            'config/packages/other.yaml' => '... other',
+        ];
+        $newRecipeFiles = [
+            'config/packages/webpack_encore.yaml' => '... encore_updated',
+            'config/packages/new.yaml' => '... new',
+        ];
+
+        $originalRecipeFileData = [];
+        foreach ($originalRecipeFiles as $file => $contents) {
+            $originalRecipeFileData[$file] = ['contents' => $contents, 'executable' => false];
+        }
+
+        $newRecipeFileData = [];
+        foreach ($newRecipeFiles as $file => $contents) {
+            $newRecipeFileData[$file] = ['contents' => $contents, 'executable' => false];
+        }
+
+        $originalRecipe = $this->createMock(Recipe::class);
+        $originalRecipe->method('getName')
+            ->willReturn('test-package');
+        $originalRecipe->method('getFiles')
+            ->willReturn($originalRecipeFileData);
+
+        $newRecipe = $this->createMock(Recipe::class);
+        $newRecipe->method('getFiles')
+            ->willReturn($newRecipeFileData);
+
+        $recipeUpdate = new RecipeUpdate(
+            $originalRecipe,
+            $newRecipe,
+            $lock,
+            FLEX_TEST_DIR
+        );
+
+        $configurator->update(
+            $recipeUpdate,
+            [],
+            []
+        );
+
+        $this->assertSame($originalRecipeFiles, $recipeUpdate->getOriginalFiles());
+        $this->assertSame($newRecipeFiles, $recipeUpdate->getNewFiles());
     }
 
     protected function setUp(): void

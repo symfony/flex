@@ -13,6 +13,7 @@ namespace Symfony\Flex\Configurator;
 
 use Symfony\Flex\Lock;
 use Symfony\Flex\Recipe;
+use Symfony\Flex\Update\RecipeUpdate;
 
 /**
  * @author Fabien Potencier <fabien@symfony.com>
@@ -25,7 +26,10 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
         $packageDir = $this->composer->getInstallationManager()->getInstallPath($recipe->getPackage());
         $options = array_merge($this->options->toArray(), $options);
 
-        $this->copyFiles($config, $packageDir, $options);
+        $files = $this->getFilesToCopy($config, $packageDir);
+        foreach ($files as $source => $target) {
+            $this->copyFile($source, $target, $options);
+        }
     }
 
     public function unconfigure(Recipe $recipe, $config, Lock $lock)
@@ -35,23 +39,48 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
         $this->removeFiles($config, $packageDir, $this->options->get('root-dir'));
     }
 
-    private function copyFiles(array $manifest, string $from, array $options)
+    public function update(RecipeUpdate $recipeUpdate, array $originalConfig, array $newConfig): void
     {
-        $to = $options['root-dir'] ?? '.';
+        $packageDir = $this->composer->getInstallationManager()->getInstallPath($recipeUpdate->getNewRecipe()->getPackage());
+        foreach ($originalConfig as $source => $target) {
+            if (isset($newConfig[$source])) {
+                // path is in both, we cannot update
+                $recipeUpdate->addCopyFromPackagePath(
+                    $packageDir.'/'.$source,
+                    $this->options->expandTargetDir($target)
+                );
+
+                unset($newConfig[$source]);
+            }
+
+            // if any paths were removed from the recipe, we'll keep them
+        }
+
+        // any remaining files are new, and we can copy them
+        foreach ($this->getFilesToCopy($newConfig, $packageDir) as $source => $target) {
+            if (!file_exists($source)) {
+                throw new \LogicException(sprintf('File "%s" does not exist!', $source));
+            }
+
+            $recipeUpdate->setNewFile($target, file_get_contents($source));
+        }
+    }
+
+    private function getFilesToCopy(array $manifest, string $from): array
+    {
+        $files = [];
         foreach ($manifest as $source => $target) {
             $target = $this->options->expandTargetDir($target);
             if ('/' === substr($source, -1)) {
-                $this->copyDir($this->path->concatenate([$from, $source]), $this->path->concatenate([$to, $target]), $options);
-            } else {
-                $targetPath = $this->path->concatenate([$to, $target]);
-                if (!is_dir(\dirname($targetPath))) {
-                    mkdir(\dirname($targetPath), 0777, true);
-                    $this->write(sprintf('  Created <fg=green>"%s"</>', $this->path->relativize(\dirname($targetPath))));
-                }
+                $files = array_merge($files, $this->getFilesForDir($this->path->concatenate([$from, $source]), $this->path->concatenate([$target])));
 
-                $this->copyFile($this->path->concatenate([$from, $source]), $targetPath, $options);
+                continue;
             }
+
+            $files[$this->path->concatenate([$from, $source])] = $target;
         }
+
+        return $files;
     }
 
     private function removeFiles(array $manifest, string $from, string $to)
@@ -70,30 +99,31 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
         }
     }
 
-    private function copyDir(string $source, string $target, array $options)
+    private function getFilesForDir(string $source, string $target): array
     {
-        $overwrite = $options['force'] ?? false;
-
-        if (!is_dir($target)) {
-            mkdir($target, 0777, true);
-        }
-
         $iterator = $this->createSourceIterator($source, \RecursiveIteratorIterator::SELF_FIRST);
+        $files = [];
         foreach ($iterator as $item) {
             $targetPath = $this->path->concatenate([$target, $iterator->getSubPathName()]);
-            if ($item->isDir()) {
-                if (!is_dir($targetPath)) {
-                    mkdir($targetPath);
-                    $this->write(sprintf('  Created <fg=green>"%s"</>', $this->path->relativize($targetPath)));
-                }
-            } elseif ($overwrite || !file_exists($targetPath)) {
-                $this->copyFile($item, $targetPath, $options);
-            }
+
+            $files[(string) $item] = $targetPath;
         }
+
+        return $files;
     }
 
+    /**
+     * @param string $source The absolute path to the source file
+     * @param string $target The relative (to root dir) path to the target
+     */
     public function copyFile(string $source, string $target, array $options)
     {
+        $target = $this->options->get('root-dir').'/'.$target;
+        if (is_dir($source)) {
+            // directory will be created when a file is copied to it
+            return;
+        }
+
         $overwrite = $options['force'] ?? false;
         if (!$this->options->shouldWriteFile($target, $overwrite)) {
             return;
@@ -101,6 +131,11 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
 
         if (!file_exists($source)) {
             throw new \LogicException(sprintf('File "%s" does not exist!', $source));
+        }
+
+        if (!file_exists(\dirname($target))) {
+            mkdir(\dirname($target), 0777, true);
+            $this->write(sprintf('  Created <fg=green>"%s"</>', $this->path->relativize(\dirname($target))));
         }
 
         file_put_contents($target, $this->options->expandTargetDir(file_get_contents($source)));

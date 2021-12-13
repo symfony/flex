@@ -20,6 +20,7 @@ use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Flex\Lock;
 use Symfony\Flex\Options;
 use Symfony\Flex\Recipe;
+use Symfony\Flex\Update\RecipeUpdate;
 
 /**
  * Adds services and volumes to docker-compose.yml file.
@@ -45,61 +46,7 @@ class DockerComposeConfigurator extends AbstractConfigurator
             return;
         }
 
-        $rootDir = $this->options->get('root-dir');
-        foreach ($this->normalizeConfig($config) as $file => $extra) {
-            $dockerComposeFile = $this->findDockerComposeFile($rootDir, $file);
-            if (null === $dockerComposeFile) {
-                $dockerComposeFile = $rootDir.'/'.$file;
-                file_put_contents($dockerComposeFile, "version: '3'\n");
-                $this->write(sprintf('  Created <fg=green>"%s"</>', $file));
-            }
-            if ($this->isFileMarked($recipe, $dockerComposeFile)) {
-                continue;
-            }
-
-            $this->write(sprintf('Adding Docker Compose definitions to "%s"', $dockerComposeFile));
-
-            $offset = 2;
-            $node = null;
-            $endAt = [];
-            $lines = [];
-            foreach (file($dockerComposeFile) as $i => $line) {
-                $lines[] = $line;
-                $ltrimedLine = ltrim($line, ' ');
-
-                // Skip blank lines and comments
-                if (('' !== $ltrimedLine && 0 === strpos($ltrimedLine, '#')) || '' === trim($line)) {
-                    continue;
-                }
-
-                // Extract Docker Compose keys (usually "services" and "volumes")
-                if (!preg_match('/^[\'"]?([a-zA-Z0-9]+)[\'"]?:\s*$/', $line, $matches)) {
-                    // Detect indentation to use
-                    $offestLine = \strlen($line) - \strlen($ltrimedLine);
-                    if ($offset > $offestLine && 0 !== $offestLine) {
-                        $offset = $offestLine;
-                    }
-                    continue;
-                }
-
-                // Keep end in memory (check break line on previous line)
-                $endAt[$node] = '' !== trim($lines[$i - 1]) ? $i : $i - 1;
-                $node = $matches[1];
-            }
-            $endAt[$node] = \count($lines) + 1;
-
-            foreach ($extra as $key => $value) {
-                if (isset($endAt[$key])) {
-                    array_splice($lines, $endAt[$key], 0, $this->markData($recipe, $this->parse(1, $offset, $value)));
-                    continue;
-                }
-
-                $lines[] = sprintf("\n%s:", $key);
-                $lines[] = $this->markData($recipe, $this->parse(1, $offset, $value));
-            }
-
-            file_put_contents($dockerComposeFile, implode('', $lines));
-        }
+        $this->configureDockerCompose($recipe, $config, $options['force'] ?? false);
 
         $this->write('Docker Compose definitions have been modified. Please run "docker-compose up --build" again to apply the changes.');
     }
@@ -130,6 +77,21 @@ class DockerComposeConfigurator extends AbstractConfigurator
         }
 
         $this->write('Docker Compose definitions have been modified. Please run "docker-compose up" again to apply the changes.');
+    }
+
+    public function update(RecipeUpdate $recipeUpdate, array $originalConfig, array $newConfig): void
+    {
+        if (!self::shouldConfigureDockerRecipe($this->composer, $this->io, $recipeUpdate->getNewRecipe())) {
+            return;
+        }
+
+        $recipeUpdate->addOriginalFiles(
+            $this->getContentsAfterApplyingRecipe($recipeUpdate->getRootDir(), $recipeUpdate->getOriginalRecipe(), $originalConfig)
+        );
+
+        $recipeUpdate->addNewFiles(
+            $this->getContentsAfterApplyingRecipe($recipeUpdate->getRootDir(), $recipeUpdate->getNewRecipe(), $newConfig)
+        );
     }
 
     public static function shouldConfigureDockerRecipe(Composer $composer, IOInterface $io, Recipe $recipe): bool
@@ -269,5 +231,141 @@ class DockerComposeConfigurator extends AbstractConfigurator
         }
 
         return $line;
+    }
+
+    private function configureDockerCompose(Recipe $recipe, array $config, bool $update): void
+    {
+        $rootDir = $this->options->get('root-dir');
+        foreach ($this->normalizeConfig($config) as $file => $extra) {
+            $dockerComposeFile = $this->findDockerComposeFile($rootDir, $file);
+            if (null === $dockerComposeFile) {
+                $dockerComposeFile = $rootDir.'/'.$file;
+                file_put_contents($dockerComposeFile, "version: '3'\n");
+                $this->write(sprintf('  Created <fg=green>"%s"</>', $file));
+            }
+
+            if (!$update && $this->isFileMarked($recipe, $dockerComposeFile)) {
+                continue;
+            }
+
+            $this->write(sprintf('Adding Docker Compose definitions to "%s"', $dockerComposeFile));
+
+            $offset = 2;
+            $node = null;
+            $endAt = [];
+            $startAt = [];
+            $lines = [];
+            $nodesLines = [];
+            foreach (file($dockerComposeFile) as $i => $line) {
+                $lines[] = $line;
+                $ltrimedLine = ltrim($line, ' ');
+                if (null !== $node) {
+                    $nodesLines[$node][$i] = $line;
+                }
+
+                // Skip blank lines and comments
+                if (('' !== $ltrimedLine && 0 === strpos($ltrimedLine, '#')) || '' === trim($line)) {
+                    continue;
+                }
+
+                // Extract Docker Compose keys (usually "services" and "volumes")
+                if (!preg_match('/^[\'"]?([a-zA-Z0-9]+)[\'"]?:\s*$/', $line, $matches)) {
+                    // Detect indentation to use
+                    $offestLine = \strlen($line) - \strlen($ltrimedLine);
+                    if ($offset > $offestLine && 0 !== $offestLine) {
+                        $offset = $offestLine;
+                    }
+                    continue;
+                }
+
+                // Keep end in memory (check break line on previous line)
+                $endAt[$node] = '' !== trim($lines[$i - 1]) ? $i : $i - 1;
+                $node = $matches[1];
+                if (!isset($nodesLines[$node])) {
+                    $nodesLines[$node] = [];
+                }
+                if (!isset($startAt[$node])) {
+                    // the section contents starts at the next line
+                    $startAt[$node] = $i + 1;
+                }
+            }
+            $endAt[$node] = \count($lines) + 1;
+
+            foreach ($extra as $key => $value) {
+                if (isset($endAt[$key])) {
+                    $data = $this->markData($recipe, $this->parse(1, $offset, $value));
+                    $updatedContents = $this->updateDataString(implode('', $nodesLines[$key]), $data);
+                    if (null === $updatedContents) {
+                        // not an update: just add to section
+                        array_splice($lines, $endAt[$key], 0, $data);
+
+                        continue;
+                    }
+
+                    $originalEndAt = $endAt[$key];
+                    $length = $endAt[$key] - $startAt[$key];
+                    array_splice($lines, $startAt[$key], $length, ltrim($updatedContents, "\n"));
+
+                    // reset any start/end positions after this to the new positions
+                    foreach ($startAt as $sectionKey => $at) {
+                        if ($at > $originalEndAt) {
+                            $startAt[$sectionKey] = $at - $length - 1;
+                        }
+                    }
+                    foreach ($endAt as $sectionKey => $at) {
+                        if ($at > $originalEndAt) {
+                            $endAt[$sectionKey] = $at - $length;
+                        }
+                    }
+
+                    continue;
+                }
+
+                $lines[] = sprintf("\n%s:", $key);
+                $lines[] = $this->markData($recipe, $this->parse(1, $offset, $value));
+            }
+
+            file_put_contents($dockerComposeFile, implode('', $lines));
+        }
+    }
+
+    private function getContentsAfterApplyingRecipe(string $rootDir, Recipe $recipe, array $config): array
+    {
+        if (0 === \count($config)) {
+            return [];
+        }
+
+        $files = array_map(function ($file) use ($rootDir) {
+            return $this->findDockerComposeFile($rootDir, $file);
+        }, array_keys($config));
+
+        $originalContents = [];
+        foreach ($files as $file) {
+            $originalContents[$file] = file_exists($file) ? file_get_contents($file) : null;
+        }
+
+        $this->configureDockerCompose(
+            $recipe,
+            $config,
+            true
+        );
+
+        $updatedContents = [];
+        foreach ($files as $file) {
+            $localPath = ltrim(str_replace($rootDir, '', $file), '/\\');
+            $updatedContents[$localPath] = file_exists($file) ? file_get_contents($file) : null;
+        }
+
+        foreach ($originalContents as $file => $contents) {
+            if (null === $contents) {
+                if (file_exists($file)) {
+                    unlink($file);
+                }
+            } else {
+                file_put_contents($file, $contents);
+            }
+        }
+
+        return $updatedContents;
     }
 }

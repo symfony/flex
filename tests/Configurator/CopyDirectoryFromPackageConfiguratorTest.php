@@ -20,6 +20,7 @@ use Symfony\Flex\Configurator\CopyFromPackageConfigurator;
 use Symfony\Flex\Lock;
 use Symfony\Flex\Options;
 use Symfony\Flex\Recipe;
+use Symfony\Flex\Update\RecipeUpdate;
 
 class CopyDirectoryFromPackageConfiguratorTest extends TestCase
 {
@@ -97,6 +98,48 @@ class CopyDirectoryFromPackageConfiguratorTest extends TestCase
             [true, 'NEW_CONTENT', 'OLD_CONTENT', 'NEW_CONTENT'],
             [false, 'NEW_CONTENT', 'OLD_CONTENT', 'OLD_CONTENT'],
         ];
+    }
+
+    public function testUpdate()
+    {
+        $configurator = $this->createConfigurator();
+
+        $recipeUpdate = new RecipeUpdate(
+            $this->createMock(Recipe::class),
+            $this->recipe,
+            $this->createMock(Lock::class),
+            FLEX_TEST_DIR
+        );
+
+        @mkdir(FLEX_TEST_DIR.'/package/files1', 0777, true);
+        @mkdir(FLEX_TEST_DIR.'/package/files2', 0777, true);
+        @mkdir(FLEX_TEST_DIR.'/package/files3', 0777, true);
+
+        touch(FLEX_TEST_DIR.'/package/files1/1a.txt');
+        touch(FLEX_TEST_DIR.'/package/files1/1b.txt');
+        touch(FLEX_TEST_DIR.'/package/files2/2a.txt');
+        touch(FLEX_TEST_DIR.'/package/files2/2b.txt');
+        touch(FLEX_TEST_DIR.'/package/files3/3a.txt');
+        touch(FLEX_TEST_DIR.'/package/files3/3b.txt');
+
+        $configurator->update(
+            $recipeUpdate,
+            ['package/files1/' => 'target/files1/', 'package/files2/' => 'target/files2/'],
+            ['package/files1/' => 'target/files1/', 'package/files3/' => 'target/files3/']
+        );
+
+        // original files always show as empty: we don't know what they are
+        // even for "package/files2", which was removed, for safety, we don't delete it
+        $this->assertSame([], $recipeUpdate->getOriginalFiles());
+
+        // only NEW copy paths are installed
+        $newFiles = array_keys($recipeUpdate->getNewFiles());
+        asort($newFiles);
+        $this->assertSame(
+            ['target/files3/3a.txt', 'target/files3/3b.txt'],
+            array_values($newFiles)
+        );
+        $this->assertSame([FLEX_TEST_DIR.'/package/files1/' => 'target/files1/'], $recipeUpdate->getCopyFromPackagePaths());
     }
 
     protected function setUp(): void
