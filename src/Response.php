@@ -65,7 +65,7 @@ class Response implements \JsonSerializable
         return $response;
     }
 
-    public function jsonSerialize()
+    public function jsonSerialize(): mixed
     {
         return ['body' => $this->body, 'headers' => $this->headers];
     }
