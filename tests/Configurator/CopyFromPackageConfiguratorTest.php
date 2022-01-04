@@ -110,7 +110,11 @@ class CopyFromPackageConfiguratorTest extends TestCase
         file_put_contents($this->targetFile, '');
         $this->assertFileExists($this->targetFile);
         $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
-        $this->createConfigurator()->unconfigure($this->recipe, [$this->sourceFileRelativePath => $this->targetFileRelativePath], $lock);
+        $this->createConfigurator()->unconfigure(
+            $this->recipe,
+            [$this->sourceFileRelativePath => $this->targetFileRelativePath, 'missingdir/' => ''],
+            $lock
+        );
         $this->assertFileDoesNotExist($this->targetFile);
     }
 
