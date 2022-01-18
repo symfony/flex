@@ -702,9 +702,10 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $data = $this->downloader->getRecipes($operations);
         $manifests = $data['manifests'] ?? [];
         $locks = $data['locks'] ?? [];
-        // symfony/flex and symfony/framework-bundle recipes should always be applied first
+        // symfony/flex recipes should always be applied first
+        $flexRecipe = [];
+        // symfony/framework-bundle recipe should always be applied first after the metapackages
         $recipes = [
-            'symfony/flex' => null,
             'symfony/framework-bundle' => null,
         ];
         $metaRecipes = [];
@@ -748,6 +749,8 @@ class Flex implements PluginInterface, EventSubscriberInterface
             if (isset($manifests[$name])) {
                 if ('metapackage' === $package->getType()) {
                     $metaRecipes[$name] = new Recipe($package, $name, $job, $manifests[$name], $locks[$name] ?? []);
+                } elseif ('symfony/flex' === $name) {
+                    $flexRecipe = [$name => new Recipe($package, $name, $job, $manifests[$name], $locks[$name] ?? [])];
                 } else {
                     $recipes[$name] = new Recipe($package, $name, $job, $manifests[$name], $locks[$name] ?? []);
                 }
@@ -775,7 +778,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             }
         }
 
-        return array_merge($metaRecipes, array_filter($recipes));
+        return array_merge($flexRecipe, $metaRecipes, array_filter($recipes));
     }
 
     public function truncatePackages(PrePoolCreateEvent $event)

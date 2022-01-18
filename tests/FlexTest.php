@@ -178,6 +178,41 @@ EOF
         return $return;
     }
 
+    public function testFetchRecipesOrder()
+    {
+        $packages = [
+            ['name' => 'symfony/console', 'type' => 'library'],
+            ['name' => 'symfony/flex', 'type' => 'composer-plugin'],
+            ['name' => 'symfony/framework-bundle', 'type' => 'library'],
+            ['name' => 'symfony/webapp-meta', 'type' => 'metapackage'],
+        ];
+
+        $io = new BufferIO('', OutputInterface::VERBOSITY_VERBOSE);
+        $rootPackage = $this->mockRootPackage(['symfony' => ['allow-contrib' => true]]);
+
+        $flex = $this->mockFlex($io, $rootPackage, null, [
+            'manifests' => array_reduce($packages, static function (array $manifests, array $packageInfo) {
+                $manifests[$packageInfo['name']] = ['manifest' => []];
+
+                return $manifests;
+            }, []),
+        ]);
+
+        $recipes = $flex->fetchRecipes(array_map(static function (array $packageInfo) {
+            $package = new Package($packageInfo['name'], '1.0.0', '1.0.0');
+            $package->setType($packageInfo['type']);
+
+            return new InstallOperation($package);
+        }, $packages), true);
+
+        $this->assertSame([
+            'symfony/flex',
+            'symfony/webapp-meta',
+            'symfony/framework-bundle',
+            'symfony/console',
+        ], array_keys($recipes));
+    }
+
     public static function getTestPackages(): array
     {
         return [
