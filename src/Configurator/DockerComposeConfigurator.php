@@ -111,34 +111,14 @@ class DockerComposeConfigurator extends AbstractConfigurator
             return false;
         }
 
-        $warning = $io->isInteractive() ? 'WARNING' : 'IGNORING';
-        $io->writeError(sprintf('  - <warning> %s </> %s', $warning, $recipe->getFormattedOrigin()));
-        $question = '    The recipe for this package contains some Docker configuration.
+        if (!isset($_SERVER['SYMFONY_DOCKER'])) {
+            $answer = self::askDockerSupport($io, $recipe);
+        } elseif (filter_var($_SERVER['SYMFONY_DOCKER'], \FILTER_VALIDATE_BOOLEAN)) {
+            $answer = 'p';
+        } else {
+            $answer = 'x';
+        }
 
-    This may create/update <comment>docker-compose.yml</comment> or update <comment>Dockerfile</comment> (if it exists).
-
-    Do you want to include Docker configuration from recipes?
-    [<comment>y</>] Yes
-    [<comment>n</>] No
-    [<comment>p</>] Yes permanently, never ask again for this project
-    [<comment>x</>] No permanently, never ask again for this project
-    (defaults to <comment>y</>): ';
-        $answer = $io->askAndValidate(
-            $question,
-            function ($value) {
-                if (null === $value) {
-                    return 'y';
-                }
-                $value = strtolower($value[0]);
-                if (!\in_array($value, ['y', 'n', 'p', 'x'], true)) {
-                    throw new \InvalidArgumentException('Invalid choice.');
-                }
-
-                return $value;
-            },
-            null,
-            'y'
-        );
         if ('n' === $answer) {
             self::$configureDockerRecipes = false;
 
@@ -367,5 +347,38 @@ class DockerComposeConfigurator extends AbstractConfigurator
         }
 
         return $updatedContents;
+    }
+
+    private static function askDockerSupport(IOInterface $io, Recipe $recipe): string
+    {
+        $warning = $io->isInteractive() ? 'WARNING' : 'IGNORING';
+        $io->writeError(sprintf('  - <warning> %s </> %s', $warning, $recipe->getFormattedOrigin()));
+        $question = '    The recipe for this package contains some Docker configuration.
+
+    This may create/update <comment>docker-compose.yml</comment> or update <comment>Dockerfile</comment> (if it exists).
+
+    Do you want to include Docker configuration from recipes?
+    [<comment>y</>] Yes
+    [<comment>n</>] No
+    [<comment>p</>] Yes permanently, never ask again for this project
+    [<comment>x</>] No permanently, never ask again for this project
+    (defaults to <comment>y</>): ';
+
+        return $io->askAndValidate(
+            $question,
+            function ($value) {
+                if (null === $value) {
+                    return 'y';
+                }
+                $value = strtolower($value[0]);
+                if (!\in_array($value, ['y', 'n', 'p', 'x'], true)) {
+                    throw new \InvalidArgumentException('Invalid choice.');
+                }
+
+                return $value;
+            },
+            null,
+            'y'
+        );
     }
 }
