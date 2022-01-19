@@ -1,0 +1,336 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2021-12-16T20:11:53Z
+
+It's Christmas before Christmas! :gift_heart:
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2021-12-16T20:33:23Z
+
+> an "archived/" directory that contains EVERY version of every recipe
+
+Did you consider using git instead of maintaining this directory? cloning the recipe repo locally and using git to checkout the tree-ref? Not saying this is would be better. This is just what I had in mind :)
+
+---------------------------------------------------------------------------
+
+by maxhelias at 2021-12-16T21:49:45Z
+
+I just read some part and it an amazing work! 👏
+
+---------------------------------------------------------------------------
+
+by weaverryan at 2021-12-17T00:12:37Z
+
+> Did you consider using git instead of maintaining this directory? cloning the recipe repo locally and using git to checkout the tree-ref? Not saying this is would be better. This is just what I had in mind :)
+
+That definitely seems like a valid approach. I guess I was trying to (A) minimize the amount of work needed on the user's local computer (e.g. git cloning the recipes repo) and (B) loading the "old" recipe data in the exact same way as normal (recipes are normally loaded from JSON files... so why not do the exact same thing to load the old recipes)?
+
+So, I think my approach for that part is the correct one. However, that represents just a small part of the PR: if we needed to change that, it wouldn't be a huge thing.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2021-12-17T10:54:29Z
+
+With longer URLs to cache, we might hit #830 soon.
+Either we should add some logic to `generateCacheKey()` to make it never generate file names longer than 143 chars or we should skip caching calls to "archived" jsons.
+Maybe both :)
+
+---------------------------------------------------------------------------
+
+by weaverryan at 2021-12-17T14:25:51Z
+
+> With longer URLs to cache, we might hit #830 soon.
+
+I tested this out - here's an example cache key for an archive:
+
+> weaverryan-recipes-flex-main-archived-symfony.framework-bundle-ffcb76bab779154c0a7d8cddb9f448c2c45a4e50.json
+
+That's length 108. So we have 35 more chars to work with, which seems unlikely to hit. UNLESS someone uses a non-Github endpoint, in which case the current `generateCacheKey()` won't shorten it nearly as much.
+
+I've just pushed a little tweak where, if the key is longer than 140 (this lives a little wiggle room for eCryptfs), we `sha($url)`. That leaves some inconsistency... but it will leave pretty much all filenames as readable in the cache dir, which is nice.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2021-12-17T15:13:00Z
+
+> if the key is longer than 140, we sha($url)
+
+Nice thanks.
+
+While you're on this topic, I know we have an issue right now related to files that are removed from recipes. Eg when `config/package/test/framwork.yaml` moved to `when@dev`. Will this be able to spot the removal? If not, is it too much to ask for this very PR? :angel:
+
+---------------------------------------------------------------------------
+
+by weaverryan at 2021-12-17T16:03:59Z
+
+> While you're on this topic, I know we have an issue right now related to files that are removed from recipes. Eg when config/package/test/framwork.yaml moved to when@dev. Will this be able to spot the removal? If not, is it too much to ask for this very PR? 👼
+
+Yup! It catches those! You can even see it at the end of the video in the PR description: a `dev` and `test` files are deleted because the `when@dev` has been patched into the main file. 🎄
+
+I don't see a specific issue or PR about that, but I know it has been an issue (there is #706, but it's about `unconfigure()`.
+
+---------------------------------------------------------------------------
+
+by shadowc at 2021-12-17T16:09:23Z
+
+I've tested on Windows updating a few recipes and it worked without issues for me!
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2021-12-17T16:37:28Z
+
+Did you consider submitting against `1.x`?
+
+---------------------------------------------------------------------------
+
+by stof at 2021-12-17T16:42:51Z
+
+> That's length 108. So we have 35 more chars to work with, which seems unlikely to hit. UNLESS someone uses a non-Github endpoint,
+
+or just a longer package name than `symfony/framework-bundle`, which is likely to happen at some point
+
+---------------------------------------------------------------------------
+
+by weaverryan at 2021-12-17T17:17:07Z
+
+> Did you consider submitting against 1.x?
+
+I was hoping you wouldn't ask ;). But strictly speaking, I CAN change to that if you want. It would mostly involve removing types and a few other things. Annoying, but doable. WDYT?
+
+Comments so far have been addressed. Only 1 TODO left in the code, pending the full `archived/` history being added to `symfony/recipes`.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2021-12-17T17:18:37Z
+
+Haha, then please target `1.x` :)
+
+---------------------------------------------------------------------------
+
+by weaverryan at 2021-12-18T18:59:41Z
+
+The `archived/` directory is now populated on `recipes` and `recipes-contrib`! I've updated this PR to use the true endpoints 🎆 .
+
+I'll re-work this for the 1.x branch, but just because you asked nicely ;)
+
+---------------------------------------------------------------------------
+
+by W2AlharbiMe at 2021-12-18T19:31:19Z
+
+Niiice, well done 👏👏
+
+---------------------------------------------------------------------------
+
+by weaverryan at 2021-12-19T21:26:54Z
+
+Ok, this is now against the 1.x branch, tested locally, tests are green!
+
+---------------------------------------------------------------------------
+
+by 7ochem at 2021-12-20T09:15:13Z
+
+I've setup an outdated project to use your fork+branch of symfony/flex and tried to run `composer symfony:recipes:update`. I got a list of outdated recipes that I could update and my first thought was "I want to updated them all", but maybe this could be a next step after this PR has been merged. So I just picked the first one and got this error:
+
+```
+There was an error applying the recipe update patch
+Command "git commit -m "original files"" failed: "error: gpg failed to sign the data
+fatal: failed to write commit object
+". Output: "".
+```
+
+A quick Google gave me some suggestions. I think you should probably add `git config commit.gpgsign false` (or first check the setting with the output of `git config commit.gpgsign`)
+
+In src/Update/RecipePatcher.php:
+```diff
+@@ -107,6 +107,7 @@ class RecipePatcher
+
+         try {
+             $this->execute('git init', $tmpPath);
++            $this->execute('git config commit.gpgsign false', $tmpPath);
+             $this->execute('git config user.name "Flex Updater"', $tmpPath);
+             $this->execute('git config user.email ""', $tmpPath);
+```
+
+---------------------------------------------------------------------------
+
+by 7ochem at 2021-12-20T09:32:52Z
+
+The next thing I'm running into is that I've got the habit of removing those `.gitignore` files that recipes place in empty directories to keep the directories under VCS once I've added actual files in them (mentioned before in #630). I think something is missing in the process to take deleted files into account. I'm thinking of any other situation where you would delete files that have been placed by recipes (because you don't want them), but cannot think of any other than those `.gitignore` files. I'm also fine if the answer will be: "Don't delete them", because the advantage of having an "recipe update" system is way better 💪🏻
+
+This happened when running recipe update for `doctrine/doctrine-bundle`:
+```
+Executing command (/tmp/_flex_recipe_update199562016461c04b5485c2a3.63558769): git init
+Executing command (/tmp/_flex_recipe_update199562016461c04b5485c2a3.63558769): git config commit.gpgsign false
+Executing command (/tmp/_flex_recipe_update199562016461c04b5485c2a3.63558769): git config user.name "Flex Updater"
+Executing command (/tmp/_flex_recipe_update199562016461c04b5485c2a3.63558769): git config user.email ""
+Executing command (/tmp/_flex_recipe_update199562016461c04b5485c2a3.63558769): git add -A
+Executing command (/tmp/_flex_recipe_update199562016461c04b5485c2a3.63558769): git commit -m "original files"
+Executing command (/tmp/_flex_recipe_update199562016461c04b5485c2a3.63558769): git hash-object 'config/bundles.php'
+Executing command (/tmp/_flex_recipe_update199562016461c04b5485c2a3.63558769): git hash-object 'config/packages/doctrine.yaml'
+Executing command (/tmp/_flex_recipe_update199562016461c04b5485c2a3.63558769): git hash-object 'config/packages/prod/doctrine.yaml'
+Executing command (/tmp/_flex_recipe_update199562016461c04b5485c2a3.63558769): git hash-object 'src/Entity/.gitignore'
+Executing command (/tmp/_flex_recipe_update199562016461c04b5485c2a3.63558769): git hash-object 'src/Repository/.gitignore'
+Executing command (/tmp/_flex_recipe_update199562016461c04b5485c2a3.63558769): git hash-object '.env'
+Executing command (/tmp/_flex_recipe_update199562016461c04b5485c2a3.63558769): git hash-object 'phpunit.xml.dist'
+Executing command (/tmp/_flex_recipe_update199562016461c04b5485c2a3.63558769): git add -A
+Executing command (/tmp/_flex_recipe_update199562016461c04b5485c2a3.63558769): git diff --cached
+There was an error applying the recipe update patch
+Could not find file "src/Entity/.gitignore" in the patch.
+```
+
+After `touch src/Entity/.gitignore` and `touch src/Repository/.gitignore` everything ran just fine 👍🏻
+
+Great job @weaverryan !
+
+---------------------------------------------------------------------------
+
+by weaverryan at 2021-12-20T21:23:03Z
+
+@7ochem THANK YOU for thoroughly testing this - that awesome!
+
+> error: gpg failed to sign the data
+
+I've added your suggested fix for this - thank you!
+
+> Could not find file "src/Entity/.gitignore" in the patch.
+
+This was a bug I introduced in the latest feature I added - very good catch! It's now fixed - it will work without needing to `touch` those files manually (it's totally ok to delete files from recipes like this - the `recipe:update` system handles it just fine, now that this bug is gone).
+
+So, tests are still green and all comments have been addressed!
+
+---------------------------------------------------------------------------
+
+by 7ochem at 2021-12-21T09:20:43Z
+
+One more thing... When trying this out, I had changed my composer.json (and composer.lock) file because I had to target your fork and this branch, so I had uncommitted changes in those files when running `composer symfony:recipes:update`. Then I got this error:
+
+```
+There was an error applying the recipe update patch
+Command "git update-index --refresh" failed: "". Output: "composer.json: needs update
+composer.lock: needs update
+".
+```
+
+Maybe you could show a warning at the start that there are uncommitted changes in files and advise to commit any changes before running `recipe:update` (because it is using Git to process and apply the necessary changes)
+
+---------------------------------------------------------------------------
+
+by weaverryan at 2021-12-21T15:18:24Z
+
+> Maybe you could show a warning at the start that there are uncommitted changes in files and advise to commit any changes before running recipe:update (because it is using Git to process and apply the necessary changes)
+
+Done!
+
+---------------------------------------------------------------------------
+
+by weaverryan at 2022-01-15T16:58:59Z
+
+Thank you for the thoughtful review Wouter!
+
+> But the symfony.lock changes aren't. I would suggest to either make sure everything modified by the command is part of the index, or nothing.
+
+To make sure I understand, are you referring to the fact that the `symfony.lock` file contains a `files` key under some recipes which tracks the added files... but that it doesn't (inside of this file) store information about the other files that were updated/added? If so, it's not strictly related to this PR, but that "struck" me as odd also. I think this was originally done to help with the `composer recipes <package/name>` command, so it could show which files it added. But it does completely ignore all the other files that might be added or modified via other configurator (beyond "copy from recipe"). Probably, but in a different PR, we should clean this up. I'd recommend removing things from symfony.lock because it's not very easy - at any time - to query the Flex API and get the full details of what the recipe looked like when you originally installed it. We could probably use that info for a visualization in the `composer recipes` command.
+
+---------------------------------------------------------------------------
+
+by wouterj at 2022-01-15T18:30:53Z
+
+> To make sure I understand, are you referring to the fact that the symfony.lock file contains a files key under some recipes which tracks the added files... but that it doesn't (inside of this file) store information about the other files that were updated/added?
+
+I'm sorry for the confusion, this is way over my head for flex internals, but I'm sure your answer will feed ideas to other flex contributors :)
+
+What I was talking about was the git index. After running `recipe:update` for a recipe, `git status` gives me this:
+
+```
+On branch main
+Changes to be committed:
+  (use "git restore --staged <file>..." to unstage)
+        modified:   config/routes.yaml
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+        modified:   symfony.lock
+```
+
+I would love if either all changed files and `modified: symfony.lock` would be in the "Changes to be committed" section, or all changes would be under "Changes not staged for commit". Currently, I find it a bit weird to see some of the changes done by this command to be auto-staged, and others don't (ofc, I understand the internal reasons behind this, but looking this is looking at it from a user perspective).
+
+---------------------------------------------------------------------------
+
+by weaverryan at 2022-01-16T11:20:16Z
+
+> I would love if either all changed files and modified: symfony.lock would be in the "Changes to be committed" section
+
+Oh, of course! Nice idea - I've just made that change :)
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2022-01-17T14:10:16Z
+
+Having to select a package in the list doesn't feel like a real choice. Aka how can I know which package I want to update?
+Based on this, I'm wondering if there is a way to upgrade all recipes at once? Eg iterate until a conflict happens? Since conflicts are going to be quite common, continue applying updates until two conflicts happen on the same file?
+
+(The simple way to take my concern into account is to set 0 as the default choice in the list of choices and tell ppl to run the command as many time as needed, but I'm wondering if we can do better)
+
+---------------------------------------------------------------------------
+
+by fabpot at 2022-01-17T14:17:41Z
+
+The good thing about doing it one by one is the ease of review: the diff is smaller and easier to understand I suppose.
+
+---------------------------------------------------------------------------
+
+by weaverryan at 2022-01-17T14:49:19Z
+
+You’re not the first person to ask about updating all of them at once. I agree with Fab that it’s nice to review them one-by-one, including the CHANGELOG that’s generated for each.
+
+If we were to update all at once, from a practical perspective, I think we would need to commit automatically because the patch system needs the working tree and index to be clean… though i can’t remember the exact reason why (I did add a check for this on purpose).
+
+So I’d like to default to the first choice and take the easy way out (just default the 0 choice) - but I’m open to either, which would include either (A) committing for the user or (B) more likely, investigating if we can apply changes to a dirty tree.
+
+---------------------------------------------------------------------------
+
+by wouterj at 2022-01-17T15:05:25Z
+
+> but I’m open to either, which would include either (A) committing for the user or (B) more likely, investigating if we can apply changes to a dirty tree.
+
+From a usage point of view, that last point is very interesting (I also preferred applying on a dirty tree when testing the current feature). But to keep the scope small, I would do it outside this big PR :)
+
+---------------------------------------------------------------------------
+
+by weaverryan at 2022-01-17T15:26:21Z
+
+New look, with the default :)
+
+<img width="799" alt="Screen Shot 2022-01-17 at 10 24 58 AM" src="https://user-images.githubusercontent.com/121003/149797174-9de15445-d16b-4c32-a630-8a03d77d692e.png">
+
+---------------------------------------------------------------------------
+
+by wouterj at 2022-01-17T16:31:16Z
+
+> we could even make the PR number clickable and hide the full URL:
+
+For what's it worth: I don't think all shells have support for this
+
+---------------------------------------------------------------------------
+
+by fabpot at 2022-01-18T06:18:27Z
+
+> > we could even make the PR number clickable and hide the full URL:
+>
+> For what's it worth: I don't think all shells have support for this
+
+I think the vast majority does. Let's make things work best for most people. I agree that the current changelog is quite "heavy".
+
+---------------------------------------------------------------------------
+
+by weaverryan at 2022-01-18T13:50:43Z
+
+Changelog shortened :)
+
+<img width="810" alt="Screen Shot 2022-01-18 at 8 47 08 AM" src="https://user-images.githubusercontent.com/121003/149949812-7235c195-5aa2-4e1a-ad44-e33e401bd37d.png">
+
+> because it relies on calls to api.github.com, it won't be compatible with private recipes (but we don't have to care until someone sends a PR to improve this), but the update itself will still work if I understood correctly since updates rely only on the JSONs.
+
+Correct! As long as the private recipe API implements the same structure as the main one (the same JSON files, etc), then the update will work. And (as you know) https://github.com/symfony-tools/recipes-checker has the tools that private recipe API's can use (the `generate:flex-endpoint` command creates the archived files and `generate:archived-recipes` can be used once time to generate a full history for all recipes).
