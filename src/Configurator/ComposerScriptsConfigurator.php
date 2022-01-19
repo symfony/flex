@@ -16,6 +16,7 @@ use Composer\Json\JsonFile;
 use Composer\Json\JsonManipulator;
 use Symfony\Flex\Lock;
 use Symfony\Flex\Recipe;
+use Symfony\Flex\Update\RecipeUpdate;
 
 /**
  * @author Fabien Potencier <fabien@symfony.com>
@@ -26,14 +27,7 @@ class ComposerScriptsConfigurator extends AbstractConfigurator
     {
         $json = new JsonFile(Factory::getComposerFile());
 
-        $jsonContents = $json->read();
-        $autoScripts = $jsonContents['scripts']['auto-scripts'] ?? [];
-        $autoScripts = array_merge($autoScripts, $scripts);
-
-        $manipulator = new JsonManipulator(file_get_contents($json->getPath()));
-        $manipulator->addSubNode('scripts', 'auto-scripts', $autoScripts);
-
-        file_put_contents($json->getPath(), $manipulator->getContents());
+        file_put_contents($json->getPath(), $this->configureScripts($scripts, $json));
     }
 
     public function unconfigure(Recipe $recipe, $scripts, Lock $lock)
@@ -50,5 +44,32 @@ class ComposerScriptsConfigurator extends AbstractConfigurator
         $manipulator->addSubNode('scripts', 'auto-scripts', $autoScripts);
 
         file_put_contents($json->getPath(), $manipulator->getContents());
+    }
+
+    public function update(RecipeUpdate $recipeUpdate, array $originalConfig, array $newConfig): void
+    {
+        $json = new JsonFile(Factory::getComposerFile());
+        $jsonPath = ltrim(str_replace($recipeUpdate->getRootDir(), '', $json->getPath()), '/\\');
+
+        $recipeUpdate->setOriginalFile(
+            $jsonPath,
+            $this->configureScripts($originalConfig, $json)
+        );
+        $recipeUpdate->setNewFile(
+            $jsonPath,
+            $this->configureScripts($newConfig, $json)
+        );
+    }
+
+    private function configureScripts(array $scripts, JsonFile $json): string
+    {
+        $jsonContents = $json->read();
+        $autoScripts = $jsonContents['scripts']['auto-scripts'] ?? [];
+        $autoScripts = array_merge($autoScripts, $scripts);
+
+        $manipulator = new JsonManipulator(file_get_contents($json->getPath()));
+        $manipulator->addSubNode('scripts', 'auto-scripts', $autoScripts);
+
+        return $manipulator->getContents();
     }
 }

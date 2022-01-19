@@ -13,6 +13,7 @@ namespace Symfony\Flex\Configurator;
 
 use Symfony\Flex\Lock;
 use Symfony\Flex\Recipe;
+use Symfony\Flex\Update\RecipeUpdate;
 
 /**
  * @author Fabien Potencier <fabien@symfony.com>
@@ -23,21 +24,7 @@ class GitignoreConfigurator extends AbstractConfigurator
     {
         $this->write('Adding entries to .gitignore');
 
-        $gitignore = $this->options->get('root-dir').'/.gitignore';
-        if (empty($options['force']) && $this->isFileMarked($recipe, $gitignore)) {
-            return;
-        }
-
-        $data = '';
-        foreach ($vars as $value) {
-            $value = $this->options->expandTargetDir($value);
-            $data .= "$value\n";
-        }
-        $data = "\n".ltrim($this->markData($recipe, $data), "\r\n");
-
-        if (!$this->updateData($gitignore, $data)) {
-            file_put_contents($gitignore, $data, \FILE_APPEND);
-        }
+        $this->configureGitignore($recipe, $vars, $options['force'] ?? false);
     }
 
     public function unconfigure(Recipe $recipe, $vars, Lock $lock)
@@ -54,5 +41,65 @@ class GitignoreConfigurator extends AbstractConfigurator
 
         $this->write('Removing entries in .gitignore');
         file_put_contents($file, ltrim($contents, "\r\n"));
+    }
+
+    public function update(RecipeUpdate $recipeUpdate, array $originalConfig, array $newConfig): void
+    {
+        $recipeUpdate->setOriginalFile(
+            '.gitignore',
+            $this->getContentsAfterApplyingRecipe($recipeUpdate->getRootDir(), $recipeUpdate->getOriginalRecipe(), $originalConfig)
+        );
+
+        $recipeUpdate->setNewFile(
+            '.gitignore',
+            $this->getContentsAfterApplyingRecipe($recipeUpdate->getRootDir(), $recipeUpdate->getNewRecipe(), $newConfig)
+        );
+    }
+
+    private function configureGitignore(Recipe $recipe, array $vars, bool $update)
+    {
+        $gitignore = $this->options->get('root-dir').'/.gitignore';
+        if (!$update && $this->isFileMarked($recipe, $gitignore)) {
+            return;
+        }
+
+        $data = '';
+        foreach ($vars as $value) {
+            $value = $this->options->expandTargetDir($value);
+            $data .= "$value\n";
+        }
+        $data = "\n".ltrim($this->markData($recipe, $data), "\r\n");
+
+        if (!$this->updateData($gitignore, $data)) {
+            file_put_contents($gitignore, $data, \FILE_APPEND);
+        }
+    }
+
+    private function getContentsAfterApplyingRecipe(string $rootDir, Recipe $recipe, $vars): ?string
+    {
+        if (0 === \count($vars)) {
+            return null;
+        }
+
+        $file = $rootDir.'/.gitignore';
+        $originalContents = file_exists($file) ? file_get_contents($file) : null;
+
+        $this->configureGitignore(
+            $recipe,
+            $vars,
+            true
+        );
+
+        $updatedContents = file_exists($file) ? file_get_contents($file) : null;
+
+        if (null === $originalContents) {
+            if (file_exists($file)) {
+                unlink($file);
+            }
+        } else {
+            file_put_contents($file, $originalContents);
+        }
+
+        return $updatedContents;
     }
 }

@@ -18,11 +18,13 @@ use Symfony\Flex\Configurator\EnvConfigurator;
 use Symfony\Flex\Lock;
 use Symfony\Flex\Options;
 use Symfony\Flex\Recipe;
+use Symfony\Flex\Update\RecipeUpdate;
 
 class EnvConfiguratorTest extends TestCase
 {
     public function testConfigure()
     {
+        @mkdir(FLEX_TEST_DIR);
         $configurator = new EnvConfigurator(
             $this->getMockBuilder(Composer::class)->getMock(),
             $this->getMockBuilder(IOInterface::class)->getMock(),
@@ -152,6 +154,7 @@ EOF
 
     public function testConfigureGeneratedSecret()
     {
+        @mkdir(FLEX_TEST_DIR);
         $configurator = new EnvConfigurator(
             $this->getMockBuilder(Composer::class)->getMock(),
             $this->getMockBuilder(IOInterface::class)->getMock(),
@@ -199,6 +202,7 @@ EOF
 
     public function testConfigureForce()
     {
+        @mkdir(FLEX_TEST_DIR);
         $configurator = new EnvConfigurator(
             $this->getMockBuilder(Composer::class)->getMock(),
             $this->getMockBuilder(IOInterface::class)->getMock(),
@@ -337,5 +341,75 @@ EOT;
         @unlink($env);
         @unlink($phpunit);
         @unlink($phpunitDist);
+    }
+
+    public function testUpdate()
+    {
+        $configurator = new EnvConfigurator(
+            $this->createMock(Composer::class),
+            $this->createMock(IOInterface::class),
+            new Options(['root-dir' => FLEX_TEST_DIR])
+        );
+
+        $recipe = $this->createMock(Recipe::class);
+        $recipe->method('getName')
+            ->willReturn('symfony/foo-bundle');
+        $recipeUpdate = new RecipeUpdate(
+            $recipe,
+            $recipe,
+            $this->createMock(Lock::class),
+            FLEX_TEST_DIR
+        );
+
+        @mkdir(FLEX_TEST_DIR);
+        file_put_contents(
+            FLEX_TEST_DIR.'/.env',
+            <<<EOF
+# Some comments on top
+###> symfony/foo-bundle ###
+APP_ENV="test bar"
+APP_SECRET=EXISTING_SECRET_VALUE
+APP_DEBUG=0
+###< symfony/foo-bundle ###
+###> symfony/baz-bundle ###
+OTHER_VAR=1
+###< symfony/baz-bundle ###
+EOF
+        );
+
+        $configurator->update(
+            $recipeUpdate,
+            // %generate(secret)% should not regenerate a new value
+            ['APP_ENV' => 'original', 'APP_SECRET' => '%generate(secret)%', 'APP_DEBUG' => 0, 'EXTRA_VAR' => 'apple'],
+            ['APP_ENV' => 'updated', 'APP_SECRET' => '%generate(secret)%', 'APP_DEBUG' => 0, 'NEW_VAR' => 'orange']
+        );
+
+        $this->assertSame(['.env' => <<<EOF
+# Some comments on top
+###> symfony/foo-bundle ###
+APP_ENV=original
+APP_SECRET=EXISTING_SECRET_VALUE
+APP_DEBUG=0
+EXTRA_VAR=apple
+###< symfony/foo-bundle ###
+###> symfony/baz-bundle ###
+OTHER_VAR=1
+###< symfony/baz-bundle ###
+EOF
+        ], $recipeUpdate->getOriginalFiles());
+
+        $this->assertSame(['.env' => <<<EOF
+# Some comments on top
+###> symfony/foo-bundle ###
+APP_ENV=updated
+APP_SECRET=EXISTING_SECRET_VALUE
+APP_DEBUG=0
+NEW_VAR=orange
+###< symfony/foo-bundle ###
+###> symfony/baz-bundle ###
+OTHER_VAR=1
+###< symfony/baz-bundle ###
+EOF
+        ], $recipeUpdate->getNewFiles());
     }
 }

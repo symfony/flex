@@ -13,6 +13,7 @@ namespace Symfony\Flex\Configurator;
 
 use Symfony\Flex\Lock;
 use Symfony\Flex\Recipe;
+use Symfony\Flex\Update\RecipeUpdate;
 
 /**
  * @author Fabien Potencier <fabien@symfony.com>
@@ -31,6 +32,21 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
     {
         $this->write('Removing files from recipe');
         $this->removeFiles($config, $this->getRemovableFilesFromRecipeAndLock($recipe, $lock), $this->options->get('root-dir'));
+    }
+
+    public function update(RecipeUpdate $recipeUpdate, array $originalConfig, array $newConfig): void
+    {
+        foreach ($recipeUpdate->getOriginalRecipe()->getFiles() as $filename => $data) {
+            $recipeUpdate->setOriginalFile($filename, $data['contents']);
+        }
+
+        $files = [];
+        foreach ($recipeUpdate->getNewRecipe()->getFiles() as $filename => $data) {
+            $recipeUpdate->setNewFile($filename, $data['contents']);
+
+            $files[] = $this->getLocalFilePath($recipeUpdate->getRootDir(), $filename);
+        }
+        $recipeUpdate->getLock()->add($recipeUpdate->getPackageName(), ['files' => $files]);
     }
 
     private function getRemovableFilesFromRecipeAndLock(Recipe $recipe, Lock $lock): array
@@ -96,7 +112,7 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
     {
         $overwrite = $options['force'] ?? false;
         $basePath = $options['root-dir'] ?? '.';
-        $copiedFile = str_replace($basePath.\DIRECTORY_SEPARATOR, '', $to);
+        $copiedFile = $this->getLocalFilePath($basePath, $to);
 
         if (!$this->options->shouldWriteFile($to, $overwrite)) {
             return $copiedFile;
@@ -150,5 +166,10 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
         if (0 === \count(glob(\dirname($to).'/*', \GLOB_NOSORT))) {
             @rmdir(\dirname($to));
         }
+    }
+
+    private function getLocalFilePath(string $basePath, $destination): string
+    {
+        return str_replace($basePath.\DIRECTORY_SEPARATOR, '', $destination);
     }
 }

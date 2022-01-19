@@ -13,17 +13,17 @@ namespace Symfony\Flex\Command;
 
 use Composer\Command\BaseCommand;
 use Composer\DependencyResolver\Operation\InstallOperation;
-use Composer\Factory;
 use Symfony\Component\Console\Exception\RuntimeException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Flex\Event\UpdateEvent;
-use Symfony\Flex\Lock;
+use Symfony\Flex\Flex;
 
 class InstallRecipesCommand extends BaseCommand
 {
+    /** @var Flex */
     private $flex;
     private $rootDir;
 
@@ -55,7 +55,7 @@ class InstallRecipesCommand extends BaseCommand
             throw new RuntimeException('Cannot run "sync-recipes --force": git not found.');
         }
 
-        $symfonyLock = new Lock(getenv('SYMFONY_LOCKFILE') ?: str_replace('composer.json', 'symfony.lock', Factory::getComposerFile()));
+        $symfonyLock = $this->flex->getLock();
         $composer = $this->getComposer();
         $locker = $composer->getLocker();
         $lockData = $locker->getLockData();

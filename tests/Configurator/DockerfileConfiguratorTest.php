@@ -18,6 +18,7 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Flex\Lock;
 use Symfony\Flex\Options;
 use Symfony\Flex\Recipe;
+use Symfony\Flex\Update\RecipeUpdate;
 
 class DockerfileConfiguratorTest extends TestCase
 {
@@ -107,17 +108,7 @@ EOF;
         $config = FLEX_TEST_DIR.'/Dockerfile';
         file_put_contents($config, $originalContent);
 
-        $package = new Package('dummy/dummy', '1.0.0', '1.0.0');
-        $package->setExtra(['symfony' => ['docker' => true]]);
-
-        $composer = $this->getMockBuilder(Composer::class)->getMock();
-        $composer->method('getPackage')->willReturn($package);
-
-        $configurator = new DockerfileConfigurator(
-            $composer,
-            $this->getMockBuilder(IOInterface::class)->getMock(),
-            new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
-        );
+        $configurator = $this->createConfigurator();
         $configurator->configure($recipe, ['RUN docker-php-ext-install pdo_mysql'], $lock);
         $this->assertEquals(<<<'EOF'
 FROM php:7.1-fpm-alpine
@@ -192,5 +183,111 @@ EOF
 
         $configurator->unconfigure($recipe, [], $lock);
         $this->assertEquals($originalContent, file_get_contents($config));
+    }
+
+    public function testUpdate()
+    {
+        $configurator = $this->createConfigurator();
+        $recipe = $this->createMock(Recipe::class);
+        $recipe->method('getName')
+            ->willReturn('dummy/dummy');
+
+        $recipeUpdate = new RecipeUpdate(
+            $recipe,
+            $recipe,
+            $this->createMock(Lock::class),
+            FLEX_TEST_DIR
+        );
+
+        @mkdir(FLEX_TEST_DIR);
+        file_put_contents(
+            FLEX_TEST_DIR.'/Dockerfile',
+            <<<EOF
+FROM php:7.1-fpm-alpine
+
+RUN apk add --no-cache --virtual .persistent-deps \
+		git \
+		zlib
+
+###> recipes ###
+###> dummy/dummy ###
+RUN docker-php-ext-install pdo_dummyv1
+# my custom line
+###< dummy/dummy ###
+###> doctrine/doctrine-bundle ###
+RUN docker-php-ext-install pdo_mysql
+###< doctrine/doctrine-bundle ###
+###< recipes ##
+
+COPY docker/app/install-composer.sh /usr/local/bin/docker-app-install-composer
+RUN chmod +x /usr/local/bin/docker-app-install-composer
+
+EOF
+        );
+
+        $configurator->update(
+            $recipeUpdate,
+            ['RUN docker-php-ext-install pdo_dummyv1'],
+            ['RUN docker-php-ext-install pdo_dummyv2']
+        );
+
+        $this->assertSame(['Dockerfile' => <<<EOF
+FROM php:7.1-fpm-alpine
+
+RUN apk add --no-cache --virtual .persistent-deps \
+		git \
+		zlib
+
+###> recipes ###
+###> dummy/dummy ###
+RUN docker-php-ext-install pdo_dummyv1
+###< dummy/dummy ###
+###> doctrine/doctrine-bundle ###
+RUN docker-php-ext-install pdo_mysql
+###< doctrine/doctrine-bundle ###
+###< recipes ##
+
+COPY docker/app/install-composer.sh /usr/local/bin/docker-app-install-composer
+RUN chmod +x /usr/local/bin/docker-app-install-composer
+
+EOF
+        ], $recipeUpdate->getOriginalFiles());
+
+        $this->assertSame(['Dockerfile' => <<<EOF
+FROM php:7.1-fpm-alpine
+
+RUN apk add --no-cache --virtual .persistent-deps \
+		git \
+		zlib
+
+###> recipes ###
+###> dummy/dummy ###
+RUN docker-php-ext-install pdo_dummyv2
+###< dummy/dummy ###
+###> doctrine/doctrine-bundle ###
+RUN docker-php-ext-install pdo_mysql
+###< doctrine/doctrine-bundle ###
+###< recipes ##
+
+COPY docker/app/install-composer.sh /usr/local/bin/docker-app-install-composer
+RUN chmod +x /usr/local/bin/docker-app-install-composer
+
+EOF
+        ], $recipeUpdate->getNewFiles());
+    }
+
+    private function createConfigurator(): DockerfileConfigurator
+    {
+        $package = new Package('dummy/dummy', '1.0.0', '1.0.0');
+        $package->setExtra(['symfony' => ['docker' => true]]);
+
+        $composer = $this->getMockBuilder(Composer::class)->getMock();
+        $composer->method('getPackage')->willReturn($package);
+
+        return new DockerfileConfigurator(
+            $composer,
+            $this->getMockBuilder(IOInterface::class)->getMock(),
+            new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
+        );
     }
 }

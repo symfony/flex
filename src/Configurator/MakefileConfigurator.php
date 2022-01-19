@@ -13,6 +13,7 @@ namespace Symfony\Flex\Configurator;
 
 use Symfony\Flex\Lock;
 use Symfony\Flex\Recipe;
+use Symfony\Flex\Update\RecipeUpdate;
 
 /**
  * @author Fabien Potencier <fabien@symfony.com>
@@ -23,8 +24,45 @@ class MakefileConfigurator extends AbstractConfigurator
     {
         $this->write('Adding Makefile entries');
 
+        $this->configureMakefile($recipe, $definitions, $options['force'] ?? false);
+    }
+
+    public function unconfigure(Recipe $recipe, $vars, Lock $lock)
+    {
+        if (!file_exists($makefile = $this->options->get('root-dir').'/Makefile')) {
+            return;
+        }
+
+        $contents = preg_replace(sprintf('{%s*###> %s ###.*###< %s ###%s+}s', "\n", $recipe->getName(), $recipe->getName(), "\n"), "\n", file_get_contents($makefile), -1, $count);
+        if (!$count) {
+            return;
+        }
+
+        $this->write(sprintf('Removing Makefile entries from %s', $makefile));
+        if (!trim($contents)) {
+            @unlink($makefile);
+        } else {
+            file_put_contents($makefile, ltrim($contents, "\r\n"));
+        }
+    }
+
+    public function update(RecipeUpdate $recipeUpdate, array $originalConfig, array $newConfig): void
+    {
+        $recipeUpdate->setOriginalFile(
+            'Makefile',
+            $this->getContentsAfterApplyingRecipe($recipeUpdate->getRootDir(), $recipeUpdate->getOriginalRecipe(), $originalConfig)
+        );
+
+        $recipeUpdate->setNewFile(
+            'Makefile',
+            $this->getContentsAfterApplyingRecipe($recipeUpdate->getRootDir(), $recipeUpdate->getNewRecipe(), $newConfig)
+        );
+    }
+
+    private function configureMakefile(Recipe $recipe, array $definitions, bool $update)
+    {
         $makefile = $this->options->get('root-dir').'/Makefile';
-        if (empty($options['force']) && $this->isFileMarked($recipe, $makefile)) {
+        if (!$update && $this->isFileMarked($recipe, $makefile)) {
             return;
         }
 
@@ -54,22 +92,31 @@ EOF
         }
     }
 
-    public function unconfigure(Recipe $recipe, $vars, Lock $lock)
+    private function getContentsAfterApplyingRecipe(string $rootDir, Recipe $recipe, array $definitions): ?string
     {
-        if (!file_exists($makefile = $this->options->get('root-dir').'/Makefile')) {
-            return;
+        if (0 === \count($definitions)) {
+            return null;
         }
 
-        $contents = preg_replace(sprintf('{%s*###> %s ###.*###< %s ###%s+}s', "\n", $recipe->getName(), $recipe->getName(), "\n"), "\n", file_get_contents($makefile), -1, $count);
-        if (!$count) {
-            return;
-        }
+        $file = $rootDir.'/Makefile';
+        $originalContents = file_exists($file) ? file_get_contents($file) : null;
 
-        $this->write(sprintf('Removing Makefile entries from %s', $makefile));
-        if (!trim($contents)) {
-            @unlink($makefile);
+        $this->configureMakefile(
+            $recipe,
+            $definitions,
+            true
+        );
+
+        $updatedContents = file_exists($file) ? file_get_contents($file) : null;
+
+        if (null === $originalContents) {
+            if (file_exists($file)) {
+                unlink($file);
+            }
         } else {
-            file_put_contents($makefile, ltrim($contents, "\r\n"));
+            file_put_contents($file, $originalContents);
         }
+
+        return $updatedContents;
     }
 }

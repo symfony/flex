@@ -18,14 +18,21 @@ use Symfony\Flex\Configurator\ContainerConfigurator;
 use Symfony\Flex\Lock;
 use Symfony\Flex\Options;
 use Symfony\Flex\Recipe;
+use Symfony\Flex\Update\RecipeUpdate;
 
 class ContainerConfiguratorTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        @mkdir(FLEX_TEST_DIR);
+    }
+
     public function testConfigure()
     {
         $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
         $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
         $config = FLEX_TEST_DIR.'/config/services.yaml';
+        @mkdir(\dirname($config));
         file_put_contents(
             $config,
             <<<EOF
@@ -284,5 +291,72 @@ services:
 
 EOF
             , file_get_contents($config));
+    }
+
+    public function testUpdate()
+    {
+        $configurator = new ContainerConfigurator(
+            $this->createMock(Composer::class),
+            $this->createMock(IOInterface::class),
+            new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
+        );
+
+        $recipeUpdate = new RecipeUpdate(
+            $this->createMock(Recipe::class),
+            $this->createMock(Recipe::class),
+            $this->createMock(Lock::class),
+            FLEX_TEST_DIR
+        );
+
+        @mkdir(FLEX_TEST_DIR.'/config');
+        file_put_contents(
+            FLEX_TEST_DIR.'/config/services.yaml',
+            <<<EOF
+parameters:
+    # comment 1
+    locale: es
+
+    # comment 2
+    foo: bar
+
+services:
+
+EOF
+        );
+
+        $configurator->update(
+            $recipeUpdate,
+            ['locale' => 'en', 'foobar' => 'baz'],
+            ['locale' => 'fr', 'foobar' => 'baz', 'new_one' => 'hallo']
+        );
+
+        $this->assertSame(['config/services.yaml' => <<<EOF
+parameters:
+    # comment 1
+    locale: en
+
+    # comment 2
+    foo: bar
+    foobar: 'baz'
+
+services:
+
+EOF
+        ], $recipeUpdate->getOriginalFiles());
+
+        $this->assertSame(['config/services.yaml' => <<<EOF
+parameters:
+    # comment 1
+    locale: fr
+
+    # comment 2
+    foo: bar
+    foobar: 'baz'
+    new_one: 'hallo'
+
+services:
+
+EOF
+        ], $recipeUpdate->getNewFiles());
     }
 }

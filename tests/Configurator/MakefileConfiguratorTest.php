@@ -18,9 +18,15 @@ use Symfony\Flex\Configurator\MakefileConfigurator;
 use Symfony\Flex\Lock;
 use Symfony\Flex\Options;
 use Symfony\Flex\Recipe;
+use Symfony\Flex\Update\RecipeUpdate;
 
 class MakefileConfiguratorTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        @mkdir(FLEX_TEST_DIR);
+    }
+
     public function testConfigure()
     {
         $configurator = new MakefileConfigurator(
@@ -124,5 +130,105 @@ EOF
             'force' => true,
         ]);
         $this->assertStringEqualsFile($makefile, $contentForce);
+    }
+
+    public function testUpdate()
+    {
+        $configurator = new MakefileConfigurator(
+            $this->getMockBuilder(Composer::class)->getMock(),
+            $this->getMockBuilder(IOInterface::class)->getMock(),
+            new Options(['root-dir' => FLEX_TEST_DIR])
+        );
+
+        $recipe = $this->createMock(Recipe::class);
+        $recipe->method('getName')
+            ->willReturn('symfony/foo-bundle');
+        $recipeUpdate = new RecipeUpdate(
+            $recipe,
+            $recipe,
+            $this->createMock(Lock::class),
+            FLEX_TEST_DIR
+        );
+
+        @mkdir(FLEX_TEST_DIR);
+        file_put_contents(
+            FLEX_TEST_DIR.'/Makefile',
+            <<<EOF
+###> symfony/foo-bundle ###
+CONSOLE := $(shell which bin/console)
+sf_console_CUSTOM:
+ifndef CONSOLE
+    @printf "Run composer require cli to install the Symfony console."
+endif
+###< symfony/foo-bundle ###
+###> symfony/bar-bundle ###
+cache-clear:
+ifdef CONSOLE
+	@$(CONSOLE) cache:clear --no-warmup
+else
+	@rm -rf var/cache/*
+endif
+.PHONY: cache-clear
+###< symfony/bar-bundle ###
+EOF
+        );
+
+        $configurator->update(
+            $recipeUpdate,
+            [
+                'CONSOLE := $(shell which bin/console)',
+                'sf_console:',
+                'ifndef CONSOLE',
+                '    @printf "Run composer require cli to install the Symfony console."',
+                'endif',
+            ],
+            [
+                'CONSOLE := $(shell which bin/console)',
+                'sf_console_CHANGED:',
+                'ifndef CONSOLE',
+                '    @printf "Run composer require cli to install the Symfony console."',
+                'endif',
+            ]
+        );
+
+        $this->assertSame(['Makefile' => <<<EOF
+###> symfony/foo-bundle ###
+CONSOLE := $(shell which bin/console)
+sf_console:
+ifndef CONSOLE
+    @printf "Run composer require cli to install the Symfony console."
+endif
+###< symfony/foo-bundle ###
+###> symfony/bar-bundle ###
+cache-clear:
+ifdef CONSOLE
+	@$(CONSOLE) cache:clear --no-warmup
+else
+	@rm -rf var/cache/*
+endif
+.PHONY: cache-clear
+###< symfony/bar-bundle ###
+EOF
+        ], $recipeUpdate->getOriginalFiles());
+
+        $this->assertSame(['Makefile' => <<<EOF
+###> symfony/foo-bundle ###
+CONSOLE := $(shell which bin/console)
+sf_console_CHANGED:
+ifndef CONSOLE
+    @printf "Run composer require cli to install the Symfony console."
+endif
+###< symfony/foo-bundle ###
+###> symfony/bar-bundle ###
+cache-clear:
+ifdef CONSOLE
+	@$(CONSOLE) cache:clear --no-warmup
+else
+	@rm -rf var/cache/*
+endif
+.PHONY: cache-clear
+###< symfony/bar-bundle ###
+EOF
+        ], $recipeUpdate->getNewFiles());
     }
 }

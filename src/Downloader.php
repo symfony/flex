@@ -139,6 +139,7 @@ class Downloader
         $data = [];
         $urls = [];
         $chunk = '';
+        $recipeRef = null;
         foreach ($operations as $operation) {
             $o = 'i';
             if ($operation instanceof UpdateOperation) {
@@ -149,9 +150,16 @@ class Downloader
                 if ($operation instanceof UninstallOperation) {
                     $o = 'r';
                 }
+
+                if ($operation instanceof InformationOperation) {
+                    $recipeRef = $operation->getRecipeRef();
+                }
             }
 
             $version = $package->getPrettyVersion();
+            if ($operation instanceof InformationOperation && $operation->getVersion()) {
+                $version = $operation->getVersion();
+            }
             if (0 === strpos($version, 'dev-') && isset($package->getExtra()['branch-alias'])) {
                 $branchAliases = $package->getExtra()['branch-alias'];
                 if (
@@ -179,6 +187,16 @@ class Downloader
                     if (version_compare($version, $v, '>=')) {
                         $data['locks'][$package->getName()]['version'] = $version;
                         $data['locks'][$package->getName()]['recipe']['version'] = $v;
+
+                        if (null !== $recipeRef && isset($this->endpoints[$endpoint]['_links']['archived_recipes_template'])) {
+                            $urls[] = strtr($this->endpoints[$endpoint]['_links']['archived_recipes_template'], [
+                                '{package_dotted}' => str_replace('/', '.', $package->getName()),
+                                '{ref}' => $recipeRef,
+                            ]);
+
+                            break;
+                        }
+
                         $urls[] = strtr($this->endpoints[$endpoint]['_links']['recipe_template'], [
                             '{package_dotted}' => str_replace('/', '.', $package->getName()),
                             '{package}' => $package->getName(),
@@ -418,6 +436,9 @@ class Downloader
         $url = preg_replace('{^https://api.github.com/repos/([^/]++/[^/]++)/contents/}', '$1/', $url);
         $url = preg_replace('{^https://raw.githubusercontent.com/([^/]++/[^/]++)/}', '$1/', $url);
 
-        return preg_replace('{[^a-z0-9.]}i', '-', $url);
+        $key = preg_replace('{[^a-z0-9.]}i', '-', $url);
+
+        // eCryptfs can have problems with filenames longer than around 143 chars
+        return \strlen($key) > 140 ? md5($url) : $key;
     }
 }
