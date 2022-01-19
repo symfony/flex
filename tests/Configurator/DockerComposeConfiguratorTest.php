@@ -257,6 +257,26 @@ YAML
         yield 'no_forever' => ['x', false, true];
     }
 
+    public function testEnvVarUsedForDockerConfirmation()
+    {
+        $composerJsonPath = FLEX_TEST_DIR.'/composer.json';
+        file_put_contents($composerJsonPath, json_encode(['name' => 'test/app']));
+
+        $this->package->setExtra(['symfony' => []]);
+        $this->recipeDb->method('getJob')->willReturn('install');
+        $this->io->expects($this->never())->method('askAndValidate');
+
+        $_SERVER['SYMFONY_DOCKER'] = 1;
+        $this->configurator->configure($this->recipeDb, self::CONFIG_DB, $this->lock);
+        unset($_SERVER['SYMFONY_DOCKER']);
+
+        $this->assertFileExists(FLEX_TEST_DIR.'/docker-compose.yml');
+
+        $composerJsonData = json_decode(file_get_contents($composerJsonPath), true);
+        $this->assertArrayHasKey('extra', $composerJsonData);
+        $this->assertTrue($composerJsonData['extra']['symfony']['docker']);
+    }
+
     public function testConfigureFileWithExistingVolumes()
     {
         $originalContent = self::ORIGINAL_CONTENT.<<<'YAML'
