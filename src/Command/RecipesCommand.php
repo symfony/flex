@@ -13,6 +13,7 @@ namespace Symfony\Flex\Command;
 
 use Composer\Command\BaseCommand;
 use Composer\Downloader\TransportException;
+use Composer\Util\HttpDownloader;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
