@@ -179,6 +179,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             $app->add(new Command\RemoveCommand($resolver));
             $app->add(new Command\RecipesCommand($this, $this->lock, $rfs));
             $app->add(new Command\InstallRecipesCommand($this, $this->options->get('root-dir')));
+            $app->add(new Command\UpdateRecipesCommand($this, $this->downloader, $rfs, $this->configurator, $this->options->get('root-dir')));
             $app->add(new Command\DumpEnvCommand($this->config, $this->options));
 
             break;
@@ -311,8 +312,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
         if (!$recipes) {
             if (ScriptEvents::POST_UPDATE_CMD === $event->getName()) {
-                $this->synchronizePackageJson($rootDir);
-                $this->lock->write();
+                $this->finish($rootDir);
             }
 
             if ($this->downloader->isEnabled()) {
@@ -408,10 +408,15 @@ class Flex implements PluginInterface, EventSubscriberInterface
             );
         }
 
+        $this->finish($rootDir, $originalComposerJsonHash);
+    }
+
+    public function finish(string $rootDir, string $originalComposerJsonHash = null): void
+    {
         $this->synchronizePackageJson($rootDir);
         $this->lock->write();
 
-        if ($this->getComposerJsonHash() !== $originalComposerJsonHash) {
+        if ($originalComposerJsonHash && $this->getComposerJsonHash() !== $originalComposerJsonHash) {
             $this->updateComposerLock();
         }
     }
@@ -575,6 +580,20 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $event->setPackages($this->filter->removeLegacyPackages($event->getPackages(), $rootPackage, $lockedPackages));
     }
 
+    public function getComposerJsonHash(): string
+    {
+        return md5_file(Factory::getComposerFile());
+    }
+
+    public function getLock(): Lock
+    {
+        if (null === $this->lock) {
+            throw new \Exception('Cannot access lock before calling activate().');
+        }
+
+        return $this->lock;
+    }
+
     private function initOptions(): Options
     {
         $extra = $this->composer->getPackage()->getExtra();
@@ -711,10 +730,5 @@ class Flex implements PluginInterface, EventSubscriberInterface
         ];
 
         return $events;
-    }
-
-    private function getComposerJsonHash(): string
-    {
-        return md5_file(Factory::getComposerFile());
     }
 }

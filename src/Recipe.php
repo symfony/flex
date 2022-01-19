@@ -115,4 +115,9 @@ class Recipe
     {
         return $this->lock['recipe']['version'] ?? $this->lock['version'];
     }
+
+    public function getLock(): array
+    {
+        return $this->lock;
+    }
 }

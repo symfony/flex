@@ -14,6 +14,7 @@ namespace Symfony\Flex;
 use Composer\Composer;
 use Composer\IO\IOInterface;
 use Symfony\Flex\Configurator\AbstractConfigurator;
+use Symfony\Flex\Update\RecipeUpdate;
 
 /**
  * @author Fabien Potencier <fabien@symfony.com>
@@ -53,6 +54,19 @@ class Configurator
             if (isset($manifest[$key])) {
                 $this->get($key)->configure($recipe, $manifest[$key], $lock, $options);
             }
+        }
+    }
+
+    public function populateUpdate(RecipeUpdate $recipeUpdate): void
+    {
+        $originalManifest = $recipeUpdate->getOriginalRecipe()->getManifest();
+        $newManifest = $recipeUpdate->getNewRecipe()->getManifest();
+        foreach (array_keys($this->configurators) as $key) {
+            if (!isset($originalManifest[$key]) && !isset($newManifest[$key])) {
+                continue;
+            }
+
+            $this->get($key)->update($recipeUpdate, $originalManifest[$key] ?? [], $newManifest[$key] ?? []);
         }
     }
 

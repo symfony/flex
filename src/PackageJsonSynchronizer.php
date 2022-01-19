@@ -16,6 +16,7 @@ use Composer\Json\JsonManipulator;
 use Composer\Semver\Constraint\ConstraintInterface;
 use Composer\Semver\Intervals;
 use Composer\Semver\VersionParser;
+use Seld\JsonLint\ParsingException;
 
 /**
  * Synchronize package.json files detected in installed PHP packages with
@@ -40,7 +41,12 @@ class PackageJsonSynchronizer
     public function synchronize(array $phpPackages): bool
     {
         // Remove all links and add again only the existing packages
-        $didAddLink = $this->removePackageJsonLinks((new JsonFile($this->rootDir.'/package.json'))->read());
+        try {
+            $didAddLink = $this->removePackageJsonLinks((new JsonFile($this->rootDir.'/package.json'))->read());
+        } catch (ParsingException $e) {
+            // if package.json is invalid (possible during a recipe upgrade), we can't update the file
+            return false;
+        }
 
         foreach ($phpPackages as $k => $phpPackage) {
             if (\is_string($phpPackage)) {
@@ -101,7 +107,12 @@ class PackageJsonSynchronizer
         uksort($devDependencies, 'strnatcmp');
         $manipulator->addMainKey('devDependencies', $devDependencies);
 
-        file_put_contents($this->rootDir.'/package.json', $manipulator->getContents());
+        $newContents = $manipulator->getContents();
+        if ($newContents === file_get_contents($this->rootDir.'/package.json')) {
+            return false;
+        }
+
+        file_put_contents($this->rootDir.'/package.json', $newContents);
 
         return true;
     }

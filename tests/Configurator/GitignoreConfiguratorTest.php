@@ -18,11 +18,13 @@ use Symfony\Flex\Configurator\GitignoreConfigurator;
 use Symfony\Flex\Lock;
 use Symfony\Flex\Options;
 use Symfony\Flex\Recipe;
+use Symfony\Flex\Update\RecipeUpdate;
 
 class GitignoreConfiguratorTest extends TestCase
 {
     public function testConfigure()
     {
+        @mkdir(FLEX_TEST_DIR);
         $configurator = new GitignoreConfigurator(
             $this->getMockBuilder(Composer::class)->getMock(),
             $this->getMockBuilder(IOInterface::class)->getMock(),
@@ -83,6 +85,7 @@ EOF;
 
     public function testConfigureForce()
     {
+        @mkdir(FLEX_TEST_DIR);
         $configurator = new GitignoreConfigurator(
             $this->getMockBuilder(Composer::class)->getMock(),
             $this->getMockBuilder(IOInterface::class)->getMock(),
@@ -133,5 +136,87 @@ EOF;
         $this->assertStringEqualsFile($gitignore, $contentsForce);
 
         @unlink($gitignore);
+    }
+
+    public function testUpdate()
+    {
+        $configurator = new GitignoreConfigurator(
+            $this->getMockBuilder(Composer::class)->getMock(),
+            $this->getMockBuilder(IOInterface::class)->getMock(),
+            new Options(['public-dir' => 'public', 'root-dir' => FLEX_TEST_DIR])
+        );
+
+        $recipe = $this->createMock(Recipe::class);
+        $recipe->method('getName')
+            ->willReturn('symfony/foo-bundle');
+        $recipeUpdate = new RecipeUpdate(
+            $recipe,
+            $recipe,
+            $this->createMock(Lock::class),
+            FLEX_TEST_DIR
+        );
+
+        @mkdir(FLEX_TEST_DIR);
+        file_put_contents(
+            FLEX_TEST_DIR.'/.gitignore',
+            <<<EOF
+# preexisting content
+
+###> symfony/foo-bundle ###
+/.env.local
+/.env.CUSTOMIZED.php
+/.env.*.local
+/new_custom_entry
+###< symfony/foo-bundle ###
+
+###> symfony/bar-bundle ###
+/.bar_file
+###< symfony/bar-bundle ###
+
+# new content
+EOF
+        );
+
+        $configurator->update(
+            $recipeUpdate,
+            ['/.env.local', '/.env.local.php', '/.env.*.local', '/vendor/'],
+            ['/.env.LOCAL', '/.env.LOCAL.php', '/.env.*.LOCAL', '/%VAR_DIR%/']
+        );
+
+        $this->assertSame(['.gitignore' => <<<EOF
+# preexisting content
+
+###> symfony/foo-bundle ###
+/.env.local
+/.env.local.php
+/.env.*.local
+/vendor/
+###< symfony/foo-bundle ###
+
+###> symfony/bar-bundle ###
+/.bar_file
+###< symfony/bar-bundle ###
+
+# new content
+EOF
+        ], $recipeUpdate->getOriginalFiles());
+
+        $this->assertSame(['.gitignore' => <<<EOF
+# preexisting content
+
+###> symfony/foo-bundle ###
+/.env.LOCAL
+/.env.LOCAL.php
+/.env.*.LOCAL
+/%VAR_DIR%/
+###< symfony/foo-bundle ###
+
+###> symfony/bar-bundle ###
+/.bar_file
+###< symfony/bar-bundle ###
+
+# new content
+EOF
+        ], $recipeUpdate->getNewFiles());
     }
 }
