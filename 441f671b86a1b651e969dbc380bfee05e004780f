@@ -1,0 +1,18 @@
+---------------------------------------------------------------------------
+
+by codedmonkey at 2021-12-22T12:22:49Z
+
+Apologies for the delay, I had a very persistent cold the last few weeks.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2022-01-19T08:29:21Z
+
+Can you please rebase?
+There is a conflict to resolve after https://github.com/symfony/flex/pull/845/files#diff-58c55c0fe84f0796c800aca4a49066dc4b12ce3bfb512ce88fe541fad0fe6209
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2022-01-19T08:29:32Z
+
+/cc @tgalopin could you please have a look?
