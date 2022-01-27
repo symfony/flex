@@ -531,8 +531,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         if ($synchronizer->shouldSynchronize()) {
             $lockData = $this->composer->getLocker()->getLockData();
 
-            $r = new \ReflectionParameter([$synchronizer, 'addPackageJsonLink'], 'phpPackage');
-            if ('string' === $r->getType()->getName()) {
+            if (method_exists($synchronizer, 'addPackageJsonLink') && 'string' === (new \ReflectionParameter([$synchronizer, 'addPackageJsonLink'], 'phpPackage'))->getType()->getName()) {
                 // support for smooth upgrades from older flex versions
                 $lockData['packages'] = array_column($lockData['packages'] ?? [], 'name');
                 $lockData['packages-dev'] = array_column($lockData['packages-dev'] ?? [], 'name');
