@@ -1,0 +1,15 @@
+{
+   "name": "symfony/fixture",
+   "dependencies": {
+      "@hotcookies": "^1.1|^2",
+      "@hotdogs": "^2",
+      "@symfony/existing-package": "file:vendor/symfony/existing-package/Resources/assets"
+   },
+   "devDependencies": {
+      "@symfony/stimulus-bridge": "^1.0.0",
+      "stimulus": "^1.1.1"
+   },
+   "browserslist": [
+      "defaults"
+   ]
+}

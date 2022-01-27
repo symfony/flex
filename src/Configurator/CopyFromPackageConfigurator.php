@@ -145,6 +145,9 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
 
     private function removeFilesFromDir(string $source, string $target)
     {
+        if (!is_dir($source)) {
+            return;
+        }
         $iterator = $this->createSourceIterator($source, \RecursiveIteratorIterator::CHILD_FIRST);
         foreach ($iterator as $item) {
             $targetPath = $this->path->concatenate([$target, $iterator->getSubPathName()]);

@@ -11,7 +11,6 @@
 
 namespace Symfony\Flex\Tests;
 
-use Composer\Semver\Intervals;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Flex\PackageJsonSynchronizer;
@@ -145,7 +144,6 @@ class PackageJsonSynchronizerTest extends TestCase
             '{
    "name": "symfony/fixture",
    "devDependencies": {
-      "@hotcookies": "'.(method_exists(Intervals::class, 'isSubsetOf') ? '^1.1' : '^1.1,(^1.1|^2)').'",
       "@hotdogs": "^2",
       "@symfony/existing-package": "file:vendor/symfony/existing-package/Resources/assets",
       "@symfony/new-package": "file:vendor/symfony/new-package/assets",
@@ -213,6 +211,38 @@ class PackageJsonSynchronizerTest extends TestCase
    ]
 }',
             trim(file_get_contents($this->tempDir.'/package.json'))
+        );
+    }
+
+    public function testExistingElevatedPackage()
+    {
+        (new Filesystem())->copy($this->tempDir.'/elevated_dependencies_package.json', $this->tempDir.'/package.json', true);
+
+        $this->synchronizer->synchronize([
+            [
+                'name' => 'symfony/existing-package',
+                'keywords' => ['symfony-ux'],
+            ],
+        ]);
+
+        // Should keep existing package references and config
+        $this->assertSame(
+            [
+                'name' => 'symfony/fixture',
+                'dependencies' => [
+                    '@hotcookies' => '^1.1|^2',
+                    '@hotdogs' => '^2',
+                    '@symfony/existing-package' => 'file:vendor/symfony/existing-package/Resources/assets',
+                ],
+                'devDependencies' => [
+                    '@symfony/stimulus-bridge' => '^1.0.0',
+                    'stimulus' => '^1.1.1',
+                ],
+                'browserslist' => [
+                    'defaults',
+                ],
+            ],
+            json_decode(file_get_contents($this->tempDir.'/package.json'), true)
         );
     }
 }

@@ -19,6 +19,7 @@
   <php>
     <ini name="error_reporting" value="-1" />
     <env name="SYMFONY_DEPRECATIONS_HELPER" value="weak" />
+    <env name="LC_ALL" value="C" />
   </php>
 
   <filter>
