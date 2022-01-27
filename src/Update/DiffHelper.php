@@ -35,6 +35,11 @@ class DiffHelper
             $patch = $contentBefore.substr($patch, $end);
         }
 
+        // valid patches end with a blank line
+        if ($patch && "\n" !== substr($patch, \strlen($patch) - 1, 1)) {
+            $patch = $patch."\n";
+        }
+
         return $patch;
     }
 }

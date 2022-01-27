@@ -105,6 +105,7 @@ index 0000000..34c2ebc
 +    dbal:
 +        # "TEST_TOKEN" is typically set by ParaTest
 +        dbname_suffix: '_test%env(default::TEST_TOKEN)%'
+
 EOF
             , [
                 '.env' => <<<EOF
@@ -154,6 +155,7 @@ index 0000000..34c2ebc
 +    dbal:
 +        # "TEST_TOKEN" is typically set by ParaTest
 +        dbname_suffix: '_test%env(default::TEST_TOKEN)%'
+
 EOF
             , [
                 'config/packages/doctrine.yaml' => <<<EOF
@@ -204,6 +206,7 @@ index 8ae31a3..17299e2 100644
 -            type: pool
 -            pool: doctrine.system_cache_pool
          query_cache_driver:
+
 EOF
             , [
                 'config/packages/test/doctrine.yaml' => <<<EOF
@@ -244,6 +247,7 @@ index 8ae31a3..17299e2 100644
 -            type: pool
 -            pool: doctrine.system_cache_pool
          query_cache_driver:
+
 EOF
             , [
                 'config/packages/test/doctrine.yaml' => <<<EOF
