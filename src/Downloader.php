@@ -280,6 +280,16 @@ class Downloader
     }
 
     /**
+     * Used to "hide" a recipe version so that the next most-recent will be returned.
+     *
+     * This is used when resolving "conflicts".
+     */
+    public function removeRecipeFromIndex(string $packageName, string $version)
+    {
+        unset($this->index[$packageName][$version]);
+    }
+
+    /**
      * Fetches and decodes JSON HTTP response bodies.
      */
     private function get(array $urls, bool $isRecipe = false, int $try = 3): array
