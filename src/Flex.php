@@ -431,7 +431,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         foreach ($recipes as $recipe) {
             if ('install' === $recipe->getJob() && !$installContribs && $recipe->isContrib()) {
                 $warning = $this->io->isInteractive() ? 'WARNING' : 'IGNORING';
-                $this->io->writeError(sprintf('  - <warning> %s </> %s', $warning, $recipe->getFormattedOrigin()));
+                $this->io->writeError(sprintf('  - <warning> %s </> %s', $warning, $this->formatOrigin($recipe)));
                 $question = sprintf('    The recipe for this package comes from the "contrib" repository, which is open to community contributions.
     Review the recipe at %s
 
@@ -474,7 +474,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
             switch ($recipe->getJob()) {
                 case 'install':
-                    $this->io->writeError(sprintf('  - Configuring %s', $recipe->getFormattedOrigin()));
+                    $this->io->writeError(sprintf('  - Configuring %s', $this->formatOrigin($recipe)));
                     $this->configurator->install($recipe, $this->lock, [
                         'force' => $event instanceof UpdateEvent && $event->force(),
                     ]);
@@ -491,7 +491,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
                 case 'update':
                     break;
                 case 'uninstall':
-                    $this->io->writeError(sprintf('  - Unconfiguring %s', $recipe->getFormattedOrigin()));
+                    $this->io->writeError(sprintf('  - Unconfiguring %s', $this->formatOrigin($recipe)));
                     $this->configurator->unconfigure($recipe, $this->lock);
                     break;
             }
@@ -832,6 +832,23 @@ class Flex implements PluginInterface, EventSubscriberInterface
         ], $extra);
 
         return new Options($options, $this->io);
+    }
+
+    private function formatOrigin(Recipe $recipe): string
+    {
+        if (method_exists($recipe, 'getFormattedOrigin')) {
+            return $recipe->getFormattedOrigin();
+        }
+
+        // BC with upgrading from flex < 1.18
+        $origin = $recipe->getOrigin();
+
+        // symfony/translation:3.3@github.com/symfony/recipes:branch
+        if (!preg_match('/^([^:]++):([^@]++)@(.+)$/', $origin, $matches)) {
+            return $origin;
+        }
+
+        return sprintf('<info>%s</> (<comment>>=%s</>): From %s', $matches[1], $matches[2], 'auto-generated recipe' === $matches[3] ? '<comment>'.$matches[3].'</>' : $matches[3]);
     }
 
     private function shouldRecordOperation(PackageEvent $event): bool
