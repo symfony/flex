@@ -22,6 +22,7 @@ use Composer\Package\Locker;
 use Composer\Package\Package;
 use Composer\Package\RootPackageInterface;
 use Composer\Plugin\PluginInterface;
+use Composer\Repository\RepositoryInterface;
 use Composer\Repository\RepositoryManager;
 use Composer\Repository\WritableRepositoryInterface;
 use Composer\Script\Event;
@@ -213,6 +214,96 @@ EOF
         ], array_keys($recipes));
     }
 
+    public function testFetchRecipesWithConflicts()
+    {
+        $originalRecipes = [
+            'locks' => [
+                'doctrine/annotations' => [
+                    'version' => '1.13',
+                    'recipe' => [
+                        'version' => '1.0',
+                    ],
+                ],
+                'doctrine/doctrine-bundle' => [
+                    'version' => '2.5',
+                    'recipe' => [
+                        'version' => '2.4',
+                    ],
+                ],
+            ],
+            'manifests' => [
+                'doctrine/annotations' => [
+                    'version' => '1.0',
+                    'manifest' => [],
+                ],
+                'doctrine/doctrine-bundle' => [
+                    'version' => '2.4',
+                    'manifest' => [
+                        'conflict' => [
+                            'symfony/framework-bundle' => '<5.3',
+                        ],
+                    ],
+                ],
+            ],
+        ];
+        $oldRecipes = [
+            'locks' => [
+                'doctrine/doctrine-bundle' => [
+                    // 2.5 is still being installed, but 2.3 recipe used
+                    'version' => '2.5',
+                    'recipe' => [
+                        'version' => '2.3',
+                    ],
+                ],
+            ],
+            'manifests' => [
+                'doctrine/doctrine-bundle' => [
+                    'version' => '2.3',
+                    'manifest' => [],
+                ],
+            ],
+        ];
+
+        $io = new BufferIO('', OutputInterface::VERBOSITY_VERBOSE);
+        $rootPackage = $this->mockRootPackage(['symfony' => ['allow-contrib' => true]]);
+
+        $downloader = $this->getMockBuilder(Downloader::class)->disableOriginalConstructor()->getMock();
+        $downloader->expects($this->exactly(2))
+            ->method('getRecipes')
+            ->willReturnOnConsecutiveCalls($originalRecipes, $oldRecipes);
+        $downloader->expects($this->any())->method('isEnabled')->willReturn(true);
+        $downloader->expects($this->once())->method('removeRecipeFromIndex')->with('doctrine/doctrine-bundle', '2.4');
+
+        $locker = $this->getMockBuilder(Locker::class)->disableOriginalConstructor()->getMock();
+        $lockedRepository = $this->getMockBuilder(RepositoryInterface::class)->disableOriginalConstructor()->getMock();
+        // make the conflicted package show up
+        $locker->expects($this->any())
+            ->method('getLockedRepository')
+            ->willReturn($lockedRepository);
+        $lockedRepository->expects($this->once())
+            ->method('findPackage')
+            ->with('symfony/framework-bundle', '<5.3')
+            ->willReturn(new Package('symfony/framework-bundle', '5.2.0', '5.2.0'));
+        $composer = $this->mockComposer($locker, $rootPackage);
+        $configurator = $this->mockConfigurator();
+        $lock = $this->mockLock();
+        $flex = $this->mockFlexCustom($io, $composer, $configurator, $downloader, $lock);
+
+        $operations = [];
+        foreach ($originalRecipes['manifests'] as $name => $recipeData) {
+            $package = new Package($name, $recipeData['version'], $recipeData['version']);
+
+            $operations[] = new InstallOperation($package);
+        }
+        $recipes = $flex->fetchRecipes($operations, true);
+
+        $this->assertSame([
+            'doctrine/annotations',
+            'doctrine/doctrine-bundle',
+        ], array_keys($recipes));
+        $this->assertSame('2.3', $recipes['doctrine/doctrine-bundle']->getVersion());
+    }
+
     public static function getTestPackages(): array
     {
         return [
@@ -358,14 +449,8 @@ EOF
         return $manager;
     }
 
-    private function mockFlex(BufferIO $io, RootPackageInterface $package, Recipe $recipe = null, array $recipes = [], array $lockerData = []): Flex
+    private function mockFlexCustom(BufferIO $io, Composer $composer, Configurator $configurator, Downloader $downloader, Lock $lock): Flex
     {
-        $composer = $this->mockComposer($this->mockLocker($lockerData), $package);
-
-        $configurator = $this->mockConfigurator($recipe);
-        $downloader = $this->mockDownloader($recipes);
-        $lock = $this->mockLock();
-
         return \Closure::bind(function () use ($composer, $io, $configurator, $downloader, $lock) {
             $flex = new Flex();
             $flex->composer = $composer;
@@ -380,5 +465,16 @@ EOF
 
             return $flex;
         }, null, Flex::class)->__invoke();
+    }
+
+    private function mockFlex(BufferIO $io, RootPackageInterface $package, Recipe $recipe = null, array $recipes = [], array $lockerData = []): Flex
+    {
+        $composer = $this->mockComposer($this->mockLocker($lockerData), $package);
+
+        $configurator = $this->mockConfigurator($recipe);
+        $downloader = $this->mockDownloader($recipes);
+        $lock = $this->mockLock();
+
+        return $this->mockFlexCustom($io, $composer, $configurator, $downloader, $lock);
     }
 }
