@@ -15,6 +15,7 @@ use Composer\Command\GlobalCommand;
 use Composer\Composer;
 use Composer\Console\Application;
 use Composer\DependencyResolver\Operation\InstallOperation;
+use Composer\DependencyResolver\Operation\OperationInterface;
 use Composer\DependencyResolver\Operation\UninstallOperation;
 use Composer\DependencyResolver\Operation\UpdateOperation;
 use Composer\EventDispatcher\EventSubscriberInterface;
@@ -507,16 +508,21 @@ class Flex implements PluginInterface, EventSubscriberInterface
             $name = $package->getName();
             $job = method_exists($operation, 'getOperationType') ? $operation->getOperationType() : $operation->getJobType();
 
-            if (!empty($manifests[$name]['manifest']['conflict']) && !$operation instanceof UninstallOperation) {
-                $lockedRepository = $this->composer->getLocker()->getLockedRepository();
+            while ($this->doesRecipeConflict($manifests[$name] ?? [], $operation)) {
+                $this->downloader->removeRecipeFromIndex($name, $manifests[$name]['version']);
+                $newData = $this->downloader->getRecipes([$operation]);
+                $newManifests = $newData['manifests'] ?? [];
 
-                foreach ($manifests[$name]['manifest']['conflict'] as $conflictingPackage => $constraint) {
-                    if ($lockedRepository->findPackage($conflictingPackage, $constraint)) {
-                        $this->io->writeError(sprintf('  - Skipping recipe for %s: it conflicts with %s %s.', $name, $conflictingPackage, $constraint), true, IOInterface::VERBOSE);
+                if (!isset($newManifests[$name])) {
+                    // no older recipe found
+                    $this->io->writeError(sprintf('  - Skipping recipe for %s: all versions of the recipe conflict with your package versions.', $name), true, IOInterface::VERBOSE);
 
-                        continue 2;
-                    }
+                    continue 2;
                 }
+
+                // push the "old" recipe into the $manifests
+                $manifests[$name] = $newManifests[$name];
+                $locks[$name] = $newData['locks'][$name];
             }
 
             if ($operation instanceof InstallOperation && isset($locks[$name])) {
@@ -729,5 +735,22 @@ class Flex implements PluginInterface, EventSubscriberInterface
         ];
 
         return $events;
+    }
+
+    private function doesRecipeConflict(array $recipeData, OperationInterface $operation): bool
+    {
+        if (empty($recipeData['manifest']['conflict']) || $operation instanceof UninstallOperation) {
+            return false;
+        }
+
+        $lockedRepository = $this->composer->getLocker()->getLockedRepository();
+
+        foreach ($recipeData['manifest']['conflict'] as $conflictingPackage => $constraint) {
+            if ($lockedRepository->findPackage($conflictingPackage, $constraint)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
