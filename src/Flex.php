@@ -986,7 +986,10 @@ class Flex implements PluginInterface, EventSubscriberInterface
     private function reinstall(Event $event, bool $update)
     {
         $event->stopPropagation();
-        $composer = Factory::create($this->io);
+
+        $ed = $composer->getEventDispatcher();
+        $disableScripts = !method_exists($ed, 'setRunScripts') || !((array) $ed)["\0*\0runScripts"];
+        $composer = Factory::create($this->io, null, false, $disableScripts);
 
         $installer = clone $this->installer;
         $installer->__construct(
