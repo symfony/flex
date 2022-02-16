@@ -46,9 +46,11 @@ class Downloader
     private $degradedMode = false;
     private $endpoints;
     private $index;
+    private $conflicts;
     private $legacyEndpoint;
     private $caFile;
     private $enabled = true;
+    private $composer;
 
     public function __construct(Composer $composer, IoInterface $io, $rfs)
     {
@@ -91,6 +93,7 @@ class Downloader
         $this->rfs = $rfs;
         $this->cache = new ComposerCache($io, $config->get('cache-repo-dir').'/flex');
         $this->sess = bin2hex(random_bytes(16));
+        $this->composer = $composer;
     }
 
     public function getSessionId(): string
@@ -135,6 +138,22 @@ class Downloader
     public function getRecipes(array $operations): array
     {
         $this->initialize();
+
+        if ($this->conflicts) {
+            $lockedRepository = $this->composer->getLocker()->getLockedRepository();
+            foreach ($this->conflicts as $conflicts) {
+                foreach ($conflicts as $package => $versions) {
+                    foreach ($versions as $version => $conflicts) {
+                        foreach ($conflicts as $conflictingPackage => $constraint) {
+                            if ($lockedRepository->findPackage($conflictingPackage, $constraint)) {
+                                unset($this->index[$package][$version]);
+                            }
+                        }
+                    }
+                }
+            }
+            $this->conflicts = [];
+        }
 
         $data = [];
         $urls = [];
@@ -208,6 +227,10 @@ class Downloader
                 }
 
                 continue;
+            }
+
+            if (\is_array($recipeVersions)) {
+                $data['conflicts'][$package->getName()] = true;
             }
 
             if (null !== $this->endpoints) {
@@ -434,11 +457,14 @@ class Downloader
             foreach ($config['recipes'] ?? [] as $package => $versions) {
                 $this->index[$package] = $this->index[$package] ?? array_fill_keys($versions, $endpoint);
             }
+            $this->conflicts[] = $config['recipe-conflicts'] ?? [];
             self::$versions += $config['versions'] ?? [];
             self::$aliases += $config['aliases'] ?? [];
-            unset($config['recipes'], $config['versions'], $config['aliases']);
+            unset($config['recipes'], $config['recipe-conflicts'], $config['versions'], $config['aliases']);
             $this->endpoints[$endpoint] = $config;
         }
+
+        return false;
     }
 
     private static function generateCacheKey(string $url): string
