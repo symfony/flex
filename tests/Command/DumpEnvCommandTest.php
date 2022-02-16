@@ -12,8 +12,8 @@
 namespace Symfony\Flex\Tests\Command;
 
 use Composer\Config;
+use Composer\Console\Application;
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Tester\CommandTester;
 use Symfony\Flex\Command\DumpEnvCommand;
 use Symfony\Flex\Options;
@@ -174,7 +174,6 @@ EOF;
         $env = FLEX_TEST_DIR.'/.env';
         $envLocal = FLEX_TEST_DIR.'/.env.local';
         $envLocalPhp = FLEX_TEST_DIR.'/.env.local.php';
-        $composer = FLEX_TEST_DIR.'/composer.json';
 
         @unlink($envLocalPhp);
 
@@ -184,9 +183,8 @@ APP_ENV=test
 APP_SECRET=abcdefgh123456789
 EOF
         );
-        file_put_contents(FLEX_TEST_DIR.'/composer.json', '{"extra":{"runtime":{"test_envs":[]}}}');
 
-        $command = $this->createCommandDumpEnv();
+        $command = $this->createCommandDumpEnv(['runtime' => ['test_envs' => []]]);
         $command->execute([
             'env' => 'test',
         ]);
@@ -202,14 +200,13 @@ EOF
         unlink($env);
         unlink($envLocal);
         unlink($envLocalPhp);
-        unlink($composer);
     }
 
-    private function createCommandDumpEnv()
+    private function createCommandDumpEnv(array $options = [])
     {
         $command = new DumpEnvCommand(
             new Config(false, __DIR__.'/../..'),
-            new Options(['root-dir' => FLEX_TEST_DIR])
+            new Options($options + ['root-dir' => FLEX_TEST_DIR])
         );
 
         $application = new Application();

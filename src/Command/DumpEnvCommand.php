@@ -13,7 +13,6 @@ namespace Symfony\Flex\Command;
 
 use Composer\Command\BaseCommand;
 use Composer\Config;
-use Composer\Factory;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -48,19 +47,22 @@ class DumpEnvCommand extends BaseCommand
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        if ($env = $input->getArgument('env')) {
-            $_SERVER['APP_ENV'] = $env;
+        $runtime = $this->options->get('runtime') ?? [];
+        $envKey = $runtime['env_var_name'] ?? 'APP_ENV';
+
+        if ($env = $input->getArgument('env') ?? $runtime['env'] ?? null) {
+            $_SERVER[$envKey] = $env;
         }
 
-        $path = $this->options->get('root-dir').'/.env';
+        $path = $this->options->get('root-dir').'/'.($runtime['dotenv_path'] ?? '.env');
 
         if (!$env || !$input->getOption('empty')) {
-            $vars = $this->loadEnv($path, $env);
-            $env = $vars['APP_ENV'];
+            $vars = $this->loadEnv($path, $env, $runtime);
+            $env = $vars[$envKey];
         }
 
         if ($input->getOption('empty')) {
-            $vars = ['APP_ENV' => $env];
+            $vars = [$envKey => $env];
         }
 
         $vars = var_export($vars, true);
@@ -79,7 +81,7 @@ EOF;
         return 0;
     }
 
-    private function loadEnv(string $path, ?string $env): array
+    private function loadEnv(string $path, ?string $env, array $runtime): array
     {
         if (!file_exists($autoloadFile = $this->config->get('vendor-dir').'/autoload.php')) {
             throw new \RuntimeException(sprintf('Please run "composer install" before running this command: "%s" not found.', $autoloadFile));
@@ -91,9 +93,10 @@ EOF;
             throw new \RuntimeException('Please run "composer require symfony/dotenv" to load the ".env" files configuring the application.');
         }
 
+        $envKey = $runtime['env_var_name'] ?? 'APP_ENV';
         $globalsBackup = [$_SERVER, $_ENV];
-        unset($_SERVER['APP_ENV']);
-        $_ENV = ['APP_ENV' => $env];
+        unset($_SERVER[$envKey]);
+        $_ENV = [$envKey => $env];
         $_SERVER['SYMFONY_DOTENV_VARS'] = implode(',', array_keys($_SERVER));
         putenv('SYMFONY_DOTENV_VARS='.$_SERVER['SYMFONY_DOTENV_VARS']);
 
@@ -105,18 +108,17 @@ EOF;
             }
 
             if (!$env && file_exists($p = "$path.local")) {
-                $env = $_ENV['APP_ENV'] = $dotenv->parse(file_get_contents($p), $p)['APP_ENV'] ?? null;
+                $env = $_ENV[$envKey] = $dotenv->parse(file_get_contents($p), $p)[$envKey] ?? null;
             }
 
             if (!$env) {
-                throw new \RuntimeException('Please provide the name of the environment either by passing it as command line argument or by defining the "APP_ENV" variable in the ".env.local" file.');
+                throw new \RuntimeException(sprintf('Please provide the name of the environment either by passing it as command line argument or by defining the "%s" variable in the ".env.local" file.', $envKey));
             }
 
-            $config = @json_decode(file_get_contents(Factory::getComposerFile()), true);
-            $testEnvs = $config['extra']['runtime']['test_envs'] ?? ['test'];
+            $testEnvs = $runtime['test_envs'] ?? ['test'];
 
             if (method_exists($dotenv, 'loadEnv')) {
-                $dotenv->loadEnv($path, 'APP_ENV', 'dev', $testEnvs);
+                $dotenv->loadEnv($path, $envKey, 'dev', $testEnvs);
             } else {
                 // fallback code in case your Dotenv component is not 4.2 or higher (when loadEnv() was added)
                 $dotenv->load(file_exists($path) || !file_exists($p = "$path.dist") ? $path : $p);

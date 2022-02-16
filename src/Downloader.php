@@ -45,9 +45,11 @@ class Downloader
     private $degradedMode = false;
     private $endpoints;
     private $index;
+    private $conflicts;
     private $legacyEndpoint;
     private $caFile;
     private $enabled = true;
+    private $composer;
 
     public function __construct(Composer $composer, IoInterface $io, HttpDownloader $rfs)
     {
@@ -90,6 +92,7 @@ class Downloader
         $this->rfs = $rfs;
         $this->cache = new Cache($io, $config->get('cache-repo-dir').'/flex');
         $this->sess = bin2hex(random_bytes(16));
+        $this->composer = $composer;
     }
 
     public function getSessionId(): string
@@ -129,6 +132,22 @@ class Downloader
     public function getRecipes(array $operations): array
     {
         $this->initialize();
+
+        if ($this->conflicts) {
+            $lockedRepository = $this->composer->getLocker()->getLockedRepository();
+            foreach ($this->conflicts as $conflicts) {
+                foreach ($conflicts as $package => $versions) {
+                    foreach ($versions as $version => $conflicts) {
+                        foreach ($conflicts as $conflictingPackage => $constraint) {
+                            if ($lockedRepository->findPackage($conflictingPackage, $constraint)) {
+                                unset($this->index[$package][$version]);
+                            }
+                        }
+                    }
+                }
+            }
+            $this->conflicts = [];
+        }
 
         $data = [];
         $urls = [];
@@ -178,30 +197,45 @@ class Downloader
                 $version = $version[0].'.'.($version[1] ?? '9999999');
 
                 foreach (array_reverse($recipeVersions) as $v => $endpoint) {
-                    if (version_compare($version, $v, '>=')) {
-                        $data['locks'][$package->getName()]['version'] = $version;
-                        $data['locks'][$package->getName()]['recipe']['version'] = $v;
+                    if (version_compare($version, $v, '<')) {
+                        continue;
+                    }
 
-                        if (null !== $recipeRef && isset($this->endpoints[$endpoint]['_links']['archived_recipes_template'])) {
-                            $urls[] = strtr($this->endpoints[$endpoint]['_links']['archived_recipes_template'], [
-                                '{package_dotted}' => str_replace('/', '.', $package->getName()),
-                                '{ref}' => $recipeRef,
-                            ]);
+                    $data['locks'][$package->getName()]['version'] = $version;
+                    $data['locks'][$package->getName()]['recipe']['version'] = $v;
+                    $links = $this->endpoints[$endpoint]['_links'];
 
-                            break;
+                    if (null !== $recipeRef && isset($links['archived_recipes_template'])) {
+                        if (isset($links['archived_recipes_template_relative'])) {
+                            $links['archived_recipes_template'] = preg_replace('{[^/\?]*+(?=\?|$)}', $links['archived_recipes_template_relative'], $endpoint, 1);
                         }
 
-                        $urls[] = strtr($this->endpoints[$endpoint]['_links']['recipe_template'], [
+                        $urls[] = strtr($links['archived_recipes_template'], [
                             '{package_dotted}' => str_replace('/', '.', $package->getName()),
-                            '{package}' => $package->getName(),
-                            '{version}' => $v,
+                            '{ref}' => $recipeRef,
                         ]);
 
                         break;
                     }
+
+                    if (isset($links['recipes_template_relative'])) {
+                        $links['recipes_template'] = preg_replace('{[^/\?]*+(?=\?|$)}', $links['recipes_template_relative'], $endpoint, 1);
+                    }
+
+                    $urls[] = strtr($links['recipe_template'], [
+                        '{package_dotted}' => str_replace('/', '.', $package->getName()),
+                        '{package}' => $package->getName(),
+                        '{version}' => $v,
+                    ]);
+
+                    break;
                 }
 
                 continue;
+            }
+
+            if (\is_array($recipeVersions)) {
+                $data['conflicts'][$package->getName()] = true;
             }
 
             if (null !== $this->endpoints) {
@@ -298,6 +332,11 @@ class Downloader
 
             if (preg_match('{^https?://api\.github\.com/}', $url)) {
                 $headers[] = 'Accept: application/vnd.github.v3.raw';
+            } elseif (preg_match('{^https?://raw\.githubusercontent\.com/}', $url) && $this->io->hasAuthentication('github.com')) {
+                $auth = $this->io->getAuthentication('github.com');
+                if ('x-oauth-basic' === $auth['password']) {
+                    $headers[] = 'Authorization: token '.$auth['username'];
+                }
             } elseif ($this->legacyEndpoint) {
                 $headers[] = 'Package-Session: '.$this->sess;
             }
@@ -410,9 +449,10 @@ class Downloader
             foreach ($config['recipes'] ?? [] as $package => $versions) {
                 $this->index[$package] = $this->index[$package] ?? array_fill_keys($versions, $endpoint);
             }
+            $this->conflicts[] = $config['recipe-conflicts'] ?? [];
             self::$versions += $config['versions'] ?? [];
             self::$aliases += $config['aliases'] ?? [];
-            unset($config['recipes'], $config['versions'], $config['aliases']);
+            unset($config['recipes'], $config['recipe-conflicts'], $config['versions'], $config['aliases']);
             $this->endpoints[$endpoint] = $config;
         }
     }

@@ -11,12 +11,12 @@
 
 namespace Symfony\Flex\Tests\Command;
 
+use Composer\Console\Application;
 use Composer\Factory;
 use Composer\IO\BufferIO;
 use Composer\Plugin\PluginInterface;
 use Composer\Util\Platform;
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Tester\CommandTester;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Process\Process;
