@@ -12,8 +12,9 @@
 namespace Symfony\Flex\Tests\Command;
 
 use Composer\Config;
+use Composer\Console\Application;
+use Composer\IO\NullIO;
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Tester\CommandTester;
 use Symfony\Flex\Command\DumpEnvCommand;
 use Symfony\Flex\Options;
@@ -210,6 +211,11 @@ EOF
         );
 
         $application = new Application();
+
+        \Closure::bind(function () {
+            $this->io = new NullIO();
+        }, $application, $application)();
+
         $application->add($command);
         $command = $application->find('dump-env');
 
