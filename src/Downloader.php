@@ -479,8 +479,6 @@ class Downloader
             unset($config['recipes'], $config['recipe-conflicts'], $config['versions'], $config['aliases']);
             $this->endpoints[$endpoint] = $config;
         }
-
-        return false;
     }
 
     private static function generateCacheKey(string $url): string
