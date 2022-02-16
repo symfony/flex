@@ -71,11 +71,13 @@ class MakefileConfigurator extends AbstractConfigurator
         $data = "\n".ltrim($data, "\r\n");
 
         if (!file_exists($makefile)) {
+            $envKey = $this->options->get('runtime')['env_var_name'] ?? 'APP_ENV';
+            $dotenvPath = $this->options->get('runtime')['dotenv_path'] ?? '.env';
             file_put_contents(
                 $this->options->get('root-dir').'/Makefile',
                 <<<EOF
-ifndef APP_ENV
-	include .env
+ifndef {$envKey}
+	include {$dotenvPath}
 endif
 
 .DEFAULT_GOAL := help

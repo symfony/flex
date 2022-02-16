@@ -25,7 +25,7 @@ class EnvConfigurator extends AbstractConfigurator
         $this->write('Adding environment variable defaults');
 
         $this->configureEnvDist($recipe, $vars, $options['force'] ?? false);
-        if (!file_exists($this->options->get('root-dir').'/.env.test')) {
+        if (!file_exists($this->options->get('root-dir').'/'.($this->options->get('runtime')['dotenv_path'] ?? '.env').'.test')) {
             $this->configurePhpUnit($recipe, $vars, $options['force'] ?? false);
         }
     }
@@ -49,7 +49,9 @@ class EnvConfigurator extends AbstractConfigurator
 
     private function configureEnvDist(Recipe $recipe, $vars, bool $update)
     {
-        foreach (['.env.dist', '.env'] as $file) {
+        $dotenvPath = $this->options->get('runtime')['dotenv_path'] ?? '.env';
+
+        foreach ([$dotenvPath.'.dist', $dotenvPath] as $file) {
             $env = $this->options->get('root-dir').'/'.$file;
             if (!is_file($env)) {
                 continue;
@@ -133,7 +135,9 @@ class EnvConfigurator extends AbstractConfigurator
 
     private function unconfigureEnvFiles(Recipe $recipe, $vars)
     {
-        foreach (['.env', '.env.dist'] as $file) {
+        $dotenvPath = $this->options->get('runtime')['dotenv_path'] ?? '.env';
+
+        foreach ([$dotenvPath, $dotenvPath.'.dist'] as $file) {
             $env = $this->options->get('root-dir').'/'.$file;
             if (!file_exists($env)) {
                 continue;
@@ -200,7 +204,8 @@ class EnvConfigurator extends AbstractConfigurator
 
     private function getContentsAfterApplyingRecipe(string $rootDir, Recipe $recipe, array $vars): array
     {
-        $files = ['.env', '.env.dist', 'phpunit.xml.dist', 'phpunit.xml'];
+        $dotenvPath = $this->options->get('runtime')['dotenv_path'] ?? '.env';
+        $files = [$dotenvPath, $dotenvPath.'.dist', 'phpunit.xml.dist', 'phpunit.xml'];
 
         if (0 === \count($vars)) {
             return array_fill_keys($files, null);
@@ -217,7 +222,7 @@ class EnvConfigurator extends AbstractConfigurator
             true
         );
 
-        if (!file_exists($rootDir.'/.env.test')) {
+        if (!file_exists($rootDir.'/'.$dotenvPath.'.test')) {
             $this->configurePhpUnit(
                 $recipe,
                 $vars,

@@ -276,7 +276,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             $app->add(new Command\RemoveCommand($resolver));
             $app->add(new Command\UnpackCommand($resolver));
             $app->add(new Command\RecipesCommand($this, $this->lock, $rfs));
-            $app->add(new Command\InstallRecipesCommand($this, $this->options->get('root-dir')));
+            $app->add(new Command\InstallRecipesCommand($this, $this->options->get('root-dir'), $this->options->get('runtime')['dotenv_path'] ?? '.env'));
             $app->add(new Command\UpdateRecipesCommand($this, $this->downloader, $rfs, $this->configurator, $this->options->get('root-dir')));
             if (class_exists(Command\GenerateIdCommand::class)) {
                 $app->add(new Command\GenerateIdCommand(null));
@@ -391,9 +391,11 @@ class Flex implements PluginInterface, EventSubscriberInterface
     public function install(Event $event)
     {
         $rootDir = $this->options->get('root-dir');
+        $runtime = $this->options->get('runtime');
+        $dotenvPath = $rootDir.'/'.($runtime['dotenv_path'] ?? '.env');
 
-        if (!file_exists("$rootDir/.env") && !file_exists("$rootDir/.env.local") && file_exists("$rootDir/.env.dist") && false === strpos(file_get_contents("$rootDir/.env.dist"), '.env.local')) {
-            copy($rootDir.'/.env.dist', $rootDir.'/.env');
+        if (!file_exists($dotenvPath) && !file_exists($dotenvPath.'.local') && file_exists($dotenvPath.'.dist') && false === strpos(file_get_contents($dotenvPath.'.dist'), '.env.local')) {
+            copy($dotenvPath.'.dist', $dotenvPath);
         }
 
         // Execute missing recipes
@@ -829,6 +831,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             'var-dir' => 'var',
             'public-dir' => 'public',
             'root-dir' => $extra['symfony']['root-dir'] ?? '.',
+            'runtime' => $extra['runtime'] ?? [],
         ], $extra);
 
         return new Options($options, $this->io);
