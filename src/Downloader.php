@@ -338,6 +338,11 @@ class Downloader
 
             if (preg_match('{^https?://api\.github\.com/}', $url)) {
                 $headers[] = 'Accept: application/vnd.github.v3.raw';
+            } elseif (preg_match('{^https?://raw\.githubusercontent\.com/}', $url) && $this->io->hasAuthentication('github.com')) {
+                $auth = $this->io->getAuthentication('github.com');
+                if ('x-oauth-basic' === $auth['password']) {
+                    $headers[] = 'Authorization: token '.$auth['username'];
+                }
             } elseif ($this->legacyEndpoint) {
                 $headers[] = 'Package-Session: '.$this->sess;
             }
