@@ -364,6 +364,7 @@ EOF
     {
         $event = $this->getMockBuilder(PackageEvent::class, ['getOperation'])->disableOriginalConstructor()->getMock();
         $event->expects($this->any())->method('getOperation')->willReturn(new InstallOperation($package));
+        $event->expects($this->any())->method('isDevMode')->willReturn(true);
 
         return $event;
     }

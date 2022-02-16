@@ -19,6 +19,7 @@ use Composer\DependencyResolver\Operation\OperationInterface;
 use Composer\DependencyResolver\Operation\UninstallOperation;
 use Composer\DependencyResolver\Operation\UpdateOperation;
 use Composer\DependencyResolver\Pool;
+use Composer\DependencyResolver\Transaction;
 use Composer\Downloader\FileDownloader;
 use Composer\EventDispatcher\EventSubscriberInterface;
 use Composer\Factory;
@@ -35,6 +36,7 @@ use Composer\Json\JsonManipulator;
 use Composer\Package\BasePackage;
 use Composer\Package\Comparer\Comparer;
 use Composer\Package\Locker;
+use Composer\Package\Package;
 use Composer\Package\PackageInterface;
 use Composer\Plugin\PluginEvents;
 use Composer\Plugin\PluginInterface;
@@ -45,6 +47,7 @@ use Composer\Repository\RepositoryFactory;
 use Composer\Repository\RepositoryManager;
 use Composer\Script\Event;
 use Composer\Script\ScriptEvents;
+use Composer\Semver\VersionParser;
 use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Flex\Event\UpdateEvent;
@@ -341,8 +344,31 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
     public function record(PackageEvent $event)
     {
-        if ($this->shouldRecordOperation($event)) {
+        if ($this->shouldRecordOperation($event->getOperation(), $event->isDevMode(), $event->getComposer())) {
             $this->operations[] = $event->getOperation();
+        }
+    }
+
+    public function recordOperations(InstallerEvent $event)
+    {
+        if (!$event->isExecutingOperations()) {
+            return;
+        }
+
+        $versionParser = new VersionParser();
+        $packages = [];
+        foreach ($this->lock->all() as $name => $info) {
+            $packages[] = new Package($name, $versionParser->normalize($info['version']), $info['version']);
+        }
+
+        $transation = \Closure::bind(function () use ($packages, $event) {
+            return new Transaction($packages, $event->getTransaction()->resultPackageMap);
+        }, null, Transaction::class)();
+
+        foreach ($transation->getOperations() as $operation) {
+            if ($this->shouldRecordOperation($operation, $event->isDevMode(), $event->getComposer())) {
+                $this->operations[] = $operation;
+            }
         }
     }
 
@@ -854,9 +880,12 @@ class Flex implements PluginInterface, EventSubscriberInterface
         return sprintf('<info>%s</> (<comment>>=%s</>): From %s', $matches[1], $matches[2], 'auto-generated recipe' === $matches[3] ? '<comment>'.$matches[3].'</>' : $matches[3]);
     }
 
-    private function shouldRecordOperation(PackageEvent $event): bool
+    private function shouldRecordOperation(OperationInterface $operation, bool $isDevMode, Composer $composer = null): bool
     {
-        $operation = $event->getOperation();
+        if ($this->dryRun) {
+            return false;
+        }
+
         if ($operation instanceof UpdateOperation) {
             $package = $operation->getTargetPackage();
         } else {
@@ -864,8 +893,8 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
 
         // when Composer runs with --no-dev, ignore uninstall operations on packages from require-dev
-        if (!$event->isDevMode() && $operation instanceof UninstallOperation) {
-            foreach ($event->getComposer()->getLocker()->getLockData()['packages-dev'] as $p) {
+        if (!$isDevMode && $operation instanceof UninstallOperation) {
+            foreach (($composer ?? $this->composer)->getLocker()->getLockData()['packages-dev'] as $p) {
                 if ($package->getName() === $p['name']) {
                     return false;
                 }
@@ -993,9 +1022,6 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
 
         $events = [
-            PackageEvents::POST_PACKAGE_INSTALL => 'record',
-            PackageEvents::POST_PACKAGE_UPDATE => [['record'], ['enableThanksReminder']],
-            PackageEvents::POST_PACKAGE_UNINSTALL => 'record',
             ScriptEvents::POST_CREATE_PROJECT_CMD => 'configureProject',
             ScriptEvents::POST_INSTALL_CMD => 'install',
             ScriptEvents::PRE_UPDATE_CMD => 'configureInstaller',
@@ -1005,6 +1031,9 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
         if (version_compare('2.0.0', PluginInterface::PLUGIN_API_VERSION, '>')) {
             $events += [
+                PackageEvents::POST_PACKAGE_INSTALL => 'record',
+                PackageEvents::POST_PACKAGE_UPDATE => [['record'], ['enableThanksReminder']],
+                PackageEvents::POST_PACKAGE_UNINSTALL => 'record',
                 InstallerEvents::PRE_DEPENDENCIES_SOLVING => [['populateProvidersCacheDir', \PHP_INT_MAX]],
                 InstallerEvents::POST_DEPENDENCIES_SOLVING => [['populateFilesCacheDir', \PHP_INT_MAX]],
                 PackageEvents::PRE_PACKAGE_INSTALL => [['populateFilesCacheDir', ~\PHP_INT_MAX]],
@@ -1012,7 +1041,11 @@ class Flex implements PluginInterface, EventSubscriberInterface
                 PluginEvents::PRE_FILE_DOWNLOAD => 'onFileDownload',
             ];
         } else {
-            $events += [PluginEvents::PRE_POOL_CREATE => 'truncatePackages'];
+            $events += [
+                PackageEvents::POST_PACKAGE_UPDATE => 'enableThanksReminder',
+                InstallerEvents::PRE_OPERATIONS_EXEC => 'recordOperations',
+                PluginEvents::PRE_POOL_CREATE => 'truncatePackages',
+            ];
         }
 
         return $events;
