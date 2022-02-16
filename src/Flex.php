@@ -754,6 +754,11 @@ class Flex implements PluginInterface, EventSubscriberInterface
             $name = $package->getName();
             $job = method_exists($operation, 'getOperationType') ? $operation->getOperationType() : $operation->getJobType();
 
+            if (!isset($manifests[$name]) && isset($data['conflicts'][$name])) {
+                $this->io->writeError(sprintf('  - Skipping recipe for %s: all versions of the recipe conflict with your package versions.', $name), true, IOInterface::VERBOSE);
+                continue;
+            }
+
             while ($this->doesRecipeConflict($manifests[$name] ?? [], $operation)) {
                 $this->downloader->removeRecipeFromIndex($name, $manifests[$name]['version']);
                 $newData = $this->downloader->getRecipes([$operation]);
@@ -987,7 +992,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
     {
         $event->stopPropagation();
 
-        $ed = $composer->getEventDispatcher();
+        $ed = $this->composer->getEventDispatcher();
         $disableScripts = !method_exists($ed, 'setRunScripts') || !((array) $ed)["\0*\0runScripts"];
         $composer = Factory::create($this->io, null, false, $disableScripts);
 
