@@ -203,27 +203,38 @@ class Downloader
                 $version = $version[0].'.'.($version[1] ?? '9999999');
 
                 foreach (array_reverse($recipeVersions) as $v => $endpoint) {
-                    if (version_compare($version, $v, '>=')) {
-                        $data['locks'][$package->getName()]['version'] = $version;
-                        $data['locks'][$package->getName()]['recipe']['version'] = $v;
+                    if (version_compare($version, $v, '<')) {
+                        continue;
+                    }
 
-                        if (null !== $recipeRef && isset($this->endpoints[$endpoint]['_links']['archived_recipes_template'])) {
-                            $urls[] = strtr($this->endpoints[$endpoint]['_links']['archived_recipes_template'], [
-                                '{package_dotted}' => str_replace('/', '.', $package->getName()),
-                                '{ref}' => $recipeRef,
-                            ]);
+                    $data['locks'][$package->getName()]['version'] = $version;
+                    $data['locks'][$package->getName()]['recipe']['version'] = $v;
+                    $links = $this->endpoints[$endpoint]['_links'];
 
-                            break;
+                    if (null !== $recipeRef && isset($links['archived_recipes_template'])) {
+                        if (isset($links['archived_recipes_template_relative'])) {
+                            $links['archived_recipes_template'] = preg_replace('{[^/\?]*+(?=\?|$)}', $links['archived_recipes_template_relative'], $endpoint, 1);
                         }
 
-                        $urls[] = strtr($this->endpoints[$endpoint]['_links']['recipe_template'], [
+                        $urls[] = strtr($links['archived_recipes_template'], [
                             '{package_dotted}' => str_replace('/', '.', $package->getName()),
-                            '{package}' => $package->getName(),
-                            '{version}' => $v,
+                            '{ref}' => $recipeRef,
                         ]);
 
                         break;
                     }
+
+                    if (isset($links['recipes_template_relative'])) {
+                        $links['recipes_template'] = preg_replace('{[^/\?]*+(?=\?|$)}', $links['recipes_template_relative'], $endpoint, 1);
+                    }
+
+                    $urls[] = strtr($links['recipe_template'], [
+                        '{package_dotted}' => str_replace('/', '.', $package->getName()),
+                        '{package}' => $package->getName(),
+                        '{version}' => $v,
+                    ]);
+
+                    break;
                 }
 
                 continue;
