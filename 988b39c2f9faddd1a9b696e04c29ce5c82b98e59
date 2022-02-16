@@ -1,0 +1,33 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2021-12-02T08:29:58Z
+
+Why don't you use `api.github.com` for private recipes?
+
+---------------------------------------------------------------------------
+
+by aivus at 2021-12-02T08:44:01Z
+
+2 points here:
+* Rate limitations (#834)
+* Re-use existing [recipes-checker](https://github.com/symfony-tools/recipes-checker) tool to build recipe
+
+---------------------------------------------------------------------------
+
+by stof at 2021-12-02T08:59:13Z
+
+Passing the token solves the rate limiting problem (as the rate limit is much higher for authenticated requests: https://docs.github.com/en/rest/overview/resources-in-the-rest-api#rate-limiting)
+
+---------------------------------------------------------------------------
+
+by aivus at 2022-01-11T13:15:46Z
+
+Ok, let's close this PR then as after forking recipes-checker and [reverting changes](https://github.com/symfony-tools/recipes-checker/commit/e0bdb0aa9e90523c627c27e25d25cf3362c6a6c3) to use api.github.com it works fine for private repos.
+
+My idea initially was to use original recipes-checker for own private/public repos, but it seems some changes are required on [checker side](https://github.com/symfony-tools/recipes-checker/compare/main...aivus:private-support?expand=1) besides URLs.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2022-01-11T13:19:25Z
+
+I'd be happy to make the recipe-checker a bit more generic if you're up for a PR.
