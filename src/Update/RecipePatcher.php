@@ -13,6 +13,7 @@ namespace Symfony\Flex\Update;
 
 use Composer\IO\IOInterface;
 use Composer\Util\ProcessExecutor;
+use RuntimeException;
 use Symfony\Component\Filesystem\Exception\IOException;
 use Symfony\Component\Filesystem\Filesystem;
 
@@ -185,7 +186,7 @@ class RecipePatcher
     {
         $addedBlobs = [];
         foreach ($blobs as $hash => $contents) {
-            $blobPath = $this->rootDir.'/'.$this->getBlobPath($hash);
+            $blobPath = $this->getGitPath($this->rootDir).'/'.$this->getBlobPath($hash);
             if (file_exists($blobPath)) {
                 continue;
             }
@@ -210,7 +211,7 @@ class RecipePatcher
             }
 
             $hash = trim($this->execute('git hash-object '.ProcessExecutor::escape($filename), $originalFilesRoot));
-            $addedBlobs[$hash] = file_get_contents($originalFilesRoot.'/'.$this->getBlobPath($hash));
+            $addedBlobs[$hash] = file_get_contents($originalFilesRoot.'/'.'.git'.'/'.$this->getBlobPath($hash));
         }
 
         return $addedBlobs;
@@ -221,6 +222,22 @@ class RecipePatcher
         $hashStart = substr($hash, 0, 2);
         $hashEnd = substr($hash, 2);
 
-        return '.git/objects/'.$hashStart.'/'.$hashEnd;
+        return 'objects/'.$hashStart.'/'.$hashEnd;
+    }
+
+    private function getGitPath(string $path): string {
+        $searchPath = $path.'/'.'.git';
+        
+        if (is_dir($searchPath)) {
+            return $searchPath;
+        }
+
+        preg_match('/^\s*gitdir:\s*(.*)\s*$/', file_get_contents($searchPath), $matches);
+
+        if (count($matches) < 2) {
+            throw new RuntimeException('Could not find git submodule location in \''.$searchPath.'\'');
+        }
+
+        return $path.'/'.trim($matches[1]);
     }
 }
