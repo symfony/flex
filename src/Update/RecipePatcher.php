@@ -225,17 +225,18 @@ class RecipePatcher
         return 'objects/'.$hashStart.'/'.$hashEnd;
     }
 
-    private function getGitPath(string $path): string {
+    private function getGitPath(string $path): string
+    {
         $searchPath = $path.'/'.'.git';
-        
+
         if (is_dir($searchPath)) {
             return $searchPath;
         }
 
         preg_match('/^\s*gitdir:\s*(.*)\s*$/', file_get_contents($searchPath), $matches);
 
-        if (count($matches) < 2) {
-            throw new RuntimeException('Could not find git submodule location in \''.$searchPath.'\'');
+        if (\count($matches) < 2) {
+            throw new RuntimeException('Could not find git submodule location in \'.'.$searchPath.'\'');
         }
 
         return $path.'/'.trim($matches[1]);
