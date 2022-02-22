@@ -260,7 +260,9 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $versionParser = new VersionParser();
         $packages = [];
         foreach ($this->lock->all() as $name => $info) {
-            $packages[] = new Package($name, $versionParser->normalize($info['version']), $info['version']);
+            if (is_array($info) && array_key_exists('version', $info)) {
+                $packages[] = new Package($name, $versionParser->normalize($info['version']), $info['version']);
+            }
         }
 
         $transation = \Closure::bind(function () use ($packages, $event) {
