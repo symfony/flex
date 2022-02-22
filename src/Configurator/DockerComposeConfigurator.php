@@ -259,7 +259,7 @@ class DockerComposeConfigurator extends AbstractConfigurator
                 }
 
                 // Keep end in memory (check break line on previous line)
-                $endAt[$node] = '' !== trim($lines[$i - 1]) ? $i : $i - 1;
+                $endAt[$node] = !$i || '' !== trim($lines[$i - 1]) ? $i : $i - 1;
                 $node = $matches[1];
                 if (!isset($nodesLines[$node])) {
                     $nodesLines[$node] = [];
