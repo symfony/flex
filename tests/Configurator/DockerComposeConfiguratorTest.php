@@ -13,7 +13,7 @@ namespace Symfony\Flex\Tests\Configurator;
 
 use Composer\Composer;
 use Composer\IO\IOInterface;
-use Composer\Package\Package;
+use Composer\Package\RootPackage;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Flex\Configurator\DockerComposeConfigurator;
@@ -114,7 +114,7 @@ YAML;
     /** @var DockerComposeConfigurator */
     private $configurator;
 
-    /** @var Package */
+    /** @var RootPackage */
     private $package;
 
     private $originalEnvComposer;
@@ -139,7 +139,7 @@ YAML;
         $this->lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
 
         // Configurator
-        $this->package = new Package('dummy/dummy', '1.0.0', '1.0.0');
+        $this->package = new RootPackage('dummy/dummy', '1.0.0', '1.0.0');
         $this->package->setExtra(['symfony' => ['docker' => true]]);
 
         $this->composer = $this->getMockBuilder(Composer::class)->getMock();

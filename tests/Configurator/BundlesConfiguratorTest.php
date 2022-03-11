@@ -170,12 +170,13 @@ return [
 EOF
         ], $recipeUpdate->getOriginalFiles());
 
+        // FooBundle::class => ['dev' => true, 'test' => true]: configured envs should not be overwritten
         $this->assertSame(['config/bundles.php' => <<<EOF
 <?php
 
 return [
     BarBundle::class => ['prod' => false, 'all' => true],
-    FooBundle::class => ['all' => true],
+    FooBundle::class => ['dev' => true, 'test' => true],
     BazBundle::class => ['all' => true],
     NewBundle::class => ['all' => true],
 ];

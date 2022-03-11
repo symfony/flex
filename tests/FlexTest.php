@@ -22,6 +22,7 @@ use Composer\Package\Locker;
 use Composer\Package\Package;
 use Composer\Package\RootPackageInterface;
 use Composer\Plugin\PluginInterface;
+use Composer\Repository\LockArrayRepository;
 use Composer\Repository\RepositoryInterface;
 use Composer\Repository\RepositoryManager;
 use Composer\Repository\WritableRepositoryInterface;
@@ -275,7 +276,10 @@ EOF
         $downloader->expects($this->once())->method('removeRecipeFromIndex')->with('doctrine/doctrine-bundle', '2.4');
 
         $locker = $this->getMockBuilder(Locker::class)->disableOriginalConstructor()->getMock();
-        $lockedRepository = $this->getMockBuilder(RepositoryInterface::class)->disableOriginalConstructor()->getMock();
+        $lockedRepository = $this->getMockBuilder(
+            // LockArrayRepository does not exist on composer 1.0.2 fallback to RepositoryInterface
+            class_exists(LockArrayRepository::class) ? LockArrayRepository::class : RepositoryInterface::class
+        )->disableOriginalConstructor()->getMock();
         // make the conflicted package show up
         $locker->expects($this->any())
             ->method('getLockedRepository')
