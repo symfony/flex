@@ -69,12 +69,11 @@ class BundlesConfigurator extends AbstractConfigurator
             unset($classes[$fwb]);
         }
         foreach ($classes as $class => $envs) {
-            // if the class already existed, clear so we can update the envs
-            if (isset($registered[$class])) {
-                $registered[$class] = [];
-            }
-            foreach ($envs as $env) {
-                $registered[$class][$env] = true;
+            // do not override existing configured envs for a bundle
+            if (!isset($registered[$class])) {
+                foreach ($envs as $env) {
+                    $registered[$class][$env] = true;
+                }
             }
         }
 
