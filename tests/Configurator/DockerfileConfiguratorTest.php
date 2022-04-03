@@ -13,7 +13,7 @@ namespace Symfony\Flex\Configurator;
 
 use Composer\Composer;
 use Composer\IO\IOInterface;
-use Composer\Package\Package;
+use Composer\Package\RootPackage;
 use PHPUnit\Framework\TestCase;
 use Symfony\Flex\Lock;
 use Symfony\Flex\Options;
@@ -278,7 +278,7 @@ EOF
 
     private function createConfigurator(): DockerfileConfigurator
     {
-        $package = new Package('dummy/dummy', '1.0.0', '1.0.0');
+        $package = new RootPackage('dummy/dummy', '1.0.0', '1.0.0');
         $package->setExtra(['symfony' => ['docker' => true]]);
 
         $composer = $this->getMockBuilder(Composer::class)->getMock();
