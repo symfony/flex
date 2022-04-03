@@ -1,0 +1,7 @@
+---------------------------------------------------------------------------
+
+by alexander-schranz at 2022-03-11T11:09:09Z
+
+Not sure how to fix:
+
+>  Method getPackage may not return value of type Composer\Package\Package, its declared return type is "Composer\Package\RootPackageInterface"
