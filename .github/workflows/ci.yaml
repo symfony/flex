@@ -20,6 +20,7 @@ jobs:
             matrix:
                 include:
                   - php: '7.1'
+                    composer: 2.2.x
                   - php: '7.2'
                   - php: '7.3'
                   - php: '7.4'
@@ -33,11 +34,11 @@ jobs:
               uses: actions/checkout@v2.3.3
 
             - name: "Install PHP with extensions"
-              uses: shivammathur/setup-php@2.7.0
+              uses: shivammathur/setup-php@2.18.0
               with:
                   coverage: "none"
                   php-version: ${{ matrix.php }}
-                  tools: composer:v2
+                  tools: composer:${{ matrix.composer }}
 
             - name: "Validate composer.json"
               run: "composer validate --strict --no-check-lock"

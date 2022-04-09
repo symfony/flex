@@ -20,12 +20,14 @@ class RecipePatchTest extends TestCase
     {
         $thePatch = 'the patch';
         $blobs = ['blob1', 'blob2', 'beware of the blob'];
+        $deletedFiles = ['old_file.txt'];
         $removedPatches = ['foo' => 'some diff'];
 
-        $patch = new RecipePatch($thePatch, $blobs, $removedPatches);
+        $patch = new RecipePatch($thePatch, $blobs, $deletedFiles, $removedPatches);
 
         $this->assertSame($thePatch, $patch->getPatch());
         $this->assertSame($blobs, $patch->getBlobs());
+        $this->assertSame($deletedFiles, $patch->getDeletedFiles());
         $this->assertSame($removedPatches, $patch->getRemovedPatches());
     }
 }

@@ -15,12 +15,14 @@ class RecipePatch
 {
     private $patch;
     private $blobs;
+    private $deletedFiles;
     private $removedPatches;
 
-    public function __construct(string $patch, array $blobs, array $removedPatches = [])
+    public function __construct(string $patch, array $blobs, array $deletedFiles, array $removedPatches = [])
     {
         $this->patch = $patch;
         $this->blobs = $blobs;
+        $this->deletedFiles = $deletedFiles;
         $this->removedPatches = $removedPatches;
     }
 
@@ -32,6 +34,11 @@ class RecipePatch
     public function getBlobs(): array
     {
         return $this->blobs;
+    }
+
+    public function getDeletedFiles(): array
+    {
+        return $this->deletedFiles;
     }
 
     /**
