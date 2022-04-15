@@ -31,19 +31,37 @@ class RecipePatcherTest extends TestCase
     /**
      * @dataProvider getGeneratePatchTests
      */
-    public function testGeneratePatch(array $originalFiles, array $newFiles, string $expectedPatch)
+    public function testGeneratePatch(array $originalFiles, array $newFiles, string $expectedPatch, array $expectedDeletedFiles = [])
     {
         $this->getFilesystem()->remove(FLEX_TEST_DIR);
         $this->getFilesystem()->mkdir(FLEX_TEST_DIR);
         // original files need to be present to avoid patcher thinking they were deleting and skipping patch
         foreach ($originalFiles as $file => $contents) {
             touch(FLEX_TEST_DIR.'/'.$file);
+            if ('.gitignore' === $file) {
+                file_put_contents(FLEX_TEST_DIR.'/'.$file, $contents);
+            }
+        }
+
+        // make sure the test directory is a git repo
+        (new Process(['git', 'init'], FLEX_TEST_DIR))->mustRun();
+        (new Process(['git', 'config', 'user.name', '"Flex Updater"'], FLEX_TEST_DIR))->mustRun();
+        (new Process(['git', 'config', 'user.email', '""'], FLEX_TEST_DIR))->mustRun();
+        if (0 !== \count($originalFiles)) {
+            (new Process(['git', 'add', '-A'], FLEX_TEST_DIR))->mustRun();
+            (new Process(['git', 'commit', '-m', '"original files"'], FLEX_TEST_DIR))->mustRun();
         }
 
         $patcher = new RecipePatcher(FLEX_TEST_DIR, $this->createMock(IOInterface::class));
 
         $patch = $patcher->generatePatch($originalFiles, $newFiles);
         $this->assertSame($expectedPatch, rtrim($patch->getPatch(), "\n"));
+        $this->assertSame($expectedDeletedFiles, $patch->getDeletedFiles());
+
+        // when testing ignored files the patch is empty
+        if ('' === $expectedPatch) {
+            return;
+        }
 
         // find all "index 7d30dc7.." in patch
         $matches = [];
@@ -121,31 +139,15 @@ EOF
         yield 'file_deleted_in_update_because_missing' => [
             ['file1.txt' => 'New file'],
             [],
-            <<<EOF
-diff --git a/file1.txt b/file1.txt
-deleted file mode 100644
-index b78ca63..0000000
---- a/file1.txt
-+++ /dev/null
-@@ -1 +0,0 @@
--New file
-\ No newline at end of file
-EOF
+            '',
+            ['file1.txt'],
         ];
 
         yield 'file_deleted_in_update_because_null' => [
             ['file1.txt' => 'New file'],
             ['file1.txt' => null],
-            <<<EOF
-diff --git a/file1.txt b/file1.txt
-deleted file mode 100644
-index b78ca63..0000000
---- a/file1.txt
-+++ /dev/null
-@@ -1 +0,0 @@
--New file
-\ No newline at end of file
-EOF
+            '',
+            ['file1.txt'],
         ];
 
         yield 'mixture_of_added_updated_removed' => [
@@ -169,15 +171,15 @@ index 0000000..f5074b6
 @@ -0,0 +1 @@
 +file to create
 \ No newline at end of file
-diff --git a/will_be_deleted.txt b/will_be_deleted.txt
-deleted file mode 100644
-index 98ff166..0000000
---- a/will_be_deleted.txt
-+++ /dev/null
-@@ -1 +0,0 @@
--file to delete
-\ No newline at end of file
 EOF
+        ,
+            ['will_be_deleted.txt'],
+        ];
+
+        yield 'ignored_file' => [
+            ['file1.txt' => 'Original contents', '.gitignore' => 'file1.txt'],
+            ['file1.txt' => 'Updated contents', '.gitignore' => 'file1.txt'],
+            '',
         ];
     }
 
@@ -243,7 +245,8 @@ EOF
             ['.env' => $dotEnvClean['in_app']],
             new RecipePatch(
                 $dotEnvClean['patch'],
-                [$dotEnvClean['hash'] => $dotEnvClean['blob']]
+                [$dotEnvClean['hash'] => $dotEnvClean['blob']],
+                []
             ),
             ['.env' => $dotEnvClean['expected']],
             false,
@@ -253,7 +256,8 @@ EOF
             ['package.json' => $packageJsonConflict['in_app']],
             new RecipePatch(
                 $packageJsonConflict['patch'],
-                [$packageJsonConflict['hash'] => $packageJsonConflict['blob']]
+                [$packageJsonConflict['hash'] => $packageJsonConflict['blob']],
+                []
             ),
             ['package.json' => $packageJsonConflict['expected']],
             true,
@@ -265,6 +269,7 @@ EOF
             new RecipePatch(
                 $webpackEncoreAdded['patch'],
                 // no blobs needed for a new file
+                [],
                 []
             ),
             ['config/packages/webpack_encore.yaml' => $webpackEncoreAdded['expected']],
@@ -274,8 +279,9 @@ EOF
         yield 'removed_one_file' => [
             ['config/packages/security.yaml' => $securityRemoved['in_app']],
             new RecipePatch(
-                $securityRemoved['patch'],
-                [$securityRemoved['hash'] => $securityRemoved['blob']]
+                '',
+                [$securityRemoved['hash'] => $securityRemoved['blob']],
+                ['config/packages/security.yaml']
             ),
             // expected to be deleted
             ['config/packages/security.yaml' => null],
@@ -290,12 +296,15 @@ EOF
                 'config/packages/security.yaml' => $securityRemoved['in_app'],
             ],
             new RecipePatch(
-                $dotEnvClean['patch']."\n".$packageJsonConflict['patch']."\n".$webpackEncoreAdded['patch']."\n".$securityRemoved['patch'],
+                $dotEnvClean['patch']."\n".$packageJsonConflict['patch']."\n".$webpackEncoreAdded['patch'],
                 [
                     $dotEnvClean['hash'] => $dotEnvClean['blob'],
                     $packageJsonConflict['hash'] => $packageJsonConflict['blob'],
                     $webpackEncoreAdded['hash'] => $webpackEncoreAdded['blob'],
                     $securityRemoved['hash'] => $securityRemoved['blob'],
+                ],
+                [
+                    'config/packages/security.yaml',
                 ]
             ),
             [
