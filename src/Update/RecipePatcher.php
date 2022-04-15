@@ -51,13 +51,16 @@ class RecipePatcher
 
     public function generatePatch(array $originalFiles, array $newFiles): RecipePatch
     {
+        $ignoredFiles = $this->getIgnoredFiles(array_keys($originalFiles) + array_keys($newFiles));
+
         // null implies "file does not exist"
-        $originalFiles = array_filter($originalFiles, function ($file) {
-            return null !== $file;
-        });
-        $newFiles = array_filter($newFiles, function ($file) {
-            return null !== $file;
-        });
+        $originalFiles = array_filter($originalFiles, function ($file, $fileName) use ($ignoredFiles) {
+            return null !== $file && !\in_array($fileName, $ignoredFiles);
+        }, \ARRAY_FILTER_USE_BOTH);
+
+        $newFiles = array_filter($newFiles, function ($file, $fileName) use ($ignoredFiles) {
+            return null !== $file && !\in_array($fileName, $ignoredFiles);
+        }, \ARRAY_FILTER_USE_BOTH);
 
         $deletedFiles = [];
         // find removed files & record that they are deleted
@@ -239,5 +242,14 @@ class RecipePatcher
                 unlink($filename);
             }
         }
+    }
+
+    private function getIgnoredFiles(array $fileNames): array
+    {
+        $args = implode(' ', array_map([ProcessExecutor::class, 'escape'], $fileNames));
+        $output = '';
+        $this->processExecutor->execute(sprintf('git check-ignore %s', $args), $output, $this->rootDir);
+
+        return $this->processExecutor->splitLines($output);
     }
 }

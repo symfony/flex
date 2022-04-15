@@ -38,6 +38,18 @@ class RecipePatcherTest extends TestCase
         // original files need to be present to avoid patcher thinking they were deleting and skipping patch
         foreach ($originalFiles as $file => $contents) {
             touch(FLEX_TEST_DIR.'/'.$file);
+            if ('.gitignore' === $file) {
+                file_put_contents(FLEX_TEST_DIR.'/'.$file, $contents);
+            }
+        }
+
+        // make sure the test directory is a git repo
+        (new Process(['git', 'init'], FLEX_TEST_DIR))->mustRun();
+        (new Process(['git', 'config', 'user.name', '"Flex Updater"'], FLEX_TEST_DIR))->mustRun();
+        (new Process(['git', 'config', 'user.email', '""'], FLEX_TEST_DIR))->mustRun();
+        if (0 !== \count($originalFiles)) {
+            (new Process(['git', 'add', '-A'], FLEX_TEST_DIR))->mustRun();
+            (new Process(['git', 'commit', '-m', '"original files"'], FLEX_TEST_DIR))->mustRun();
         }
 
         $patcher = new RecipePatcher(FLEX_TEST_DIR, $this->createMock(IOInterface::class));
@@ -45,6 +57,11 @@ class RecipePatcherTest extends TestCase
         $patch = $patcher->generatePatch($originalFiles, $newFiles);
         $this->assertSame($expectedPatch, rtrim($patch->getPatch(), "\n"));
         $this->assertSame($expectedDeletedFiles, $patch->getDeletedFiles());
+
+        // when testing ignored files the patch is empty
+        if ('' === $expectedPatch) {
+            return;
+        }
 
         // find all "index 7d30dc7.." in patch
         $matches = [];
@@ -157,6 +174,12 @@ index 0000000..f5074b6
 EOF
         ,
             ['will_be_deleted.txt'],
+        ];
+
+        yield 'ignored_file' => [
+            ['file1.txt' => 'Original contents', '.gitignore' => 'file1.txt'],
+            ['file1.txt' => 'Updated contents', '.gitignore' => 'file1.txt'],
+            '',
         ];
     }
 
