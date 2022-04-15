@@ -1,0 +1,21 @@
+---------------------------------------------------------------------------
+
+by weaverryan at 2022-03-18T13:18:11Z
+
+Oh, and for the coding standards, I should have just pointed you at fabbot (one of the CI checks): https://fabbot.io/report/symfony/flex/885/d84cd84094be56d55cfd5db080db4c40a6dcce16 - you can fix everything automatically from there.
+
+---------------------------------------------------------------------------
+
+by maxime-aknin at 2022-03-19T11:51:25Z
+
+Hello @weaverryan 👋
+
+That's ok I think every code style problem is now fixed. Sorry I didn't take the time to properly check the code standards before submitting. Thanks for the feedback and for the great symfonycast 🤘
+
+Cheers !
+
+---------------------------------------------------------------------------
+
+by fabpot at 2022-04-03T17:31:43Z
+
+@weaverryan Can you check now that the code has been updated now?
