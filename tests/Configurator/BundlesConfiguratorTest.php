@@ -176,7 +176,7 @@ EOF
 
 return [
     BarBundle::class => ['prod' => false, 'all' => true],
-    FooBundle::class => ['dev' => true, 'test' => true],
+    FooBundle::class => ['all' => true],
     BazBundle::class => ['all' => true],
     NewBundle::class => ['all' => true],
 ];
