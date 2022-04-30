@@ -103,7 +103,7 @@ class ParallelDownloader extends RemoteFilesystem
         }
     }
 
-    public function getOptions()
+    public function getOptions(): array
     {
         $options = array_replace_recursive(parent::getOptions(), $this->nextOptions);
         $this->nextOptions = [];
@@ -121,7 +121,7 @@ class ParallelDownloader extends RemoteFilesystem
     /**
      * {@inheritdoc}
      */
-    public function getLastHeaders()
+    public function getLastHeaders(): array
     {
         return $this->lastHeaders ?? parent::getLastHeaders();
     }
@@ -156,7 +156,7 @@ class ParallelDownloader extends RemoteFilesystem
     /**
      * @internal
      */
-    public function callbackGet($notificationCode, $severity, $message, $messageCode, $bytesTransferred, $bytesMax, $nativeDownload = true)
+    public function callbackGet($notificationCode, $severity, $message, $messageCode, $bytesTransferred, $bytesMax, $nativeDownload = true): void
     {
         if (!$nativeDownload && \STREAM_NOTIFY_SEVERITY_ERR === $severity) {
             throw new TransportException($message, $messageCode);
