@@ -1,0 +1,12 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2022-04-30T17:27:36Z
+
+Good catch!
+I fixed the index instead, thanks for the PR.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2022-04-30T18:02:09Z
+
+Oops: https://github.com/symfony/flex/issues/904
