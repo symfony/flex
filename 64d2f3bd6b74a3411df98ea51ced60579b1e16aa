@@ -1,0 +1,58 @@
+---------------------------------------------------------------------------
+
+by PhilETaylor at 2022-02-21T17:24:38Z
+
+Not sure how to fix the unit tests as they seem to be running `Locking composer/composer (1.10.x-dev d4b29e9)`
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2022-02-21T17:26:36Z
+
+They are running with both composer 1 and composer 2, which flex supports.
+
+---------------------------------------------------------------------------
+
+by PhilETaylor at 2022-02-21T18:57:16Z
+
+I suck. The unit tests pass locally, just not in GitHub...
+
+<img width="1125" alt="Screen Shot 2022-02-21 at 18 57 06" src="https://user-images.githubusercontent.com/400092/155012800-e1260a1b-5dc1-4f6b-8cb9-73351579fe64.png">
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2022-02-22T18:38:04Z
+
+You can ignore these warnings!
+But there are other failures ;)
+
+---------------------------------------------------------------------------
+
+by Seldaek at 2022-02-22T19:24:28Z
+
+Thanks for testing snapshots @PhilETaylor ! I reverted the changes as part of https://github.com/composer/composer/pull/10561 because my intent here is to move the Composer code forward as much as I can but not to break things massively..
+
+That said, it's still great if types get added here, so that one day Composer can add them too.
+
+---------------------------------------------------------------------------
+
+by PhilETaylor at 2022-02-25T20:07:17Z
+
+@Seldaek Hi there... I run snapshot updated daily "for fun" on my Mac. I appreciate it can sometimes be broken - but I do try to contribute when I can, and not complain or look for support on issues. Im not here looking for support but to help.
+
+If I read correctly, this PR is no longer needed because the changes in composer are being reverted?
+
+ (I could not resolve the issues anyway, as the unit tests pass locally, but not in the symfony/flex GitHub actions and I ran out of time to debug that - cause probably by my lack of understanding and experience)
+
+---------------------------------------------------------------------------
+
+by PhilETaylor at 2022-02-25T20:10:10Z
+
+I can confirm using Composer snapshot af995c30384a846a998a4dacb860a02d50400b16 and flex causes no issues so I'll close this for now.
+
+---------------------------------------------------------------------------
+
+by Seldaek at 2022-02-25T20:53:23Z
+
+@PhilETaylor it's not *needed* anymore but I think it'd still be nice to add return types so that one day we may add these to Composer too. I didn't want to break all currently installed flex versions right now tho.
+
+So if you do have time to clean up and finalize the PR it'd be cool but if not I can't blame you ;)
