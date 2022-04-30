@@ -163,8 +163,12 @@ class Flex implements PluginInterface, EventSubscriberInterface
             $composer->setRepositoryManager($manager);
         }
 
+        $composerFile = Factory::getComposerFile();
+        $composerLock = 'json' === pathinfo($composerFile, \PATHINFO_EXTENSION) ? substr($composerFile, 0, -4).'lock' : $composerFile.'.lock';
+        $symfonyLock = str_replace('composer', 'symfony', basename($composerLock));
+
         $this->configurator = new Configurator($composer, $io, $this->options);
-        $this->lock = new Lock(getenv('SYMFONY_LOCKFILE') ?: str_replace('composer.json', 'symfony.lock', Factory::getComposerFile()));
+        $this->lock = new Lock(getenv('SYMFONY_LOCKFILE') ?: \dirname($composerLock).'/'.(basename($composerLock) !== $symfonyLock ? $symfonyLock : 'symfony.lock'));
 
         $disable = true;
         foreach (array_merge($composer->getPackage()->getRequires() ?? [], $composer->getPackage()->getDevRequires() ?? []) as $link) {
