@@ -72,7 +72,7 @@ class CopyFromRecipeConfiguratorTest extends ConfiguratorTest
         file_put_contents($this->targetFile, '');
         $this->io->expects($this->exactly(1))->method('writeError')->with(['    Copying files from recipe']);
         $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
-        $this->createConfigurator()->configure($this->recipe, [$this->sourceFileRelativePath => $this->targetFileRelativePath], $lock);
+        $this->configurator->configure($this->recipe, [$this->sourceFileRelativePath => $this->targetFileRelativePath], $lock);
     }
 
     public function testConfigureLocksFiles()
@@ -80,7 +80,7 @@ class CopyFromRecipeConfiguratorTest extends ConfiguratorTest
         $this->recipe->method('getName')->willReturn('test-recipe');
         $lock = new Lock($this->targetDirectory.'/symfony.lock');
 
-        $this->createConfigurator()->configure(
+        $this->configurator->configure(
             $this->recipe,
             [$this->sourceFileRelativePath => $this->targetFileRelativePath],
             $lock
@@ -104,7 +104,7 @@ class CopyFromRecipeConfiguratorTest extends ConfiguratorTest
         $this->io->method('askConfirmation')->with('File "build/config/file" has uncommitted changes, overwrite? [y/N] ')->willReturn(true);
 
         $this->assertFileExists($this->targetFile);
-        $this->createConfigurator()->configure(
+        $this->configurator->configure(
             $this->recipe,
             [$this->sourceFileRelativePath => $this->targetFileRelativePath],
             $lock,
@@ -121,7 +121,7 @@ class CopyFromRecipeConfiguratorTest extends ConfiguratorTest
 
         $this->assertFileDoesNotExist($this->targetFile);
         $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
-        $this->createConfigurator()->configure(
+        $this->configurator->configure(
             $this->recipe,
             [$this->sourceFileRelativePath => $this->targetFileRelativePath],
             $lock
@@ -140,7 +140,7 @@ class CopyFromRecipeConfiguratorTest extends ConfiguratorTest
         $lock = new Lock(FLEX_TEST_DIR.'/test.lock');
         $lock->set('other-recipe', ['files' => ['./'.$this->targetFileRelativePath]]);
 
-        $this->createConfigurator()->unconfigure($this->recipe, [$this->targetFileRelativePath], $lock);
+        $this->configurator->unconfigure($this->recipe, [$this->targetFileRelativePath], $lock);
 
         $this->assertFileExists($this->sourceFile);
     }
@@ -156,7 +156,7 @@ class CopyFromRecipeConfiguratorTest extends ConfiguratorTest
         file_put_contents($this->targetFile, '');
         $this->assertFileExists($this->targetFile);
         $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
-        $this->createConfigurator()->unconfigure($this->recipe, [$this->targetFileRelativePath], $lock);
+        $this->configurator->unconfigure($this->recipe, [$this->targetFileRelativePath], $lock);
         $this->assertFileDoesNotExist($this->targetFile);
     }
 
@@ -165,13 +165,11 @@ class CopyFromRecipeConfiguratorTest extends ConfiguratorTest
         $this->assertFileDoesNotExist($this->targetFile);
         $this->io->expects($this->exactly(1))->method('writeError')->with(['    Removing files from recipe']);
         $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
-        $this->createConfigurator()->unconfigure($this->recipe, [$this->sourceFileRelativePath => $this->targetFileRelativePath], $lock);
+        $this->configurator->unconfigure($this->recipe, [$this->sourceFileRelativePath => $this->targetFileRelativePath], $lock);
     }
 
     public function testUpdate()
     {
-        $configurator = $this->createConfigurator();
-
         $lock = $this->createMock(Lock::class);
         $lock->expects($this->once())
             ->method('add')
@@ -213,7 +211,7 @@ class CopyFromRecipeConfiguratorTest extends ConfiguratorTest
             FLEX_TEST_DIR
         );
 
-        $configurator->update(
+        $this->configurator->update(
             $recipeUpdate,
             [],
             []

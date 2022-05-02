@@ -11,7 +11,6 @@
 
 namespace Symfony\Flex\Tests\Configurator;
 
-use Symfony\Flex\Configurator\AbstractConfigurator;
 use Symfony\Flex\Configurator\MakefileConfigurator;
 use Symfony\Flex\Lock;
 use Symfony\Flex\Options;
@@ -27,7 +26,7 @@ class MakefileConfiguratorTest extends ConfiguratorTest
         @mkdir(FLEX_TEST_DIR);
     }
 
-    protected function createConfigurator(): AbstractConfigurator
+    protected function createConfigurator(): MakefileConfigurator
     {
         return new MakefileConfigurator(
             $this->composer,

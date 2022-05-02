@@ -11,8 +11,6 @@
 
 namespace Symfony\Flex\Tests\Configurator;
 
-use Composer\Composer;
-use Composer\IO\IOInterface;
 use Symfony\Flex\Configurator\ContainerConfigurator;
 use Symfony\Flex\Lock;
 use Symfony\Flex\Options;
@@ -53,12 +51,7 @@ services:
 
 EOF
         );
-        $configurator = new ContainerConfigurator(
-            $this->getMockBuilder(Composer::class)->getMock(),
-            $this->getMockBuilder(IOInterface::class)->getMock(),
-            new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
-        );
-        $configurator->configure($recipe, ['locale' => 'en'], $lock);
+        $this->configurator->configure($recipe, ['locale' => 'en'], $lock);
         $this->assertEquals(<<<EOF
 # comment
 parameters:
@@ -69,7 +62,7 @@ services:
 EOF
         , file_get_contents($config));
 
-        $configurator->unconfigure($recipe, ['locale' => 'en'], $lock);
+        $this->configurator->unconfigure($recipe, ['locale' => 'en'], $lock);
         $this->assertEquals(<<<EOF
 # comment
 parameters:

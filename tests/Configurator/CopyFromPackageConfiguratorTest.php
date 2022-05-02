@@ -64,7 +64,7 @@ class CopyFromPackageConfiguratorTest extends ConfiguratorTest
         file_put_contents($this->targetFile, '');
         $this->io->expects($this->exactly(1))->method('writeError')->with(['    Copying files from package']);
         $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
-        $this->createConfigurator()->configure($this->recipe, [$this->sourceFileRelativePath => $this->targetFileRelativePath], $lock);
+        $this->configurator->configure($this->recipe, [$this->sourceFileRelativePath => $this->targetFileRelativePath], $lock);
     }
 
     public function testConfigureAndOverwriteFiles()
@@ -86,7 +86,7 @@ class CopyFromPackageConfiguratorTest extends ConfiguratorTest
         $this->io->method('askConfirmation')->with('File "build/public/file" has uncommitted changes, overwrite? [y/N] ')->willReturn(true);
 
         $this->assertFileExists($this->targetFile);
-        $this->createConfigurator()->configure(
+        $this->configurator->configure(
             $this->recipe,
             [$this->sourceFileRelativePath => $this->targetFileRelativePath],
             $lock,
@@ -104,7 +104,7 @@ class CopyFromPackageConfiguratorTest extends ConfiguratorTest
         $this->expectException(LogicException::class);
         $this->expectExceptionMessage(sprintf('File "%s" does not exist!', $this->sourceFile));
         $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
-        $this->createConfigurator()->configure($this->recipe, [$this->sourceFileRelativePath => $this->targetFileRelativePath], $lock);
+        $this->configurator->configure($this->recipe, [$this->sourceFileRelativePath => $this->targetFileRelativePath], $lock);
     }
 
     public function testConfigure()
@@ -124,7 +124,7 @@ class CopyFromPackageConfiguratorTest extends ConfiguratorTest
 
         $this->assertFileDoesNotExist($this->targetFile);
         $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
-        $this->createConfigurator()->configure($this->recipe, [$this->sourceFileRelativePath => $this->targetFileRelativePath], $lock);
+        $this->configurator->configure($this->recipe, [$this->sourceFileRelativePath => $this->targetFileRelativePath], $lock);
         $this->assertFileExists($this->targetFile);
     }
 
@@ -141,7 +141,7 @@ class CopyFromPackageConfiguratorTest extends ConfiguratorTest
         file_put_contents($this->targetFile, '');
         $this->assertFileExists($this->targetFile);
         $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
-        $this->createConfigurator()->unconfigure(
+        $this->configurator->unconfigure(
             $this->recipe,
             [$this->sourceFileRelativePath => $this->targetFileRelativePath, 'missingdir/' => ''],
             $lock
@@ -156,7 +156,7 @@ class CopyFromPackageConfiguratorTest extends ConfiguratorTest
         $this->assertFileDoesNotExist($this->targetFile);
         $this->io->expects($this->exactly(1))->method('writeError')->with(['    Removing files from package']);
         $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
-        $this->createConfigurator()->unconfigure($this->recipe, [$this->sourceFileRelativePath => $this->targetFileRelativePath], $lock);
+        $this->configurator->unconfigure($this->recipe, [$this->sourceFileRelativePath => $this->targetFileRelativePath], $lock);
     }
 
     protected function tearDown(): void

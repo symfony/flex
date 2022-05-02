@@ -11,7 +11,6 @@
 
 namespace Symfony\Flex\Tests\Configurator;
 
-use Symfony\Flex\Configurator\AbstractConfigurator;
 use Symfony\Flex\Configurator\BundlesConfigurator;
 use Symfony\Flex\Lock;
 use Symfony\Flex\Options;
@@ -20,14 +19,7 @@ use Symfony\Flex\Update\RecipeUpdate;
 
 class BundlesConfiguratorTest extends ConfiguratorTest
 {
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->configurator = $this->createConfigurator();
-    }
-
-    protected function createConfigurator(): AbstractConfigurator
+    protected function createConfigurator(): BundlesConfigurator
     {
         return new BundlesConfigurator(
             $this->composer,
