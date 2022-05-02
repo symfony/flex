@@ -1013,8 +1013,10 @@ class Flex implements PluginInterface, EventSubscriberInterface
             $composer->getAutoloadGenerator()
         );
 
-        if (!$update) {
+        if (!$update && method_exists($installer, 'setUpdateAllowList')) {
             $installer->setUpdateAllowList(['php']);
+        } elseif (!$update) {
+            $installer->setUpdateWhiteList(['php']);
         }
 
         if (method_exists($installer, 'setSkipSuggest')) {
