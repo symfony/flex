@@ -20,14 +20,20 @@ use Symfony\Flex\Update\RecipeUpdate;
  */
 class ContainerConfigurator extends AbstractConfigurator
 {
-    public function configure(Recipe $recipe, $parameters, Lock $lock, array $options = [])
+    public function configure(Recipe $recipe, $parameters, Lock $lock, array $options = []): bool
     {
-        $this->write('Setting parameters');
-        $contents = $this->configureParameters($parameters);
-
-        if (null !== $contents) {
-            file_put_contents($this->options->get('root-dir').'/'.$this->getServicesPath(), $contents);
+        if (!$this->shouldConfigure($this->composer, $this->io, $recipe)) {
+            return false;
         }
+
+        $this->write('Setting parameters');
+
+        file_put_contents(
+            $this->options->get('root-dir').'/'.$this->getServicesPath(),
+            $this->configureParameters($parameters)
+        );
+
+        return true;
     }
 
     public function unconfigure(Recipe $recipe, $parameters, Lock $lock)
@@ -46,6 +52,10 @@ class ContainerConfigurator extends AbstractConfigurator
 
     public function update(RecipeUpdate $recipeUpdate, array $originalConfig, array $newConfig): void
     {
+        if (!$this->shouldConfigure($this->composer, $this->io, $recipeUpdate->getNewRecipe())) {
+            return;
+        }
+
         if ($originalConfig) {
             $recipeUpdate->setOriginalFile(
                 $this->getServicesPath(),
@@ -59,6 +69,11 @@ class ContainerConfigurator extends AbstractConfigurator
                 $this->configureParameters($newConfig, true)
             );
         }
+    }
+
+    public function configureKey(): string
+    {
+        return 'container';
     }
 
     private function configureParameters(array $parameters, bool $update = false): string

@@ -11,25 +11,26 @@
 
 namespace Symfony\Flex\Tests\Configurator;
 
-use Composer\Composer;
-use Composer\IO\IOInterface;
-use PHPUnit\Framework\TestCase;
 use Symfony\Flex\Configurator\GitignoreConfigurator;
 use Symfony\Flex\Lock;
 use Symfony\Flex\Options;
 use Symfony\Flex\Recipe;
 use Symfony\Flex\Update\RecipeUpdate;
 
-class GitignoreConfiguratorTest extends TestCase
+class GitignoreConfiguratorTest extends ConfiguratorTest
 {
+    protected function createConfigurator(): GitignoreConfigurator
+    {
+        return new GitignoreConfigurator(
+            $this->composer,
+            $this->io,
+            new Options(['public-dir' => 'public', 'root-dir' => FLEX_TEST_DIR])
+        );
+    }
+
     public function testConfigure()
     {
         @mkdir(FLEX_TEST_DIR);
-        $configurator = new GitignoreConfigurator(
-            $this->getMockBuilder(Composer::class)->getMock(),
-            $this->getMockBuilder(IOInterface::class)->getMock(),
-            new Options(['public-dir' => 'public', 'root-dir' => FLEX_TEST_DIR])
-        );
         $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
 
         $recipe1 = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
@@ -64,20 +65,20 @@ EOF;
 ###< BarBundle ###
 EOF;
 
-        $configurator->configure($recipe1, $vars1, $lock);
+        $this->configurator->configure($recipe1, $vars1, $lock);
         $this->assertStringEqualsFile($gitignore, "\n".$gitignoreContents1."\n");
 
-        $configurator->configure($recipe2, $vars2, $lock);
+        $this->configurator->configure($recipe2, $vars2, $lock);
         $this->assertStringEqualsFile($gitignore, "\n".$gitignoreContents1."\n\n".$gitignoreContents2."\n");
 
-        $configurator->configure($recipe1, $vars1, $lock);
-        $configurator->configure($recipe2, $vars2, $lock);
+        $this->configurator->configure($recipe1, $vars1, $lock);
+        $this->configurator->configure($recipe2, $vars2, $lock);
         $this->assertStringEqualsFile($gitignore, "\n".$gitignoreContents1."\n\n".$gitignoreContents2."\n");
 
-        $configurator->unconfigure($recipe1, $vars1, $lock);
+        $this->configurator->unconfigure($recipe1, $vars1, $lock);
         $this->assertStringEqualsFile($gitignore, $gitignoreContents2."\n");
 
-        $configurator->unconfigure($recipe2, $vars2, $lock);
+        $this->configurator->unconfigure($recipe2, $vars2, $lock);
         $this->assertStringEqualsFile($gitignore, '');
 
         @unlink($gitignore);
@@ -86,11 +87,6 @@ EOF;
     public function testConfigureForce()
     {
         @mkdir(FLEX_TEST_DIR);
-        $configurator = new GitignoreConfigurator(
-            $this->getMockBuilder(Composer::class)->getMock(),
-            $this->getMockBuilder(IOInterface::class)->getMock(),
-            new Options(['public-dir' => 'public', 'root-dir' => FLEX_TEST_DIR])
-        );
 
         $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
         $recipe->expects($this->any())->method('getName')->willReturn('FooBundle');
@@ -121,13 +117,13 @@ EOF;
 EOF;
 
         $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
-        $configurator->configure($recipe, [
+        $this->configurator->configure($recipe, [
             '.env',
         ], $lock);
         file_put_contents($gitignore, "\n# new content", \FILE_APPEND);
         $this->assertStringEqualsFile($gitignore, $contentsConfigure);
 
-        $configurator->configure($recipe, [
+        $this->configurator->configure($recipe, [
             '.env',
             '.env.test',
         ], $lock, [
@@ -140,12 +136,6 @@ EOF;
 
     public function testUpdate()
     {
-        $configurator = new GitignoreConfigurator(
-            $this->getMockBuilder(Composer::class)->getMock(),
-            $this->getMockBuilder(IOInterface::class)->getMock(),
-            new Options(['public-dir' => 'public', 'root-dir' => FLEX_TEST_DIR])
-        );
-
         $recipe = $this->createMock(Recipe::class);
         $recipe->method('getName')
             ->willReturn('symfony/foo-bundle');
@@ -177,7 +167,7 @@ EOF;
 EOF
         );
 
-        $configurator->update(
+        $this->configurator->update(
             $recipeUpdate,
             ['/.env.local', '/.env.local.php', '/.env.*.local', '/vendor/'],
             ['/.env.LOCAL', '/.env.LOCAL.php', '/.env.*.LOCAL', '/%VAR_DIR%/']

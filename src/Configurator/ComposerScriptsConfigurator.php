@@ -23,11 +23,16 @@ use Symfony\Flex\Update\RecipeUpdate;
  */
 class ComposerScriptsConfigurator extends AbstractConfigurator
 {
-    public function configure(Recipe $recipe, $scripts, Lock $lock, array $options = [])
+    public function configure(Recipe $recipe, $scripts, Lock $lock, array $options = []): bool
     {
-        $json = new JsonFile(Factory::getComposerFile());
+        if (!$this->shouldConfigure($this->composer, $this->io, $recipe)) {
+            return false;
+        }
 
+        $json = new JsonFile(Factory::getComposerFile());
         file_put_contents($json->getPath(), $this->configureScripts($scripts, $json));
+
+        return true;
     }
 
     public function unconfigure(Recipe $recipe, $scripts, Lock $lock)
@@ -48,6 +53,10 @@ class ComposerScriptsConfigurator extends AbstractConfigurator
 
     public function update(RecipeUpdate $recipeUpdate, array $originalConfig, array $newConfig): void
     {
+        if (!$this->shouldConfigure($this->composer, $this->io, $recipeUpdate->getNewRecipe())) {
+            return;
+        }
+
         $json = new JsonFile(Factory::getComposerFile());
         $jsonPath = ltrim(str_replace($recipeUpdate->getRootDir(), '', $json->getPath()), '/\\');
 
@@ -59,6 +68,11 @@ class ComposerScriptsConfigurator extends AbstractConfigurator
             $jsonPath,
             $this->configureScripts($newConfig, $json)
         );
+    }
+
+    public function configureKey(): string
+    {
+        return 'composer-scripts';
     }
 
     private function configureScripts(array $scripts, JsonFile $json): string

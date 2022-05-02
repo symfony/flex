@@ -11,16 +11,13 @@
 
 namespace Symfony\Flex\Tests\Configurator;
 
-use Composer\Composer;
-use Composer\IO\IOInterface;
-use PHPUnit\Framework\TestCase;
 use Symfony\Flex\Configurator\CopyFromRecipeConfigurator;
 use Symfony\Flex\Lock;
 use Symfony\Flex\Options;
 use Symfony\Flex\Recipe;
 use Symfony\Flex\Update\RecipeUpdate;
 
-class CopyFromRecipeConfiguratorTest extends TestCase
+class CopyFromRecipeConfiguratorTest extends ConfiguratorTest
 {
     private $sourceFile;
     private $sourceFileRelativePath;
@@ -28,8 +25,44 @@ class CopyFromRecipeConfiguratorTest extends TestCase
     private $targetFile;
     private $targetFileRelativePath;
     private $targetDirectory;
-    private $io;
     private $recipe;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->sourceDirectory = FLEX_TEST_DIR.'/source';
+        $this->sourceFileRelativePath = 'source/file';
+        $this->sourceFile = $this->sourceDirectory.'/file';
+
+        $this->targetDirectory = FLEX_TEST_DIR.'/config';
+        $this->targetFileRelativePath = 'config/file';
+        $this->targetFile = $this->targetDirectory.'/file';
+
+        $this->recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
+        $this->recipe->expects($this->any())->method('getFiles')->willReturn([
+            $this->sourceFileRelativePath => [
+                'contents' => 'somecontent',
+                'executable' => false,
+            ],
+        ]);
+
+        $this->cleanUpTargetFiles();
+    }
+
+    protected function createConfigurator(): CopyFromRecipeConfigurator
+    {
+        return new CopyFromRecipeConfigurator(
+            $this->composer,
+            $this->io,
+            new Options(['root-dir' => FLEX_TEST_DIR], $this->io)
+        );
+    }
+
+    protected function sampleConfig()
+    {
+        return [];
+    }
 
     public function testNoFilesCopied()
     {
@@ -190,40 +223,11 @@ class CopyFromRecipeConfiguratorTest extends TestCase
         $this->assertSame($newRecipeFiles, $recipeUpdate->getNewFiles());
     }
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->sourceDirectory = FLEX_TEST_DIR.'/source';
-        $this->sourceFileRelativePath = 'source/file';
-        $this->sourceFile = $this->sourceDirectory.'/file';
-
-        $this->targetDirectory = FLEX_TEST_DIR.'/config';
-        $this->targetFileRelativePath = 'config/file';
-        $this->targetFile = $this->targetDirectory.'/file';
-
-        $this->io = $this->getMockBuilder(IOInterface::class)->getMock();
-        $this->recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
-        $this->recipe->expects($this->any())->method('getFiles')->willReturn([
-            $this->sourceFileRelativePath => [
-                'contents' => 'somecontent',
-                'executable' => false,
-            ],
-        ]);
-
-        $this->cleanUpTargetFiles();
-    }
-
     protected function tearDown(): void
     {
         parent::tearDown();
 
         $this->cleanUpTargetFiles();
-    }
-
-    private function createConfigurator(): CopyFromRecipeConfigurator
-    {
-        return new CopyFromRecipeConfigurator($this->getMockBuilder(Composer::class)->getMock(), $this->io, new Options(['root-dir' => FLEX_TEST_DIR], $this->io));
     }
 
     private function cleanUpTargetFiles()

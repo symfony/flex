@@ -11,6 +11,7 @@
 
 namespace Symfony\Flex\Configurator;
 
+use Composer\IO\IOInterface;
 use Symfony\Flex\Lock;
 use Symfony\Flex\Recipe;
 use Symfony\Flex\Update\RecipeUpdate;
@@ -22,13 +23,15 @@ use Symfony\Flex\Update\RecipeUpdate;
  */
 class DockerfileConfigurator extends AbstractConfigurator
 {
-    public function configure(Recipe $recipe, $config, Lock $lock, array $options = [])
+    public function configure(Recipe $recipe, $config, Lock $lock, array $options = []): bool
     {
-        if (!DockerComposeConfigurator::shouldConfigureDockerRecipe($this->composer, $this->io, $recipe)) {
-            return;
+        if (!$this->shouldConfigure($this->composer, $this->io, $recipe)) {
+            return false;
         }
 
         $this->configureDockerfile($recipe, $config, $options['force'] ?? false);
+
+        return true;
     }
 
     public function unconfigure(Recipe $recipe, $config, Lock $lock)
@@ -49,7 +52,7 @@ class DockerfileConfigurator extends AbstractConfigurator
 
     public function update(RecipeUpdate $recipeUpdate, array $originalConfig, array $newConfig): void
     {
-        if (!DockerComposeConfigurator::shouldConfigureDockerRecipe($this->composer, $this->io, $recipeUpdate->getNewRecipe())) {
+        if (!$this->shouldConfigure($this->composer, $this->io, $recipeUpdate->getNewRecipe())) {
             return;
         }
 
@@ -62,6 +65,43 @@ class DockerfileConfigurator extends AbstractConfigurator
             'Dockerfile',
             $this->getContentsAfterApplyingRecipe($recipeUpdate->getNewRecipe(), $newConfig)
         );
+    }
+
+    public function configureKey(): string
+    {
+        return 'docker';
+    }
+
+    public function isEnabledByDefault(): bool
+    {
+        return false;
+    }
+
+    protected function askSupport(IOInterface $io, Recipe $recipe): string
+    {
+        if (!isset($_SERVER['SYMFONY_DOCKER'])) {
+            $answer = parent::askSupport($io, $recipe);
+        } elseif (filter_var($_SERVER['SYMFONY_DOCKER'], \FILTER_VALIDATE_BOOLEAN)) {
+            $answer = 'p';
+        } else {
+            $answer = 'x';
+        }
+
+        return $answer;
+    }
+
+    protected function supportQuestion(): string
+    {
+        return '    The recipe for this package contains some Docker configuration.
+
+    This may create/update <comment>docker-compose.yml</comment> or update <comment>Dockerfile</comment> (if it exists).
+
+    Do you want to include Docker configuration from recipes?
+    [<comment>y</>] Yes
+    [<comment>n</>] No
+    [<comment>p</>] Yes permanently, never ask again for this project
+    [<comment>x</>] No permanently, never ask again for this project
+    (defaults to <comment>y</>): ';
     }
 
     private function configureDockerfile(Recipe $recipe, array $config, bool $update, bool $writeOutput = true): void

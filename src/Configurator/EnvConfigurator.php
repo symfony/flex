@@ -20,14 +20,20 @@ use Symfony\Flex\Update\RecipeUpdate;
  */
 class EnvConfigurator extends AbstractConfigurator
 {
-    public function configure(Recipe $recipe, $vars, Lock $lock, array $options = [])
+    public function configure(Recipe $recipe, $vars, Lock $lock, array $options = []): bool
     {
+        if (!$this->shouldConfigure($this->composer, $this->io, $recipe)) {
+            return false;
+        }
+
         $this->write('Adding environment variable defaults');
 
         $this->configureEnvDist($recipe, $vars, $options['force'] ?? false);
         if (!file_exists($this->options->get('root-dir').'/'.($this->options->get('runtime')['dotenv_path'] ?? '.env').'.test')) {
             $this->configurePhpUnit($recipe, $vars, $options['force'] ?? false);
         }
+
+        return true;
     }
 
     public function unconfigure(Recipe $recipe, $vars, Lock $lock)
@@ -38,6 +44,10 @@ class EnvConfigurator extends AbstractConfigurator
 
     public function update(RecipeUpdate $recipeUpdate, array $originalConfig, array $newConfig): void
     {
+        if (!$this->shouldConfigure($this->composer, $this->io, $recipeUpdate->getNewRecipe())) {
+            return;
+        }
+
         $recipeUpdate->addOriginalFiles(
             $this->getContentsAfterApplyingRecipe($recipeUpdate->getRootDir(), $recipeUpdate->getOriginalRecipe(), $originalConfig)
         );
@@ -45,6 +55,11 @@ class EnvConfigurator extends AbstractConfigurator
         $recipeUpdate->addNewFiles(
             $this->getContentsAfterApplyingRecipe($recipeUpdate->getRootDir(), $recipeUpdate->getNewRecipe(), $newConfig)
         );
+    }
+
+    public function configureKey(): string
+    {
+        return 'env';
     }
 
     private function configureEnvDist(Recipe $recipe, $vars, bool $update)

@@ -11,32 +11,40 @@
 
 namespace Symfony\Flex\Tests\Configurator;
 
-use Composer\Composer;
-use Composer\IO\IOInterface;
-use PHPUnit\Framework\TestCase;
+use Symfony\Flex\Configurator\AbstractConfigurator;
 use Symfony\Flex\Configurator\BundlesConfigurator;
 use Symfony\Flex\Lock;
 use Symfony\Flex\Options;
 use Symfony\Flex\Recipe;
 use Symfony\Flex\Update\RecipeUpdate;
 
-class BundlesConfiguratorTest extends TestCase
+class BundlesConfiguratorTest extends ConfiguratorTest
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->configurator = $this->createConfigurator();
+    }
+
+    protected function createConfigurator(): AbstractConfigurator
+    {
+        return new BundlesConfigurator(
+            $this->composer,
+            $this->io,
+            new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
+        );
+    }
+
     public function testConfigure()
     {
         $config = FLEX_TEST_DIR.'/config/bundles.php';
-
-        $configurator = new BundlesConfigurator(
-            $this->getMockBuilder(Composer::class)->getMock(),
-            $this->getMockBuilder(IOInterface::class)->getMock(),
-            new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
-        );
 
         $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
         $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
 
         @unlink($config);
-        $configurator->configure($recipe, [
+        $this->configurator->configure($recipe, [
             'FooBundle' => ['dev', 'test'],
             'Symfony\Bundle\FrameworkBundle\FrameworkBundle' => ['all'],
         ], $lock);
@@ -63,16 +71,10 @@ return [
 EOF
         );
 
-        $configurator = new BundlesConfigurator(
-            $this->getMockBuilder(Composer::class)->getMock(),
-            $this->getMockBuilder(IOInterface::class)->getMock(),
-            new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
-        );
-
         $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
         $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
 
-        $configurator->configure($recipe, [
+        $this->configurator->configure($recipe, [
             'FooBundle' => ['dev', 'test'],
             'Symfony\Bundle\FrameworkBundle\FrameworkBundle' => ['all'],
         ], $lock);
@@ -102,16 +104,10 @@ return [
 EOF
         );
 
-        $configurator = new BundlesConfigurator(
-            $this->getMockBuilder(Composer::class)->getMock(),
-            $this->getMockBuilder(IOInterface::class)->getMock(),
-            new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
-        );
-
         $recipe = $this->createMock(Recipe::class);
         $lock = $this->createMock(Lock::class);
 
-        $configurator->unconfigure($recipe, [
+        $this->configurator->unconfigure($recipe, [
             'BarBundle' => ['dev', 'all'],
         ], $lock);
         $this->assertEquals(<<<EOF
@@ -128,12 +124,6 @@ EOF
 
     public function testUpdate()
     {
-        $configurator = new BundlesConfigurator(
-            $this->createMock(Composer::class),
-            $this->createMock(IOInterface::class),
-            new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
-        );
-
         $recipeUpdate = new RecipeUpdate(
             $this->createMock(Recipe::class),
             $this->createMock(Recipe::class),
@@ -152,7 +142,7 @@ return [
 EOF
         );
 
-        $configurator->update(
+        $this->configurator->update(
             $recipeUpdate,
             ['FooBundle' => ['dev', 'test']],
             ['FooBundle' => ['all'], 'NewBundle' => ['all']]

@@ -20,11 +20,17 @@ use Symfony\Flex\Update\RecipeUpdate;
  */
 class MakefileConfigurator extends AbstractConfigurator
 {
-    public function configure(Recipe $recipe, $definitions, Lock $lock, array $options = [])
+    public function configure(Recipe $recipe, $definitions, Lock $lock, array $options = []): bool
     {
+        if (!$this->shouldConfigure($this->composer, $this->io, $recipe)) {
+            return false;
+        }
+
         $this->write('Adding Makefile entries');
 
         $this->configureMakefile($recipe, $definitions, $options['force'] ?? false);
+
+        return true;
     }
 
     public function unconfigure(Recipe $recipe, $vars, Lock $lock)
@@ -48,6 +54,10 @@ class MakefileConfigurator extends AbstractConfigurator
 
     public function update(RecipeUpdate $recipeUpdate, array $originalConfig, array $newConfig): void
     {
+        if (!$this->shouldConfigure($this->composer, $this->io, $recipeUpdate->getNewRecipe())) {
+            return;
+        }
+
         $recipeUpdate->setOriginalFile(
             'Makefile',
             $this->getContentsAfterApplyingRecipe($recipeUpdate->getRootDir(), $recipeUpdate->getOriginalRecipe(), $originalConfig)
@@ -57,6 +67,11 @@ class MakefileConfigurator extends AbstractConfigurator
             'Makefile',
             $this->getContentsAfterApplyingRecipe($recipeUpdate->getRootDir(), $recipeUpdate->getNewRecipe(), $newConfig)
         );
+    }
+
+    public function configureKey(): string
+    {
+        return 'makefile';
     }
 
     private function configureMakefile(Recipe $recipe, array $definitions, bool $update)

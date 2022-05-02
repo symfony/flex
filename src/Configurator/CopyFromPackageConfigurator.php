@@ -20,8 +20,12 @@ use Symfony\Flex\Update\RecipeUpdate;
  */
 class CopyFromPackageConfigurator extends AbstractConfigurator
 {
-    public function configure(Recipe $recipe, $config, Lock $lock, array $options = [])
+    public function configure(Recipe $recipe, $config, Lock $lock, array $options = []): bool
     {
+        if (!$this->shouldConfigure($this->composer, $this->io, $recipe)) {
+            return false;
+        }
+
         $this->write('Copying files from package');
         $packageDir = $this->composer->getInstallationManager()->getInstallPath($recipe->getPackage());
         $options = array_merge($this->options->toArray(), $options);
@@ -30,6 +34,8 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
         foreach ($files as $source => $target) {
             $this->copyFile($source, $target, $options);
         }
+
+        return true;
     }
 
     public function unconfigure(Recipe $recipe, $config, Lock $lock)
@@ -41,6 +47,10 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
 
     public function update(RecipeUpdate $recipeUpdate, array $originalConfig, array $newConfig): void
     {
+        if (!$this->shouldConfigure($this->composer, $this->io, $recipeUpdate->getNewRecipe())) {
+            return;
+        }
+
         $packageDir = $this->composer->getInstallationManager()->getInstallPath($recipeUpdate->getNewRecipe()->getPackage());
         foreach ($originalConfig as $source => $target) {
             if (isset($newConfig[$source])) {
@@ -64,6 +74,11 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
 
             $recipeUpdate->setNewFile($target, file_get_contents($source));
         }
+    }
+
+    public function configureKey(): string
+    {
+        return 'copy-from-package';
     }
 
     private function getFilesToCopy(array $manifest, string $from): array

@@ -11,26 +11,34 @@
 
 namespace Symfony\Flex\Tests\Configurator;
 
-use Composer\Composer;
-use Composer\IO\IOInterface;
 use Composer\Util\Platform;
-use PHPUnit\Framework\TestCase;
 use Symfony\Flex\Configurator\ComposerScriptsConfigurator;
 use Symfony\Flex\Lock;
 use Symfony\Flex\Options;
 use Symfony\Flex\Recipe;
 use Symfony\Flex\Update\RecipeUpdate;
 
-class ComposerScriptsConfiguratorTest extends TestCase
+class ComposerScriptsConfiguratorTest extends ConfiguratorTest
 {
     protected function setUp(): void
     {
+        parent::setUp();
+
         @mkdir(FLEX_TEST_DIR);
         if (method_exists(Platform::class, 'putEnv')) {
             Platform::putEnv('COMPOSER', FLEX_TEST_DIR.'/composer.json');
         } else {
             putenv('COMPOSER='.FLEX_TEST_DIR.'/composer.json');
         }
+    }
+
+    protected function createConfigurator(): ComposerScriptsConfigurator
+    {
+        return new ComposerScriptsConfigurator(
+            $this->composer,
+            $this->io,
+            new Options(['root-dir' => FLEX_TEST_DIR])
+        );
     }
 
     protected function tearDown(): void
@@ -57,16 +65,10 @@ class ComposerScriptsConfiguratorTest extends TestCase
             ],
         ], \JSON_PRETTY_PRINT));
 
-        $configurator = new ComposerScriptsConfigurator(
-            $this->createMock(Composer::class),
-            $this->createMock(IOInterface::class),
-            new Options(['root-dir' => FLEX_TEST_DIR])
-        );
-
         $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
         $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
 
-        $configurator->configure($recipe, [
+        $this->configurator->configure($recipe, [
             'do:cool-stuff' => 'symfony-cmd',
         ], $lock);
         $this->assertEquals(<<<EOF
@@ -104,16 +106,10 @@ EOF
             ],
         ], \JSON_PRETTY_PRINT));
 
-        $configurator = new ComposerScriptsConfigurator(
-            $this->createMock(Composer::class),
-            $this->createMock(IOInterface::class),
-            new Options(['root-dir' => FLEX_TEST_DIR])
-        );
-
         $recipe = $this->createMock(Recipe::class);
         $lock = $this->createMock(Lock::class);
 
-        $configurator->unconfigure($recipe, [
+        $this->configurator->unconfigure($recipe, [
             'do:cool-stuff' => 'symfony-cmd',
             'cache:clear' => 'symfony-cmd',
         ], $lock);
@@ -139,12 +135,6 @@ EOF
 
     public function testUpdate()
     {
-        $configurator = new ComposerScriptsConfigurator(
-            $this->createMock(Composer::class),
-            $this->createMock(IOInterface::class),
-            new Options(['root-dir' => FLEX_TEST_DIR])
-        );
-
         $recipeUpdate = new RecipeUpdate(
             $this->createMock(Recipe::class),
             $this->createMock(Recipe::class),
@@ -163,7 +153,7 @@ EOF
             ],
         ], \JSON_PRETTY_PRINT));
 
-        $configurator->update(
+        $this->configurator->update(
             $recipeUpdate,
             ['cache:clear' => 'symfony-cmd'],
             ['cache:clear' => 'other-cmd', 'do:cool-stuff' => 'symfony-cmd']
