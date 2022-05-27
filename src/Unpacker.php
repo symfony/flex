@@ -73,14 +73,6 @@ class Unpacker
             }
             $devRequires = $pkg->getDevRequires();
 
-            foreach ($devRequires as $i => $link) {
-                if (!isset($requires[$link->getTarget()])) {
-                    throw new \RuntimeException(sprintf('Symfony pack "%s" must duplicate all entries from "require-dev" into "require" but entry "%s" was not found.', $package['name'], $link->getTarget()));
-                }
-                $devRequires[$i] = $requires[$link->getTarget()];
-                unset($requires[$link->getTarget()]);
-            }
-
             $versionSelector = null;
             foreach ([$requires, $devRequires] as $dev => $requires) {
                 $dev = $dev ?: $devRequire ?: $package['dev'];
