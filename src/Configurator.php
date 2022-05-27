@@ -72,6 +72,10 @@ class Configurator
 
     public function unconfigure(Recipe $recipe, Lock $lock)
     {
+        if ('kbond/homepage-scaffold' === $recipe->getPackage()->getName()) {
+            return;
+        }
+
         $manifest = $recipe->getManifest();
         foreach (array_keys($this->configurators) as $key) {
             if (isset($manifest[$key])) {
