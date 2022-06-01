@@ -306,6 +306,14 @@ class Flex implements PluginInterface, EventSubscriberInterface
         foreach ($backtrace as $trace) {
             if (isset($trace['object']) && $trace['object'] instanceof Installer) {
                 $this->installer = $trace['object']->setSuggestedPackagesReporter(new SuggestedPackagesReporter(new NullIO()));
+
+                $updateAllowList = \Closure::bind(function () {
+                    return $this->updateWhitelist ?? $this->updateAllowList;
+                }, $this->installer, $this->installer)();
+
+                if (['php' => 0] === $updateAllowList) {
+                    $this->dryRun = true; // prevent recipes from being uninstalled when removing a pack
+                }
             }
 
             if (isset($trace['object']) && $trace['object'] instanceof GlobalCommand) {
@@ -754,6 +762,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $recipes = [
             'symfony/framework-bundle' => null,
         ];
+        $packRecipes = [];
         $metaRecipes = [];
 
         foreach ($operations as $operation) {
@@ -803,12 +812,16 @@ class Flex implements PluginInterface, EventSubscriberInterface
             }
 
             if (isset($manifests[$name])) {
-                if ('metapackage' === $package->getType()) {
-                    $metaRecipes[$name] = new Recipe($package, $name, $job, $manifests[$name], $locks[$name] ?? []);
+                $recipe = new Recipe($package, $name, $job, $manifests[$name], $locks[$name] ?? []);
+
+                if ('symfony-pack' === $package->getType()) {
+                    $packRecipes[$name] = $recipe;
+                } elseif ('metapackage' === $package->getType()) {
+                    $metaRecipes[$name] = $recipe;
                 } elseif ('symfony/flex' === $name) {
-                    $flexRecipe = [$name => new Recipe($package, $name, $job, $manifests[$name], $locks[$name] ?? [])];
+                    $flexRecipe = [$name => $recipe];
                 } else {
-                    $recipes[$name] = new Recipe($package, $name, $job, $manifests[$name], $locks[$name] ?? []);
+                    $recipes[$name] = $recipe;
                 }
             }
 
@@ -834,7 +847,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             }
         }
 
-        return array_merge($flexRecipe, $metaRecipes, array_filter($recipes));
+        return array_merge($flexRecipe, $packRecipes, $metaRecipes, array_filter($recipes));
     }
 
     public function truncatePackages(PrePoolCreateEvent $event)
