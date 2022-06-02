@@ -83,7 +83,7 @@ class Recipe
 
     public function getURL(): string
     {
-        if (!$this->data['origin']) {
+        if (empty($this->data['origin'])) {
             return '';
         }
 

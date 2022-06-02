@@ -18,6 +18,7 @@ use Composer\DependencyResolver\Operation\UninstallOperation;
 use Composer\DependencyResolver\Operation\UpdateOperation;
 use Composer\IO\IOInterface;
 use Composer\Json\JsonFile;
+use Composer\Package\PackageInterface;
 use Composer\Util\Http\Response as ComposerResponse;
 use Composer\Util\HttpDownloader;
 use Composer\Util\Loop;
@@ -51,6 +52,7 @@ class Downloader
     private $caFile;
     private $enabled = true;
     private $composer;
+    private $vendorDir;
 
     public function __construct(Composer $composer, IoInterface $io, $rfs)
     {
@@ -94,6 +96,7 @@ class Downloader
         $this->cache = new ComposerCache($io, $config->get('cache-repo-dir').'/flex');
         $this->sess = bin2hex(random_bytes(16));
         $this->composer = $composer;
+        $this->vendorDir = $config->get('vendor-dir');
     }
 
     public function getSessionId(): string
@@ -155,6 +158,7 @@ class Downloader
             $this->conflicts = [];
         }
 
+        $localRecipes = [];
         $data = [];
         $urls = [];
         $chunk = '';
@@ -173,6 +177,11 @@ class Downloader
                 if ($operation instanceof InformationOperation) {
                     $recipeRef = $operation->getRecipeRef();
                 }
+            }
+
+            if ('symfony-pack' === $package->getType() && is_file($this->vendorDir.'/'.$package->getName().'/manifest.json')) {
+                $localRecipes[$package->getName()] = $package;
+                continue;
             }
 
             $version = $package->getPrettyVersion();
@@ -310,6 +319,14 @@ class Downloader
             }
         }
 
+        foreach ($localRecipes as $name => $package) {
+            $data['locks'][$name] = [
+                'version' => $package->getPrettyVersion(),
+            ];
+
+            $data['manifests'][$name] = $this->getLocalRecipe($package);
+        }
+
         return $data;
     }
 
@@ -328,6 +345,10 @@ class Downloader
      */
     private function get(array $urls, bool $isRecipe = false, int $try = 3): array
     {
+        if (!$urls) {
+            return [];
+        }
+
         $responses = [];
         $retries = [];
         $options = [];
@@ -479,6 +500,47 @@ class Downloader
             unset($config['recipes'], $config['recipe-conflicts'], $config['versions'], $config['aliases']);
             $this->endpoints[$endpoint] = $config;
         }
+    }
+
+    private function getLocalRecipe(PackageInterface $package): array
+    {
+        $name = $package->getName();
+        $path = $this->vendorDir.'/'.$name;
+        $manifest = json_decode(file_get_contents($path.'/manifest.json'), true);
+        if (!\is_array($manifest)) {
+            throw new \LogicException(sprintf('Invalid recipe manifest in "%s".', $path));
+        }
+        $files = [];
+        $it = new \RecursiveDirectoryIterator($path);
+        $it->setFlags($it::SKIP_DOTS | $it::FOLLOW_SYMLINKS | $it::UNIX_PATHS);
+
+        foreach (new \RecursiveIteratorIterator($it) as $path => $file) {
+            $file = substr($path, 1 + \strlen($name));
+            if (is_dir($path) || 'manifest.json' === $file || 'composer.json') {
+                continue;
+            }
+            if ('post-install.txt' === $file) {
+                $manifest['post-install-output'] = explode("\n", rtrim(str_replace("\r", '', file_get_contents($path)), "\n"));
+                continue;
+            }
+            if ('Makefile' === $file) {
+                $manifest['makefile'] = explode("\n", rtrim(str_replace("\r", '', file_get_contents($path)), "\n"));
+                continue;
+            }
+            $contents = file_get_contents($path);
+            $files[$file] = [
+                'contents' => preg_match('//u', $contents) ? explode("\n", $contents) : base64_encode($contents),
+                'executable' => is_executable($path),
+            ];
+        }
+
+        return [
+            'manifest' => $manifest,
+            'files' => $files,
+            'package' => $name,
+            'origin' => sprintf('%s:%s@vendor:manifest.json', $name, $package->getPrettyVersion()),
+            'is_contrib' => false,
+        ];
     }
 
     private static function generateCacheKey(string $url): string
