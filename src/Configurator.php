@@ -44,6 +44,7 @@ class Configurator
             'gitignore' => Configurator\GitignoreConfigurator::class,
             'dockerfile' => Configurator\DockerfileConfigurator::class,
             'docker-compose' => Configurator\DockerComposeConfigurator::class,
+            'patch' => Configurator\PatchConfigurator::class,
         ];
     }
 
