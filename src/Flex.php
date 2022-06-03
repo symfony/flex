@@ -172,7 +172,6 @@ class Flex implements PluginInterface, EventSubscriberInterface
             }
 
             if (isset(self::$aliasResolveCommands[$command])) {
-                // early resolve for BC with Composer 1.0
                 if ($input->hasArgument('packages')) {
                     $input->setArgument('packages', $resolver->resolve($input->getArgument('packages'), self::$aliasResolveCommands[$command]));
                 }
@@ -185,9 +184,6 @@ class Flex implements PluginInterface, EventSubscriberInterface
                 BasePackage::$stabilities['dev'] = 1 + BasePackage::STABILITY_STABLE;
             }
 
-            $app->add(new Command\RequireCommand($resolver, \Closure::fromCallable([$this, 'updateComposerLock'])));
-            $app->add(new Command\UpdateCommand($resolver));
-            $app->add(new Command\RemoveCommand($resolver));
             $app->add(new Command\RecipesCommand($this, $this->lock, $rfs));
             $app->add(new Command\InstallRecipesCommand($this, $this->options->get('root-dir'), $this->options->get('runtime')['dotenv_path'] ?? '.env'));
             $app->add(new Command\UpdateRecipesCommand($this, $this->downloader, $rfs, $this->configurator, $this->options->get('root-dir')));
@@ -208,6 +204,14 @@ class Flex implements PluginInterface, EventSubscriberInterface
         foreach ($backtrace as $trace) {
             if (isset($trace['object']) && $trace['object'] instanceof Installer) {
                 $this->installer = $trace['object']->setSuggestedPackagesReporter(new SuggestedPackagesReporter(new NullIO()));
+
+                $updateAllowList = \Closure::bind(function () {
+                    return $this->updateWhitelist ?? $this->updateAllowList;
+                }, $this->installer, $this->installer)();
+
+                if (['php' => 0] === $updateAllowList) {
+                    $this->dryRun = true; // prevent recipes from being uninstalled when removing a pack
+                }
             }
 
             if (isset($trace['object']) && $trace['object'] instanceof GlobalCommand) {
@@ -313,6 +317,9 @@ class Flex implements PluginInterface, EventSubscriberInterface
             if (!isset($json['flex-'.$type])) {
                 continue;
             }
+
+            $this->io->writeError(sprintf('<warning>Using section "flex-%s" in composer.json is deprecated, use "%1$s" instead.</>', $type));
+
             foreach ($json['flex-'.$type] as $package => $constraint) {
                 if ($symfonyVersion && '*' === $constraint && isset($versions['splits'][$package])) {
                     // replace unbounded constraints for symfony/* packages by extra.symfony.require
@@ -538,6 +545,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $recipes = [
             'symfony/framework-bundle' => null,
         ];
+        $packRecipes = [];
         $metaRecipes = [];
 
         foreach ($operations as $operation) {
@@ -587,12 +595,16 @@ class Flex implements PluginInterface, EventSubscriberInterface
             }
 
             if (isset($manifests[$name])) {
-                if ('metapackage' === $package->getType()) {
-                    $metaRecipes[$name] = new Recipe($package, $name, $job, $manifests[$name], $locks[$name] ?? []);
+                $recipe = new Recipe($package, $name, $job, $manifests[$name], $locks[$name] ?? []);
+
+                if ('symfony-pack' === $package->getType()) {
+                    $packRecipes[$name] = $recipe;
+                } elseif ('metapackage' === $package->getType()) {
+                    $metaRecipes[$name] = $recipe;
                 } elseif ('symfony/flex' === $name) {
-                    $flexRecipe = [$name => new Recipe($package, $name, $job, $manifests[$name], $locks[$name] ?? [])];
+                    $flexRecipe = [$name => $recipe];
                 } else {
-                    $recipes[$name] = new Recipe($package, $name, $job, $manifests[$name], $locks[$name] ?? []);
+                    $recipes[$name] = $recipe;
                 }
             }
 
@@ -618,7 +630,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             }
         }
 
-        return array_merge($flexRecipe, $metaRecipes, array_filter($recipes));
+        return array_merge($flexRecipe, $packRecipes, $metaRecipes, array_filter($recipes));
     }
 
     public function truncatePackages(PrePoolCreateEvent $event)

@@ -187,6 +187,7 @@ EOF
             ['name' => 'symfony/flex', 'type' => 'composer-plugin'],
             ['name' => 'symfony/framework-bundle', 'type' => 'library'],
             ['name' => 'symfony/webapp-meta', 'type' => 'metapackage'],
+            ['name' => 'symfony/webapp-pack', 'type' => 'symfony-pack'],
         ];
 
         $io = new BufferIO('', OutputInterface::VERBOSITY_VERBOSE);
@@ -209,6 +210,7 @@ EOF
 
         $this->assertSame([
             'symfony/flex',
+            'symfony/webapp-pack',
             'symfony/webapp-meta',
             'symfony/framework-bundle',
             'symfony/console',
