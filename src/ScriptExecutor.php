@@ -128,6 +128,10 @@ class ScriptExecutor
             $arguments[] = '--php-ini='.$ini;
         }
 
+        if ($memoryLimit = (string) getenv('COMPOSER_MEMORY_LIMIT')) {
+            $arguments[] = "-d memory_limit={$memoryLimit}";
+        }
+
         $phpArgs = implode(' ', array_map([ProcessExecutor::class, 'escape'], $arguments));
 
         return ProcessExecutor::escape($php).($phpArgs ? ' '.$phpArgs : '').' '.$cmd;
