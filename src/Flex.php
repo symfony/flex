@@ -206,7 +206,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
                 $this->installer = $trace['object']->setSuggestedPackagesReporter(new SuggestedPackagesReporter(new NullIO()));
 
                 $updateAllowList = \Closure::bind(function () {
-                    return $this->updateWhitelist ?? $this->updateAllowList;
+                    return $this->updateWhitelist ?? $this->updateAllowList ?? null;
                 }, $this->installer, $this->installer)();
 
                 if (['php' => 0] === $updateAllowList) {
@@ -284,7 +284,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }, null, Transaction::class)();
 
         foreach ($transation->getOperations() as $operation) {
-            if ($this->shouldRecordOperation($operation, $event->isDevMode(), $event->getComposer())) {
+            if (!$operation instanceof UninstallOperation && $this->shouldRecordOperation($operation, $event->isDevMode(), $event->getComposer())) {
                 $this->operations[] = $operation;
             }
         }
@@ -606,9 +606,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
                 } else {
                     $recipes[$name] = $recipe;
                 }
-            }
-
-            if (!isset($manifests[$name])) {
+            } else {
                 $bundles = [];
 
                 if (null === $devPackages) {
@@ -626,6 +624,10 @@ class Flex implements PluginInterface, EventSubscriberInterface
                         'manifest' => ['bundles' => $bundles],
                     ];
                     $recipes[$name] = new Recipe($package, $name, $job, $manifest);
+
+                    if ($operation instanceof InstallOperation) {
+                        $this->lock->set($name, ['version' => $package->getPrettyVersion()]);
+                    }
                 }
             }
         }
@@ -810,6 +812,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $events = [
             PackageEvents::POST_PACKAGE_UPDATE => 'enableThanksReminder',
             PackageEvents::POST_PACKAGE_INSTALL => 'recordFlexInstall',
+            PackageEvents::POST_PACKAGE_UNINSTALL => 'record',
             InstallerEvents::PRE_OPERATIONS_EXEC => 'recordOperations',
             PluginEvents::PRE_POOL_CREATE => 'truncatePackages',
             ScriptEvents::POST_CREATE_PROJECT_CMD => 'configureProject',
