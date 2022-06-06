@@ -245,7 +245,6 @@ class Downloader
             }
 
             if (null !== $this->endpoints) {
-                $data['locks'][$package->getName()]['version'] = $version;
                 continue;
             }
 

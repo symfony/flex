@@ -382,7 +382,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }, null, Transaction::class)();
 
         foreach ($transation->getOperations() as $operation) {
-            if ($this->shouldRecordOperation($operation, $event->isDevMode(), $event->getComposer())) {
+            if (!$operation instanceof UninstallOperation && $this->shouldRecordOperation($operation, $event->isDevMode(), $event->getComposer())) {
                 $this->operations[] = $operation;
             }
         }
@@ -822,9 +822,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
                 } else {
                     $recipes[$name] = $recipe;
                 }
-            }
-
-            if (!isset($manifests[$name])) {
+            } else {
                 $bundles = [];
 
                 if (null === $devPackages) {
@@ -842,6 +840,10 @@ class Flex implements PluginInterface, EventSubscriberInterface
                         'manifest' => ['bundles' => $bundles],
                     ];
                     $recipes[$name] = new Recipe($package, $name, $job, $manifest);
+
+                    if ($operation instanceof InstallOperation) {
+                        $this->lock->set($name, ['version' => $package->getPrettyVersion()]);
+                    }
                 }
             }
         }
@@ -1058,6 +1060,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
 
         $events = [
+            PackageEvents::POST_PACKAGE_UNINSTALL => 'record',
             ScriptEvents::POST_CREATE_PROJECT_CMD => 'configureProject',
             ScriptEvents::POST_INSTALL_CMD => 'install',
             ScriptEvents::PRE_UPDATE_CMD => 'configureInstaller',
@@ -1069,7 +1072,6 @@ class Flex implements PluginInterface, EventSubscriberInterface
             $events += [
                 PackageEvents::POST_PACKAGE_INSTALL => [['recordFlexInstall'], ['record']],
                 PackageEvents::POST_PACKAGE_UPDATE => [['record'], ['enableThanksReminder']],
-                PackageEvents::POST_PACKAGE_UNINSTALL => 'record',
                 InstallerEvents::PRE_DEPENDENCIES_SOLVING => [['populateProvidersCacheDir', \PHP_INT_MAX]],
                 InstallerEvents::POST_DEPENDENCIES_SOLVING => [['populateFilesCacheDir', \PHP_INT_MAX]],
                 PackageEvents::PRE_PACKAGE_INSTALL => [['populateFilesCacheDir', ~\PHP_INT_MAX]],

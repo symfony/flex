@@ -13,6 +13,7 @@ namespace Symfony\Flex\Command;
 
 use Composer\Command\BaseCommand;
 use Composer\IO\IOInterface;
+use Composer\Package\Package;
 use Composer\Util\ProcessExecutor;
 use Symfony\Component\Console\Exception\RuntimeException;
 use Symfony\Component\Console\Formatter\OutputFormatterStyle;
@@ -122,7 +123,9 @@ class UpdateRecipesCommand extends BaseCommand
             return 1;
         }
 
-        $originalRecipe = $this->getRecipe($packageName, $recipeRef, $recipeVersion);
+        $installedRepo = $this->getComposer()->getRepositoryManager()->getLocalRepository();
+        $package = $installedRepo->findPackage($packageName, '*') ?? new Package($packageName, $packageLockData['version'], $packageLockData['version']);
+        $originalRecipe = $this->getRecipe($package, $recipeRef, $recipeVersion);
 
         if (null === $originalRecipe) {
             $io->writeError([
@@ -134,7 +137,7 @@ class UpdateRecipesCommand extends BaseCommand
             return 1;
         }
 
-        $newRecipe = $this->getRecipe($packageName);
+        $newRecipe = $this->getRecipe($package);
 
         if ($newRecipe->getRef() === $originalRecipe->getRef()) {
             $io->write(sprintf('This recipe for <info>%s</info> is already at the latest version.', $packageName));
@@ -259,13 +262,8 @@ class UpdateRecipesCommand extends BaseCommand
         return 0;
     }
 
-    private function getRecipe(string $packageName, string $recipeRef = null, string $recipeVersion = null): ?Recipe
+    private function getRecipe(Package $package, string $recipeRef = null, string $recipeVersion = null): ?Recipe
     {
-        $installedRepo = $this->getComposer()->getRepositoryManager()->getLocalRepository();
-        $package = $installedRepo->findPackage($packageName, '*');
-        if (null === $package) {
-            throw new RuntimeException(sprintf('Could not find package "%s". Try running "composer install".', $packageName));
-        }
         $operation = new InformationOperation($package);
         if (null !== $recipeRef) {
             $operation->setSpecificRecipeVersion($recipeRef, $recipeVersion);
@@ -278,10 +276,10 @@ class UpdateRecipesCommand extends BaseCommand
 
         return new Recipe(
             $package,
-            $packageName,
+            $package->getName(),
             $operation->getOperationType(),
-            $recipes['manifests'][$packageName],
-            $recipes['locks'][$packageName] ?? []
+            $recipes['manifests'][$package->getName()],
+            $recipes['locks'][$package->getName()] ?? []
         );
     }
 
@@ -358,19 +356,13 @@ class UpdateRecipesCommand extends BaseCommand
     private function askForPackage(IOInterface $io, Lock $symfonyLock): ?string
     {
         $installedRepo = $this->getComposer()->getRepositoryManager()->getLocalRepository();
-        $locker = $this->getComposer()->getLocker();
-        $lockData = $locker->getLockData();
-
-        // Merge all packages installed
-        $packages = array_merge($lockData['packages'], $lockData['packages-dev']);
 
         $operations = [];
-        foreach ($packages as $value) {
-            if (null === $pkg = $installedRepo->findPackage($value['name'], '*')) {
-                continue;
+        foreach ($symfonyLock->all() as $name => $lock) {
+            if (isset($lock['recipe']['ref'])) {
+                $package = $installedRepo->findPackage($name, '*') ?? new Package($name, $lock['version'], $lock['version']);
+                $operations[] = new InformationOperation($package);
             }
-
-            $operations[] = new InformationOperation($pkg);
         }
 
         $recipes = $this->flex->fetchRecipes($operations, false);
