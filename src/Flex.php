@@ -206,7 +206,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
                 $this->installer = $trace['object']->setSuggestedPackagesReporter(new SuggestedPackagesReporter(new NullIO()));
 
                 $updateAllowList = \Closure::bind(function () {
-                    return $this->updateWhitelist ?? $this->updateAllowList ?? null;
+                    return $this->updateAllowList;
                 }, $this->installer, $this->installer)();
 
                 if (['php' => 0] === $updateAllowList) {
