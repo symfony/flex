@@ -26,6 +26,11 @@
             "Symfony\\Flex\\": "src"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "Symfony\\Flex\\Tests\\": "tests"
+        }
+    },
     "extra": {
         "class": "Symfony\\Flex\\Flex"
     }

@@ -11,20 +11,28 @@
 
 namespace Symfony\Flex\Tests\Configurator;
 
-use Composer\Composer;
-use Composer\IO\IOInterface;
-use PHPUnit\Framework\TestCase;
 use Symfony\Flex\Configurator\ContainerConfigurator;
 use Symfony\Flex\Lock;
 use Symfony\Flex\Options;
 use Symfony\Flex\Recipe;
 use Symfony\Flex\Update\RecipeUpdate;
 
-class ContainerConfiguratorTest extends TestCase
+class ContainerConfiguratorTest extends ConfiguratorTest
 {
     protected function setUp(): void
     {
+        parent::setUp();
+
         @mkdir(FLEX_TEST_DIR);
+    }
+
+    protected function createConfigurator(): ContainerConfigurator
+    {
+        return new ContainerConfigurator(
+            $this->composer,
+            $this->io,
+            new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
+        );
     }
 
     public function testConfigure()
@@ -43,12 +51,7 @@ services:
 
 EOF
         );
-        $configurator = new ContainerConfigurator(
-            $this->getMockBuilder(Composer::class)->getMock(),
-            $this->getMockBuilder(IOInterface::class)->getMock(),
-            new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
-        );
-        $configurator->configure($recipe, ['locale' => 'en'], $lock);
+        $this->configurator->configure($recipe, ['locale' => 'en'], $lock);
         $this->assertEquals(<<<EOF
 # comment
 parameters:
@@ -59,7 +62,7 @@ services:
 EOF
         , file_get_contents($config));
 
-        $configurator->unconfigure($recipe, ['locale' => 'en'], $lock);
+        $this->configurator->unconfigure($recipe, ['locale' => 'en'], $lock);
         $this->assertEquals(<<<EOF
 # comment
 parameters:
@@ -82,12 +85,7 @@ services:
 
 EOF
         );
-        $configurator = new ContainerConfigurator(
-            $this->getMockBuilder(Composer::class)->getMock(),
-            $this->getMockBuilder(IOInterface::class)->getMock(),
-            new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
-        );
-        $configurator->configure($recipe, ['locale' => 'en'], $lock);
+        $this->configurator->configure($recipe, ['locale' => 'en'], $lock);
         $this->assertEquals(<<<EOF
 parameters:
     locale: 'en'
@@ -97,7 +95,7 @@ services:
 EOF
         , file_get_contents($config));
 
-        $configurator->unconfigure($recipe, ['locale' => 'en'], $lock);
+        $this->configurator->unconfigure($recipe, ['locale' => 'en'], $lock);
         $this->assertEquals(<<<EOF
 parameters:
 
@@ -122,12 +120,7 @@ services:
 
 EOF
         );
-        $configurator = new ContainerConfigurator(
-            $this->getMockBuilder(Composer::class)->getMock(),
-            $this->getMockBuilder(IOInterface::class)->getMock(),
-            new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
-        );
-        $configurator->configure($recipe, ['locale' => 'en'], $lock);
+        $this->configurator->configure($recipe, ['locale' => 'en'], $lock);
         $this->assertEquals(<<<EOF
 parameters:
     locale: es
@@ -137,7 +130,7 @@ services:
 EOF
         , file_get_contents($config));
 
-        $configurator->unconfigure($recipe, ['locale' => 'en'], $lock);
+        $this->configurator->unconfigure($recipe, ['locale' => 'en'], $lock);
         $this->assertEquals(<<<EOF
 parameters:
 
@@ -166,12 +159,7 @@ services:
 
 EOF
         );
-        $configurator = new ContainerConfigurator(
-            $this->getMockBuilder(Composer::class)->getMock(),
-            $this->getMockBuilder(IOInterface::class)->getMock(),
-            new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
-        );
-        $configurator->configure($recipe, ['locale' => 'en', 'foobar' => 'baz'], $lock);
+        $this->configurator->configure($recipe, ['locale' => 'en', 'foobar' => 'baz'], $lock);
         $this->assertEquals(<<<EOF
 parameters:
     # comment 1
@@ -186,7 +174,7 @@ services:
 EOF
         , file_get_contents($config));
 
-        $configurator->unconfigure($recipe, ['locale' => 'en', 'foobar' => 'baz'], $lock);
+        $this->configurator->unconfigure($recipe, ['locale' => 'en', 'foobar' => 'baz'], $lock);
         $this->assertEquals(<<<EOF
 parameters:
     # comment 1
@@ -216,12 +204,7 @@ services:
 
 EOF
         );
-        $configurator = new ContainerConfigurator(
-            $this->getMockBuilder(Composer::class)->getMock(),
-            $this->getMockBuilder(IOInterface::class)->getMock(),
-            new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
-        );
-        $configurator->configure($recipe, ['locale' => 'en', 'foobar' => 'baz', 'array' => ['key1' => 'value', 'key2' => "Escape ' one quote"], 'key1' => 'Keep It'], $lock);
+        $this->configurator->configure($recipe, ['locale' => 'en', 'foobar' => 'baz', 'array' => ['key1' => 'value', 'key2' => "Escape ' one quote"], 'key1' => 'Keep It'], $lock);
         $this->assertEquals(<<<EOF
 parameters:
     # comment 1
@@ -237,7 +220,7 @@ services:
 EOF
             , file_get_contents($config));
 
-        $configurator->unconfigure($recipe, ['locale' => 'en', 'array' => ['key1' => 'value', 'key2' => "Escape ' one quote"]], $lock);
+        $this->configurator->unconfigure($recipe, ['locale' => 'en', 'array' => ['key1' => 'value', 'key2' => "Escape ' one quote"]], $lock);
         $this->assertEquals(<<<EOF
 parameters:
     # comment 1
@@ -266,12 +249,7 @@ services:
 
 EOF
         );
-        $configurator = new ContainerConfigurator(
-            $this->getMockBuilder(Composer::class)->getMock(),
-            $this->getMockBuilder(IOInterface::class)->getMock(),
-            new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
-        );
-        $configurator->configure($recipe, ['env(APP_ENV)' => ''], $lock);
+        $this->configurator->configure($recipe, ['env(APP_ENV)' => ''], $lock);
         $this->assertEquals(<<<EOF
 # comment
 parameters:
@@ -282,7 +260,7 @@ services:
 EOF
             , file_get_contents($config));
 
-        $configurator->unconfigure($recipe, ['env(APP_ENV)' => ''], $lock);
+        $this->configurator->unconfigure($recipe, ['env(APP_ENV)' => ''], $lock);
         $this->assertEquals(<<<EOF
 # comment
 parameters:
@@ -295,12 +273,6 @@ EOF
 
     public function testUpdate()
     {
-        $configurator = new ContainerConfigurator(
-            $this->createMock(Composer::class),
-            $this->createMock(IOInterface::class),
-            new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
-        );
-
         $recipeUpdate = new RecipeUpdate(
             $this->createMock(Recipe::class),
             $this->createMock(Recipe::class),
@@ -324,7 +296,7 @@ services:
 EOF
         );
 
-        $configurator->update(
+        $this->configurator->update(
             $recipeUpdate,
             ['locale' => 'en', 'foobar' => 'baz'],
             ['locale' => 'fr', 'foobar' => 'baz', 'new_one' => 'hallo']

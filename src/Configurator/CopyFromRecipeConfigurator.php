@@ -20,12 +20,18 @@ use Symfony\Flex\Update\RecipeUpdate;
  */
 class CopyFromRecipeConfigurator extends AbstractConfigurator
 {
-    public function configure(Recipe $recipe, $config, Lock $lock, array $options = [])
+    public function configure(Recipe $recipe, $config, Lock $lock, array $options = []): bool
     {
+        if (!$this->shouldConfigure($this->composer, $this->io, $recipe)) {
+            return false;
+        }
+
         $this->write('Copying files from recipe');
         $options = array_merge($this->options->toArray(), $options);
 
         $lock->add($recipe->getName(), ['files' => $this->copyFiles($config, $recipe->getFiles(), $options)]);
+
+        return true;
     }
 
     public function unconfigure(Recipe $recipe, $config, Lock $lock)
@@ -36,6 +42,10 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
 
     public function update(RecipeUpdate $recipeUpdate, array $originalConfig, array $newConfig): void
     {
+        if (!$this->shouldConfigure($this->composer, $this->io, $recipeUpdate->getNewRecipe())) {
+            return;
+        }
+
         foreach ($recipeUpdate->getOriginalRecipe()->getFiles() as $filename => $data) {
             $recipeUpdate->setOriginalFile($filename, $data['contents']);
         }
@@ -47,6 +57,11 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
             $files[] = $this->getLocalFilePath($recipeUpdate->getRootDir(), $filename);
         }
         $recipeUpdate->getLock()->add($recipeUpdate->getPackageName(), ['files' => $files]);
+    }
+
+    public function configureKey(): string
+    {
+        return 'copy-from-recipe';
     }
 
     private function getRemovableFilesFromRecipeAndLock(Recipe $recipe, Lock $lock): array

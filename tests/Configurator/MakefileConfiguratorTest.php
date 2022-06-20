@@ -11,29 +11,32 @@
 
 namespace Symfony\Flex\Tests\Configurator;
 
-use Composer\Composer;
-use Composer\IO\IOInterface;
-use PHPUnit\Framework\TestCase;
 use Symfony\Flex\Configurator\MakefileConfigurator;
 use Symfony\Flex\Lock;
 use Symfony\Flex\Options;
 use Symfony\Flex\Recipe;
 use Symfony\Flex\Update\RecipeUpdate;
 
-class MakefileConfiguratorTest extends TestCase
+class MakefileConfiguratorTest extends ConfiguratorTest
 {
     protected function setUp(): void
     {
+        parent::setUp();
+
         @mkdir(FLEX_TEST_DIR);
+    }
+
+    protected function createConfigurator(): MakefileConfigurator
+    {
+        return new MakefileConfigurator(
+            $this->composer,
+            $this->io,
+            new Options(['root-dir' => FLEX_TEST_DIR])
+        );
     }
 
     public function testConfigure()
     {
-        $configurator = new MakefileConfigurator(
-            $this->getMockBuilder(Composer::class)->getMock(),
-            $this->getMockBuilder(IOInterface::class)->getMock(),
-            new Options(['root-dir' => FLEX_TEST_DIR])
-        );
         $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
 
         $recipe1 = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
@@ -72,31 +75,25 @@ EOF
         $makefileContents1 = "###> FooBundle ###\n".implode("\n", $makefile1)."\n###< FooBundle ###";
         $makefileContents2 = "###> BarBundle ###\n".implode("\n", $makefile2)."\n###< BarBundle ###";
 
-        $configurator->configure($recipe1, $makefile1, $lock);
+        $this->configurator->configure($recipe1, $makefile1, $lock);
         $this->assertStringEqualsFile($makefile, "\n".$makefileContents1."\n");
 
-        $configurator->configure($recipe2, $makefile2, $lock);
+        $this->configurator->configure($recipe2, $makefile2, $lock);
         $this->assertStringEqualsFile($makefile, "\n".$makefileContents1."\n\n".$makefileContents2."\n");
 
-        $configurator->configure($recipe1, $makefile1, $lock);
-        $configurator->configure($recipe2, $makefile2, $lock);
+        $this->configurator->configure($recipe1, $makefile1, $lock);
+        $this->configurator->configure($recipe2, $makefile2, $lock);
         $this->assertStringEqualsFile($makefile, "\n".$makefileContents1."\n\n".$makefileContents2."\n");
 
-        $configurator->unconfigure($recipe1, $makefile1, $lock);
+        $this->configurator->unconfigure($recipe1, $makefile1, $lock);
         $this->assertStringEqualsFile($makefile, $makefileContents2."\n");
 
-        $configurator->unconfigure($recipe2, $makefile2, $lock);
+        $this->configurator->unconfigure($recipe2, $makefile2, $lock);
         $this->assertFalse(is_file($makefile));
     }
 
     public function testConfigureForce()
     {
-        $configurator = new MakefileConfigurator(
-            $this->getMockBuilder(Composer::class)->getMock(),
-            $this->getMockBuilder(IOInterface::class)->getMock(),
-            new Options(['root-dir' => FLEX_TEST_DIR])
-        );
-
         $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
         $recipe->expects($this->any())->method('getName')->willReturn('FooBundle');
 
@@ -122,11 +119,11 @@ EOF
 
         $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
 
-        $configurator->configure($recipe, $bundleLinesConfigure, $lock);
+        $this->configurator->configure($recipe, $bundleLinesConfigure, $lock);
         file_put_contents($makefile, "\n# new content", \FILE_APPEND);
         $this->assertStringEqualsFile($makefile, $contentConfigure);
 
-        $configurator->configure($recipe, $bundleLinesForce, $lock, [
+        $this->configurator->configure($recipe, $bundleLinesForce, $lock, [
             'force' => true,
         ]);
         $this->assertStringEqualsFile($makefile, $contentForce);
@@ -134,12 +131,6 @@ EOF
 
     public function testUpdate()
     {
-        $configurator = new MakefileConfigurator(
-            $this->getMockBuilder(Composer::class)->getMock(),
-            $this->getMockBuilder(IOInterface::class)->getMock(),
-            new Options(['root-dir' => FLEX_TEST_DIR])
-        );
-
         $recipe = $this->createMock(Recipe::class);
         $recipe->method('getName')
             ->willReturn('symfony/foo-bundle');
@@ -173,7 +164,7 @@ endif
 EOF
         );
 
-        $configurator->update(
+        $this->configurator->update(
             $recipeUpdate,
             [
                 'CONSOLE := $(shell which bin/console)',

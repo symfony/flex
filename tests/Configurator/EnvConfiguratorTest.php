@@ -11,25 +11,26 @@
 
 namespace Symfony\Flex\Tests\Configurator;
 
-use Composer\Composer;
-use Composer\IO\IOInterface;
-use PHPUnit\Framework\TestCase;
 use Symfony\Flex\Configurator\EnvConfigurator;
 use Symfony\Flex\Lock;
 use Symfony\Flex\Options;
 use Symfony\Flex\Recipe;
 use Symfony\Flex\Update\RecipeUpdate;
 
-class EnvConfiguratorTest extends TestCase
+class EnvConfiguratorTest extends ConfiguratorTest
 {
+    protected function createConfigurator(): EnvConfigurator
+    {
+        return new EnvConfigurator(
+            $this->composer,
+            $this->io,
+            new Options(['root-dir' => FLEX_TEST_DIR])
+        );
+    }
+
     public function testConfigure()
     {
         @mkdir(FLEX_TEST_DIR);
-        $configurator = new EnvConfigurator(
-            $this->getMockBuilder(Composer::class)->getMock(),
-            $this->getMockBuilder(IOInterface::class)->getMock(),
-            new Options(['root-dir' => FLEX_TEST_DIR])
-        );
         $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
 
         $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
@@ -45,7 +46,7 @@ class EnvConfiguratorTest extends TestCase
         @unlink($phpunitDist);
         copy(__DIR__.'/../Fixtures/phpunit.xml.dist', $phpunitDist);
         copy(__DIR__.'/../Fixtures/phpunit.xml.dist', $phpunit);
-        $configurator->configure($recipe, [
+        $this->configurator->configure($recipe, [
             'APP_ENV' => 'test bar',
             'APP_DEBUG' => '0',
             'APP_PARAGRAPH' => "foo\n\"bar\"\\t",
@@ -115,7 +116,7 @@ EOF;
         $this->assertStringEqualsFile($phpunitDist, $xmlContents);
         $this->assertStringEqualsFile($phpunit, $xmlContents);
 
-        $configurator->configure($recipe, [
+        $this->configurator->configure($recipe, [
             'APP_ENV' => 'test',
             'APP_DEBUG' => '0',
             '#1' => 'Comment 1',
@@ -128,7 +129,7 @@ EOF;
         $this->assertStringEqualsFile($phpunitDist, $xmlContents);
         $this->assertStringEqualsFile($phpunit, $xmlContents);
 
-        $configurator->unconfigure($recipe, [
+        $this->configurator->unconfigure($recipe, [
             'APP_ENV' => 'test',
             'APP_DEBUG' => '0',
             '#1' => 'Comment 1',
@@ -155,11 +156,6 @@ EOF
     public function testConfigureGeneratedSecret()
     {
         @mkdir(FLEX_TEST_DIR);
-        $configurator = new EnvConfigurator(
-            $this->getMockBuilder(Composer::class)->getMock(),
-            $this->getMockBuilder(IOInterface::class)->getMock(),
-            new Options(['root-dir' => FLEX_TEST_DIR])
-        );
         $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
 
         $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
@@ -176,7 +172,7 @@ EOF
         copy(__DIR__.'/../Fixtures/phpunit.xml.dist', $phpunitDist);
         copy(__DIR__.'/../Fixtures/phpunit.xml.dist', $phpunit);
 
-        $configurator->configure($recipe, [
+        $this->configurator->configure($recipe, [
             '#TRUSTED_SECRET_1' => '%generate(secret,32)%',
             '#TRUSTED_SECRET_2' => '%generate(secret, 32)%',
             '#TRUSTED_SECRET_3' => '%generate(secret,     32)%',
@@ -203,11 +199,6 @@ EOF
     public function testConfigureForce()
     {
         @mkdir(FLEX_TEST_DIR);
-        $configurator = new EnvConfigurator(
-            $this->getMockBuilder(Composer::class)->getMock(),
-            $this->getMockBuilder(IOInterface::class)->getMock(),
-            new Options(['root-dir' => FLEX_TEST_DIR])
-        );
 
         $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
         $recipe->expects($this->any())->method('getName')->willReturn('FooBundle');
@@ -307,7 +298,7 @@ EOT;
 
         $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
 
-        $configurator->configure($recipe, [
+        $this->configurator->configure($recipe, [
             'FOO' => 'bar',
         ], $lock);
 
@@ -327,7 +318,7 @@ EOT;
         $this->assertStringEqualsFile($phpunit, $xmlContentsConfigure);
         $this->assertStringEqualsFile($phpunitDist, $xmlContentsConfigure);
 
-        $configurator->configure($recipe, [
+        $this->configurator->configure($recipe, [
             'FOO' => 'bar',
             'OOF' => 'rab',
         ], $lock, [
@@ -345,12 +336,6 @@ EOT;
 
     public function testUpdate()
     {
-        $configurator = new EnvConfigurator(
-            $this->createMock(Composer::class),
-            $this->createMock(IOInterface::class),
-            new Options(['root-dir' => FLEX_TEST_DIR])
-        );
-
         $recipe = $this->createMock(Recipe::class);
         $recipe->method('getName')
             ->willReturn('symfony/foo-bundle');
@@ -377,7 +362,7 @@ OTHER_VAR=1
 EOF
         );
 
-        $configurator->update(
+        $this->configurator->update(
             $recipeUpdate,
             // %generate(secret)% should not regenerate a new value
             ['APP_ENV' => 'original', 'APP_SECRET' => '%generate(secret)%', 'APP_DEBUG' => 0, 'EXTRA_VAR' => 'apple'],

@@ -20,11 +20,17 @@ use Symfony\Flex\Update\RecipeUpdate;
  */
 class BundlesConfigurator extends AbstractConfigurator
 {
-    public function configure(Recipe $recipe, $bundles, Lock $lock, array $options = [])
+    public function configure(Recipe $recipe, $bundles, Lock $lock, array $options = []): bool
     {
+        if (!$this->shouldConfigure($this->composer, $this->io, $recipe)) {
+            return false;
+        }
+
         $this->write('Enabling the package as a Symfony bundle');
         $registered = $this->configureBundles($bundles);
         $this->dump($this->getConfFile(), $registered);
+
+        return true;
     }
 
     public function unconfigure(Recipe $recipe, $bundles, Lock $lock)
@@ -44,6 +50,10 @@ class BundlesConfigurator extends AbstractConfigurator
 
     public function update(RecipeUpdate $recipeUpdate, array $originalConfig, array $newConfig): void
     {
+        if (!$this->shouldConfigure($this->composer, $this->io, $recipeUpdate->getNewRecipe())) {
+            return;
+        }
+
         $originalBundles = $this->configureBundles($originalConfig, true);
         $recipeUpdate->setOriginalFile(
             $this->getLocalConfFile(),
@@ -55,6 +65,11 @@ class BundlesConfigurator extends AbstractConfigurator
             $this->getLocalConfFile(),
             $this->buildContents($newBundles)
         );
+    }
+
+    public function configureKey(): string
+    {
+        return 'bundles';
     }
 
     private function configureBundles(array $bundles, bool $resetEnvironments = false): array

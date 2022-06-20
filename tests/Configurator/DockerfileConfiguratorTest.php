@@ -9,22 +9,32 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\Flex\Configurator;
+namespace Symfony\Flex\Tests\Configurator;
 
-use Composer\Composer;
-use Composer\IO\IOInterface;
-use Composer\Package\RootPackage;
-use PHPUnit\Framework\TestCase;
+use Symfony\Flex\Configurator\DockerfileConfigurator;
 use Symfony\Flex\Lock;
 use Symfony\Flex\Options;
 use Symfony\Flex\Recipe;
 use Symfony\Flex\Update\RecipeUpdate;
 
-class DockerfileConfiguratorTest extends TestCase
+class DockerfileConfiguratorTest extends ConfiguratorTest
 {
     protected function setUp(): void
     {
+        parent::setUp();
+
+        $this->package->setExtra(['symfony' => ['docker' => true]]);
+
         @mkdir(FLEX_TEST_DIR);
+    }
+
+    protected function createConfigurator(): DockerfileConfigurator
+    {
+        return new DockerfileConfigurator(
+            $this->composer,
+            $this->io,
+            new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
+        );
     }
 
     protected function tearDown(): void
@@ -108,8 +118,7 @@ EOF;
         $config = FLEX_TEST_DIR.'/Dockerfile';
         file_put_contents($config, $originalContent);
 
-        $configurator = $this->createConfigurator();
-        $configurator->configure($recipe, ['RUN docker-php-ext-install pdo_mysql'], $lock);
+        $this->configurator->configure($recipe, ['RUN docker-php-ext-install pdo_mysql'], $lock);
         $this->assertEquals(<<<'EOF'
 FROM php:7.1-fpm-alpine
 
@@ -181,13 +190,12 @@ CMD ["php-fpm"]
 EOF
             , file_get_contents($config));
 
-        $configurator->unconfigure($recipe, [], $lock);
+        $this->configurator->unconfigure($recipe, [], $lock);
         $this->assertEquals($originalContent, file_get_contents($config));
     }
 
     public function testUpdate()
     {
-        $configurator = $this->createConfigurator();
         $recipe = $this->createMock(Recipe::class);
         $recipe->method('getName')
             ->willReturn('dummy/dummy');
@@ -225,7 +233,7 @@ RUN chmod +x /usr/local/bin/docker-app-install-composer
 EOF
         );
 
-        $configurator->update(
+        $this->configurator->update(
             $recipeUpdate,
             ['RUN docker-php-ext-install pdo_dummyv1'],
             ['RUN docker-php-ext-install pdo_dummyv2']
@@ -274,20 +282,5 @@ RUN chmod +x /usr/local/bin/docker-app-install-composer
 
 EOF
         ], $recipeUpdate->getNewFiles());
-    }
-
-    private function createConfigurator(): DockerfileConfigurator
-    {
-        $package = new RootPackage('dummy/dummy', '1.0.0', '1.0.0');
-        $package->setExtra(['symfony' => ['docker' => true]]);
-
-        $composer = $this->getMockBuilder(Composer::class)->getMock();
-        $composer->method('getPackage')->willReturn($package);
-
-        return new DockerfileConfigurator(
-            $composer,
-            $this->getMockBuilder(IOInterface::class)->getMock(),
-            new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
-        );
     }
 }

@@ -20,11 +20,17 @@ use Symfony\Flex\Update\RecipeUpdate;
  */
 class GitignoreConfigurator extends AbstractConfigurator
 {
-    public function configure(Recipe $recipe, $vars, Lock $lock, array $options = [])
+    public function configure(Recipe $recipe, $vars, Lock $lock, array $options = []): bool
     {
+        if (!$this->shouldConfigure($this->composer, $this->io, $recipe)) {
+            return false;
+        }
+
         $this->write('Adding entries to .gitignore');
 
         $this->configureGitignore($recipe, $vars, $options['force'] ?? false);
+
+        return true;
     }
 
     public function unconfigure(Recipe $recipe, $vars, Lock $lock)
@@ -43,8 +49,17 @@ class GitignoreConfigurator extends AbstractConfigurator
         file_put_contents($file, ltrim($contents, "\r\n"));
     }
 
+    public function configureKey(): string
+    {
+        return 'gitignore';
+    }
+
     public function update(RecipeUpdate $recipeUpdate, array $originalConfig, array $newConfig): void
     {
+        if (!$this->shouldConfigure($this->composer, $this->io, $recipeUpdate->getNewRecipe())) {
+            return;
+        }
+
         $recipeUpdate->setOriginalFile(
             '.gitignore',
             $this->getContentsAfterApplyingRecipe($recipeUpdate->getRootDir(), $recipeUpdate->getOriginalRecipe(), $originalConfig)
