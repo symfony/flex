@@ -83,6 +83,8 @@ class RecipePatcher
             }
         }
 
+        // Use git binary to get project path from repository root
+        $prefix = trim($this->execute('git rev-parse --show-prefix', $this->rootDir));
         $tmpPath = sys_get_temp_dir().'/_flex_recipe_update'.uniqid(mt_rand(), true);
         $this->filesystem->mkdir($tmpPath);
 
@@ -104,7 +106,7 @@ class RecipePatcher
             $this->writeFiles($newFiles, $tmpPath);
             $this->execute('git add -A', $tmpPath);
 
-            $patchString = $this->execute('git diff --cached', $tmpPath);
+            $patchString = $this->execute(sprintf('git diff --cached --src-prefix "a/%s" --dst-prefix "b/%s"', $prefix, $prefix), $tmpPath);
             $removedPatches = [];
             $patchString = DiffHelper::removeFilesFromPatch($patchString, $deletedModifiedFiles, $removedPatches);
 
@@ -166,8 +168,9 @@ class RecipePatcher
     private function addMissingBlobs(array $blobs): array
     {
         $addedBlobs = [];
+        $gitDir = trim($this->execute('git rev-parse --absolute-git-dir', $this->rootDir));
         foreach ($blobs as $hash => $contents) {
-            $blobPath = $this->rootDir.'/'.$this->getBlobPath($hash);
+            $blobPath = $gitDir.'/'.$this->getBlobPath($hash);
             if (file_exists($blobPath)) {
                 continue;
             }
@@ -185,6 +188,7 @@ class RecipePatcher
     private function generateBlobs(array $originalFiles, string $originalFilesRoot): array
     {
         $addedBlobs = [];
+        $originalFilesGitDir = trim($this->execute('git rev-parse --absolute-git-dir', $originalFilesRoot));
         foreach ($originalFiles as $filename => $contents) {
             // if the file didn't originally exist, no blob needed
             if (!file_exists($originalFilesRoot.'/'.$filename)) {
@@ -192,7 +196,7 @@ class RecipePatcher
             }
 
             $hash = trim($this->execute('git hash-object '.ProcessExecutor::escape($filename), $originalFilesRoot));
-            $addedBlobs[$hash] = file_get_contents($originalFilesRoot.'/'.$this->getBlobPath($hash));
+            $addedBlobs[$hash] = file_get_contents($originalFilesGitDir.'/'.$this->getBlobPath($hash));
         }
 
         return $addedBlobs;
@@ -203,7 +207,7 @@ class RecipePatcher
         $hashStart = substr($hash, 0, 2);
         $hashEnd = substr($hash, 2);
 
-        return '.git/objects/'.$hashStart.'/'.$hashEnd;
+        return 'objects/'.$hashStart.'/'.$hashEnd;
     }
 
     private function _applyPatchFile(RecipePatch $patch)
