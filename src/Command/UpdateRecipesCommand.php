@@ -14,9 +14,9 @@ namespace Symfony\Flex\Command;
 use Composer\Command\BaseCommand;
 use Composer\IO\IOInterface;
 use Composer\Package\Package;
+use Composer\Package\PackageInterface;
 use Composer\Util\ProcessExecutor;
 use Symfony\Component\Console\Exception\RuntimeException;
-use Symfony\Component\Console\Formatter\OutputFormatterStyle;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -262,7 +262,7 @@ class UpdateRecipesCommand extends BaseCommand
         return 0;
     }
 
-    private function getRecipe(Package $package, string $recipeRef = null, string $recipeVersion = null): ?Recipe
+    private function getRecipe(PackageInterface $package, string $recipeRef = null, string $recipeVersion = null): ?Recipe
     {
         $operation = new InformationOperation($package);
         if (null !== $recipeRef) {
