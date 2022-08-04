@@ -34,31 +34,32 @@ class ContainerConfigurator extends AbstractConfigurator
     {
         $this->write('Unsetting parameters');
         $target = $this->options->get('root-dir').'/'.$this->getServicesPath();
-        $lines = [];
-        foreach (file($target) as $line) {
-            if ($this->removeParameters(1, $parameters, $line)) {
-                continue;
-            }
-            $lines[] = $line;
-        }
+        $lines = $this->removeParametersFromLines(file($target), $parameters);
         file_put_contents($target, implode('', $lines));
     }
 
     public function update(RecipeUpdate $recipeUpdate, array $originalConfig, array $newConfig): void
     {
-        if ($originalConfig) {
-            $recipeUpdate->setOriginalFile(
-                $this->getServicesPath(),
-                $this->configureParameters($originalConfig, true)
-            );
+        $recipeUpdate->setOriginalFile(
+            $this->getServicesPath(),
+            $this->configureParameters($originalConfig, true)
+        );
+
+        // for the new file, we need to update any values *and* remove any removed values
+        $removedParameters = [];
+        foreach ($originalConfig as $name => $value) {
+            if (!isset($newConfig[$name])) {
+                $removedParameters[$name] = $value;
+            }
         }
 
-        if ($newConfig) {
-            $recipeUpdate->setNewFile(
-                $this->getServicesPath(),
-                $this->configureParameters($newConfig, true)
-            );
-        }
+        $updatedFile = $this->configureParameters($newConfig, true);
+        $lines = $this->removeParametersFromLines(explode("\n", $updatedFile), $removedParameters);
+
+        $recipeUpdate->setNewFile(
+            $this->getServicesPath(),
+            implode("\n", $lines)
+        );
     }
 
     private function configureParameters(array $parameters, bool $update = false): string
@@ -112,6 +113,19 @@ class ContainerConfigurator extends AbstractConfigurator
         }
 
         return implode('', $lines);
+    }
+
+    private function removeParametersFromLines(array $sourceLines, array $parameters): array
+    {
+        $lines = [];
+        foreach ($sourceLines as $line) {
+            if ($this->removeParameters(1, $parameters, $line)) {
+                continue;
+            }
+            $lines[] = $line;
+        }
+
+        return $lines;
     }
 
     private function removeParameters($level, $params, $line)
