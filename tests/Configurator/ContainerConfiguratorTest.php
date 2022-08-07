@@ -57,7 +57,7 @@ parameters:
 services:
 
 EOF
-        , file_get_contents($config));
+            , file_get_contents($config));
 
         $configurator->unconfigure($recipe, ['locale' => 'en'], $lock);
         $this->assertEquals(<<<EOF
@@ -67,7 +67,7 @@ parameters:
 services:
 
 EOF
-        , file_get_contents($config));
+            , file_get_contents($config));
     }
 
     public function testConfigureWithoutParametersKey()
@@ -95,7 +95,7 @@ parameters:
 services:
 
 EOF
-        , file_get_contents($config));
+            , file_get_contents($config));
 
         $configurator->unconfigure($recipe, ['locale' => 'en'], $lock);
         $this->assertEquals(<<<EOF
@@ -104,7 +104,7 @@ parameters:
 services:
 
 EOF
-        , file_get_contents($config));
+            , file_get_contents($config));
     }
 
     public function testConfigureWithoutDuplicated()
@@ -135,7 +135,7 @@ parameters:
 services:
 
 EOF
-        , file_get_contents($config));
+            , file_get_contents($config));
 
         $configurator->unconfigure($recipe, ['locale' => 'en'], $lock);
         $this->assertEquals(<<<EOF
@@ -144,7 +144,7 @@ parameters:
 services:
 
 EOF
-        , file_get_contents($config));
+            , file_get_contents($config));
     }
 
     public function testConfigureWithComplexContent()
@@ -184,7 +184,7 @@ parameters:
 services:
 
 EOF
-        , file_get_contents($config));
+            , file_get_contents($config));
 
         $configurator->unconfigure($recipe, ['locale' => 'en', 'foobar' => 'baz'], $lock);
         $this->assertEquals(<<<EOF
@@ -197,7 +197,7 @@ parameters:
 services:
 
 EOF
-        , file_get_contents($config));
+            , file_get_contents($config));
     }
 
     public function testConfigureWithComplexContent2()
@@ -356,6 +356,60 @@ parameters:
 
 services:
 
+EOF
+        ], $recipeUpdate->getNewFiles());
+    }
+
+    public function testUpdateWithNoRemovedKeysInUpdate()
+    {
+        $configurator = new ContainerConfigurator(
+            $this->createMock(Composer::class),
+            $this->createMock(IOInterface::class),
+            new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
+        );
+
+        $recipeUpdate = new RecipeUpdate(
+            $this->createMock(Recipe::class),
+            $this->createMock(Recipe::class),
+            $this->createMock(Lock::class),
+            FLEX_TEST_DIR
+        );
+
+        @mkdir(FLEX_TEST_DIR.'/config');
+        file_put_contents(
+            FLEX_TEST_DIR.'/config/services.yaml',
+            <<<EOF
+parameters:
+    locale: es
+    something: else
+
+services:
+    foo_router: '@router'
+EOF
+        );
+
+        $configurator->update(
+            $recipeUpdate,
+            ['locale' => 'en'],
+            []
+        );
+
+        $this->assertSame(['config/services.yaml' => <<<EOF
+parameters:
+    locale: en
+    something: else
+
+services:
+    foo_router: '@router'
+EOF
+        ], $recipeUpdate->getOriginalFiles());
+
+        $this->assertSame(['config/services.yaml' => <<<EOF
+parameters:
+    something: else
+
+services:
+    foo_router: '@router'
 EOF
         ], $recipeUpdate->getNewFiles());
     }
