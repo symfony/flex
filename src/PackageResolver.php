@@ -11,7 +11,6 @@
 
 namespace Symfony\Flex;
 
-use Composer\Factory;
 use Composer\Package\Version\VersionParser;
 use Composer\Repository\PlatformRepository;
 
@@ -22,10 +21,12 @@ class PackageResolver
 {
     private static $SYMFONY_VERSIONS = ['lts', 'previous', 'stable', 'next', 'dev'];
     private $downloader;
+    private $symfonyRequire;
 
-    public function __construct(Downloader $downloader)
+    public function __construct(Downloader $downloader, string $symfonyRequire = '')
     {
         $this->downloader = $downloader;
+        $this->symfonyRequire = $symfonyRequire;
     }
 
     public function resolve(array $arguments = [], bool $isRequire = false): array
@@ -65,14 +66,10 @@ class PackageResolver
         }
 
         if (!$version || '*' === $version) {
-            try {
-                $config = @json_decode(file_get_contents(Factory::getComposerFile()), true);
-            } finally {
-                if (!$isRequire || !(isset($config['extra']['symfony']['require']) || isset($config['require']['symfony/framework-bundle']))) {
-                    return '';
-                }
+            if (!$isRequire || empty($this->symfonyRequire)) {
+                return '';
             }
-            $version = $config['extra']['symfony']['require'] ?? $config['require']['symfony/framework-bundle'];
+            $version = $this->symfonyRequire;
         } elseif ('dev' === $version) {
             $version = '^'.$versions['dev-name'].'@dev';
         } elseif ('next' === $version) {
