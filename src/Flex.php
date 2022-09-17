@@ -65,7 +65,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
     private $config;
     private $options;
     private $configurator;
-    private $downloader;
+    private RecipeProviderInterface $recipeProvider;
 
     /**
      * @var Installer
@@ -112,10 +112,14 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
         $rfs = Factory::createHttpDownloader($this->io, $this->config);
 
-        $this->downloader = $downloader = new Downloader($composer, $io, $rfs);
+        $this->recipeProvider = new CompositeRecipeProvider(
+            [
+                new Downloader($composer, $io, $rfs),
+                new LocalRecipeProvider($composer),
+            ]);
 
         if ($symfonyRequire) {
-            $this->filter = new PackageFilter($io, $symfonyRequire, $this->downloader);
+            $this->filter = new PackageFilter($io, $symfonyRequire, $this->recipeProvider);
         }
 
         $composerFile = Factory::getComposerFile();
@@ -134,7 +138,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             }
         }
         if ($disable) {
-            $downloader->disable();
+            $this->recipeProvider->disable();
         }
 
         $backtrace = $this->configureInstaller();
@@ -153,7 +157,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             $input = $trace['args'][0];
             $app = $trace['object'];
 
-            $resolver = new PackageResolver($this->downloader);
+            $resolver = new PackageResolver($this->recipeProvider);
 
             try {
                 $command = $input->getFirstArgument();
@@ -186,7 +190,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
             $app->add(new Command\RecipesCommand($this, $this->lock, $rfs));
             $app->add(new Command\InstallRecipesCommand($this, $this->options->get('root-dir'), $this->options->get('runtime')['dotenv_path'] ?? '.env'));
-            $app->add(new Command\UpdateRecipesCommand($this, $this->downloader, $rfs, $this->configurator, $this->options->get('root-dir')));
+            $app->add(new Command\UpdateRecipesCommand($this, $this->recipeProvider, $rfs, $this->configurator, $this->options->get('root-dir')));
             $app->add(new Command\DumpEnvCommand($this->config, $this->options));
 
             break;
@@ -215,7 +219,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             }
 
             if (isset($trace['object']) && $trace['object'] instanceof GlobalCommand) {
-                $this->downloader->disable();
+                $this->recipeProvider->disable();
             }
         }
 
@@ -224,7 +228,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
     public function configureProject(Event $event)
     {
-        if (!$this->downloader->isEnabled()) {
+        if (!$this->recipeProvider->isEnabled()) {
             $this->io->writeError('<warning>Project configuration is disabled: "symfony/flex" not found in the root composer.json</>');
 
             return;
@@ -312,7 +316,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $manipulator = new JsonManipulator($contents);
         $sortPackages = $this->composer->getConfig()->get('sort-packages');
         $symfonyVersion = $json['extra']['symfony']['require'] ?? null;
-        $versions = $symfonyVersion ? $this->downloader->getVersions() : null;
+        $versions = $symfonyVersion ? $this->recipeProvider->getVersions() : null;
         foreach (['require', 'require-dev'] as $type) {
             if (!isset($json['flex-'.$type])) {
                 continue;
@@ -363,7 +367,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
                 $this->finish($rootDir);
             }
 
-            if ($this->downloader->isEnabled()) {
+            if ($this->recipeProvider->isEnabled()) {
                 $this->io->writeError('Run <comment>composer recipes</> at any time to see the status of your Symfony recipes.');
                 $this->io->writeError('');
             }
@@ -371,7 +375,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             return;
         }
 
-        $this->io->writeError(sprintf('<info>Symfony operations: %d recipe%s (%s)</>', \count($recipes), \count($recipes) > 1 ? 's' : '', $this->downloader->getSessionId()));
+        $this->io->writeError(sprintf('<info>Symfony operations: %d recipe%s (%s)</>', \count($recipes), \count($recipes) > 1 ? 's' : '', $this->recipeProvider->getSessionId()));
         $installContribs = $this->composer->getPackage()->getExtra()['symfony']['allow-contrib'] ?? false;
         $manifest = null;
         $originalComposerJsonHash = $this->getComposerJsonHash();
@@ -527,13 +531,13 @@ class Flex implements PluginInterface, EventSubscriberInterface
      */
     public function fetchRecipes(array $operations, bool $reset): array
     {
-        if (!$this->downloader->isEnabled()) {
+        if (!$this->recipeProvider->isEnabled()) {
             $this->io->writeError('<warning>Symfony recipes are disabled: "symfony/flex" not found in the root composer.json</>');
 
             return [];
         }
         $devPackages = null;
-        $data = $this->downloader->getRecipes($operations);
+        $data = $this->recipeProvider->getRecipes($operations);
         $manifests = $data['manifests'] ?? [];
         $locks = $data['locks'] ?? [];
         // symfony/flex recipes should always be applied first
@@ -562,8 +566,8 @@ class Flex implements PluginInterface, EventSubscriberInterface
             }
 
             while ($this->doesRecipeConflict($manifests[$name] ?? [], $operation)) {
-                $this->downloader->removeRecipeFromIndex($name, $manifests[$name]['version']);
-                $newData = $this->downloader->getRecipes([$operation]);
+                $this->recipeProvider->removeRecipeFromIndex($name, $manifests[$name]['version']);
+                $newData = $this->recipeProvider->getRecipes([$operation]);
                 $newManifests = $newData['manifests'] ?? [];
 
                 if (!isset($newManifests[$name])) {
@@ -751,7 +755,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             }
         }
 
-        $unpacker = new Unpacker($this->composer, new PackageResolver($this->downloader), $this->dryRun);
+        $unpacker = new Unpacker($this->composer, new PackageResolver($this->recipeProvider), $this->dryRun);
         $result = $unpacker->unpack($unpackOp);
 
         if (!$result->getUnpacked()) {

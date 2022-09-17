@@ -464,7 +464,7 @@ EOF
             $flex->config = $composer->getConfig();
             $flex->io = $io;
             $flex->configurator = $configurator;
-            $flex->downloader = $downloader;
+            $flex->recipeProvider = $downloader;
             $flex->runningCommand = function () {
             };
             $flex->options = new Options(['config-dir' => 'config', 'var-dir' => 'var', 'root-dir' => '.']);
