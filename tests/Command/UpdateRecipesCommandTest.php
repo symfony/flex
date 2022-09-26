@@ -100,7 +100,7 @@ class UpdateRecipesCommandTest extends TestCase
             $rfs = Factory::createRemoteFilesystem($this->io, $composer->getConfig());
             $rfs = new ParallelDownloader($this->io, $composer->getConfig(), $rfs->getOptions(), $rfs->isTlsDisabled());
         }
-        $options = new Options(['root-dir' => FLEX_TEST_DIR]);
+        $options = new Options(['root-dir' => FLEX_TEST_DIR, 'bin-dir' => 'bin/']);
         $command = new UpdateRecipesCommand(
             $flex,
             new Downloader($composer, $this->io, $rfs),
