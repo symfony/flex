@@ -190,6 +190,84 @@ class CopyFromRecipeConfiguratorTest extends TestCase
         $this->assertSame($newRecipeFiles, $recipeUpdate->getNewFiles());
     }
 
+    public function testUpdateResolveDirectories()
+    {
+        $configurator = $this->createConfigurator();
+
+        $lock = $this->createMock(Lock::class);
+        $lock->expects($this->once())
+            ->method('add')
+            ->with(
+                'test-package',
+                [
+                    'files' => [
+                        'config/packages/framework.yaml',
+                        'test.yaml',
+                    ],
+                ]
+            );
+
+        $originalRecipeFiles = [
+            'symfony8config/packages/framework.yaml' => 'before',
+            'root/test.yaml' => 'before',
+        ];
+        $newRecipeFiles = [
+            'symfony8config/packages/framework.yaml' => 'after',
+            'root/test.yaml' => 'after',
+        ];
+
+        $originalRecipeFileData = [];
+        foreach ($originalRecipeFiles as $file => $contents) {
+            $originalRecipeFileData[$file] = ['contents' => $contents, 'executable' => false];
+        }
+
+        $newRecipeFileData = [];
+        foreach ($newRecipeFiles as $file => $contents) {
+            $newRecipeFileData[$file] = ['contents' => $contents, 'executable' => false];
+        }
+
+        $originalRecipe = $this->createMock(Recipe::class);
+        $originalRecipe->method('getName')
+            ->willReturn('test-package');
+        $originalRecipe->method('getFiles')
+            ->willReturn($originalRecipeFileData);
+
+        $newRecipe = $this->createMock(Recipe::class);
+        $newRecipe->method('getFiles')
+            ->willReturn($newRecipeFileData);
+
+        $recipeUpdate = new RecipeUpdate(
+            $originalRecipe,
+            $newRecipe,
+            $lock,
+            FLEX_TEST_DIR
+        );
+
+        $configurator->update(
+            $recipeUpdate,
+            [
+                'root/' => '',
+                'symfony8config/' => '%CONFIG_DIR%/',
+            ],
+            [
+                'root/' => '',
+                'symfony8config/' => '%CONFIG_DIR%/',
+            ]
+        );
+
+        // Due to root/ => '', we expect that root/ has been stripped
+        $this->assertArrayHasKey('test.yaml', $recipeUpdate->getOriginalFiles());
+        $this->assertArrayHasKey('test.yaml', $recipeUpdate->getNewFiles());
+
+        $this->assertSame('after', $recipeUpdate->getNewFiles()['test.yaml']);
+
+        // %CONFIG-DIR%, got resolved to config/packages back
+        $this->assertArrayHasKey('config/packages/framework.yaml', $recipeUpdate->getOriginalFiles());
+        $this->assertArrayHasKey('config/packages/framework.yaml', $recipeUpdate->getNewFiles());
+
+        $this->assertSame('after', $recipeUpdate->getNewFiles()['config/packages/framework.yaml']);
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -223,7 +301,7 @@ class CopyFromRecipeConfiguratorTest extends TestCase
 
     private function createConfigurator(): CopyFromRecipeConfigurator
     {
-        return new CopyFromRecipeConfigurator($this->getMockBuilder(Composer::class)->getMock(), $this->io, new Options(['root-dir' => FLEX_TEST_DIR], $this->io));
+        return new CopyFromRecipeConfigurator($this->getMockBuilder(Composer::class)->getMock(), $this->io, new Options(['root-dir' => FLEX_TEST_DIR, 'config-dir' => 'config'], $this->io));
     }
 
     private function cleanUpTargetFiles()
