@@ -27,7 +27,8 @@ use Symfony\Flex\GithubApi;
 use Symfony\Flex\InformationOperation;
 use Symfony\Flex\Lock;
 use Symfony\Flex\Recipe;
-use Symfony\Flex\Update\RecipePatcher;
+use Symfony\Flex\Update\GitRecipePatcher;
+use Symfony\Flex\Update\PlainRecipePatcher;
 use Symfony\Flex\Update\RecipeUpdate;
 
 class UpdateRecipesCommand extends BaseCommand
@@ -63,13 +64,15 @@ class UpdateRecipesCommand extends BaseCommand
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $win = '\\' === \DIRECTORY_SEPARATOR;
+        $isGitProject = file_exists($this->rootDir.'/.git');
+
         $runtimeExceptionClass = class_exists(RuntimeException::class) ? RuntimeException::class : \RuntimeException::class;
         if (!@is_executable(strtok(exec($win ? 'where git' : 'command -v git'), \PHP_EOL))) {
             throw new $runtimeExceptionClass('Cannot run "recipes:update": git not found.');
         }
 
         $io = $this->getIO();
-        if (!$this->isIndexClean($io)) {
+        if ($isGitProject && !$this->isIndexClean()) {
             $io->write([
                 '  Cannot run <comment>recipes:update</comment>: Your git index contains uncommitted changes.',
                 '  Please commit or stash them and try again!',
@@ -153,7 +156,12 @@ class UpdateRecipesCommand extends BaseCommand
         $recipeUpdate = new RecipeUpdate($originalRecipe, $newRecipe, $symfonyLock, $this->rootDir);
         $this->configurator->populateUpdate($recipeUpdate);
         $originalComposerJsonHash = $this->flex->getComposerJsonHash();
-        $patcher = new RecipePatcher($this->rootDir, $io);
+
+        if ($isGitProject) {
+            $patcher = new GitRecipePatcher($this->rootDir, $io);
+        } else {
+            $patcher = new PlainRecipePatcher($this->rootDir, $io);
+        }
 
         try {
             $patch = $patcher->generatePatch($recipeUpdate->getOriginalFiles(), $recipeUpdate->getNewFiles());
@@ -175,7 +183,10 @@ class UpdateRecipesCommand extends BaseCommand
 
         // stage symfony.lock, as all patched files with already be staged
         $cmdOutput = '';
-        $this->getProcessExecutor()->execute('git add symfony.lock', $cmdOutput, $this->rootDir);
+
+        if ($isGitProject) {
+            $this->getProcessExecutor()->execute('git add symfony.lock', $cmdOutput, $this->rootDir);
+        }
 
         $io->write([
             '  <bg=blue;fg=white>                      </>',
@@ -196,7 +207,7 @@ class UpdateRecipesCommand extends BaseCommand
                 $io->write([
                     '  No files were changed as a result of the update.',
                 ]);
-            } else {
+            } elseif ($isGitProject) {
                 $io->write([
                     '  Run <comment>git status</comment> or <comment>git diff --cached</comment> to see the changes.',
                     '  When you\'re ready, commit these changes like normal.',
@@ -392,7 +403,7 @@ class UpdateRecipesCommand extends BaseCommand
         return $outdatedRecipes[$choice];
     }
 
-    private function isIndexClean(IOInterface $io): bool
+    private function isIndexClean(): bool
     {
         $output = '';
 

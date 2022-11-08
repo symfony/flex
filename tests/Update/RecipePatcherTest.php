@@ -15,8 +15,8 @@ use Composer\IO\IOInterface;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Process\Process;
+use Symfony\Flex\Update\GitRecipePatcher;
 use Symfony\Flex\Update\RecipePatch;
-use Symfony\Flex\Update\RecipePatcher;
 
 class RecipePatcherTest extends TestCase
 {
@@ -52,7 +52,7 @@ class RecipePatcherTest extends TestCase
             (new Process(['git', 'commit', '-m', '"original files"'], FLEX_TEST_DIR))->mustRun();
         }
 
-        $patcher = new RecipePatcher(FLEX_TEST_DIR, $this->createMock(IOInterface::class));
+        $patcher = new GitRecipePatcher(FLEX_TEST_DIR, $this->createMock(IOInterface::class));
 
         $patch = $patcher->generatePatch($originalFiles, $newFiles);
         $this->assertSame($expectedPatch, rtrim($patch->getPatch(), "\n"));
@@ -189,7 +189,7 @@ EOF
         $this->getFilesystem()->remove(FLEX_TEST_DIR);
         $this->getFilesystem()->mkdir(FLEX_TEST_DIR);
 
-        $patcher = new RecipePatcher(FLEX_TEST_DIR, $this->createMock(IOInterface::class));
+        $patcher = new GitRecipePatcher(FLEX_TEST_DIR, $this->createMock(IOInterface::class));
 
         // try to update a file that does not exist in the project
         $patch = $patcher->generatePatch(['.env' => 'original contents'], ['.env' => 'new contents']);
@@ -217,7 +217,7 @@ EOF
             (new Process(['git', 'commit', '-m', 'Committing original files'], FLEX_TEST_DIR))->mustRun();
         }
 
-        $patcher = new RecipePatcher(FLEX_TEST_DIR, $this->createMock(IOInterface::class));
+        $patcher = new GitRecipePatcher(FLEX_TEST_DIR, $this->createMock(IOInterface::class));
         $hadConflicts = !$patcher->applyPatch($recipePatch);
 
         foreach ($expectedFiles as $file => $expectedContents) {
@@ -345,7 +345,7 @@ EOF
         (new Process(['git', 'add', '-A'], FLEX_TEST_DIR))->mustRun();
         (new Process(['git', 'commit', '-m', 'committing in app start files'], FLEX_TEST_DIR))->mustRun();
 
-        $patcher = new RecipePatcher(FLEX_TEST_DIR, $this->createMock(IOInterface::class));
+        $patcher = new GitRecipePatcher(FLEX_TEST_DIR, $this->createMock(IOInterface::class));
         $originalFiles = [
             '.env' => $files['dot_env_clean']['original_recipe'],
             'package.json' => $files['package_json_conflict']['original_recipe'],

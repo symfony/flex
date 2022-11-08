@@ -16,18 +16,16 @@ use Composer\Util\ProcessExecutor;
 use Symfony\Component\Filesystem\Exception\IOException;
 use Symfony\Component\Filesystem\Filesystem;
 
-class RecipePatcher
+class GitRecipePatcher
 {
-    private $rootDir;
-    private $filesystem;
-    private $io;
-    private $processExecutor;
+    protected $rootDir;
+    protected $filesystem;
+    protected $processExecutor;
 
     public function __construct(string $rootDir, IOInterface $io)
     {
         $this->rootDir = $rootDir;
         $this->filesystem = new Filesystem();
-        $this->io = $io;
         $this->processExecutor = new ProcessExecutor($io);
     }
 
@@ -143,7 +141,7 @@ class RecipePatcher
         }
     }
 
-    private function execute(string $command, string $cwd): string
+    protected function execute(string $command, string $cwd): string
     {
         $output = '';
         $statusCode = $this->processExecutor->execute($command, $output, $cwd);
@@ -244,7 +242,7 @@ class RecipePatcher
         }
     }
 
-    private function getIgnoredFiles(array $fileNames): array
+    protected function getIgnoredFiles(array $fileNames): array
     {
         $args = implode(' ', array_map([ProcessExecutor::class, 'escape'], $fileNames));
         $output = '';

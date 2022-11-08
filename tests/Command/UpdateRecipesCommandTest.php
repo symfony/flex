@@ -88,6 +88,35 @@ class UpdateRecipesCommandTest extends TestCase
         $this->assertStringNotContainsString('c6d02bdfba9da13c22157520e32a602dbee8a75c', file_get_contents(FLEX_TEST_DIR.'/symfony.lock'));
     }
 
+    /**
+     * Skip 7.1, simply because there isn't a newer recipe version available
+     * that we can easily use to assert.
+     *
+     * @requires PHP >= 7.2
+     */
+    public function testCommandUpdatesRecipeWithoutGitProject()
+    {
+        @mkdir(FLEX_TEST_DIR);
+        @mkdir(FLEX_TEST_DIR.'/bin');
+
+        // copy in outdated bin/console and symfony.lock set at the recipe it came from
+        file_put_contents(FLEX_TEST_DIR.'/bin/console', file_get_contents(__DIR__.'/../Fixtures/update_recipes/console'));
+        file_put_contents(FLEX_TEST_DIR.'/symfony.lock', file_get_contents(__DIR__.'/../Fixtures/update_recipes/symfony.lock'));
+        file_put_contents(FLEX_TEST_DIR.'/composer.json', file_get_contents(__DIR__.'/../Fixtures/update_recipes/composer.json'));
+
+        (new Process([__DIR__.'/../../vendor/bin/composer', 'install'], FLEX_TEST_DIR))->mustRun();
+
+        $command = $this->createCommandUpdateRecipes();
+        $command->execute(['package' => 'symfony/console']);
+
+        $this->assertSame(0, $command->getStatusCode(), $this->io->getOutput());
+        $this->assertStringContainsString('Recipe updated', $this->io->getOutput());
+        // assert bin/console has changed
+        $this->assertStringNotContainsString('vendor/autoload.php', file_get_contents(FLEX_TEST_DIR.'/bin/console'));
+        // assert the recipe was updated
+        $this->assertStringNotContainsString('c6d02bdfba9da13c22157520e32a602dbee8a75c', file_get_contents(FLEX_TEST_DIR.'/symfony.lock'));
+    }
+
     private function createCommandUpdateRecipes(): CommandTester
     {
         $this->io = new BufferIO();
