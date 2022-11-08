@@ -39,7 +39,11 @@ final class ScriptExecutorTest extends TestCase
 
         $arguments = $phpFinder->findArguments();
         $ini = php_ini_loaded_file();
-        $arguments[] = "--php-ini={$ini}";
+
+        if (false !== $ini) {
+            $arguments[] = "--php-ini={$ini}";
+        }
+
         $arguments[] = "-d memory_limit={$memoryLimit}";
 
         $phpArgs = implode(' ', array_map([ProcessExecutor::class, 'escape'], $arguments));
