@@ -20,9 +20,9 @@ class PackageResolverTest extends TestCase
     /**
      * @dataProvider getPackages
      */
-    public function testResolve($packages, $resolved)
+    public function testResolve($packages, $resolved, bool $isRequire = false)
     {
-        $this->assertEquals($resolved, $this->getResolver()->resolve($packages));
+        $this->assertEquals($resolved, $this->getResolver()->resolve($packages, $isRequire));
     }
 
     public function getPackages()
@@ -31,6 +31,16 @@ class PackageResolverTest extends TestCase
             [
                 ['cli'],
                 ['symfony/console'],
+            ],
+            [
+                ['lock'],
+                ['lock'],
+                false,
+            ],
+            [
+                ['lock'],
+                ['symfony/lock'],
+                true,
             ],
             [
                 ['cli', 'symfony/workflow'],
@@ -116,6 +126,7 @@ class PackageResolverTest extends TestCase
                 'console' => 'symfony/console',
                 'translation' => 'symfony/translation',
                 'validator' => 'symfony/validator',
+                'lock' => 'symfony/lock',
             ]);
 
         return new PackageResolver($downloader);
