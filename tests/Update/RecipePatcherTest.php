@@ -233,9 +233,55 @@ EOF
         $this->assertSame($expectedConflicts, $hadConflicts);
     }
 
-    public function getApplyPatchTests(): iterable
+    /**
+     * @dataProvider getApplyPatchTests
+     */
+    public function testApplyPatchOnSubfolder(array $filesCurrentlyInApp, RecipePatch $recipePatch, array $expectedFiles, bool $expectedConflicts)
     {
-        $files = $this->getFilesForPatching();
+        $mainProjectPath = FLEX_TEST_DIR;
+        $subProjectPath = FLEX_TEST_DIR.'/ProjectA';
+
+        ## init main project git repo
+        (new Process(['git', 'init'], $mainProjectPath))->mustRun();
+        (new Process(['git', 'config', 'user.name', 'Unit test'], $mainProjectPath))->mustRun();
+        (new Process(['git', 'config', 'user.email', ''], $mainProjectPath))->mustRun();
+
+        if (!file_exists($subProjectPath)) {
+            mkdir($subProjectPath, 0777, true);
+        }
+
+        foreach ($filesCurrentlyInApp as $file => $contents) {
+            $path = $subProjectPath.'/'.$file;
+            if (!file_exists(\dirname($path))) {
+                @mkdir(\dirname($path), 0777, true);
+            }
+            file_put_contents($path, $contents);
+        }
+        if (\count($filesCurrentlyInApp) > 0) {
+            (new Process(['git', 'add', '-A'], $subProjectPath))->mustRun();
+            (new Process(['git', 'commit', '-m', 'Committing original files'], $subProjectPath))->mustRun();
+        }
+
+        $patcher = new RecipePatcher($subProjectPath, $this->createMock(IOInterface::class));
+        $hadConflicts = !$patcher->applyPatch($recipePatch);
+
+        foreach ($expectedFiles as $file => $expectedContents) {
+            if (null === $expectedContents) {
+                $this->assertFileDoesNotExist($subProjectPath.'/'.$file);
+
+                continue;
+            }
+            $this->assertFileExists($subProjectPath.'/'.$file);
+            $this->assertSame($expectedContents, file_get_contents($subProjectPath.'/'.$file));
+        }
+
+        $this->assertSame($expectedConflicts, $hadConflicts);
+    }
+
+    public function getApplyPatchTests(string $testMethodName): iterable
+    {
+        $projectRootPath = ($testMethodName === "testApplyPatchOnSubfolder") ? "ProjectA/" : "";
+        $files = $this->getFilesForPatching($projectRootPath);
         $dotEnvClean = $files['dot_env_clean'];
         $packageJsonConflict = $files['package_json_conflict'];
         $webpackEncoreAdded = $files['webpack_encore_added'];
@@ -393,7 +439,7 @@ EOF
      *      * original_recipe
      *      * updated_recipe.
      */
-    private function getFilesForPatching(): array
+    private function getFilesForPatching(string $projectPath=""): array
     {
         $files = [
             // .env
@@ -538,7 +584,7 @@ EOF
         foreach ($files as $key => $data) {
             $files[$key] = array_merge(
                 $data,
-                $this->generatePatchData($data['filename'], $data['original_recipe'], $data['updated_recipe'])
+                $this->generatePatchData($projectPath.$data['filename'], $data['original_recipe'], $data['updated_recipe'])
             );
         }
 

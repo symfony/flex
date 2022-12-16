@@ -168,9 +168,8 @@ class RecipePatcher
     private function addMissingBlobs(array $blobs): array
     {
         $addedBlobs = [];
-        $gitDir = trim($this->execute('git rev-parse --absolute-git-dir', $this->rootDir));
         foreach ($blobs as $hash => $contents) {
-            $blobPath = $gitDir.'/'.$this->getBlobPath($hash);
+            $blobPath = $this->getBlobPath($this->rootDir, $hash);
             if (file_exists($blobPath)) {
                 continue;
             }
@@ -188,7 +187,6 @@ class RecipePatcher
     private function generateBlobs(array $originalFiles, string $originalFilesRoot): array
     {
         $addedBlobs = [];
-        $originalFilesGitDir = trim($this->execute('git rev-parse --absolute-git-dir', $originalFilesRoot));
         foreach ($originalFiles as $filename => $contents) {
             // if the file didn't originally exist, no blob needed
             if (!file_exists($originalFilesRoot.'/'.$filename)) {
@@ -196,18 +194,20 @@ class RecipePatcher
             }
 
             $hash = trim($this->execute('git hash-object '.ProcessExecutor::escape($filename), $originalFilesRoot));
-            $addedBlobs[$hash] = file_get_contents($originalFilesGitDir.'/'.$this->getBlobPath($hash));
+            $addedBlobs[$hash] = file_get_contents($this->getBlobPath($originalFilesRoot, $hash));
         }
 
         return $addedBlobs;
     }
 
-    private function getBlobPath(string $hash): string
+    private function getBlobPath(string $gitRoot, string $hash): string
     {
+        $gitDir = trim($this->execute('git rev-parse --absolute-git-dir', $gitRoot));
+
         $hashStart = substr($hash, 0, 2);
         $hashEnd = substr($hash, 2);
 
-        return 'objects/'.$hashStart.'/'.$hashEnd;
+        return $gitDir.'/objects/'.$hashStart.'/'.$hashEnd;
     }
 
     private function _applyPatchFile(RecipePatch $patch)
