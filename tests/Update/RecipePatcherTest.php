@@ -241,7 +241,6 @@ EOF
         $mainProjectPath = FLEX_TEST_DIR;
         $subProjectPath = FLEX_TEST_DIR.'/ProjectA';
 
-        ## init main project git repo
         (new Process(['git', 'init'], $mainProjectPath))->mustRun();
         (new Process(['git', 'config', 'user.name', 'Unit test'], $mainProjectPath))->mustRun();
         (new Process(['git', 'config', 'user.email', ''], $mainProjectPath))->mustRun();
@@ -280,7 +279,7 @@ EOF
 
     public function getApplyPatchTests(string $testMethodName): iterable
     {
-        $projectRootPath = ($testMethodName === "testApplyPatchOnSubfolder") ? "ProjectA/" : "";
+        $projectRootPath = ('testApplyPatchOnSubfolder' === $testMethodName) ? 'ProjectA/' : '';
         $files = $this->getFilesForPatching($projectRootPath);
         $dotEnvClean = $files['dot_env_clean'];
         $packageJsonConflict = $files['package_json_conflict'];
@@ -439,7 +438,7 @@ EOF
      *      * original_recipe
      *      * updated_recipe.
      */
-    private function getFilesForPatching(string $projectPath=""): array
+    private function getFilesForPatching(string $projectPath = ''): array
     {
         $files = [
             // .env
