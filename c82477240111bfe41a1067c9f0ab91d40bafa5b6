@@ -1,0 +1,27 @@
+---------------------------------------------------------------------------
+
+by Peukku at 2022-11-29T06:18:13Z
+
+Thank you for the feedback!I'm extremely busy this week, but i will continue after that
+
+---------------------------------------------------------------------------
+
+by weaverryan at 2022-12-16T14:21:20Z
+
+I see some new work on this - awesome :). I don't know if you're finished, yet, but 2 small things:
+
+A) Please rebase the PR to remove the merge commit
+B) On fabbot, there is a curl command you can run to tweak any coding standards - d429f654e42ab691c1fb684d99501d8fcf8903d
+
+Thanks!
+
+---------------------------------------------------------------------------
+
+by Peukku at 2022-12-16T19:29:28Z
+
+Extremely busy week turned into two .. But now I was finally able to continue with this!
+
+I moved the "git rev-parse" into getBlobPath() as you suggested, makes much more sense that getBlobPath() returns the full path. The full blob path consists of two parts; git root path (which can be project repository or the temp location used in creating the patch) and the hash. These are now the arguments for the getBlobPath(string $gitRoot, string $hash).
+
+I also made the duplicate of testApplyPatch; testApplyPatchOnSubfolder. And made it use the same dataprovider as the original one. Same files and patches can be used, but subfolder had to be added in the generated patch.
+For that I made the dataprovider getApplyPatchTests to check the name of the test method calling it to prefix the patches with required path.
