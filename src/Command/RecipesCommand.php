@@ -165,6 +165,10 @@ class RecipesCommand extends BaseCommand
         $lockBranch = $recipeLock['recipe']['branch'] ?? null;
         $lockVersion = $recipeLock['recipe']['version'] ?? $recipeLock['version'] ?? null;
 
+        if ('master' === $lockBranch && \in_array($lockRepo, ['github.com/symfony/recipes', 'github.com/symfony/recipes-contrib'])) {
+            $lockBranch = 'main';
+        }
+
         $status = '<comment>up to date</comment>';
         if ($recipe->isAuto()) {
             $status = '<comment>auto-generated recipe</comment>';
