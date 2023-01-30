@@ -1,0 +1,11 @@
+{
+   "name": "symfony/fixture",
+   "devDependencies": {
+      "@hotcookies": "^2",
+      "@hotdogs": "^1.9",
+      "@symfony/existing-package": "file:vendor/symfony/existing-package/Resources/assets"
+   },
+   "browserslist": [
+      "defaults"
+   ]
+}

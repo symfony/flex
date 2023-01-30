@@ -245,4 +245,34 @@ class PackageJsonSynchronizerTest extends TestCase
             json_decode(file_get_contents($this->tempDir.'/package.json'), true)
         );
     }
+
+    public function testStricterConstraintsAreKeptNonMatchingAreReplaced()
+    {
+        (new Filesystem())->copy($this->tempDir.'/stricter_constraints_package.json', $this->tempDir.'/package.json', true);
+
+        $this->synchronizer->synchronize([
+            [
+                'name' => 'symfony/existing-package',
+                'keywords' => ['symfony-ux'],
+            ],
+        ]);
+
+        // Should keep existing constraints when stricter than packages ones
+        $this->assertSame(
+            [
+                'name' => 'symfony/fixture',
+                'devDependencies' => [
+                    // this satisfies the constraint, so it's kept
+                    '@hotcookies' => '^2',
+                    // this was too low, so it's replaced
+                    '@hotdogs' => '^2',
+                    '@symfony/existing-package' => 'file:vendor/symfony/existing-package/Resources/assets',
+                ],
+                'browserslist' => [
+                    'defaults',
+                ],
+            ],
+            json_decode(file_get_contents($this->tempDir.'/package.json'), true)
+        );
+    }
 }
