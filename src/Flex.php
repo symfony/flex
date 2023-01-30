@@ -103,6 +103,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         'unpack' => true,
     ];
     private $filter;
+    private $symfonyRequire = '';
 
     public function activate(Composer $composer, IOInterface $io)
     {
@@ -126,15 +127,15 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $this->config = $composer->getConfig();
         $this->options = $this->initOptions();
 
-        $symfonyRequire = preg_replace('/\.x$/', '.x-dev', getenv('SYMFONY_REQUIRE') ?: ($composer->getPackage()->getExtra()['symfony']['require'] ?? ''));
+        $this->symfonyRequire = preg_replace('/\.x$/', '.x-dev', $this->symfonyRequireVersion($this->composer));
 
         if ($composer2 = version_compare('2.0.0', PluginInterface::PLUGIN_API_VERSION, '<=')) {
             $rfs = Factory::createHttpDownloader($this->io, $this->config);
 
             $this->downloader = $downloader = new Downloader($composer, $io, $rfs);
 
-            if ($symfonyRequire) {
-                $this->filter = new PackageFilter($io, $symfonyRequire, $this->downloader);
+            if ($this->symfonyRequire) {
+                $this->filter = new PackageFilter($io, $this->symfonyRequire, $this->downloader);
             }
 
             $setRepositories = null;
@@ -146,6 +147,9 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
             $rootPackage = $composer->getPackage();
             $manager = RepositoryFactory::manager($this->io, $this->config, $composer->getEventDispatcher(), $this->rfs);
+
+            // We can't pass an instance member variable to a closure via `use`, so create a local copy here.
+            $symfonyRequire = $this->symfonyRequire;
             $setRepositories = \Closure::bind(function (RepositoryManager $manager) use (&$symfonyRequire, $rootPackage, $downloader) {
                 $manager->repositoryClasses = $this->repositoryClasses;
                 $manager->setRepositoryClass('composer', TruncatedComposerRepository::class);
@@ -214,7 +218,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             $input = $trace['args'][0];
             $app = $trace['object'];
 
-            $resolver = new PackageResolver($this->downloader);
+            $resolver = new PackageResolver($this->downloader, $this->symfonyRequire);
 
             if (version_compare('1.1.0', PluginInterface::PLUGIN_API_VERSION, '>')) {
                 $note = $app->has('self-update') ? sprintf('`php %s self-update`', $_SERVER['argv'][0]) : 'https://getcomposer.org/';
@@ -241,7 +245,6 @@ class Flex implements PluginInterface, EventSubscriberInterface
             } elseif ('update' === $command) {
                 $this->displayThanksReminder = 1;
             } elseif ('outdated' === $command) {
-                $symfonyRequire = null;
                 if ($setRepositories) {
                     $setRepositories($manager);
                 }
@@ -995,7 +998,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             }
         }
 
-        $unpacker = new Unpacker($this->composer, new PackageResolver($this->downloader), $this->dryRun);
+        $unpacker = new Unpacker($this->composer, new PackageResolver($this->downloader, $this->symfonyRequire), $this->dryRun);
         $result = $unpacker->unpack($unpackOp);
 
         if (!$result->getUnpacked()) {
@@ -1102,5 +1105,28 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
 
         return false;
+    }
+
+    private function symfonyRequireVersion(Composer $composer): string
+    {
+        $package = $composer->getPackage();
+        $version = getenv('SYMFONY_REQUIRE') ?: '';
+
+        if (empty($version)) {
+            $version = $package->getExtra()['symfony']['require'] ?? '';
+        }
+
+        if (empty($version)) {
+            $require = $package->getRequires();
+            $link = $require['symfony/framework-bundle'] ?? null;
+
+            try {
+                $version = $link ? $link->getPrettyConstraint() : '';
+            } catch (\UnexpectedValueException $exception) {
+                $version = '';
+            }
+        }
+
+        return '*' !== $version ? $version : '';
     }
 }
