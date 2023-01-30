@@ -315,9 +315,9 @@ class DockerComposeConfigurator extends AbstractConfigurator
             return [];
         }
 
-        $files = array_map(function ($file) use ($rootDir) {
+        $files = array_filter(array_map(function ($file) use ($rootDir) {
             return $this->findDockerComposeFile($rootDir, $file);
-        }, array_keys($config));
+        }, array_keys($config)));
 
         $originalContents = [];
         foreach ($files as $file) {
