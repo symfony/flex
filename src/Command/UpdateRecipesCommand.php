@@ -19,6 +19,7 @@ use Composer\Util\ProcessExecutor;
 use Symfony\Component\Console\Exception\RuntimeException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Flex\Configurator;
 use Symfony\Flex\Downloader;
@@ -57,6 +58,7 @@ class UpdateRecipesCommand extends BaseCommand
             ->setAliases(['recipes:update'])
             ->setDescription('Updates an already-installed recipe to the latest version.')
             ->addArgument('package', InputArgument::OPTIONAL, 'Recipe that should be updated.')
+            ->addOption('auto-commit', 'c', InputOption::VALUE_OPTIONAL, 'Commit the changes automatically if no conflicts found. With an optional commit message like: "Update recipe for {packageName}\n\n{changelog}\n"', false)
         ;
     }
 
@@ -190,16 +192,26 @@ class UpdateRecipesCommand extends BaseCommand
                 '  Run <comment>git status</comment> to see them.',
                 '  After resolving, commit your changes like normal.',
             ]);
+
+            if (false !== $input->getOption('auto-commit')) {
+                $io->write([
+                    '  For a prepared commit message run <comment>git commit -F .git/SYMFONY_FLEX_COMMIT_MSG</comment>.',
+                ]);
+            }
         } else {
             if (!$patch->getPatch()) {
                 // no changes were required
                 $io->write([
                     '  No files were changed as a result of the update.',
                 ]);
-            } else {
+            } elseif (false === $input->getOption('auto-commit')) {
                 $io->write([
                     '  Run <comment>git status</comment> or <comment>git diff --cached</comment> to see the changes.',
                     '  When you\'re ready, commit these changes like normal.',
+                ]);
+            } else {
+                $io->write([
+                    '  Changes will be committed automatically.',
                 ]);
             }
         }
@@ -256,6 +268,20 @@ class UpdateRecipesCommand extends BaseCommand
                 $io->write($changelog);
             } else {
                 $io->write('No CHANGELOG could be calculated.');
+            }
+        }
+
+        if (false !== $msg = $input->getOption('auto-commit')) {
+            $msg ??= "Update recipe for {packageName}\n\n{changelog}\n";
+            $msg = strtr($msg, [
+                '{packageName}' => $packageName,
+                '{changelog}' => preg_replace('/\\033]8;[^;]*;([^\\033]*)\\033\\\\([^\\033]*)\\033]8;;\\033\\\\/', '$2 - $1', implode(\PHP_EOL, $changelog ?? [])),
+            ]);
+
+            if ($hasConflicts) {
+                file_put_contents('.git/SYMFONY_FLEX_COMMIT_MSG', $msg);
+            } else {
+                $this->getProcessExecutor()->execute(['git', 'commit', '-m', $msg], $cmdOutput, $this->rootDir);
             }
         }
 
