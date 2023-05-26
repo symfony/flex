@@ -9,7 +9,14 @@
                 }
             }
         },
-        "entrypoints": ["admin.js"]
+        "entrypoints": ["admin.js"],
+        "importmap": {
+            "@hotcake": "^1.9.0",
+            "@symfony/new-package": {
+                "version": "path:%PACKAGE%/dist/loader.js",
+                "preload": true
+            }
+        }
     },
     "peerDependencies": {
         "@hotcookies": "^1.1"
