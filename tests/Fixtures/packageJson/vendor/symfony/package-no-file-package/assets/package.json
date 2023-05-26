@@ -1,0 +1,8 @@
+{
+    "symfony": {
+        "needsPackageAsADependency": false
+    },
+    "peerDependencies": {
+        "@hotcookies": "^1.1"
+    }
+}

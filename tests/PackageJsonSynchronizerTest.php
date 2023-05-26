@@ -14,18 +14,25 @@ namespace Symfony\Flex\Tests;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Flex\PackageJsonSynchronizer;
+use Symfony\Flex\ScriptExecutor;
 
 class PackageJsonSynchronizerTest extends TestCase
 {
     private $tempDir;
     private $synchronizer;
+    private $scriptExecutor;
 
     protected function setUp(): void
     {
         $this->tempDir = sys_get_temp_dir().'/flex-package-json-'.substr(md5(uniqid('', true)), 0, 6);
         (new Filesystem())->mirror(__DIR__.'/Fixtures/packageJson', $this->tempDir);
+        $this->scriptExecutor = $this->createMock(ScriptExecutor::class);
 
-        $this->synchronizer = new PackageJsonSynchronizer($this->tempDir, 'vendor');
+        $this->synchronizer = new PackageJsonSynchronizer(
+            $this->tempDir,
+            'vendor',
+            $this->scriptExecutor
+        );
     }
 
     protected function tearDown(): void
@@ -250,6 +257,8 @@ class PackageJsonSynchronizerTest extends TestCase
     {
         (new Filesystem())->copy($this->tempDir.'/stricter_constraints_package.json', $this->tempDir.'/package.json', true);
 
+        (new Filesystem())->copy($this->tempDir.'/stricter_constraints_package.json', $this->tempDir.'/package.json', true);
+
         $this->synchronizer->synchronize([
             [
                 'name' => 'symfony/existing-package',
@@ -273,6 +282,106 @@ class PackageJsonSynchronizerTest extends TestCase
                 ],
             ],
             json_decode(file_get_contents($this->tempDir.'/package.json'), true)
+        );
+    }
+
+    public function testSynchronizePackageWithoutNeedingFilePackage()
+    {
+        $this->synchronizer->synchronize([
+            [
+                'name' => 'symfony/existing-package',
+                'keywords' => ['symfony-ux'],
+            ],
+            [
+                'name' => 'symfony/package-no-file-package',
+                'keywords' => ['symfony-ux'],
+            ],
+        ]);
+
+        // Should keep existing package references and config and add the new package, while keeping the formatting
+        $this->assertSame(
+            '{
+   "name": "symfony/fixture",
+   "devDependencies": {
+      "@hotdogs": "^2",
+      "@symfony/existing-package": "file:vendor/symfony/existing-package/Resources/assets",
+      "@symfony/stimulus-bridge": "^1.0.0",
+      "stimulus": "^1.1.1"
+   },
+   "browserslist": [
+      "defaults"
+   ]
+}',
+            trim(file_get_contents($this->tempDir.'/package.json'))
+        );
+    }
+
+    public function testSynchronizeAssetMapperNewPackage()
+    {
+        file_put_contents($this->tempDir.'/importmap.php', '<?php return [];');
+
+        $fileModulePath = $this->tempDir.'/vendor/symfony/new-package/assets/dist/loader.js';
+        $this->scriptExecutor->expects($this->exactly(2))
+            ->method('execute')
+            ->withConsecutive(
+                ['symfony-cmd', 'importmap:require', ['@hotcake@^1.9.0']],
+                ['symfony-cmd', 'importmap:require', ['@symfony/new-package', '--path='.$fileModulePath, '--preload']]
+            );
+
+        $this->synchronizer->synchronize([
+            [
+                'name' => 'symfony/existing-package',
+                'keywords' => ['symfony-ux'],
+            ],
+            [
+                'name' => 'symfony/new-package',
+                'keywords' => ['symfony-ux'],
+            ],
+        ]);
+
+        // package.json exists, but should remain untouched because importmap.php was found
+        $this->assertSame(
+            '{
+   "name": "symfony/fixture",
+   "devDependencies": {
+      "@symfony/stimulus-bridge": "^1.0.0",
+      "stimulus": "^1.1.1",
+      "@symfony/existing-package": "file:vendor/symfony/existing-package/Resources/assets"
+   },
+   "browserslist": [
+      "defaults"
+   ]
+}',
+            trim(file_get_contents($this->tempDir.'/package.json'))
+        );
+
+        // controllers.json updated like normal
+        $this->assertSame(
+            [
+                'controllers' => [
+                    '@symfony/existing-package' => [
+                        'mock' => [
+                            'enabled' => false,
+                            'fetch' => 'eager',
+                            'autoimport' => [
+                                '@symfony/existing-package/dist/style.css' => false,
+                                '@symfony/existing-package/dist/new-style.css' => true,
+                            ],
+                        ],
+                    ],
+                    '@symfony/new-package' => [
+                        'new' => [
+                            'enabled' => true,
+                            'fetch' => 'lazy',
+                            'autoimport' => [
+                                '@symfony/new-package/dist/style.css' => true,
+                            ],
+                        ],
+                    ],
+                ],
+                'entrypoints' => ['admin.js'],
+            ],
+            json_decode(file_get_contents($this->tempDir.'/assets/controllers.json'), true)
         );
     }
 }

@@ -375,6 +375,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $installContribs = $this->composer->getPackage()->getExtra()['symfony']['allow-contrib'] ?? false;
         $manifest = null;
         $originalComposerJsonHash = $this->getComposerJsonHash();
+        $postInstallRecipes = [];
         foreach ($recipes as $recipe) {
             if ('install' === $recipe->getJob() && !$installContribs && $recipe->isContrib()) {
                 $warning = $this->io->isInteractive() ? 'WARNING' : 'IGNORING';
@@ -421,6 +422,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
             switch ($recipe->getJob()) {
                 case 'install':
+                    $postInstallRecipes[] = $recipe;
                     $this->io->writeError(sprintf('  - Configuring %s', $this->formatOrigin($recipe)));
                     $this->configurator->install($recipe, $this->lock, [
                         'force' => $event instanceof UpdateEvent && $event->force(),
@@ -442,6 +444,12 @@ class Flex implements PluginInterface, EventSubscriberInterface
                     $this->configurator->unconfigure($recipe, $this->lock);
                     break;
             }
+        }
+
+        foreach ($postInstallRecipes as $recipe) {
+            $this->configurator->postInstall($recipe, $this->lock, [
+                'force' => $event instanceof UpdateEvent && $event->force(),
+            ]);
         }
 
         if (null !== $manifest) {
@@ -474,16 +482,11 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $rootDir = realpath($rootDir);
         $vendorDir = trim((new Filesystem())->makePathRelative($this->config->get('vendor-dir'), $rootDir), '/');
 
-        $synchronizer = new PackageJsonSynchronizer($rootDir, $vendorDir);
+        $executor = new ScriptExecutor($this->composer, $this->io, $this->options);
+        $synchronizer = new PackageJsonSynchronizer($rootDir, $vendorDir, $executor);
 
         if ($synchronizer->shouldSynchronize()) {
             $lockData = $this->composer->getLocker()->getLockData();
-
-            if (method_exists($synchronizer, 'addPackageJsonLink') && 'string' === (new \ReflectionParameter([$synchronizer, 'addPackageJsonLink'], 'phpPackage'))->getType()->getName()) {
-                // support for smooth upgrades from older flex versions
-                $lockData['packages'] = array_column($lockData['packages'] ?? [], 'name');
-                $lockData['packages-dev'] = array_column($lockData['packages-dev'] ?? [], 'name');
-            }
 
             if ($synchronizer->synchronize(array_merge($lockData['packages'] ?? [], $lockData['packages-dev'] ?? []))) {
                 $this->io->writeError('<info>Synchronizing package.json with PHP packages</>');
@@ -557,7 +560,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             $job = method_exists($operation, 'getOperationType') ? $operation->getOperationType() : $operation->getJobType();
 
             if (!isset($manifests[$name]) && isset($data['conflicts'][$name])) {
-                $this->io->writeError(sprintf('  - Skipping recipe for %s: all versions of the recipe conflict with your package versions.', $name), true, IOInterface::VERBOSE);
+                $this->io->writeError(sprintf('  - Skipping recipe for %s: all versions of the recipe conflict with your package versions.', $name));
                 continue;
             }
 
@@ -568,7 +571,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
                 if (!isset($newManifests[$name])) {
                     // no older recipe found
-                    $this->io->writeError(sprintf('  - Skipping recipe for %s: all versions of the recipe conflict with your package versions.', $name), true, IOInterface::VERBOSE);
+                    $this->io->writeError(sprintf('  - Skipping recipe for %s: all versions of the recipe conflict with your package versions.', $name));
 
                     continue 2;
                 }
