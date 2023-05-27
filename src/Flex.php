@@ -446,10 +446,12 @@ class Flex implements PluginInterface, EventSubscriberInterface
             }
         }
 
-        foreach ($postInstallRecipes as $recipe) {
-            $this->configurator->postInstall($recipe, $this->lock, [
-                'force' => $event instanceof UpdateEvent && $event->force(),
-            ]);
+        if (method_exists($this->configurator, 'postInstall')) {
+            foreach ($postInstallRecipes as $recipe) {
+                $this->configurator->postInstall($recipe, $this->lock, [
+                    'force' => $event instanceof UpdateEvent && $event->force(),
+                ]);
+            }
         }
 
         if (null !== $manifest) {
