@@ -35,30 +35,11 @@ class AddLinesConfigurator extends AbstractConfigurator
 
     public function unconfigure(Recipe $recipe, $config, Lock $lock): void
     {
-        foreach ($config as $patch) {
-            if (!isset($patch['file'])) {
-                $this->write(sprintf('The "file" key is required for the "add-lines" configurator for recipe "%s". Skipping', $recipe->getName()));
+        $changes = $this->getUnconfigureFileChanges($recipe, $config);
 
-                continue;
-            }
-
-            // Ignore "requires": the target packages may have just become uninstalled.
-            // Checking for a "content" match is enough.
-
-            $file = $this->path->concatenate([$this->options->get('root-dir'), $patch['file']]);
-            if (!is_file($file)) {
-                continue;
-            }
-
-            if (!isset($patch['content'])) {
-                $this->write(sprintf('The "content" key is required for the "add-lines" configurator for recipe "%s". Skipping', $recipe->getName()));
-
-                continue;
-            }
-            $value = $patch['content'];
-
-            $newContents = $this->getUnPatchedContents($file, $value);
-            file_put_contents($file, $newContents);
+        foreach ($changes as $file => $change) {
+            $this->write(sprintf('[add-lines] Reverting file "%s"', $file));
+            file_put_contents($file, $change);
         }
     }
 
@@ -152,6 +133,38 @@ class AddLinesConfigurator extends AbstractConfigurator
             $target = isset($patch['target']) ? $patch['target'] : null;
 
             $newContents = $this->getPatchedContents($file, $content, $position, $target, $warnIfMissing);
+            $changes[$file] = $newContents;
+        }
+
+        return $changes;
+    }
+
+    public function getUnconfigureFileChanges(Recipe $recipe, $config): array
+    {
+        $changes = [];
+        foreach ($config as $patch) {
+            if (!isset($patch['file'])) {
+                $this->write(sprintf('The "file" key is required for the "add-lines" configurator for recipe "%s". Skipping', $recipe->getName()));
+
+                continue;
+            }
+
+            // Ignore "requires": the target packages may have just become uninstalled.
+            // Checking for a "content" match is enough.
+
+            $file = $this->path->concatenate([$this->options->get('root-dir'), $patch['file']]);
+            if (!is_file($file)) {
+                continue;
+            }
+
+            if (!isset($patch['content'])) {
+                $this->write(sprintf('The "content" key is required for the "add-lines" configurator for recipe "%s". Skipping', $recipe->getName()));
+
+                continue;
+            }
+            $value = $patch['content'];
+
+            $newContents = $this->getUnPatchedContents($file, $value);
             $changes[$file] = $newContents;
         }
 
