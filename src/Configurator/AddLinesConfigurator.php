@@ -78,7 +78,8 @@ class AddLinesConfigurator extends AbstractConfigurator
             }
             $target = isset($patch['target']) ? $patch['target'] : null;
 
-            $this->patchFile($file, $content, $position, $target, $warnIfMissing);
+            $newContents = $this->getPatchedContents($file, $content, $position, $target, $warnIfMissing);
+            file_put_contents($file, $newContents);
         }
     }
 
@@ -106,7 +107,8 @@ class AddLinesConfigurator extends AbstractConfigurator
             }
             $value = $patch['content'];
 
-            $this->unPatchFile($file, $value);
+            $newContents = $this->getUnPatchedContents($file, $value);
+            file_put_contents($file, $newContents);
         }
     }
 
@@ -145,12 +147,12 @@ class AddLinesConfigurator extends AbstractConfigurator
         $this->configure($recipeUpdate->getNewRecipe(), $filteredNewConfig, $recipeUpdate->getLock());
     }
 
-    private function patchFile(string $file, string $value, string $position, ?string $target, bool $warnIfMissing)
+    private function getPatchedContents(string $file, string $value, string $position, ?string $target, bool $warnIfMissing): string
     {
         $fileContents = file_get_contents($file);
 
         if (false !== strpos($fileContents, $value)) {
-            return; // already includes value, skip
+            return $fileContents; // already includes value, skip
         }
 
         switch ($position) {
@@ -188,15 +190,15 @@ class AddLinesConfigurator extends AbstractConfigurator
                 break;
         }
 
-        file_put_contents($file, $fileContents);
+        return $fileContents;
     }
 
-    private function unPatchFile(string $file, $value)
+    private function getUnPatchedContents(string $file, $value): string
     {
         $fileContents = file_get_contents($file);
 
         if (false === strpos($fileContents, $value)) {
-            return; // value already gone!
+            return $fileContents; // value already gone!
         }
 
         if (false !== strpos($fileContents, "\n".$value)) {
@@ -208,7 +210,7 @@ class AddLinesConfigurator extends AbstractConfigurator
         $position = strpos($fileContents, $value);
         $fileContents = substr_replace($fileContents, '', $position, \strlen($value));
 
-        file_put_contents($file, $fileContents);
+        return $fileContents;
     }
 
     private function isPackageInstalled($packages): bool
