@@ -332,7 +332,11 @@ class DockerComposeConfigurator extends AbstractConfigurator
 
         $updatedContents = [];
         foreach ($files as $file) {
-            $localPath = ltrim(str_replace($rootDir, '', $file), '/\\');
+            $localPath = $file;
+            if (0 === strpos($file, $rootDir)) {
+                $localPath = substr($file, \strlen($rootDir) + 1);
+            }
+            $localPath = ltrim($localPath, '/\\');
             $updatedContents[$localPath] = file_exists($file) ? file_get_contents($file) : null;
         }
 
