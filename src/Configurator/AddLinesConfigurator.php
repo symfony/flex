@@ -25,61 +25,11 @@ class AddLinesConfigurator extends AbstractConfigurator
 
     public function configure(Recipe $recipe, $config, Lock $lock, array $options = []): void
     {
-        foreach ($config as $patch) {
-            if (!isset($patch['file'])) {
-                $this->write(sprintf('The "file" key is required for the "add-lines" configurator for recipe "%s". Skipping', $recipe->getName()));
+        $changes = $this->getConfigureFileChanges($recipe, $config);
 
-                continue;
-            }
-
-            if (isset($patch['requires']) && !$this->isPackageInstalled($patch['requires'])) {
-                continue;
-            }
-
-            if (!isset($patch['content'])) {
-                $this->write(sprintf('The "content" key is required for the "add-lines" configurator for recipe "%s". Skipping', $recipe->getName()));
-
-                continue;
-            }
-            $content = $patch['content'];
-
-            $file = $this->path->concatenate([$this->options->get('root-dir'), $patch['file']]);
-            $warnIfMissing = isset($patch['warn_if_missing']) && $patch['warn_if_missing'];
-            if (!is_file($file)) {
-                $this->write([
-                    sprintf('Could not add lines to file <info>%s</info> as it does not exist. Missing lines:', $patch['file']),
-                    '<comment>"""</comment>',
-                    $content,
-                    '<comment>"""</comment>',
-                    '',
-                ], $warnIfMissing ? IOInterface::NORMAL : IOInterface::VERBOSE);
-
-                continue;
-            }
-
-            $this->write(sprintf('Patching file "%s"', $patch['file']));
-
-            if (!isset($patch['position'])) {
-                $this->write(sprintf('The "position" key is required for the "add-lines" configurator for recipe "%s". Skipping', $recipe->getName()));
-
-                continue;
-            }
-            $position = $patch['position'];
-            if (!\in_array($position, self::VALID_POSITIONS, true)) {
-                $this->write(sprintf('The "position" key must be one of "%s" for the "add-lines" configurator for recipe "%s". Skipping', implode('", "', self::VALID_POSITIONS), $recipe->getName()));
-
-                continue;
-            }
-
-            if (self::POSITION_AFTER_TARGET === $position && !isset($patch['target'])) {
-                $this->write(sprintf('The "target" key is required when "position" is "%s" for the "add-lines" configurator for recipe "%s". Skipping', self::POSITION_AFTER_TARGET, $recipe->getName()));
-
-                continue;
-            }
-            $target = isset($patch['target']) ? $patch['target'] : null;
-
-            $newContents = $this->getPatchedContents($file, $content, $position, $target, $warnIfMissing);
-            file_put_contents($file, $newContents);
+        foreach ($changes as $file => $change) {
+            $this->write(sprintf('[add-lines] Patching file "%s"', $file));
+            file_put_contents($file, $change);
         }
     }
 
@@ -145,6 +95,67 @@ class AddLinesConfigurator extends AbstractConfigurator
 
         $this->unconfigure($recipeUpdate->getOriginalRecipe(), $filteredOriginalConfig, $recipeUpdate->getLock());
         $this->configure($recipeUpdate->getNewRecipe(), $filteredNewConfig, $recipeUpdate->getLock());
+    }
+
+    public function getConfigureFileChanges(Recipe $recipe, $config): array
+    {
+        $changes = [];
+        foreach ($config as $patch) {
+            if (!isset($patch['file'])) {
+                $this->write(sprintf('The "file" key is required for the "add-lines" configurator for recipe "%s". Skipping', $recipe->getName()));
+
+                continue;
+            }
+
+            if (isset($patch['requires']) && !$this->isPackageInstalled($patch['requires'])) {
+                continue;
+            }
+
+            if (!isset($patch['content'])) {
+                $this->write(sprintf('The "content" key is required for the "add-lines" configurator for recipe "%s". Skipping', $recipe->getName()));
+
+                continue;
+            }
+            $content = $patch['content'];
+
+            $file = $this->path->concatenate([$this->options->get('root-dir'), $patch['file']]);
+            $warnIfMissing = isset($patch['warn_if_missing']) && $patch['warn_if_missing'];
+            if (!is_file($file)) {
+                $this->write([
+                    sprintf('Could not add lines to file <info>%s</info> as it does not exist. Missing lines:', $patch['file']),
+                    '<comment>"""</comment>',
+                    $content,
+                    '<comment>"""</comment>',
+                    '',
+                ], $warnIfMissing ? IOInterface::NORMAL : IOInterface::VERBOSE);
+
+                continue;
+            }
+
+            if (!isset($patch['position'])) {
+                $this->write(sprintf('The "position" key is required for the "add-lines" configurator for recipe "%s". Skipping', $recipe->getName()));
+
+                continue;
+            }
+            $position = $patch['position'];
+            if (!\in_array($position, self::VALID_POSITIONS, true)) {
+                $this->write(sprintf('The "position" key must be one of "%s" for the "add-lines" configurator for recipe "%s". Skipping', implode('", "', self::VALID_POSITIONS), $recipe->getName()));
+
+                continue;
+            }
+
+            if (self::POSITION_AFTER_TARGET === $position && !isset($patch['target'])) {
+                $this->write(sprintf('The "target" key is required when "position" is "%s" for the "add-lines" configurator for recipe "%s". Skipping', self::POSITION_AFTER_TARGET, $recipe->getName()));
+
+                continue;
+            }
+            $target = isset($patch['target']) ? $patch['target'] : null;
+
+            $newContents = $this->getPatchedContents($file, $content, $position, $target, $warnIfMissing);
+            $changes[$file] = $newContents;
+        }
+
+        return $changes;
     }
 
     private function getPatchedContents(string $file, string $value, string $position, ?string $target, bool $warnIfMissing): string
