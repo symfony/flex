@@ -23,64 +23,62 @@ class AddLinesConfigurator extends AbstractConfigurator
         self::POSITION_AFTER_TARGET,
     ];
 
+    /**
+     * Holds file contents for files that have been loaded.
+     * This allows us to "change" the contents of a file multiple
+     * times before we actually write it out.
+     *
+     * @var string[]
+     */
+    private $fileContents = [];
+
     public function configure(Recipe $recipe, $config, Lock $lock, array $options = []): void
     {
-        $changes = $this->getConfigureFileChanges($recipe, $config);
+        $this->fileContents = [];
+        $this->executeConfigure($recipe, $config);
 
-        foreach ($changes as $file => $change) {
-            $this->write(sprintf('[add-lines] Patching file "%s"', $file));
-            file_put_contents($file, $change);
+        foreach ($this->fileContents as $file => $contents) {
+            $this->write(sprintf('[add-lines] Patching file "%s"', $this->relativize($file)));
+            file_put_contents($file, $contents);
         }
     }
 
     public function unconfigure(Recipe $recipe, $config, Lock $lock): void
     {
-        $changes = $this->getUnconfigureFileChanges($recipe, $config);
+        $this->fileContents = [];
+        $this->executeUnconfigure($recipe, $config);
 
-        foreach ($changes as $file => $change) {
-            $this->write(sprintf('[add-lines] Reverting file "%s"', $file));
+        foreach ($this->fileContents as $file => $change) {
+            $this->write(sprintf('[add-lines] Reverting file "%s"', $this->relativize($file)));
             file_put_contents($file, $change);
         }
     }
 
     public function update(RecipeUpdate $recipeUpdate, array $originalConfig, array $newConfig): void
     {
+        // manually check for "requires", as unconfigure ignores it
         $originalConfig = array_filter($originalConfig, function ($item) {
             return !isset($item['requires']) || $this->isPackageInstalled($item['requires']);
         });
-        $newConfig = array_filter($newConfig, function ($item) {
-            return !isset($item['requires']) || $this->isPackageInstalled($item['requires']);
-        });
 
-        $filterDuplicates = function (array $sourceConfig, array $comparisonConfig) {
-            $filtered = [];
-            foreach ($sourceConfig as $sourceItem) {
-                $found = false;
-                foreach ($comparisonConfig as $comparisonItem) {
-                    if ($sourceItem['file'] === $comparisonItem['file'] && $sourceItem['content'] === $comparisonItem['content']) {
-                        $found = true;
-                        break;
-                    }
-                }
-                if (!$found) {
-                    $filtered[] = $sourceItem;
-                }
-            }
-
-            return $filtered;
-        };
-
-        // remove any config where the file+value is the same before & after
-        $filteredOriginalConfig = $filterDuplicates($originalConfig, $newConfig);
-        $filteredNewConfig = $filterDuplicates($newConfig, $originalConfig);
-
-        $this->unconfigure($recipeUpdate->getOriginalRecipe(), $filteredOriginalConfig, $recipeUpdate->getLock());
-        $this->configure($recipeUpdate->getNewRecipe(), $filteredNewConfig, $recipeUpdate->getLock());
+        // reset the file content cache
+        $this->fileContents = [];
+        $this->executeUnconfigure($recipeUpdate->getOriginalRecipe(), $originalConfig);
+        $this->executeConfigure($recipeUpdate->getNewRecipe(), $newConfig);
+        $newFiles = [];
+        $originalFiles = [];
+        foreach ($this->fileContents as $file => $contents) {
+            // set the original file to the current contents
+            $originalFiles[$this->relativize($file)] = file_get_contents($file);
+            // and the new file where the old recipe was unconfigured, and the new configured
+            $newFiles[$this->relativize($file)] = $contents;
+        }
+        $recipeUpdate->addOriginalFiles($originalFiles);
+        $recipeUpdate->addNewFiles($newFiles);
     }
 
-    public function getConfigureFileChanges(Recipe $recipe, $config): array
+    public function executeConfigure(Recipe $recipe, $config): void
     {
-        $changes = [];
         foreach ($config as $patch) {
             if (!isset($patch['file'])) {
                 $this->write(sprintf('The "file" key is required for the "add-lines" configurator for recipe "%s". Skipping', $recipe->getName()));
@@ -133,15 +131,12 @@ class AddLinesConfigurator extends AbstractConfigurator
             $target = isset($patch['target']) ? $patch['target'] : null;
 
             $newContents = $this->getPatchedContents($file, $content, $position, $target, $warnIfMissing);
-            $changes[$file] = $newContents;
+            $this->fileContents[$file] = $newContents;
         }
-
-        return $changes;
     }
 
-    public function getUnconfigureFileChanges(Recipe $recipe, $config): array
+    public function executeUnconfigure(Recipe $recipe, $config): void
     {
-        $changes = [];
         foreach ($config as $patch) {
             if (!isset($patch['file'])) {
                 $this->write(sprintf('The "file" key is required for the "add-lines" configurator for recipe "%s". Skipping', $recipe->getName()));
@@ -165,15 +160,13 @@ class AddLinesConfigurator extends AbstractConfigurator
             $value = $patch['content'];
 
             $newContents = $this->getUnPatchedContents($file, $value);
-            $changes[$file] = $newContents;
+            $this->fileContents[$file] = $newContents;
         }
-
-        return $changes;
     }
 
     private function getPatchedContents(string $file, string $value, string $position, ?string $target, bool $warnIfMissing): string
     {
-        $fileContents = file_get_contents($file);
+        $fileContents = $this->readFile($file);
 
         if (false !== strpos($fileContents, $value)) {
             return $fileContents; // already includes value, skip
@@ -219,7 +212,7 @@ class AddLinesConfigurator extends AbstractConfigurator
 
     private function getUnPatchedContents(string $file, $value): string
     {
-        $fileContents = file_get_contents($file);
+        $fileContents = $this->readFile($file);
 
         if (false === strpos($fileContents, $value)) {
             return $fileContents; // value already gone!
@@ -232,9 +225,8 @@ class AddLinesConfigurator extends AbstractConfigurator
         }
 
         $position = strpos($fileContents, $value);
-        $fileContents = substr_replace($fileContents, '', $position, \strlen($value));
 
-        return $fileContents;
+        return substr_replace($fileContents, '', $position, \strlen($value));
     }
 
     private function isPackageInstalled($packages): bool
@@ -252,5 +244,27 @@ class AddLinesConfigurator extends AbstractConfigurator
         }
 
         return true;
+    }
+
+    private function relativize(string $path): string
+    {
+        $rootDir = $this->options->get('root-dir');
+        if (0 === strpos($path, $rootDir)) {
+            $path = substr($path, \strlen($rootDir) + 1);
+        }
+
+        return ltrim($path, '/\\');
+    }
+
+    private function readFile(string $file): string
+    {
+        if (isset($this->fileContents[$file])) {
+            return $this->fileContents[$file];
+        }
+
+        $fileContents = file_get_contents($file);
+        $this->fileContents[$file] = $fileContents;
+
+        return $fileContents;
     }
 }
