@@ -86,6 +86,9 @@ class Flex implements PluginInterface, EventSubscriberInterface
     ];
     private $filter;
 
+    /**
+     * @return void
+     */
     public function activate(Composer $composer, IOInterface $io)
     {
         if (!\extension_loaded('openssl')) {
@@ -193,6 +196,9 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
     }
 
+    /**
+     * @return void
+     */
     public function deactivate(Composer $composer, IOInterface $io)
     {
         self::$activated = false;
@@ -498,6 +504,9 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
     }
 
+    /**
+     * @return void
+     */
     public function uninstall(Composer $composer, IOInterface $io)
     {
         $this->lock->delete();

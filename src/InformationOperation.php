@@ -57,6 +57,8 @@ class InformationOperation implements OperationInterface
 
     /**
      * {@inheritdoc}
+     *
+     * @return string
      */
     public function getOperationType()
     {
@@ -65,6 +67,8 @@ class InformationOperation implements OperationInterface
 
     /**
      * {@inheritdoc}
+     *
+     * @return string
      */
     public function show($lock)
     {
