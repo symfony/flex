@@ -409,8 +409,8 @@ EOF
      */
     public function testUpdate(array $originalFiles, array $originalConfig, array $newConfig, array $expectedFiles)
     {
-        foreach ($originalFiles as $filename => $contents) {
-            $this->saveFile($filename, $contents);
+        foreach ($originalFiles as $filename => $originalContents) {
+            $this->saveFile($filename, $originalContents);
         }
 
         $composer = $this->createComposerMockWithPackagesInstalled([
@@ -423,28 +423,30 @@ EOF
         $recipeUpdate = new RecipeUpdate($recipe, $recipe, $lock, FLEX_TEST_DIR);
         $configurator->update($recipeUpdate, $originalConfig, $newConfig);
 
-        foreach ($expectedFiles as $filename => $contents) {
-            $this->assertSame($contents, $this->readFile($filename));
+        $this->assertCount(\count($expectedFiles), $recipeUpdate->getNewFiles());
+        foreach ($expectedFiles as $filename => $expectedContents) {
+            $this->assertSame($this->readFile($filename), $recipeUpdate->getOriginalFiles()[$filename]);
+            $this->assertSame($expectedContents, $recipeUpdate->getNewFiles()[$filename]);
         }
     }
 
     public function getUpdateTests()
     {
-        $appJs = <<<EOF
+        $appJsOriginal = <<<EOF
 import * as Turbo from '@hotwired/turbo';
 import './bootstrap';
 
 console.log(Turbo);
 EOF;
 
-        $bootstrapJs = <<<EOF
+        $bootstrapJsOriginal = <<<EOF
 console.log('bootstrap.js');
 
 console.log('on the bottom');
 EOF;
 
         yield 'recipe_changes_patch_contents' => [
-            ['assets/app.js' => $appJs],
+            ['assets/app.js' => $appJsOriginal],
             [
                 ['file' => 'assets/app.js', 'position' => 'top', 'content' => "import './bootstrap';"],
             ],
@@ -461,18 +463,18 @@ EOF
         ];
 
         yield 'recipe_file_and_value_same_before_and_after' => [
-            ['assets/app.js' => $appJs],
+            ['assets/app.js' => $appJsOriginal],
             [
                 ['file' => 'assets/app.js', 'position' => 'top', 'content' => "import * as Turbo from '@hotwired/turbo';"],
             ],
             [
                 ['file' => 'assets/app.js', 'position' => 'top', 'content' => "import * as Turbo from '@hotwired/turbo';"],
             ],
-            ['assets/app.js' => $appJs],
+            ['assets/app.js' => $appJsOriginal],
         ];
 
         yield 'different_files_unconfigures_old_and_configures_new' => [
-            ['assets/app.js' => $appJs, 'assets/bootstrap.js' => $bootstrapJs],
+            ['assets/app.js' => $appJsOriginal, 'assets/bootstrap.js' => $bootstrapJsOriginal],
             [
                 ['file' => 'assets/app.js', 'position' => 'top', 'content' => "import * as Turbo from '@hotwired/turbo';"],
             ],
@@ -496,18 +498,18 @@ EOF
         ];
 
         yield 'recipe_changes_but_ignored_because_package_not_installed' => [
-            ['assets/app.js' => $appJs],
+            ['assets/app.js' => $appJsOriginal],
             [
                 ['file' => 'assets/app.js', 'position' => 'top', 'content' => "import './bootstrap';", 'requires' => 'symfony/not-installed'],
             ],
             [
                 ['file' => 'assets/app.js', 'position' => 'top', 'content' => "import './stimulus_bootstrap';", 'requires' => 'symfony/not-installed'],
             ],
-            ['assets/app.js' => $appJs],
+            [], // no changes will come back in the RecipePatch
         ];
 
         yield 'recipe_changes_are_applied_if_required_package_installed' => [
-            ['assets/app.js' => $appJs],
+            ['assets/app.js' => $appJsOriginal],
             [
                 ['file' => 'assets/app.js', 'position' => 'top', 'content' => "import './bootstrap';", 'requires' => 'symfony/installed-package'],
             ],
