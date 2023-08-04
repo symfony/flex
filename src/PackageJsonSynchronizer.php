@@ -296,7 +296,12 @@ class PackageJsonSynchronizer
             return;
         }
 
-        $previousControllersJson = (new JsonFile($controllersJsonPath))->read();
+        try {
+            $previousControllersJson = (new JsonFile($controllersJsonPath))->read();
+        } catch (ParsingException $e) {
+            // if controllers.json is invalid (possible during a recipe upgrade), we can't update the file
+            return;
+        }
         $newControllersJson = [
             'controllers' => [],
             'entrypoints' => $previousControllersJson['entrypoints'],
