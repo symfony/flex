@@ -97,7 +97,7 @@ class AddLinesConfigurator extends AbstractConfigurator
             }
             $content = $patch['content'];
 
-            $file = $this->path->concatenate([$this->options->get('root-dir'), $patch['file']]);
+            $file = $this->path->concatenate([$this->options->get('root-dir'), $this->options->expandTargetDir($patch['file'])]);
             $warnIfMissing = isset($patch['warn_if_missing']) && $patch['warn_if_missing'];
             if (!is_file($file)) {
                 $this->write([
@@ -147,7 +147,7 @@ class AddLinesConfigurator extends AbstractConfigurator
             // Ignore "requires": the target packages may have just become uninstalled.
             // Checking for a "content" match is enough.
 
-            $file = $this->path->concatenate([$this->options->get('root-dir'), $patch['file']]);
+            $file = $this->path->concatenate([$this->options->get('root-dir'), $this->options->expandTargetDir($patch['file'])]);
             if (!is_file($file)) {
                 continue;
             }
