@@ -23,7 +23,7 @@ use Symfony\Flex\Recipe;
 use Symfony\Flex\Update\RecipeUpdate;
 
 /**
- * @author Kévin Dunglas <dunglas@gmail.com>
+ * @author Kévin Dunglas <kevin@dunglas.dev>
  */
 class DockerComposeConfiguratorTest extends TestCase
 {
@@ -166,18 +166,33 @@ YAML;
         putenv('COMPOSER='.$this->originalEnvComposer);
 
         (new Filesystem())->remove([
+            FLEX_TEST_DIR.'/compose.yml',
             FLEX_TEST_DIR.'/docker-compose.yml',
+            FLEX_TEST_DIR.'/compose.override.yml',
             FLEX_TEST_DIR.'/docker-compose.override.yml',
+            FLEX_TEST_DIR.'/compose.yaml',
             FLEX_TEST_DIR.'/docker-compose.yaml',
             FLEX_TEST_DIR.'/composer.json',
+            FLEX_TEST_DIR.'/child/compose.override.yaml',
             FLEX_TEST_DIR.'/child/docker-compose.override.yaml',
             FLEX_TEST_DIR.'/child',
         ]);
     }
 
-    public function testConfigure()
+    public static function dockerComposerFileProvider(): iterable
     {
-        $dockerComposeFile = FLEX_TEST_DIR.'/docker-compose.yaml';
+        yield ['compose.yaml'];
+        yield ['compose.yml'];
+        yield ['docker-compose.yaml'];
+        yield ['docker-compose.yml'];
+    }
+
+    /**
+     * @dataProvider dockerComposerFileProvider
+     */
+    public function testConfigure(string $fileName)
+    {
+        $dockerComposeFile = FLEX_TEST_DIR."/$fileName";
         file_put_contents($dockerComposeFile, self::ORIGINAL_CONTENT);
 
         $this->configurator->configure($this->recipeDb, self::CONFIG_DB, $this->lock);
@@ -205,7 +220,7 @@ volumes:
 ###< doctrine/doctrine-bundle ###
 
 YAML
-            );
+        );
 
         $this->configurator->unconfigure($this->recipeDb, self::CONFIG_DB, $this->lock);
         $this->assertEquals(self::ORIGINAL_CONTENT, file_get_contents($dockerComposeFile));
@@ -216,7 +231,7 @@ YAML
         $this->package->setExtra(['symfony' => ['docker' => false]]);
         $this->configurator->configure($this->recipeDb, self::CONFIG_DB, $this->lock);
 
-        $this->assertFileDoesNotExist(FLEX_TEST_DIR.'/docker-compose.yml');
+        $this->assertFileDoesNotExist(FLEX_TEST_DIR.'/docker-compose.yaml');
     }
 
     /**
@@ -235,9 +250,9 @@ YAML
         $this->configurator->configure($this->recipeDb, self::CONFIG_DB, $this->lock);
 
         if ($expectedIsConfigured) {
-            $this->assertFileExists(FLEX_TEST_DIR.'/docker-compose.yml');
+            $this->assertFileExists(FLEX_TEST_DIR.'/compose.yaml');
         } else {
-            $this->assertFileDoesNotExist(FLEX_TEST_DIR.'/docker-compose.yml');
+            $this->assertFileDoesNotExist(FLEX_TEST_DIR.'/compose.yaml');
         }
 
         $composerJsonData = json_decode(file_get_contents($composerJsonPath), true);
@@ -270,7 +285,7 @@ YAML
         $this->configurator->configure($this->recipeDb, self::CONFIG_DB, $this->lock);
         unset($_SERVER['SYMFONY_DOCKER']);
 
-        $this->assertFileExists(FLEX_TEST_DIR.'/docker-compose.yml');
+        $this->assertFileExists(FLEX_TEST_DIR.'/compose.yaml');
 
         $composerJsonData = json_decode(file_get_contents($composerJsonPath), true);
         $this->assertArrayHasKey('extra', $composerJsonData);
@@ -316,7 +331,7 @@ volumes:
 ###< doctrine/doctrine-bundle ###
 
 YAML
-            );
+        );
 
         $this->configurator->unconfigure($this->recipeDb, self::CONFIG_DB, $this->lock);
         // Not the same original, we have an extra breaks line
@@ -411,7 +426,7 @@ volumes:
 ###< doctrine/doctrine-bundle ###
 
 YAML
-            );
+        );
 
         $this->configurator->unconfigure($recipe, $config, $this->lock);
         $this->assertEquals($originalContent, file_get_contents($dockerComposeFile));
@@ -526,7 +541,7 @@ volumes:
 ###< doctrine/doctrine-bundle ###
 
 YAML
-                );
+            );
         }
 
         $this->configurator->unconfigure($this->recipeDb, self::CONFIG_DB_MULTIPLE_FILES, $this->lock);
@@ -571,7 +586,7 @@ volumes:
 ###< doctrine/doctrine-bundle ###
 
 YAML
-                );
+            );
         }
 
         $this->configurator->unconfigure($this->recipeDb, self::CONFIG_DB_MULTIPLE_FILES, $this->lock);
@@ -624,7 +639,7 @@ YAML
 
     public function testConfigureWithoutExistingDockerComposeFiles()
     {
-        $dockerComposeFile = FLEX_TEST_DIR.'/docker-compose.yml';
+        $dockerComposeFile = FLEX_TEST_DIR.'/compose.yaml';
         $defaultContent = "version: '3'\n";
 
         $this->configurator->configure($this->recipeDb, self::CONFIG_DB, $this->lock);
@@ -653,7 +668,7 @@ volumes:
 ###< doctrine/doctrine-bundle ###
 
 YAML
-            );
+        );
 
         $this->configurator->unconfigure($this->recipeDb, self::CONFIG_DB, $this->lock);
         $this->assertEquals(trim($defaultContent), file_get_contents($dockerComposeFile));
