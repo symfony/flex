@@ -16,6 +16,7 @@ use Composer\EventDispatcher\ScriptExecutionException;
 use Composer\IO\IOInterface;
 use Composer\Semver\Constraint\MatchAllConstraint;
 use Composer\Util\ProcessExecutor;
+use Composer\XdebugHandler\PhpConfig;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Output\StreamOutput;
 use Symfony\Component\Process\PhpExecutableFinder;
@@ -116,20 +117,8 @@ class ScriptExecutor
 
         $arguments = $phpFinder->findArguments();
 
-        if ($env = (string) getenv('COMPOSER_ORIGINAL_INIS')) {
-            $paths = explode(\PATH_SEPARATOR, $env);
-            $ini = array_shift($paths);
-        } else {
-            $ini = php_ini_loaded_file();
-        }
-
-        if ($ini) {
-            $arguments[] = '--php-ini='.$ini;
-        }
-
-        if ($memoryLimit = (string) getenv('COMPOSER_MEMORY_LIMIT')) {
-            $arguments[] = "-d memory_limit={$memoryLimit}";
-        }
+        $phpConfig = new PhpConfig();
+        $phpConfig->usePersistent();
 
         $phpArgs = implode(' ', array_map([ProcessExecutor::class, 'escape'], $arguments));
         $scriptArgs = implode(' ', array_map([ProcessExecutor::class, 'escape'], $scriptArguments));
