@@ -1,0 +1,20 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2023-10-10T07:52:07Z
+
+Alternatively, can we detect the version of docker that is in use?
+
+---------------------------------------------------------------------------
+
+by dunglas at 2023-10-10T08:12:54Z
+
+> It might be too early to generate composer.yaml by default.
+
+Docker Compose support `compose.yaml` since 1.28.6 (2021-03-23). Docker Compose v1 stopped receiving updates in July 2023.
+All currently maintained Docker Compose installations support this file name.
+
+Also, it's weird to generate files on new projects (existing projects will continue working and are unaffected) that are marked as legacy by the upstream vendor.
+
+> Alternatively, can we detect the version of docker that is in use?
+
+This should be possible, but is it worth it? Starting a new project with an EOLed version of Docker Compose looks very weird.
