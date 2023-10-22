@@ -1,0 +1,19 @@
+---------------------------------------------------------------------------
+
+by fabpot at 2023-05-29T07:20:33Z
+
+Is it only for 2.x or also for 1.x?
+
+---------------------------------------------------------------------------
+
+by weaverryan at 2023-05-30T15:08:35Z
+
+> Is it only for 2.x or also for 1.x?
+
+Also in 1.x. My mistake - I updated the branch target - thanks for catching that.
+
+---------------------------------------------------------------------------
+
+by weaverryan at 2023-07-11T15:09:19Z
+
+This should be ready to go
