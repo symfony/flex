@@ -12,7 +12,7 @@
         }
     },
     "peerDependencies": {
-        "@hotcookies": "^1.1|^2",
-        "@hotdogs": "^2"
+        "@hotcookies/bar": "^1.1|^2",
+        "@hotdogs/bun": "^2"
     }
 }

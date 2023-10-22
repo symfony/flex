@@ -3,6 +3,6 @@
         "needsPackageAsADependency": false
     },
     "peerDependencies": {
-        "@hotcookies": "^1.1"
+        "@hotcookies/bar": "^1.1"
     }
 }

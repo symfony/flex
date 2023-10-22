@@ -11,6 +11,7 @@
 
 namespace Symfony\Flex\Tests;
 
+use Composer\IO\IOInterface;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Flex\PackageJsonSynchronizer;
@@ -31,7 +32,8 @@ class PackageJsonSynchronizerTest extends TestCase
         $this->synchronizer = new PackageJsonSynchronizer(
             $this->tempDir,
             'vendor',
-            $this->scriptExecutor
+            $this->scriptExecutor,
+            $this->createMock(IOInterface::class)
         );
     }
 
@@ -99,8 +101,8 @@ class PackageJsonSynchronizerTest extends TestCase
             [
                 'name' => 'symfony/fixture',
                 'devDependencies' => [
-                    '@hotcookies' => '^1.1|^2',
-                    '@hotdogs' => '^2',
+                    '@hotcookies/bar' => '^1.1|^2',
+                    '@hotdogs/bun' => '^2',
                     '@symfony/existing-package' => 'file:vendor/symfony/existing-package/Resources/assets',
                     '@symfony/stimulus-bridge' => '^1.0.0',
                     'stimulus' => '^1.1.1',
@@ -151,7 +153,7 @@ class PackageJsonSynchronizerTest extends TestCase
             '{
    "name": "symfony/fixture",
    "devDependencies": {
-      "@hotdogs": "^2",
+      "@hotdogs/bun": "^2",
       "@symfony/existing-package": "file:vendor/symfony/existing-package/Resources/assets",
       "@symfony/new-package": "file:vendor/symfony/new-package/assets",
       "@symfony/stimulus-bridge": "^1.0.0",
@@ -207,8 +209,8 @@ class PackageJsonSynchronizerTest extends TestCase
             '{
    "name": "symfony/fixture",
    "devDependencies": {
-      "@hotcookies": "^1.1|^2",
-      "@hotdogs": "^2",
+      "@hotcookies/bar": "^1.1|^2",
+      "@hotdogs/bun": "^2",
       "@symfony/existing-package": "file:vendor/symfony/existing-package/Resources/assets",
       "@symfony/stimulus-bridge": "^1.0.0",
       "stimulus": "^1.1.1"
@@ -237,8 +239,8 @@ class PackageJsonSynchronizerTest extends TestCase
             [
                 'name' => 'symfony/fixture',
                 'dependencies' => [
-                    '@hotcookies' => '^1.1|^2',
-                    '@hotdogs' => '^2',
+                    '@hotcookies/bar' => '^1.1|^2',
+                    '@hotdogs/bun' => '^2',
                     '@symfony/existing-package' => 'file:vendor/symfony/existing-package/Resources/assets',
                 ],
                 'devDependencies' => [
@@ -272,9 +274,9 @@ class PackageJsonSynchronizerTest extends TestCase
                 'name' => 'symfony/fixture',
                 'devDependencies' => [
                     // this satisfies the constraint, so it's kept
-                    '@hotcookies' => '^2',
+                    '@hotcookies/bar' => '^2',
                     // this was too low, so it's replaced
-                    '@hotdogs' => '^2',
+                    '@hotdogs/bun' => '^2',
                     '@symfony/existing-package' => 'file:vendor/symfony/existing-package/Resources/assets',
                 ],
                 'browserslist' => [
@@ -303,7 +305,7 @@ class PackageJsonSynchronizerTest extends TestCase
             '{
    "name": "symfony/fixture",
    "devDependencies": {
-      "@hotdogs": "^2",
+      "@hotdogs/bun": "^2",
       "@symfony/existing-package": "file:vendor/symfony/existing-package/Resources/assets",
       "@symfony/stimulus-bridge": "^1.0.0",
       "stimulus": "^1.1.1"
@@ -324,12 +326,13 @@ class PackageJsonSynchronizerTest extends TestCase
         $this->scriptExecutor->expects($this->exactly(2))
             ->method('execute')
             ->withConsecutive(
-                ['symfony-cmd', 'importmap:require', ['@hotcake@^1.9.0']],
-                ['symfony-cmd', 'importmap:require', ['@symfony/new-package', '--path='.$fileModulePath, '--preload']]
+                ['symfony-cmd', 'importmap:require', ['@hotcake/foo@^1.9.0']],
+                ['symfony-cmd', 'importmap:require', ['@symfony/new-package', '--path='.$fileModulePath]]
             );
 
         $this->synchronizer->synchronize([
             [
+                // no "importmap" specific config, but still registered as a controller
                 'name' => 'symfony/existing-package',
                 'keywords' => ['symfony-ux'],
             ],
@@ -383,5 +386,56 @@ class PackageJsonSynchronizerTest extends TestCase
             ],
             json_decode(file_get_contents($this->tempDir.'/assets/controllers.json'), true)
         );
+    }
+
+    public function testSynchronizeAssetMapperUpgradesPackageIfNeeded()
+    {
+        $importMap = [
+            '@hotcake/foo' => [
+                // constraint in package.json is ^1.9.0
+                'version' => '1.8.0',
+            ],
+        ];
+        file_put_contents($this->tempDir.'/importmap.php', sprintf('<?php return %s;', var_export($importMap, true)));
+
+        $fileModulePath = $this->tempDir.'/vendor/symfony/new-package/assets/dist/loader.js';
+        $this->scriptExecutor->expects($this->exactly(2))
+            ->method('execute')
+            ->withConsecutive(
+                ['symfony-cmd', 'importmap:require', ['@hotcake/foo@^1.9.0']],
+                ['symfony-cmd', 'importmap:require', ['@symfony/new-package', '--path='.$fileModulePath]]
+            );
+
+        $this->synchronizer->synchronize([
+            [
+                'name' => 'symfony/new-package',
+                'keywords' => ['symfony-ux'],
+            ],
+        ]);
+    }
+
+    public function testSynchronizeAssetMapperSkipsUpgradeIfAlreadySatisfied()
+    {
+        $importMap = [
+            '@hotcake/foo' => [
+                // constraint in package.json is ^1.9.0
+                'version' => '1.9.1',
+            ],
+        ];
+        file_put_contents($this->tempDir.'/importmap.php', sprintf('<?php return %s;', var_export($importMap, true)));
+
+        $fileModulePath = $this->tempDir.'/vendor/symfony/new-package/assets/dist/loader.js';
+        $this->scriptExecutor->expects($this->once())
+            ->method('execute')
+            ->withConsecutive(
+                ['symfony-cmd', 'importmap:require', ['@symfony/new-package', '--path='.$fileModulePath]]
+            );
+
+        $this->synchronizer->synchronize([
+            [
+                'name' => 'symfony/new-package',
+                'keywords' => ['symfony-ux'],
+            ],
+        ]);
     }
 }

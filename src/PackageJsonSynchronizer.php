@@ -11,8 +11,10 @@
 
 namespace Symfony\Flex;
 
+use Composer\IO\IOInterface;
 use Composer\Json\JsonFile;
 use Composer\Json\JsonManipulator;
+use Composer\Semver\Semver;
 use Composer\Semver\VersionParser;
 use Seld\JsonLint\ParsingException;
 
@@ -25,13 +27,15 @@ class PackageJsonSynchronizer
     private $rootDir;
     private $vendorDir;
     private $scriptExecutor;
+    private $io;
     private $versionParser;
 
-    public function __construct(string $rootDir, string $vendorDir, ScriptExecutor $scriptExecutor)
+    public function __construct(string $rootDir, string $vendorDir, ScriptExecutor $scriptExecutor, IOInterface $io)
     {
         $this->rootDir = $rootDir;
         $this->vendorDir = $vendorDir;
         $this->scriptExecutor = $scriptExecutor;
+        $this->io = $io;
         $this->versionParser = new VersionParser();
     }
 
@@ -147,11 +151,9 @@ class PackageJsonSynchronizer
         foreach ($packageJson->read()['symfony']['importmap'] ?? [] as $importMapName => $constraintConfig) {
             if (\is_array($constraintConfig)) {
                 $constraint = $constraintConfig['version'] ?? [];
-                $preload = $constraintConfig['preload'] ?? false;
                 $package = $constraintConfig['package'] ?? $importMapName;
             } else {
                 $constraint = $constraintConfig;
-                $preload = false;
                 $package = $importMapName;
             }
 
@@ -161,7 +163,6 @@ class PackageJsonSynchronizer
 
                 $dependencies[$importMapName] = [
                     'path' => $path,
-                    'preload' => $preload,
                 ];
 
                 continue;
@@ -170,7 +171,6 @@ class PackageJsonSynchronizer
             $dependencies[$importMapName] = [
                 'version' => $constraint,
                 'package' => $package,
-                'preload' => $preload,
             ];
         }
 
@@ -239,7 +239,7 @@ class PackageJsonSynchronizer
     }
 
     /**
-     * @param array<string, array{path?: string, preload: bool, package?: string, version?: string}> $importMapEntries
+     * @param array<string, array{path?: string, package?: string, version?: string}> $importMapEntries
      */
     private function updateImportMap(array $importMapEntries): void
     {
@@ -251,14 +251,24 @@ class PackageJsonSynchronizer
 
         foreach ($importMapEntries as $name => $importMapEntry) {
             if (isset($importMapData[$name])) {
-                continue;
+                if (!isset($importMapData[$name]['version'])) {
+                    // AssetMapper 6.3
+                    continue;
+                }
+
+                $version = $importMapData[$name]['version'];
+                $versionConstraint = $importMapEntry['version'] ?? null;
+
+                // if the version constraint is satisfied, skip - else, update the package
+                if (Semver::satisfies($version, $versionConstraint)) {
+                    continue;
+                }
+
+                $this->io->writeError(sprintf('Updating package <comment>%s</> from <info>%s</> to <info>%s</>.', $name, $version, $versionConstraint));
             }
 
             if (isset($importMapEntry['path'])) {
                 $arguments = [$name, '--path='.$importMapEntry['path']];
-                if ($importMapEntry['preload']) {
-                    $arguments[] = '--preload';
-                }
                 $this->scriptExecutor->execute(
                     'symfony-cmd',
                     'importmap:require',
@@ -274,9 +284,6 @@ class PackageJsonSynchronizer
                     $packageName .= '='.$name;
                 }
                 $arguments = [$packageName];
-                if ($importMapEntry['preload']) {
-                    $arguments[] = '--preload';
-                }
                 $this->scriptExecutor->execute(
                     'symfony-cmd',
                     'importmap:require',
