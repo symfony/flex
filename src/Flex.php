@@ -587,7 +587,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $vendorDir = trim((new Filesystem())->makePathRelative($this->config->get('vendor-dir'), $rootDir), '/');
 
         $executor = new ScriptExecutor($this->composer, $this->io, $this->options);
-        $synchronizer = new PackageJsonSynchronizer($rootDir, $vendorDir, $executor);
+        $synchronizer = new PackageJsonSynchronizer($rootDir, $vendorDir, $executor, $this->io);
 
         if ($synchronizer->shouldSynchronize()) {
             $lockData = $this->composer->getLocker()->getLockData();

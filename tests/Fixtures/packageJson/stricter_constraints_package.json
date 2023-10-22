@@ -1,8 +1,8 @@
 {
    "name": "symfony/fixture",
    "devDependencies": {
-      "@hotcookies": "^2",
-      "@hotdogs": "^1.9",
+      "@hotcookies/bar": "^2",
+      "@hotdogs/bun": "^1.9",
       "@symfony/existing-package": "file:vendor/symfony/existing-package/Resources/assets"
    },
    "browserslist": [

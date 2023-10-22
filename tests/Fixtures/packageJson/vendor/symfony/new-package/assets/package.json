@@ -11,14 +11,13 @@
         },
         "entrypoints": ["admin.js"],
         "importmap": {
-            "@hotcake": "^1.9.0",
+            "@hotcake/foo": "^1.9.0",
             "@symfony/new-package": {
-                "version": "path:%PACKAGE%/dist/loader.js",
-                "preload": true
+                "version": "path:%PACKAGE%/dist/loader.js"
             }
         }
     },
     "peerDependencies": {
-        "@hotcookies": "^1.1"
+        "@hotcookies/bar": "^1.1"
     }
 }
