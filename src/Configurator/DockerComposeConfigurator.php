@@ -31,7 +31,7 @@ class DockerComposeConfigurator extends AbstractConfigurator
 {
     private $filesystem;
 
-    public static $configureDockerRecipes = null;
+    public static $configureDockerRecipes;
 
     public function __construct(Composer $composer, IOInterface $io, Options $options)
     {
@@ -194,12 +194,12 @@ class DockerComposeConfigurator extends AbstractConfigurator
         $dir = $rootDir;
         do {
             if (
-                $this->filesystem->exists($dockerComposeFile = sprintf('%s/%s', $dir, $file)) ||
+                $this->filesystem->exists($dockerComposeFile = sprintf('%s/%s', $dir, $file))
                 // Test with the ".yml" extension if the file doesn't end up with ".yaml"
-                $this->filesystem->exists($dockerComposeFile = substr($dockerComposeFile, 0, -3).'ml') ||
+                || $this->filesystem->exists($dockerComposeFile = substr($dockerComposeFile, 0, -3).'ml')
                 // Test with the legacy "docker-" suffix if "compose.ya?ml" doesn't exist
-                $this->filesystem->exists($dockerComposeFile = sprintf('%s/docker-%s', $dir, $file)) ||
-                $this->filesystem->exists($dockerComposeFile = substr($dockerComposeFile, 0, -3).'ml')
+                || $this->filesystem->exists($dockerComposeFile = sprintf('%s/docker-%s', $dir, $file))
+                || $this->filesystem->exists($dockerComposeFile = substr($dockerComposeFile, 0, -3).'ml')
             ) {
                 return $dockerComposeFile;
             }
@@ -260,7 +260,7 @@ class DockerComposeConfigurator extends AbstractConfigurator
                 }
 
                 // Skip blank lines and comments
-                if (('' !== $ltrimedLine && 0 === strpos($ltrimedLine, '#')) || '' === trim($line)) {
+                if (('' !== $ltrimedLine && strncmp($ltrimedLine, '#', 1)) && '' !== trim($line)) {
                     continue;
                 }
 
@@ -349,7 +349,7 @@ class DockerComposeConfigurator extends AbstractConfigurator
         $updatedContents = [];
         foreach ($files as $file) {
             $localPath = $file;
-            if (0 === strpos($file, $rootDir)) {
+            if (strncmp($file, $rootDir, \strlen($rootDir))) {
                 $localPath = substr($file, \strlen($rootDir) + 1);
             }
             $localPath = ltrim($localPath, '/\\');
