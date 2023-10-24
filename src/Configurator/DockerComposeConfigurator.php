@@ -151,7 +151,7 @@ class DockerComposeConfigurator extends AbstractConfigurator
                 return ['compose.yaml' => $config];
             }
 
-            if (!str_starts_with($key, 'docker-')) {
+            if (strncmp($key, 'docker-', 7)) {
                 continue;
             }
 
