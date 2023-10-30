@@ -75,6 +75,10 @@ class Cache extends BaseCache
                     continue;
                 }
 
+                if ('symfony/psr-http-message-bridge' === $name && 6.4 > $normalizedVersion) {
+                    continue;
+                }
+
                 $constraint = new Constraint('==', $normalizedVersion);
 
                 if ($rootConstraint && $rootConstraint->matches($constraint)) {
