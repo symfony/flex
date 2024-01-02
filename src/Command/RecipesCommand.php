@@ -55,7 +55,7 @@ class RecipesCommand extends BaseCommand
         ;
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $installedRepo = $this->getComposer()->getRepositoryManager()->getLocalRepository();
 
