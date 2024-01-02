@@ -49,7 +49,7 @@ class UnpackCommand extends BaseCommand
         ;
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $composer = $this->getComposer();
         $packages = $this->resolver->resolve($input->getArgument('packages'), true);
