@@ -67,6 +67,26 @@ EOF
             $actualContents);
     }
 
+    public function testExpandTargetDirWhenConfiguring()
+    {
+        $this->saveFile('config/file.txt', 'FirstLine');
+
+        $this->runConfigure([
+            [
+                'file' => '%CONFIG_DIR%/file.txt',
+                'position' => 'top',
+                'content' => 'NewFirstLine',
+            ],
+        ]);
+        $actualContents = $this->readFile('config/file.txt');
+        $this->assertSame(<<<EOF
+NewFirstLine
+FirstLine
+EOF
+            ,
+            $actualContents);
+    }
+
     public function testLinesAddedToBottomOfFile()
     {
         $this->saveFile('assets/app.js', <<<EOF
@@ -316,6 +336,28 @@ EOF
         ]);
         $actualContents = $this->readFile('assets/app.js');
         $this->assertSame($expectedContents, $actualContents);
+    }
+
+    public function testExpandTargetDirWhenUnconfiguring()
+    {
+        $this->saveFile('config/file.txt',
+            <<<EOF
+Line1
+Line2
+EOF
+        );
+
+        $this->runUnconfigure([
+            [
+                'file' => '%CONFIG_DIR%/file.txt',
+                'content' => 'Line1',
+            ],
+        ]);
+        $actualContents = $this->readFile('config/file.txt');
+        $this->assertSame(<<<EOF
+Line2
+EOF
+            , $actualContents);
     }
 
     public function getUnconfigureTests()
