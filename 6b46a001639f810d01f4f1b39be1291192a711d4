@@ -1,0 +1,23 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2024-02-05T13:45:24Z
+
+Thanks for the PR. Can you please rebase it for branch 1.x? Please also revert the CS changes while doing so as 1.x still supports PHP 7.1
+
+---------------------------------------------------------------------------
+
+by mnocon at 2024-02-05T15:24:37Z
+
+Thanks for the suggestion!
+I've rebased this PR onto 1.x and adapted the code to PHP 7.1 (small change: https://github.com/symfony/flex/pull/990/commits/88672dcc54bfd1477beb41d60eb22139623a5d49)
+
+Questions:
+1) Bot still suggests some CS improvements - but from what I see polyfills are not installed when using `--prefer-lowest`, is it ok to ignore this?
+2) The `--prefer-lowest` job is failing with:
+```
+[RuntimeException]
+  Could not load package microweber/microweber in [http://packagist.org:](http://packagist.org/) [UnexpectedValueException] Could not parse version constraint v2.6.*: Invalid version string "v2.6.*"
+```
+The earliest occurance I found of this failure is here: https://github.com/symfony/flex/actions/runs/7101907556/job/19331086614
+
+I've tried debugging this, but TBH I don't even know where to start (and when running the tests locally I had a different error) - do you have any suggestions where to look?
