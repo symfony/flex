@@ -14,10 +14,10 @@ namespace Symfony\Flex\Configurator;
 use Composer\Factory;
 use Composer\Json\JsonFile;
 use Composer\Json\JsonManipulator;
+use Symfony\Component\Filesystem\Path;
 use Symfony\Flex\Lock;
 use Symfony\Flex\Recipe;
 use Symfony\Flex\Update\RecipeUpdate;
-use Symfony\Component\Filesystem\Path;
 
 /**
  * @author Fabien Potencier <fabien@symfony.com>
