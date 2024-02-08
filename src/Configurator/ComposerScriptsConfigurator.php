@@ -17,6 +17,7 @@ use Composer\Json\JsonManipulator;
 use Symfony\Flex\Lock;
 use Symfony\Flex\Recipe;
 use Symfony\Flex\Update\RecipeUpdate;
+use Symfony\Component\Filesystem\Path;
 
 /**
  * @author Fabien Potencier <fabien@symfony.com>
@@ -49,7 +50,7 @@ class ComposerScriptsConfigurator extends AbstractConfigurator
     public function update(RecipeUpdate $recipeUpdate, array $originalConfig, array $newConfig): void
     {
         $json = new JsonFile(Factory::getComposerFile());
-        $jsonPath = ltrim(str_replace($recipeUpdate->getRootDir(), '', $json->getPath()), '/\\');
+        $jsonPath = Path::makeRelative($json->getPath(), $recipeUpdate->getRootDir());
 
         $recipeUpdate->setOriginalFile(
             $jsonPath,
