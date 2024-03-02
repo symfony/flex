@@ -21,11 +21,11 @@ use Composer\Repository\PlatformRepository;
 class PackageResolver
 {
     private static $SYMFONY_VERSIONS = ['lts', 'previous', 'stable', 'next', 'dev'];
-    private $downloader;
+    private RecipeProviderInterface $recipeProvider;
 
-    public function __construct(Downloader $downloader)
+    public function __construct(RecipeProviderInterface $recipeProvider)
     {
-        $this->downloader = $downloader;
+        $this->recipeProvider = $recipeProvider;
     }
 
     public function resolve(array $arguments = [], bool $isRequire = false): array
@@ -58,7 +58,7 @@ class PackageResolver
             return $version ? ':'.$version : '';
         }
 
-        $versions = $this->downloader->getVersions();
+        $versions = $this->recipeProvider->getVersions();
 
         if (!isset($versions['splits'][$package])) {
             return $version ? ':'.$version : '';
@@ -96,7 +96,7 @@ class PackageResolver
             return $argument;
         }
 
-        $aliases = $this->downloader->getAliases();
+        $aliases = $this->recipeProvider->getAliases();
 
         if (isset($aliases[$argument])) {
             $argument = $aliases[$argument];
@@ -122,7 +122,7 @@ class PackageResolver
     private function throwAlternatives(string $argument, int $position)
     {
         $alternatives = [];
-        foreach ($this->downloader->getAliases() as $alias => $package) {
+        foreach ($this->recipeProvider->getAliases() as $alias => $package) {
             $lev = levenshtein($argument, $alias);
             if ($lev <= \strlen($argument) / 3 || ('' !== $argument && false !== strpos($alias, $argument))) {
                 $alternatives[$package][] = $alias;

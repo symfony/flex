@@ -21,12 +21,12 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Flex\Configurator;
-use Symfony\Flex\Downloader;
 use Symfony\Flex\Flex;
 use Symfony\Flex\GithubApi;
 use Symfony\Flex\InformationOperation;
 use Symfony\Flex\Lock;
 use Symfony\Flex\Recipe;
+use Symfony\Flex\RecipeProviderInterface;
 use Symfony\Flex\Update\RecipePatcher;
 use Symfony\Flex\Update\RecipeUpdate;
 
@@ -34,16 +34,16 @@ class UpdateRecipesCommand extends BaseCommand
 {
     /** @var Flex */
     private $flex;
-    private $downloader;
+    private RecipeProviderInterface $recipeProvider;
     private $configurator;
     private $rootDir;
     private $githubApi;
     private $processExecutor;
 
-    public function __construct(/* cannot be type-hinted */ $flex, Downloader $downloader, $httpDownloader, Configurator $configurator, string $rootDir)
+    public function __construct(/* cannot be type-hinted */ $flex, RecipeProviderInterface $recipeProvider, $httpDownloader, Configurator $configurator, string $rootDir)
     {
         $this->flex = $flex;
-        $this->downloader = $downloader;
+        $this->recipeProvider = $recipeProvider;
         $this->configurator = $configurator;
         $this->rootDir = $rootDir;
         $this->githubApi = new GithubApi($httpDownloader);
@@ -268,7 +268,7 @@ class UpdateRecipesCommand extends BaseCommand
         if (null !== $recipeRef) {
             $operation->setSpecificRecipeVersion($recipeRef, $recipeVersion);
         }
-        $recipes = $this->downloader->getRecipes([$operation]);
+        $recipes = $this->recipeProvider->getRecipes([$operation]);
 
         if (0 === \count($recipes['manifests'] ?? [])) {
             return null;

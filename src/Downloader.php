@@ -13,7 +13,6 @@ namespace Symfony\Flex;
 
 use Composer\Cache;
 use Composer\Composer;
-use Composer\DependencyResolver\Operation\OperationInterface;
 use Composer\DependencyResolver\Operation\UninstallOperation;
 use Composer\DependencyResolver\Operation\UpdateOperation;
 use Composer\IO\IOInterface;
@@ -26,7 +25,7 @@ use Composer\Util\Loop;
  * @author Fabien Potencier <fabien@symfony.com>
  * @author Nicolas Grekas <p@tchwork.com>
  */
-class Downloader
+class Downloader implements RecipeProviderInterface
 {
     private const DEFAULT_ENDPOINTS = [
         'https://raw.githubusercontent.com/symfony/recipes/flex/main/index.json',
@@ -95,29 +94,44 @@ class Downloader
         $this->composer = $composer;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public function getSessionId(): string
     {
         return $this->sess;
     }
 
-    public function isEnabled()
+    /**
+     * {@inheritDoc}
+     */
+    public function isEnabled(): bool
     {
         return $this->enabled;
     }
 
-    public function disable()
+    /**
+     * {@inheritDoc}
+     */
+    public function disable(): void
     {
         $this->enabled = false;
     }
 
-    public function getVersions()
+    /**
+     * {@inheritDoc}
+     */
+    public function getVersions(): array
     {
         $this->initialize();
 
         return self::$versions ?? self::$versions = current($this->get([$this->legacyEndpoint.'/versions.json']));
     }
 
-    public function getAliases()
+    /**
+     * {@inheritDoc}
+     */
+    public function getAliases(): array
     {
         $this->initialize();
 
@@ -125,9 +139,7 @@ class Downloader
     }
 
     /**
-     * Downloads recipes.
-     *
-     * @param OperationInterface[] $operations
+     * {@inheritDoc}
      */
     public function getRecipes(array $operations): array
     {
@@ -307,11 +319,9 @@ class Downloader
     }
 
     /**
-     * Used to "hide" a recipe version so that the next most-recent will be returned.
-     *
-     * This is used when resolving "conflicts".
+     * {@inheritDoc}
      */
-    public function removeRecipeFromIndex(string $packageName, string $version)
+    public function removeRecipeFromIndex(string $packageName, string $version): void
     {
         unset($this->index[$packageName][$version]);
     }

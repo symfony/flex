@@ -28,15 +28,15 @@ class PackageFilter
     private $versionParser;
     private $symfonyRequire;
     private $symfonyConstraints;
-    private $downloader;
+    private $recipeProvider;
     private $io;
 
-    public function __construct(IOInterface $io, string $symfonyRequire, Downloader $downloader)
+    public function __construct(IOInterface $io, string $symfonyRequire, RecipeProviderInterface $recipeProvider)
     {
         $this->versionParser = new VersionParser();
         $this->symfonyRequire = $symfonyRequire;
         $this->symfonyConstraints = $this->versionParser->parseConstraints($symfonyRequire);
-        $this->downloader = $downloader;
+        $this->recipeProvider = $recipeProvider;
         $this->io = $io;
     }
 
@@ -119,8 +119,8 @@ class PackageFilter
             return $this->versions;
         }
 
-        $versions = $this->downloader->getVersions();
-        $this->downloader = null;
+        $versions = $this->recipeProvider->getVersions();
+        $this->recipeProvider = null;
         $okVersions = [];
 
         if (!isset($versions['splits'])) {
