@@ -32,20 +32,19 @@ use Symfony\Flex\Update\RecipeUpdate;
 
 class UpdateRecipesCommand extends BaseCommand
 {
-    /** @var Flex */
-    private $flex;
-    private $downloader;
-    private $configurator;
-    private $rootDir;
     private $githubApi;
     private $processExecutor;
 
-    public function __construct(/* cannot be type-hinted */ $flex, Downloader $downloader, $httpDownloader, Configurator $configurator, string $rootDir)
-    {
-        $this->flex = $flex;
-        $this->downloader = $downloader;
-        $this->configurator = $configurator;
-        $this->rootDir = $rootDir;
+    /**
+     * @param Flex $flex
+     */
+    public function __construct(
+        /* cannot be type-hinted */ private $flex,
+        private Downloader $downloader,
+        $httpDownloader,
+        private Configurator $configurator,
+        private string $rootDir
+    ) {
         $this->githubApi = new GithubApi($httpDownloader);
 
         parent::__construct();
@@ -262,7 +261,7 @@ class UpdateRecipesCommand extends BaseCommand
         return 0;
     }
 
-    private function getRecipe(PackageInterface $package, string $recipeRef = null, string $recipeVersion = null): ?Recipe
+    private function getRecipe(PackageInterface $package, ?string $recipeRef = null, ?string $recipeVersion = null): ?Recipe
     {
         $operation = new InformationOperation($package);
         if (null !== $recipeRef) {

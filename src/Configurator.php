@@ -21,18 +21,15 @@ use Symfony\Flex\Update\RecipeUpdate;
  */
 class Configurator
 {
-    private $composer;
-    private $io;
-    private $options;
     private $configurators;
     private $postInstallConfigurators;
     private $cache;
 
-    public function __construct(Composer $composer, IOInterface $io, Options $options)
-    {
-        $this->composer = $composer;
-        $this->io = $io;
-        $this->options = $options;
+    public function __construct(
+        private Composer $composer,
+        private IOInterface $io,
+        private Options $options,
+    ) {
         // ordered list of configurators
         $this->configurators = [
             'bundles' => Configurator\BundlesConfigurator::class,

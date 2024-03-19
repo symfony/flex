@@ -21,11 +21,10 @@ use Composer\Repository\PlatformRepository;
 class PackageResolver
 {
     private static $SYMFONY_VERSIONS = ['lts', 'previous', 'stable', 'next', 'dev'];
-    private $downloader;
 
-    public function __construct(Downloader $downloader)
-    {
-        $this->downloader = $downloader;
+    public function __construct(
+        private Downloader $downloader,
+    ) {
     }
 
     public function resolve(array $arguments = [], bool $isRequire = false): array

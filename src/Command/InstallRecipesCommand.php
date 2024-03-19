@@ -24,17 +24,14 @@ use Symfony\Flex\Flex;
 
 class InstallRecipesCommand extends BaseCommand
 {
-    /** @var Flex */
-    private $flex;
-    private $rootDir;
-    private $dotenvPath;
-
-    public function __construct(/* cannot be type-hinted */ $flex, string $rootDir, string $dotenvPath = '.env')
-    {
-        $this->flex = $flex;
-        $this->rootDir = $rootDir;
-        $this->dotenvPath = $dotenvPath;
-
+    /**
+     * @param Flex $flex
+     */
+    public function __construct(
+        /* cannot be type-hinted */ private $flex,
+        private string $rootDir,
+        private string $dotenvPath = '.env'
+    ) {
         parent::__construct();
     }
 

@@ -25,16 +25,14 @@ use Symfony\Component\Process\PhpExecutableFinder;
  */
 class ScriptExecutor
 {
-    private $composer;
-    private $io;
-    private $options;
     private $executor;
 
-    public function __construct(Composer $composer, IOInterface $io, Options $options, ProcessExecutor $executor = null)
-    {
-        $this->composer = $composer;
-        $this->io = $io;
-        $this->options = $options;
+    public function __construct(
+        private Composer $composer,
+        private IOInterface $io,
+        private Options $options,
+        ?ProcessExecutor $executor = null
+    ) {
         $this->executor = $executor ?: new ProcessExecutor();
     }
 

@@ -10,13 +10,12 @@ use Composer\Package\PackageInterface;
  */
 class InformationOperation implements OperationInterface
 {
-    private $package;
     private $recipeRef = null;
     private $version = null;
 
-    public function __construct(PackageInterface $package)
-    {
-        $this->package = $package;
+    public function __construct(
+        private PackageInterface $package,
+    ) {
     }
 
     /**

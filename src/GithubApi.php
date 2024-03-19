@@ -16,12 +16,9 @@ use Composer\Util\RemoteFilesystem;
 
 class GithubApi
 {
-    /** @var HttpDownloader|RemoteFilesystem */
-    private $downloader;
-
-    public function __construct($downloader)
-    {
-        $this->downloader = $downloader;
+    public function __construct(
+        private HttpDownloader|RemoteFilesystem $downloader,
+    ) {
     }
 
     /**

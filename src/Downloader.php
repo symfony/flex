@@ -37,11 +37,9 @@ class Downloader
     private static $versions;
     private static $aliases;
 
-    private $io;
     private $sess;
     private $cache;
 
-    private HttpDownloader $rfs;
     private $degradedMode = false;
     private $endpoints;
     private $index;
@@ -49,10 +47,12 @@ class Downloader
     private $legacyEndpoint;
     private $caFile;
     private $enabled = true;
-    private $composer;
 
-    public function __construct(Composer $composer, IoInterface $io, HttpDownloader $rfs)
-    {
+    public function __construct(
+        private Composer $composer,
+        private IoInterface $io,
+        private HttpDownloader $rfs,
+    ) {
         if (getenv('SYMFONY_CAFILE')) {
             $this->caFile = getenv('SYMFONY_CAFILE');
         }
@@ -87,12 +87,10 @@ class Downloader
             $this->endpoints = array_fill_keys($this->endpoints, []);
         }
 
-        $this->io = $io;
         $config = $composer->getConfig();
         $this->rfs = $rfs;
         $this->cache = new Cache($io, $config->get('cache-repo-dir').'/flex');
         $this->sess = bin2hex(random_bytes(16));
-        $this->composer = $composer;
     }
 
     public function getSessionId(): string

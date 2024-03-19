@@ -16,11 +16,9 @@ namespace Symfony\Flex;
  */
 class Path
 {
-    private $workingDirectory;
-
-    public function __construct($workingDirectory)
-    {
-        $this->workingDirectory = $workingDirectory;
+    public function __construct(
+        private $workingDirectory,
+    ) {
     }
 
     public function relativize(string $absolutePath): string

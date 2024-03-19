@@ -18,19 +18,13 @@ use Composer\Package\PackageInterface;
  */
 class Recipe
 {
-    private $package;
-    private $name;
-    private $job;
-    private $data;
-    private $lock;
-
-    public function __construct(PackageInterface $package, string $name, string $job, array $data, array $lock = [])
-    {
-        $this->package = $package;
-        $this->name = $name;
-        $this->job = $job;
-        $this->data = $data;
-        $this->lock = $lock;
+    public function __construct(
+        private PackageInterface $package,
+        private string $name,
+        private string $job,
+        private array $data,
+        private array $lock = [],
+    ) {
     }
 
     public function getPackage(): PackageInterface
