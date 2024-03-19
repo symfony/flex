@@ -584,7 +584,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $this->finish($rootDir, $originalComposerJsonHash);
     }
 
-    public function finish(string $rootDir, string $originalComposerJsonHash = null): void
+    public function finish(string $rootDir, ?string $originalComposerJsonHash = null): void
     {
         $this->synchronizePackageJson($rootDir);
         $this->lock->write();
@@ -934,7 +934,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         return sprintf('<info>%s</> (<comment>>=%s</>): From %s', $matches[1], $matches[2], 'auto-generated recipe' === $matches[3] ? '<comment>'.$matches[3].'</>' : $matches[3]);
     }
 
-    private function shouldRecordOperation(OperationInterface $operation, bool $isDevMode, Composer $composer = null): bool
+    private function shouldRecordOperation(OperationInterface $operation, bool $isDevMode, ?Composer $composer = null): bool
     {
         if ($this->dryRun || $this->reinstall) {
             return false;

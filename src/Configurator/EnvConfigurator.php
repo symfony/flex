@@ -177,7 +177,7 @@ class EnvConfigurator extends AbstractConfigurator
      * If $originalValue is passed, and the value contains an expression.
      * the $originalValue is used.
      */
-    private function evaluateValue($value, string $originalValue = null)
+    private function evaluateValue($value, ?string $originalValue = null)
     {
         if ('%generate(secret)%' === $value) {
             if (null !== $originalValue) {

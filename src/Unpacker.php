@@ -42,7 +42,7 @@ class Unpacker
         $this->versionParser = new VersionParser();
     }
 
-    public function unpack(Operation $op, Result $result = null, &$links = [], bool $devRequire = false): Result
+    public function unpack(Operation $op, ?Result $result = null, &$links = [], bool $devRequire = false): Result
     {
         if (null === $result) {
             $result = new Result();

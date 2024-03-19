@@ -262,7 +262,7 @@ class UpdateRecipesCommand extends BaseCommand
         return 0;
     }
 
-    private function getRecipe(PackageInterface $package, string $recipeRef = null, string $recipeVersion = null): ?Recipe
+    private function getRecipe(PackageInterface $package, ?string $recipeRef = null, ?string $recipeVersion = null): ?Recipe
     {
         $operation = new InformationOperation($package);
         if (null !== $recipeRef) {
