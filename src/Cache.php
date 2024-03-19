@@ -30,7 +30,7 @@ class Cache extends BaseCache
     private $downloader;
     private $io;
 
-    public function setSymfonyRequire(string $symfonyRequire, RootPackageInterface $rootPackage, Downloader $downloader, IOInterface $io = null)
+    public function setSymfonyRequire(string $symfonyRequire, RootPackageInterface $rootPackage, Downloader $downloader, ?IOInterface $io = null)
     {
         $this->versionParser = new VersionParser();
         $this->symfonyRequire = $symfonyRequire;

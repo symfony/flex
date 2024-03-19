@@ -23,7 +23,7 @@ class Options
     private $writtenFiles = [];
     private $io;
 
-    public function __construct(array $options = [], IOInterface $io = null)
+    public function __construct(array $options = [], ?IOInterface $io = null)
     {
         $this->options = $options;
         $this->io = $io;

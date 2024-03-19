@@ -31,7 +31,7 @@ class ScriptExecutor
     private $options;
     private $executor;
 
-    public function __construct(Composer $composer, IOInterface $io, Options $options, ProcessExecutor $executor = null)
+    public function __construct(Composer $composer, IOInterface $io, Options $options, ?ProcessExecutor $executor = null)
     {
         $this->composer = $composer;
         $this->io = $io;

@@ -216,7 +216,7 @@ class ParallelDownloader extends RemoteFilesystem
     /**
      * {@inheritdoc}
      */
-    protected function getRemoteContents($originUrl, $fileUrl, $context, array &$responseHeaders = null, $maxFileSize = null)
+    protected function getRemoteContents($originUrl, $fileUrl, $context, ?array &$responseHeaders = null, $maxFileSize = null)
     {
         if (isset(self::$cache[$fileUrl])) {
             self::$cacheNext = false;
