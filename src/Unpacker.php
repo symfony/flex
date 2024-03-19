@@ -27,13 +27,13 @@ use Symfony\Flex\Unpack\Result;
 
 class Unpacker
 {
-    private $composer;
-    private $resolver;
-    private $dryRun;
     private $versionParser;
 
-    public function __construct(Composer $composer, PackageResolver $resolver, bool $dryRun)
-    {
+    public function __construct(
+        private Composer $composer,
+        private PackageResolver $resolver,
+        private bool $dryRun
+    ) {
         $this->composer = $composer;
         $this->resolver = $resolver;
         $this->dryRun = $dryRun;

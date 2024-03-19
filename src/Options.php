@@ -19,14 +19,12 @@ use Composer\Util\ProcessExecutor;
  */
 class Options
 {
-    private $options;
     private $writtenFiles = [];
-    private $io;
 
-    public function __construct(array $options = [], IOInterface $io = null)
-    {
-        $this->options = $options;
-        $this->io = $io;
+    public function __construct(
+        private array $options = [],
+        private ?IOInterface $io = null,
+    ) {
     }
 
     public function get(string $name)

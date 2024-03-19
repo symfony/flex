@@ -16,20 +16,17 @@ namespace Symfony\Flex;
  */
 class Response implements \JsonSerializable
 {
-    private $body;
-    private $origHeaders;
     private $headers;
-    private $code;
 
     /**
      * @param mixed $body The response as JSON
      */
-    public function __construct($body, array $headers = [], int $code = 200)
-    {
-        $this->body = $body;
-        $this->origHeaders = $headers;
-        $this->headers = $this->parseHeaders($headers);
-        $this->code = $code;
+    public function __construct(
+        private $body,
+        private array $origHeaders = [],
+        private int $code = 200,
+    ) {
+        $this->headers = $this->parseHeaders($origHeaders);
     }
 
     public function getStatusCode(): int

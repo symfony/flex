@@ -24,18 +24,14 @@ use Seld\JsonLint\ParsingException;
  */
 class PackageJsonSynchronizer
 {
-    private $rootDir;
-    private $vendorDir;
-    private $scriptExecutor;
-    private $io;
     private $versionParser;
 
-    public function __construct(string $rootDir, string $vendorDir, ScriptExecutor $scriptExecutor, IOInterface $io)
-    {
-        $this->rootDir = $rootDir;
-        $this->vendorDir = $vendorDir;
-        $this->scriptExecutor = $scriptExecutor;
-        $this->io = $io;
+    public function __construct(
+        private string $rootDir,
+        private string $vendorDir,
+        private ScriptExecutor $scriptExecutor,
+        private IOInterface $io
+    ) {
         $this->versionParser = new VersionParser();
     }
 

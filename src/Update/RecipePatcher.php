@@ -18,16 +18,14 @@ use Symfony\Component\Filesystem\Filesystem;
 
 class RecipePatcher
 {
-    private $rootDir;
     private $filesystem;
-    private $io;
     private $processExecutor;
 
-    public function __construct(string $rootDir, IOInterface $io)
-    {
-        $this->rootDir = $rootDir;
+    public function __construct(
+        private string $rootDir,
+        private IOInterface $io,
+    ) {
         $this->filesystem = new Filesystem();
-        $this->io = $io;
         $this->processExecutor = new ProcessExecutor($io);
     }
 

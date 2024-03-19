@@ -26,13 +26,15 @@ class PackageFilter
 {
     private $versions;
     private $versionParser;
-    private $symfonyRequire;
     private $symfonyConstraints;
     private $downloader;
     private $io;
 
-    public function __construct(IOInterface $io, string $symfonyRequire, Downloader $downloader)
-    {
+    public function __construct(
+        IOInterface $io,
+        private string $symfonyRequire,
+        Downloader $downloader,
+    ) {
         $this->versionParser = new VersionParser();
         $this->symfonyRequire = $symfonyRequire;
         $this->symfonyConstraints = $this->versionParser->parseConstraints($symfonyRequire);

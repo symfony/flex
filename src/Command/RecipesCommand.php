@@ -29,16 +29,16 @@ use Symfony\Flex\Recipe;
  */
 class RecipesCommand extends BaseCommand
 {
-    /** @var \Symfony\Flex\Flex */
-    private $flex;
-
-    private Lock $symfonyLock;
     private GithubApi $githubApi;
 
-    public function __construct(/* cannot be type-hinted */ $flex, Lock $symfonyLock, HttpDownloader $downloader)
-    {
-        $this->flex = $flex;
-        $this->symfonyLock = $symfonyLock;
+    /**
+     * @param \Symfony\Flex\Flex $flex
+     */
+    public function __construct(
+        /* cannot be type-hinted */ private $flex,
+        private Lock $symfonyLock,
+        HttpDownloader $downloader
+    ) {
         $this->githubApi = new GithubApi($downloader);
 
         parent::__construct();

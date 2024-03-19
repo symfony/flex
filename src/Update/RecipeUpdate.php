@@ -16,23 +16,18 @@ use Symfony\Flex\Recipe;
 
 class RecipeUpdate
 {
-    private $originalRecipe;
-    private $newRecipe;
-    private $lock;
-    private $rootDir;
-
     /** @var string[] */
     private $originalRecipeFiles = [];
     /** @var string[] */
     private $newRecipeFiles = [];
     private $copyFromPackagePaths = [];
 
-    public function __construct(Recipe $originalRecipe, Recipe $newRecipe, Lock $lock, string $rootDir)
-    {
-        $this->originalRecipe = $originalRecipe;
-        $this->newRecipe = $newRecipe;
-        $this->lock = $lock;
-        $this->rootDir = $rootDir;
+    public function __construct(
+        private Recipe $originalRecipe,
+        private Recipe $newRecipe,
+        private Lock $lock,
+        private string $rootDir,
+    ) {
     }
 
     public function getOriginalRecipe(): Recipe

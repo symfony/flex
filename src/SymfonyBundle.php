@@ -19,12 +19,13 @@ use Composer\Package\PackageInterface;
  */
 class SymfonyBundle
 {
-    private $package;
-    private $operation;
     private $vendorDir;
 
-    public function __construct(Composer $composer, PackageInterface $package, string $operation)
-    {
+    public function __construct(
+        Composer $composer,
+        private PackageInterface $package,
+        private string $operation,
+    ) {
         $this->package = $package;
         $this->operation = $operation;
         $this->vendorDir = rtrim($composer->getConfig()->get('vendor-dir'), '/');
