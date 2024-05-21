@@ -323,11 +323,16 @@ class PackageJsonSynchronizerTest extends TestCase
         file_put_contents($this->tempDir.'/importmap.php', '<?php return [];');
 
         $fileModulePath = $this->tempDir.'/vendor/symfony/new-package/assets/dist/loader.js';
-        $this->scriptExecutor->expects($this->exactly(2))
+        $entrypointPath = $this->tempDir.'/vendor/symfony/new-package/assets/entry.js';
+        $secondEntrypointPath = $this->tempDir.'/vendor/symfony/new-package/assets/entry2.js';
+
+        $this->scriptExecutor->expects($this->exactly(4))
             ->method('execute')
             ->withConsecutive(
                 ['symfony-cmd', 'importmap:require', ['@hotcake/foo@^1.9.0']],
-                ['symfony-cmd', 'importmap:require', ['@symfony/new-package', '--path='.$fileModulePath]]
+                ['symfony-cmd', 'importmap:require', ['@symfony/new-package', '--path='.$fileModulePath]],
+                ['symfony-cmd', 'importmap:require', ['@symfony/new-package/entry.js', '--path='.$entrypointPath, '--entrypoint']],
+                ['symfony-cmd', 'importmap:require', ['@symfony/new-package/entry2.js', '--path='.$secondEntrypointPath, '--entrypoint']],
             );
 
         $this->synchronizer->synchronize([
@@ -396,14 +401,19 @@ class PackageJsonSynchronizerTest extends TestCase
                 'version' => '1.8.0',
             ],
         ];
-        file_put_contents($this->tempDir.'/importmap.php', sprintf('<?php return %s;', var_export($importMap, true)));
+        file_put_contents($this->tempDir.'/importmap.php', \sprintf('<?php return %s;', var_export($importMap, true)));
 
         $fileModulePath = $this->tempDir.'/vendor/symfony/new-package/assets/dist/loader.js';
-        $this->scriptExecutor->expects($this->exactly(2))
+        $entrypointPath = $this->tempDir.'/vendor/symfony/new-package/assets/entry.js';
+        $secondEntrypointPath = $this->tempDir.'/vendor/symfony/new-package/assets/entry2.js';
+
+        $this->scriptExecutor->expects($this->exactly(4))
             ->method('execute')
             ->withConsecutive(
                 ['symfony-cmd', 'importmap:require', ['@hotcake/foo@^1.9.0']],
-                ['symfony-cmd', 'importmap:require', ['@symfony/new-package', '--path='.$fileModulePath]]
+                ['symfony-cmd', 'importmap:require', ['@symfony/new-package', '--path='.$fileModulePath]],
+                ['symfony-cmd', 'importmap:require', ['@symfony/new-package/entry.js', '--path='.$entrypointPath, '--entrypoint']],
+                ['symfony-cmd', 'importmap:require', ['@symfony/new-package/entry2.js', '--path='.$secondEntrypointPath, '--entrypoint']]
             );
 
         $this->synchronizer->synchronize([
@@ -421,19 +431,41 @@ class PackageJsonSynchronizerTest extends TestCase
                 // constraint in package.json is ^1.9.0
                 'version' => '1.9.1',
             ],
+            '@symfony/new-package/entry2.js' => [
+                'path' => './vendor/symfony/new-package/assets/entry2.js',
+                'entrypoint' => true,
+            ],
         ];
-        file_put_contents($this->tempDir.'/importmap.php', sprintf('<?php return %s;', var_export($importMap, true)));
+        file_put_contents($this->tempDir.'/importmap.php', \sprintf('<?php return %s;', var_export($importMap, true)));
 
         $fileModulePath = $this->tempDir.'/vendor/symfony/new-package/assets/dist/loader.js';
-        $this->scriptExecutor->expects($this->once())
+        $entrypointPath = $this->tempDir.'/vendor/symfony/new-package/assets/entry.js';
+
+        $this->scriptExecutor->expects($this->exactly(2))
             ->method('execute')
             ->withConsecutive(
-                ['symfony-cmd', 'importmap:require', ['@symfony/new-package', '--path='.$fileModulePath]]
+                ['symfony-cmd', 'importmap:require', ['@symfony/new-package', '--path='.$fileModulePath]],
+                ['symfony-cmd', 'importmap:require', ['@symfony/new-package/entry.js', '--path='.$entrypointPath, '--entrypoint']],
             );
 
         $this->synchronizer->synchronize([
             [
                 'name' => 'symfony/new-package',
+                'keywords' => ['symfony-ux'],
+            ],
+        ]);
+    }
+
+    public function testExceptionWhenInvalidImportMapConstraint()
+    {
+        file_put_contents($this->tempDir.'/importmap.php', '<?php return [];');
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid constraint config for key "@symfony/test": "true" given, array or string expected.');
+
+        $this->synchronizer->synchronize([
+            [
+                'name' => 'symfony/importmap-invalid-constraint-package',
                 'keywords' => ['symfony-ux'],
             ],
         ]);
