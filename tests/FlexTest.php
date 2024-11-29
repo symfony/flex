@@ -310,6 +310,47 @@ EOF
         $this->assertSame('2.3', $recipes['doctrine/doctrine-bundle']->getVersion());
     }
 
+    public function testInstallWithPackageJsonToSynchronizeSkipped()
+    {
+        $io = new BufferIO('', OutputInterface::VERBOSITY_VERBOSE);
+        $rootPackage = $this->mockRootPackage([
+            'symfony/flex' => ['synchronize_package_json' => false],
+        ]);
+
+        $flex = $this->mockFlex($io, $rootPackage);
+        $flex->install($this->mockFlexEvent());
+
+        $this->assertStringContainsString(
+            'Skip synchronizing package.json with PHP packages',
+            $io->getOutput(),
+        );
+    }
+
+    /**
+     * @dataProvider getDataForTestInstallWithoutPackageJsonToSynchronizeSkipped
+     */
+    public function testInstallWithoutPackageJsonToSynchronizeSkipped(array $extra)
+    {
+        $io = new BufferIO('', OutputInterface::VERBOSITY_VERBOSE);
+        $rootPackage = $this->mockRootPackage($extra);
+
+        $flex = $this->mockFlex($io, $rootPackage);
+        $flex->install($this->mockFlexEvent());
+
+        $this->assertStringNotContainsString(
+            'Skip synchronizing package.json with PHP packages',
+            $io->getOutput(),
+        );
+    }
+
+    public function getDataForTestInstallWithoutPackageJsonToSynchronizeSkipped(): array
+    {
+        return [
+            'default_behavior' => [[]],
+            'with_config_explicitly_set' => [['symfony/flex' => ['synchronize_package_json' => true]]],
+        ];
+    }
+
     public static function getTestPackages(): array
     {
         return [
