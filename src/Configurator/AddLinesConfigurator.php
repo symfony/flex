@@ -164,9 +164,13 @@ class AddLinesConfigurator extends AbstractConfigurator
         }
     }
 
-    private function getPatchedContents(string $file, string $value, string $position, ?string $target, bool $warnIfMissing): string
+    private function getPatchedContents(string $file, string|array $value, string $position, ?string $target, bool $warnIfMissing): string
     {
         $fileContents = $this->readFile($file);
+
+        if (\is_array($value)) {
+            $value = implode(\PHP_EOL, $value);
+        }
 
         if (false !== strpos($fileContents, $value)) {
             return $fileContents; // already includes value, skip

@@ -566,6 +566,70 @@ console.log(Turbo);
 EOF
             ],
         ];
+
+        yield 'recipe_changes_with_multiline_string' => [
+            ['assets/app.js' => $appJsOriginal],
+            [
+                ['file' => 'assets/app.js', 'position' => 'top', 'content' => "import './bootstrap';"],
+            ],
+            [
+                ['file' => 'assets/app.js', 'position' => 'top', 'content' => "import './stimulus_bootstrap';\nimport { useIntersection } from 'stimulus-use';"],
+            ],
+            ['assets/app.js' => <<<EOF
+import './stimulus_bootstrap';
+import { useIntersection } from 'stimulus-use';
+import * as Turbo from '@hotwired/turbo';
+
+console.log(Turbo);
+EOF
+            ],
+        ];
+
+        yield 'recipe_changes_with_multiline_array' => [
+            ['assets/app.js' => $appJsOriginal],
+            [
+                ['file' => 'assets/app.js', 'position' => 'top', 'content' => "import './bootstrap';"],
+            ],
+            [
+                ['file' => 'assets/app.js', 'position' => 'top', 'content' => [
+                    "import './stimulus_bootstrap';",
+                    "import { useIntersection } from 'stimulus-use';",
+                ]],
+            ],
+            ['assets/app.js' => <<<EOF
+import './stimulus_bootstrap';
+import { useIntersection } from 'stimulus-use';
+import * as Turbo from '@hotwired/turbo';
+
+console.log(Turbo);
+EOF
+            ],
+        ];
+
+        yield 'recipe_changes_with_complex_multiline_array' => [
+            ['assets/app.js' => $appJsOriginal],
+            [
+                ['file' => 'assets/app.js', 'position' => 'top', 'content' => "import './bootstrap';"],
+            ],
+            [
+                ['file' => 'assets/app.js', 'position' => 'top', 'content' => [
+                    "import './stimulus_bootstrap';",
+                    "import { useIntersection } from 'stimulus-use';",
+                    '',
+                    "  console.log(years['2025'] !== years['0225']);",
+                ]],
+            ],
+            ['assets/app.js' => <<<EOF
+import './stimulus_bootstrap';
+import { useIntersection } from 'stimulus-use';
+
+  console.log(years['2025'] !== years['0225']);
+import * as Turbo from '@hotwired/turbo';
+
+console.log(Turbo);
+EOF
+            ],
+        ];
     }
 
     private function runConfigure(array $config, ?Composer $composer = null)
