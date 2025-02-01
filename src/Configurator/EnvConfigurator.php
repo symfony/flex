@@ -197,9 +197,24 @@ class EnvConfigurator extends AbstractConfigurator
         return $value;
     }
 
-    private function generateRandomBytes($length = 16)
+    private function generateRandomBytes($length = 16): string
     {
-        return bin2hex(random_bytes($length));
+        $base58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+        $length *= 2;
+
+        if (\PHP_VERSION_ID >= 80300) {
+            $randomizer = new \Random\Randomizer();
+
+            return $randomizer->getBytesFromString($base58, $length);
+        }
+
+        $max = \strlen($base58) - 1;
+        $str = '';
+        for ($i = 0; $i < $length; ++$i) {
+            $str .= $base58[random_int(0, $max)];
+        }
+
+        return $str;
     }
 
     private function getContentsAfterApplyingRecipe(string $rootDir, Recipe $recipe, array $vars): array
