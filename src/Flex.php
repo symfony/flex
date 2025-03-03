@@ -502,6 +502,12 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
     private function synchronizePackageJson(string $rootDir)
     {
+        if (!$this->downloader->isEnabled()) {
+            $this->io->writeError('<warning>Synchronizing package.json is disabled: "symfony/flex" not found in the root composer.json</>');
+
+            return;
+        }
+
         $rootDir = realpath($rootDir);
         $vendorDir = trim((new Filesystem())->makePathRelative($this->config->get('vendor-dir'), $rootDir), '/');
 
