@@ -1,0 +1,7 @@
+---------------------------------------------------------------------------
+
+by wuchen90 at 2024-12-11T08:11:23Z
+
+> Perhaps it would be better if it logs what exactly has been skipped?
+
+@skmedix Currently it already outputs this `<info>Skip synchronizing package.json with PHP packages</>`. What kind of logs do you have in mind?
