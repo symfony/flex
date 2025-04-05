@@ -42,6 +42,7 @@ class DumpEnvCommand extends BaseCommand
                 new InputArgument('env', InputArgument::OPTIONAL, 'The application environment to dump .env files for - e.g. "prod".'),
             ])
             ->addOption('empty', null, InputOption::VALUE_NONE, 'Ignore the content of .env files')
+            ->addOption('override', null, InputOption::VALUE_NONE, 'Whether existing environment variables set by the system should be overridden')
         ;
     }
 
@@ -57,7 +58,7 @@ class DumpEnvCommand extends BaseCommand
         $path = $this->options->get('root-dir').'/'.($runtime['dotenv_path'] ?? '.env');
 
         if (!$env || !$input->getOption('empty')) {
-            $vars = $this->loadEnv($path, $env, $runtime);
+            $vars = $this->loadEnv($path, $env, $runtime, $input->getOption('override'));
             $env = $vars[$envKey];
         }
 
@@ -81,7 +82,7 @@ EOF;
         return 0;
     }
 
-    private function loadEnv(string $path, ?string $env, array $runtime): array
+    private function loadEnv(string $path, ?string $env, array $runtime, bool $override): array
     {
         if (!file_exists($autoloadFile = $this->config->get('vendor-dir').'/autoload.php')) {
             throw new \RuntimeException(\sprintf('Please run "composer install" before running this command: "%s" not found.', $autoloadFile));
@@ -118,7 +119,7 @@ EOF;
             $testEnvs = $runtime['test_envs'] ?? ['test'];
 
             if (method_exists($dotenv, 'loadEnv')) {
-                $dotenv->loadEnv($path, $envKey, 'dev', $testEnvs);
+                $dotenv->loadEnv($path, $envKey, 'dev', $testEnvs, $override);
             } else {
                 // fallback code in case your Dotenv component is not 4.2 or higher (when loadEnv() was added)
                 $dotenv->load(file_exists($path) || !file_exists($p = "$path.dist") ? $path : $p);
