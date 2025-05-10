@@ -872,7 +872,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             return false;
         }
 
-        $lockedRepository = $this->composer->getLocker()->getLockedRepository();
+        $lockedRepository = $this->composer->getLocker()->getLockedRepository(true);
 
         foreach ($recipeData['manifest']['conflict'] as $conflictingPackage => $constraint) {
             if ($lockedRepository->findPackage($conflictingPackage, $constraint)) {
