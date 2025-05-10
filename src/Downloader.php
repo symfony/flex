@@ -134,7 +134,7 @@ class Downloader
         $this->initialize();
 
         if ($this->conflicts) {
-            $lockedRepository = $this->composer->getLocker()->getLockedRepository();
+            $lockedRepository = $this->composer->getLocker()->getLockedRepository(true);
             foreach ($this->conflicts as $conflicts) {
                 foreach ($conflicts as $package => $versions) {
                     foreach ($versions as $version => $conflicts) {
