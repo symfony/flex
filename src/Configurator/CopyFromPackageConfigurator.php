@@ -72,7 +72,7 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
         foreach ($manifest as $source => $target) {
             $target = $this->options->expandTargetDir($target);
             if ('/' === substr($source, -1)) {
-                $files = array_merge($files, $this->getFilesForDir($this->path->concatenate([$from, $source]), $this->path->concatenate([$target])));
+                $files = array_merge($files, $this->getFilesForDir($this->path->concatenate([$from, $source]), $target));
 
                 continue;
             }
@@ -118,7 +118,7 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
      */
     public function copyFile(string $source, string $target, array $options)
     {
-        $target = $this->options->get('root-dir').'/'.$target;
+        $target = $this->options->get('root-dir').'/'.$this->options->expandTargetDir($target);
         if (is_dir($source)) {
             // directory will be created when a file is copied to it
             return;

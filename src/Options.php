@@ -36,7 +36,7 @@ class Options
 
     public function expandTargetDir(string $target): string
     {
-        return preg_replace_callback('{%(.+?)%}', function ($matches) {
+        $result = preg_replace_callback('{%(.+?)%}', function ($matches) {
             $option = str_replace('_', '-', strtolower($matches[1]));
             if (!isset($this->options[$option])) {
                 return $matches[0];
@@ -44,6 +44,22 @@ class Options
 
             return rtrim($this->options[$option], '/');
         }, $target);
+
+        $phpunitDistFiles = [
+            'phpunit.xml.dist' => true,
+            'phpunit.dist.xml' => true,
+        ];
+
+        $rootDir = $this->get('root-dir');
+
+        if (null === $rootDir || !isset($phpunitDistFiles[$result]) || !is_dir($rootDir) || file_exists($rootDir.'/'.$result)) {
+            return $result;
+        }
+
+        unset($phpunitDistFiles[$result]);
+        $otherPhpunitDistFile = key($phpunitDistFiles);
+
+        return file_exists($rootDir.'/'.$otherPhpunitDistFile) ? $otherPhpunitDistFile : $result;
     }
 
     public function shouldWriteFile(string $file, bool $overwrite): bool
