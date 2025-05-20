@@ -46,6 +46,7 @@ class InstallRecipesCommand extends BaseCommand
             ->addArgument('packages', InputArgument::IS_ARRAY | InputArgument::OPTIONAL, 'Recipes that should be installed.')
             ->addOption('force', null, InputOption::VALUE_NONE, 'Overwrite existing files when a new version of a recipe is available')
             ->addOption('reset', null, InputOption::VALUE_NONE, 'Reset all recipes back to their initial state (should be combined with --force)')
+            ->addOption('yes', null, InputOption::VALUE_NONE, "Answer prompt questions with 'yes' for all questions.")
         ;
     }
 
@@ -135,7 +136,7 @@ class InstallRecipesCommand extends BaseCommand
             }
         }
 
-        $this->flex->update(new UpdateEvent($force, (bool) $input->getOption('reset')), $operations);
+        $this->flex->update(new UpdateEvent($force, (bool) $input->getOption('reset'), (bool) $input->getOption('yes')), $operations);
 
         if ($force) {
             $output = [

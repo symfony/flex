@@ -124,8 +124,7 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
             return;
         }
 
-        $overwrite = $options['force'] ?? false;
-        if (!$this->options->shouldWriteFile($target, $overwrite)) {
+        if (!$this->options->shouldWriteFile($target, $options['force'] ?? false, $options['assumeYesForPrompts'] ?? false)) {
             return;
         }
 
