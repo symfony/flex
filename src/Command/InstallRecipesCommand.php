@@ -130,7 +130,7 @@ class InstallRecipesCommand extends BaseCommand
             rename($dotenvPath, $dotenvPath.'.local');
             $pipes = [];
             proc_close(proc_open(\sprintf('git mv %s %s > %s 2>&1 || %s %1$s %2$s', ProcessExecutor::escape($dotenvFile.'.dist'), ProcessExecutor::escape($dotenvFile), $win ? 'NUL' : '/dev/null', $win ? 'rename' : 'mv'), $pipes, $pipes, $this->rootDir));
-            if (file_exists($this->rootDir.'/phpunit.xml.dist')) {
+            if (file_exists($this->rootDir.'/phpunit.xml.dist') || file_exists($this->rootDir.'/phpunit.dist.xml')) {
                 touch($dotenvPath.'.test');
             }
         }

@@ -108,7 +108,7 @@ class EnvConfigurator extends AbstractConfigurator
 
     private function configurePhpUnit(Recipe $recipe, $vars, bool $update)
     {
-        foreach (['phpunit.xml.dist', 'phpunit.xml'] as $file) {
+        foreach (['phpunit.xml.dist', 'phpunit.dist.xml', 'phpunit.xml'] as $file) {
             $phpunit = $this->options->get('root-dir').'/'.$file;
             if (!is_file($phpunit)) {
                 continue;
@@ -173,7 +173,7 @@ class EnvConfigurator extends AbstractConfigurator
 
     private function unconfigurePhpUnit(Recipe $recipe, $vars)
     {
-        foreach (['phpunit.xml.dist', 'phpunit.xml'] as $file) {
+        foreach (['phpunit.dist.xml', 'phpunit.xml.dist', 'phpunit.xml'] as $file) {
             $phpunit = $this->options->get('root-dir').'/'.$file;
             if (!is_file($phpunit)) {
                 continue;
@@ -223,7 +223,7 @@ class EnvConfigurator extends AbstractConfigurator
     private function getContentsAfterApplyingRecipe(string $rootDir, Recipe $recipe, array $vars): array
     {
         $dotenvPath = $this->options->get('runtime')['dotenv_path'] ?? '.env';
-        $files = '' === $this->suffix ? [$dotenvPath, $dotenvPath.'.dist', 'phpunit.xml.dist', 'phpunit.xml'] : [$dotenvPath.'.'.$this->suffix];
+        $files = '' === $this->suffix ? [$dotenvPath, $dotenvPath.'.dist', 'phpunit.dist.xml', 'phpunit.xml.dist', 'phpunit.xml'] : [$dotenvPath.'.'.$this->suffix];
 
         if (0 === \count($vars)) {
             return array_fill_keys($files, null);
