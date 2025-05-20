@@ -1,0 +1,25 @@
+---------------------------------------------------------------------------
+
+by stof at 2025-04-08T12:53:05Z
+
+This should add tests covering this behavior (in CopyFromRecipeConfiguratorTest) to prevent regressions.
+
+---------------------------------------------------------------------------
+
+by shyim at 2025-04-10T08:32:18Z
+
+the 7.4 fails because of packagist woofoo with composer 1
+
+---------------------------------------------------------------------------
+
+by Ocarthon at 2025-05-07T07:42:31Z
+
+@stof Does this feature have the potential to be merged and released? I just encountered the same bug with our internal recipes.
+
+If yes, i would also create a PR for flex 2.x (if @shyim agrees)
+
+---------------------------------------------------------------------------
+
+by shyim at 2025-05-07T07:51:51Z
+
+It will be backported when merged I think automatically
