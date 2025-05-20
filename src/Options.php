@@ -62,7 +62,7 @@ class Options
         return file_exists($rootDir.'/'.$otherPhpunitDistFile) ? $otherPhpunitDistFile : $result;
     }
 
-    public function shouldWriteFile(string $file, bool $overwrite): bool
+    public function shouldWriteFile(string $file, bool $overwrite, bool $skipQuestion): bool
     {
         if (isset($this->writtenFiles[$file])) {
             return false;
@@ -78,6 +78,10 @@ class Options
         }
 
         if (!filesize($file)) {
+            return true;
+        }
+
+        if ($skipQuestion) {
             return true;
         }
 

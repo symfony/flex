@@ -127,11 +127,10 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
 
     private function copyFile(string $to, string $contents, bool $executable, array $options): string
     {
-        $overwrite = $options['force'] ?? false;
         $basePath = $options['root-dir'] ?? '.';
         $copiedFile = $this->getLocalFilePath($basePath, $to);
 
-        if (!$this->options->shouldWriteFile($to, $overwrite)) {
+        if (!$this->options->shouldWriteFile($to, $options['force'] ?? false, $options['assumeYesForPrompts'] ?? false)) {
             return $copiedFile;
         }
 

@@ -447,6 +447,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
                     $this->io->writeError(\sprintf('  - Configuring %s', $this->formatOrigin($recipe)));
                     $this->configurator->install($recipe, $this->lock, [
                         'force' => $event instanceof UpdateEvent && $event->force(),
+                        'assumeYesForPrompts' => $event instanceof UpdateEvent && $event->assumeYesForPrompts(),
                     ]);
                     $manifest = $recipe->getManifest();
                     if (isset($manifest['post-install-output'])) {
@@ -471,6 +472,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             foreach ($postInstallRecipes as $recipe) {
                 $this->configurator->postInstall($recipe, $this->lock, [
                     'force' => $event instanceof UpdateEvent && $event->force(),
+                    'assumeYesForPrompts' => $event instanceof UpdateEvent && $event->assumeYesForPrompts(),
                 ]);
             }
         }
