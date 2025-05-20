@@ -1,0 +1,48 @@
+---------------------------------------------------------------------------
+
+by stof at 2025-04-08T12:51:10Z
+
+Note that this default should impact only files for which git cannot give us the modified state or untracked files. Existing files created by recipes are supposed to be tracked files. What is your workflow in which no files are being overwritten ?
+
+---------------------------------------------------------------------------
+
+by shyim at 2025-04-10T07:05:09Z
+
+We have many customers that don't use Git (yes it's bad). Therefore they can't use the recipes:update command, so we tell them to use `recpies:install --reset --force -n` and diff them on their own (or create only new yaml files, don't touch existing ones).
+
+As no file is tracked, flex asks for like 30 files this question, and for non interactive sessions, it did no changes as the default was false
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2025-05-20T12:38:59Z
+
+Did you try using the `yes` command instead?
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2025-05-20T12:42:54Z
+
+I'd rather handle this with a new command line argument instead, so that the default is safe. eg `-y` to swap the defaults.
+
+Please rebase to target 2.x also (and revert the unrelated changes while doing so)
+
+---------------------------------------------------------------------------
+
+by shyim at 2025-05-20T13:02:16Z
+
+I will add an flag `-y`, is fine for me :)
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2025-05-20T14:10:37Z
+
+>1) Symfony\Flex\Tests\OptionsTest::testShouldWrite
+>Failed asserting that true is false.
+
+test case failing though
+
+---------------------------------------------------------------------------
+
+by shyim at 2025-05-20T15:06:49Z
+
+is now finally green :)
