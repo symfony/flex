@@ -98,7 +98,7 @@ class RecipePatcher
             if (\count($originalFiles) > 0) {
                 $this->writeFiles($originalFiles, $tmpPath);
                 $this->execute('git add -A', $tmpPath);
-                $this->execute('git commit -m "original files"', $tmpPath);
+                $this->execute('git commit -n -m "original files"', $tmpPath);
 
                 $blobs = $this->generateBlobs($originalFiles, $tmpPath);
             }
