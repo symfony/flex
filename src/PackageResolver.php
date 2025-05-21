@@ -68,11 +68,11 @@ class PackageResolver
             try {
                 $config = @json_decode(file_get_contents(Factory::getComposerFile()), true);
             } finally {
-                if (!$isRequire || !(isset($config['extra']['symfony']['require']) || isset($config['require']['symfony/framework-bundle']))) {
+                if (!$isRequire || !isset($config['extra']['symfony']['require'])) {
                     return '';
                 }
             }
-            $version = $config['extra']['symfony']['require'] ?? $config['require']['symfony/framework-bundle'];
+            $version = $config['extra']['symfony']['require'];
         } elseif ('dev' === $version) {
             $version = '^'.$versions['dev-name'].'@dev';
         } elseif ('next' === $version) {
