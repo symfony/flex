@@ -32,7 +32,7 @@ class PackageFilterTest extends TestCase
     public function testRemoveLegacyPackages(array $expected, array $packages, string $symfonyRequire, array $versions, array $lockedPackages = [])
     {
         $downloader = $this->getMockBuilder('Symfony\Flex\Downloader')->disableOriginalConstructor()->getMock();
-        $downloader->expects($this->once())
+        $downloader->expects($this->any())
             ->method('getVersions')
             ->willReturn($versions);
         $filter = new PackageFilter(new NullIO(), $symfonyRequire, $downloader);

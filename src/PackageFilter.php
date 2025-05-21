@@ -65,7 +65,7 @@ class PackageFilter
             $rootConstraints[$name] = $link->getConstraint();
         }
 
-        $knownVersions = $this->getVersions();
+        $knownVersions = null;
         $filteredPackages = [];
         $symfonyPackages = [];
         $oneSymfony = false;
@@ -77,8 +77,8 @@ class PackageFilter
             }
 
             if ('symfony/symfony' !== $name && (
-                !isset($knownVersions['splits'][$name])
-                || array_intersect($versions, $lockedVersions[$name] ?? [])
+                array_intersect($versions, $lockedVersions[$name] ?? [])
+                || (($knownVersions ??= $this->getVersions()) && !isset($knownVersions['splits'][$name]))
                 || (isset($rootConstraints[$name]) && !Intervals::haveIntersections($this->symfonyConstraints, $rootConstraints[$name]))
                 || ('symfony/psr-http-message-bridge' === $name && 6.4 > $versions[0])
             )) {
