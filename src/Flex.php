@@ -77,14 +77,12 @@ class Flex implements PluginInterface, EventSubscriberInterface
     private $operations = [];
     private $lock;
     private $displayThanksReminder = 0;
-    private $dryRun = false;
     private $reinstall;
     private static $activated = true;
     private static $aliasResolveCommands = [
         'require' => true,
         'update' => false,
         'remove' => false,
-        'unpack' => true,
     ];
     private $filter;
 
@@ -108,6 +106,8 @@ class Flex implements PluginInterface, EventSubscriberInterface
             }
         }
 
+        $composer->getInstallationManager()->addInstaller(new SymfonyPackInstaller($io));
+
         $this->composer = $composer;
         $this->io = $io;
         $this->config = $composer->getConfig();
@@ -122,7 +122,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
         $symfonyRequire = preg_replace('/\.x$/', '.x-dev', getenv('SYMFONY_REQUIRE') ?: ($composer->getPackage()->getExtra()['symfony']['require'] ?? ''));
 
-        $rfs = Factory::createHttpDownloader($this->io, $this->config);
+        $rfs = $composer->getLoop()->getHttpDownloader();
 
         $this->downloader = $downloader = new Downloader($composer, $io, $rfs);
 
@@ -221,14 +221,6 @@ class Flex implements PluginInterface, EventSubscriberInterface
         foreach ($backtrace as $trace) {
             if (isset($trace['object']) && $trace['object'] instanceof Installer) {
                 $this->installer = $trace['object']->setSuggestedPackagesReporter(new SuggestedPackagesReporter(new NullIO()));
-
-                $updateAllowList = \Closure::bind(function () {
-                    return $this->updateAllowList;
-                }, $this->installer, $this->installer)();
-
-                if (['php' => 0] === $updateAllowList) {
-                    $this->dryRun = true; // prevent recipes from being uninstalled when removing a pack
-                }
             }
 
             if (isset($trace['object']) && $trace['object'] instanceof GlobalCommand) {
@@ -254,7 +246,6 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $file = Factory::getComposerFile();
         $contents = file_get_contents($file);
         $manipulator = new JsonManipulator($contents);
-        $json = JsonFile::parseJson($contents);
 
         // new projects are most of the time proprietary
         $manipulator->addMainKey('license', 'proprietary');
@@ -351,7 +342,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
         file_put_contents($file, $manipulator->getContents());
 
-        $this->reinstall($event, true);
+        $this->reinstall($event);
     }
 
     public function install(Event $event)
@@ -738,7 +729,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
     private function shouldRecordOperation(OperationInterface $operation, bool $isDevMode, ?Composer $composer = null): bool
     {
-        if ($this->dryRun || $this->reinstall) {
+        if ($this->reinstall) {
             return false;
         }
 
@@ -794,24 +785,21 @@ class Flex implements PluginInterface, EventSubscriberInterface
             }
         }
 
-        $unpacker = new Unpacker($this->composer, new PackageResolver($this->downloader), $this->dryRun);
+        $unpacker = new Unpacker($this->composer, new PackageResolver($this->downloader));
         $result = $unpacker->unpack($unpackOp);
 
         if (!$result->getUnpacked()) {
             return;
         }
 
-        $this->io->writeError('<info>Unpacking Symfony packs</>');
         foreach ($result->getUnpacked() as $pkg) {
             $this->io->writeError(\sprintf('  - Unpacked <info>%s</>', $pkg->getName()));
         }
 
         $unpacker->updateLock($result, $this->io);
-
-        $this->reinstall($event, false);
     }
 
-    private function reinstall(Event $event, bool $update)
+    private function reinstall(Event $event)
     {
         $this->reinstall = false;
         $event->stopPropagation();
@@ -819,6 +807,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $ed = $this->composer->getEventDispatcher();
         $disableScripts = !method_exists($ed, 'setRunScripts') || !((array) $ed)["\0*\0runScripts"];
         $composer = Factory::create($this->io, null, false, $disableScripts);
+        $composer->getInstallationManager()->addInstaller(new SymfonyPackInstaller($this->io));
 
         $installer = clone $this->installer;
         $installer->__construct(
@@ -834,10 +823,6 @@ class Flex implements PluginInterface, EventSubscriberInterface
         );
         if (method_exists($installer, 'setPlatformRequirementFilter')) {
             $installer->setPlatformRequirementFilter(((array) $this->installer)["\0*\0platformRequirementFilter"]);
-        }
-
-        if (!$update) {
-            $installer->setUpdateAllowList(['php']);
         }
 
         $installer->run();
