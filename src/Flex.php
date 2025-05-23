@@ -785,7 +785,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             }
         }
 
-        $unpacker = new Unpacker($this->composer, new PackageResolver($this->downloader));
+        $unpacker = new Unpacker($this->composer, new PackageResolver($this->downloader), false); // 3rd arg to ease upgrading from flex <= 2.6.0
         $result = $unpacker->unpack($unpackOp);
 
         if (!$result->getUnpacked()) {
