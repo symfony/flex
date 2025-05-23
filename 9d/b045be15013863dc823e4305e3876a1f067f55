@@ -1,0 +1,371 @@
+---------------------------------------------------------------------------
+
+by Jibbarth at 2024-12-12T10:14:40Z
+
+relate to https://github.com/symfony/symfony/issues/53912
+
+---------------------------------------------------------------------------
+
+by smnandre at 2024-12-14T21:40:37Z
+
+Do we allow bundle to change the public/index.php file? Or to create new webpack configs ?
+
+I really find weird  that a bundle could install things like this. And a bit dangerous.
+
+And still wait for a use case that require to create a entrypoint .... maybe you could describe yours for the package in question ? That really could help me understand the need.
+
+---------------------------------------------------------------------------
+
+by lanfisis at 2025-01-25T08:57:27Z
+
+> Do we allow bundle to change the public/index.php file? Or to create new webpack configs ?
+>
+> I really find weird that a bundle could install things like this. And a bit dangerous.
+>
+> And still wait for a use case that require to create a entrypoint .... maybe you could describe yours for the package in question ? That really could help me understand the need.
+
+[TL;DR] This feature is cool, we need it in flex. As it or in other way, but it would be useful to describe a bundle js dependency as an entry point.
+
+Hello @smnandre,
+
+I was concern by the topic "Asset Mapper with Bundle" because I work on Sylius applications, and we use themes (drove by the [Sylius Theme Bundle](https://github.com/Sylius/SyliusThemeBundle)).
+
+The idea behind was to distribute Sylius Theme as Symfony Bundle / Sylius Plugin (that's the same thing) to offer the ability for a developer to make a `composer require my-vendor/my-beautiful-theme`, go to the Sylius admin panel, select the new "My Beautiful Theme" theme, save, on go to the front to see the magic happen.
+
+A Sylius theme package / bundle / plugin it's almost templates (twig files), CSS and JS. Since we have introduced Asset Mapper in our Sylius project, I encountered all the problems describe in this [looong topic](https://github.com/symfony/symfony/issues/53912). Basically: how to smoothly install a bundle with JS and CSS dependencies in a Symfony project where assets are Asset Mapper drove.
+
+I'm not going to rehash the game and I understand both side arguments. I resolve a lot of my problems using the same methods as Symfony UX packages: add `symfony-ux'` in the `keywords` part of the `composer.json` of my theme Bundle that allow **flex** to install in the `importmap.php` dependencies declared in the `assets/packages.json` like this:
+
+```json
+{
+  "name": "my-vendor/my-beautiful-theme",
+  "description": "Beautiful Theme for Sylius",
+  "license": "MIT",
+  "version": "1.0.0",
+  "symfony": {
+    "importmap": {
+      "alpinejs": "3.13.2",
+      "flickity": "3.0.0",
+      "my-vendor/my-beautiful-theme": "path:%PACKAGE%/my-entrypoint.js"
+    }
+  }
+}
+```
+
+ I use the idea describe [in this comment ](https://github.com/symfony/symfony/issues/53912#issuecomment-2591275217) to declare theme assets folder as Asset Mapper path. (Part 2: How do I expose my bundle's own assets to a consumer of the bundle?)
+
+And it's work like a charm. 🎉
+
+But now there is my point: theme bundles comes with the whole Sylius app templates. Whole app means that somewhere we use `{{ importmap('my-vendor/my-beautiful-theme') }}` in a twig file to import. But, if flex have correctly added `my-vendor/my-beautiful-theme` in the `impormap.php` file, it was not declared as an entry point and there is an exception when front page is loaded. I have to ask my theme bundle users to manually transform
+```php
+    // Automatically added by flex FTW but it miss that this is an entrypoint
+    'my-vendor/my-beautiful-theme' => [
+        'path' => './vendor/my-vendor/my-beautiful-theme/assets/my-entrypoint.js'
+    ],
+```
+to
+```php
+    '@monsieurbiz/master-theme' => [
+        'path' => './vendor/my-vendor/my-beautiful-theme/assets/my-entrypoint.js',
+        'entrypoint' => true,
+    ],
+```
+in the `importmap.php` after theme bundle installation and it's not cool.
+
+That's why I agree with @Jibbarth: It woul be very very cool to have this feature!
+
+---------------------------------------------------------------------------
+
+by Jibbarth at 2025-01-25T09:04:03Z
+
+Thanks @lanfisis 👍
+
+ I totally forgot to reply here, sorry @smnandre, but what I want to achieve is exactly what @lanfisis describe above ☺️
+
+---------------------------------------------------------------------------
+
+by smnandre at 2025-01-26T05:13:48Z
+
+Well, once more.... we're not talking about "bundle assets" but `third-party external dependencies` that are not present `in` your bundle.
+
+Because assets from your bundle _**are exposed**_ via both asset package and AssetMapper.
+
+I have no power to prevent you for moving on this topic, and no intention to do so...
+As long I don't have megabytes of data coming from nowhere and auto-installed next time I `composer update` my projects 😅
+
+Meaning this should, i think, be a new configuration key somewhere..
+(cannot be the [Stimulus one](https://github.com/symfony/flex/pull/1026#pullrequestreview-2504263279) that has another usage)
+
+---------------------------------------------------------------------------
+
+by lanfisis at 2025-01-26T08:43:02Z
+
+Hi @smnandre,
+
+To be honest, I'm not sure to understand your reply because it seems not related to my post.  You mention `third-party external dependencies` instead of `bundle dependencies` but I mainly speak about `bundle dependencies`.
+
+To be clear:
+* I am the developper of a third party bundle called `my-beautiful-theme`.
+* I've added `symfony-ux` in the keyword of the `composer.json` file [like this UX bundle](https://github.com/symfony/ux/blob/ec09cdff7dfc00b71cc7097618df4a7274c24deb/src/Translator/composer.json#L6)
+*  I've added an `assets/package.json` file with **BOTH** external package (e.g. `"alpinejs": "3.13.2"`) and local to the bundle JS files (e.g. `"my-vendor/my-beautiful-theme": "path:%PACKAGE%/my-entrypoint.js"`) [always like this UX bundle](https://github.com/symfony/ux/blob/ec09cdff7dfc00b71cc7097618df4a7274c24deb/src/Translator/assets/package.json#L18)
+* thanks to flex, because of the 2 previous actions, when I require this bundle in my Symfony app, **BOTH** external package and bundle JS file are added to the `importmap.php` of my app.
+
+This process exists and works perfectly. No hack, no trick, no billions of external packages. This is how Symfony UX bundle works too.
+
+The only purpose of this PR, and my only point is: let us the capability to precise that one or more bundle JS local files are entry points in `importmap.php`. That's all. No dirty extra features with hidden package download.
+
+I you `composer require` a Symfony US package, do you think that you
+> have megabytes of data coming from nowhere and auto-installed next time I composer update my projects 😅
+
+If the answer is _yes_, you probably not use Symfony UX and you are probably not the right person to deal with our point about entrypoint.
+
+If the answer is _no_, you have to understand that this small feature could be a game changer for peoples who work on third party bundle with app sized JS file (theme bundle, full admin bundle, dashboard bundle, ....)
+
+Move from actual `package.json` file like :
+```json
+{
+  "name": "my-vendor/my-beautiful-theme",
+  "description": "Beautiful Theme for Sylius",
+  "license": "MIT",
+  "version": "1.0.0",
+  "symfony": {
+    "importmap": {
+      "alpinejs": "3.13.2",
+      "flickity": "3.0.0",
+      "my-vendor/my-beautiful-theme": "path:%PACKAGE%/my-entrypoint.js"
+    }
+  }
+}
+```
+to
+```json
+{
+  "name": "my-vendor/my-beautiful-theme",
+  "description": "Beautiful Theme for Sylius",
+  "license": "MIT",
+  "version": "1.0.0",
+  "symfony": {
+    "entrypoints": ["my-vendor/my-beautiful-theme"]
+    "importmap": {
+      "alpinejs": "3.13.2",
+      "flickity": "3.0.0",
+      "my-vendor/my-beautiful-theme": "path:%PACKAGE%/my-entrypoint.js"
+    }
+  }
+}
+```
+for a result from actual `importmap.php` file:
+```php
+    // Automatically added by flex FTW but it miss that this is an entrypoint
+    'my-vendor/my-beautiful-theme' => [
+        'path' => './vendor/my-vendor/my-beautiful-theme/assets/my-entrypoint.js'
+    ],
+```
+to
+```php
+    '@monsieurbiz/master-theme' => [
+        'path' => './vendor/my-vendor/my-beautiful-theme/assets/my-entrypoint.js',
+        'entrypoint' => true,
+    ],
+```
+should not create such a debate to my mind.
+
+But, I know you have to address tons of different problems for the Symfony community, and that's a huge and time-consuming work. I'm open to try to answer to your questions and ready to try to calm your fears for this point.
+
+Cheers
+
+---------------------------------------------------------------------------
+
+by smnandre at 2025-01-26T11:24:52Z
+
+Hi @lanfisis!
+
+The general asset situation is currently a bit of a mess, and I can assure you I've been once or twice using Symfony UX packages :)
+
+I'm saying again and again bundles can expose _**their**_ assets, so it's only a question about external dependencies and automatic installation. And i will precise this everytime it's needed, I don't want anyone to believe this is not the case currently.
+
+> should not create such a debate to my mind.
+
+This is why I'm telling you I won't nor want (nor can) oppose this feature. And I continue to answer on the technicalities and consequences on some of the suggested implementations (see my last comment on this matter. https://github.com/symfony/symfony/issues/53912#issuecomment-2591599401)
+
+---------------------------------------------------------------------------
+
+by lanfisis at 2025-01-26T13:35:42Z
+
+@smnandre,
+
+Thanks for the quick answer (as usual).
+
+>  I can assure you I've been once or twice using Symfony UX packages :)
+
+I was no doubt about this, my question was more rhetoric than really relevant.
+
+In a previous message, you said:
+
+> Do we allow bundle to change the public/index.php file? Or to create new webpack configs ?
+>
+> I really find weird that a bundle could install things like this. And a bit dangerous.
+
+But this is a flex feature[ implemented 2 years ago by Ryan and Kevin](https://github.com/symfony/flex/blame/14189260e2513403467d8897604ae85578713219/src/PackageJsonSynchronizer.php#L81), and used by a lot of official bundles. Almost all the UX bundle add external dependencies to `importmap.json`.
+That's a common practice and a fact: dependencies into `assets/packages.json` under node `["symfony"]["importmap"]` are automatically added to `importmap.php`.
+
+>So .. nope : this is not related to importmap entrypoints, but to stimulus bundle + controllers.json file. Thus should not be used here :)
+
+That's not true. It is used to manage any bundle located js file as [you can see here](https://github.com/symfony/ux/blob/ec09cdff7dfc00b71cc7097618df4a7274c24deb/src/React/assets/package.json#L28).  There is absolutely nothing in the code that constraint the use of this feature for Stimulus controller.
+
+> And still wait for a use case that require to create a entrypoint .... maybe you could describe yours for the package in question ? That really could help me understand the need.
+
+I hope I have to show you at least one example of why we need this feature.
+
+> I'm saying again and again bundles can expose their assets, so it's only a question about external dependencies.
+
+Nope, you are the only one who deal with this topic at the beginning. Adding external dependencies and / or JS bundle files into the `importmap.php` file automatically is a reality. It's use by official bundle and probably community and private bundle too. You don't think it's a good practice: that's ok, you could promote the idea to remove this feature from Flex.  But to me, this is a discussion you should have with your partners of the UX core team. Not into the reply of this PR whose only goal is to add a small improvement to an existing feature.
+
+---------------------------------------------------------------------------
+
+by smnandre at 2025-01-26T14:03:41Z
+
+> That's not true. It is used to manage any bundle located js file as [you can see here](https://github.com/symfony/ux/blob/ec09cdff7dfc00b71cc7097618df4a7274c24deb/src/React/assets/package.json#L28). There is absolutely nothing in the code that constraint the use of this feature for Stimulus controller.
+
+There is not in this file any Symfony entrypoint key. When i comment something specific about the code, it is only about the code. No thing more .
+
+—-
+
+You keep comparing to multiple UX packages. But you must have seen none of them add a new entrypoint.  Which is specifically what you say you want here. So yeah i’m not getting the argument here.
+
+—-
+
+Flex is not managed by the UX Core Team, nor is AssetMapper. The StimulusBundle is, but still follows the BC promise of Symfony in general.
+
+—-
+
+The fact you seem to ignore or let aside the difference between entrypoints and other dependencies proves me the entire system must be re-documented and/or clarified, probably changed too.
+
+—
+
+On the other PR I explain certain things about technical points and try to separate the very différent things asked related to bundles.
+Hzre, the PR implémentation asked for feedback on the key used and I say: I dont think this is the food key to do so. This key had another meaning.
+
+—
+
+You wont convince me and this is not a problem and should not be one.
+
+One last time: I cannot and will not block this feature. I can point some technicalities to avoid messing with users that never signed for it. But allow me to not be celebrating it either.
+
+---------------------------------------------------------------------------
+
+by lanfisis at 2025-01-26T15:03:08Z
+
+Ok, so the key is probably not good named. I agree with this. And this comment is surely relevant in the scope of this PR.
+But too me this is the only one.
+
+>You keep comparing to multiple UX packages. But you must have seen none of them add a new entrypoint. Which is specifically what you say you want here. So yeah i’m not getting the argument here.
+
+I use UX bundle as example because this is the only way to add dependencies on `importmap.php` file. But not only UX bundle want to to this.  Maybe the keyword should be rename `asset-mapper-aware` instead of `symfony-ux` but that's a technical debate.
+
+My point is:
+
+UX packages have to add JS dependencies on `importmap.php`file => no problemo, Kevin and Ryan add some code in flex to do this and it works like a charm. [Absolutely no one has any reservations about the  idea.](https://github.com/symfony/flex/pull/975)
+
+Peoples of the community said: in the context certain kind of bundle, as I describe and I can describe again if needed, we want to do exacltly the same thing but we want to precise that one of this package is an entrypoint because the bundle comes with templates that include this entrypoint => we get comments about the fact that's "weird" and that there is no concrete application.
+
+Let's assume "that" is weird to me.
+
+> The fact you seem to ignore or let aside the difference between entrypoints and other dependencies proves me the entire system must be re-documented and/or clarified, probably changed too.
+
+Be sure that I really understand what an entry point is. I'm working on the ability to make Sylius Theme bundle distributable with an asset mapper compatibility for a year. Because there's no documentation, it takes me hours to find how to smoothly, backed by official Symfony tool and trying to avoid dirty fixes, make this working by reading codes source of Asset Mapper, Flex, UX bundles, .... So you're right: this need to be documented and clarified. But this is a group work that have to be backed by the advices and the need of the entire Symfony community, not your own personal opinion.
+
+> You wont convince me and this is not a problem and should not be one.
+One last time: I cannot and will not block this feature. I can point some technicalities to avoid messing with users that never signed for it. But allow me to not be celebrating it either.
+
+You said "I'm saying again and again bundles can expose their assets ..." and we (@Jibbarth and I) just add "... with the capability to precise that one of this asset is an entry point".
+
+Sorry, but it's to little drive me crazy to see you give your negative point of you  like "I really find weird that a bundle could install things like this. And a bit dangerous."  or " But allow me to not be celebrating it either." on PR like this where people have takes time to produce code, are aware about technical observation and describe real life use case.  This is only based on your guts feeling too me, no based on fact. But, agree to disagree about that an asset bundle could be or not an entrypoint.
+
+I hope that @Jibbarth will takes time to change his code according to your needs and I hope that this feature will be available on flex soon because it's a real life needs.
+
+Have a nice day.
+
+---------------------------------------------------------------------------
+
+by smnandre at 2025-01-26T18:53:46Z
+
+@lanfisis reached out to propose a private discussion to address and smooth out differences in perspective and clarify a few points. I gladly accept (we’ll aim to do this as soon as possible) and truly appreciate the positive and constructive approach.
+
+---------------------------------------------------------------------------
+
+by Jibbarth at 2025-02-02T12:57:51Z
+
+Let's sum up.
+
+Currently, we can declare assets for asset-mapper with following ways in package.json
+
+```json
+{
+  "symfony": {
+    "importmap": {
+	  "jquery": "^3.7.1", // Remote
+      "myjquery": { // custom name
+          "version":"^3.7.1",
+          "package": "jquery"
+      },
+      "@mybundle/script.js": {
+        "version": "path:%PACKAGE%/script.js",
+      },
+      "@mybundle/script2.js": "path:%PACKAGE%/script2.js"
+    }
+  }
+}
+```
+
+To be able to use one of these as entrypoint, as proposed by @smnandre, I added following possibilies
+
+```json
+{
+  "symfony": {
+    "importmap": {
+      "@mybundle/script.js": {
+        "version": "path:%PACKAGE%/script.js",
+        "entrypoint": true,
+      },
+      "@mybundle/script2.js": "entrypoint:%PACKAGE%/script2.js",
+      "@mybundle/script3.js": {
+        "version": "entrypoint:%PACKAGE%/script3.js"
+      }
+    }
+  }
+}
+```
+
+I guess, for a while, third-party bundle should use the first way
+```
+      "@mybundle/script.js": {
+        "version": "path:%PACKAGE%/script.js",
+        "entrypoint": true,
+      }
+```
+because it will not throw any error while requiring the asset for app that don't have latest flex version, but user still have to add the "entrypoint => true" in their importmap.php.
+
+---------------------------------------------------------------------------
+
+by smnandre at 2025-02-03T19:55:07Z
+
+Seems ok!
+
+---------------------------------------------------------------------------
+
+by lanfisis at 2025-02-04T20:37:39Z
+
+Ok to me too !  I've personally adopted another way to add entrypoints after some talks with @smnandre, this small feature could be useful and have no side effects I think.
+
+---------------------------------------------------------------------------
+
+by Jibbarth at 2025-05-19T13:00:10Z
+
+Friendly ping @nicolas-grekas @fabpot :slightly_smiling_face: Is there anything else I can do here ?
+
+---------------------------------------------------------------------------
+
+by Jibbarth at 2025-05-21T12:52:52Z
+
+Thanks @Kocal for the review :heart_hands: Comments addressed
