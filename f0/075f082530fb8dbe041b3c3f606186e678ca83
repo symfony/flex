@@ -1,0 +1,5 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2025-05-22T17:40:53Z
+
+/cc @alexpott you might be interested in this additional logic (fixing composer require reinserting the pack in composer.json even if the plugin removed it and removing anything from the pack in the vendor/ dir)
