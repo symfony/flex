@@ -29,14 +29,12 @@ class Unpacker
 {
     private $composer;
     private $resolver;
-    private $dryRun;
     private $versionParser;
 
-    public function __construct(Composer $composer, PackageResolver $resolver, bool $dryRun)
+    public function __construct(Composer $composer, PackageResolver $resolver)
     {
         $this->composer = $composer;
         $this->resolver = $resolver;
-        $this->dryRun = $dryRun;
         $this->versionParser = new VersionParser();
     }
 
@@ -131,7 +129,7 @@ class Unpacker
             }
         }
 
-        if ($this->dryRun || 1 < \func_num_args()) {
+        if (1 < \func_num_args()) {
             return $result;
         }
 
@@ -139,6 +137,13 @@ class Unpacker
         $jsonContent = file_get_contents($jsonPath);
         $jsonStored = json_decode($jsonContent, true);
         $jsonManipulator = new JsonManipulator($jsonContent);
+
+        foreach ($result->getUnpacked() as $pkg) {
+            $localRepo->removePackage($pkg);
+            $localRepo->setDevPackageNames(array_diff($localRepo->getDevPackageNames(), [$pkg->getName()]));
+            $jsonManipulator->removeSubNode('require', $pkg->getName());
+            $jsonManipulator->removeSubNode('require-dev', $pkg->getName());
+        }
 
         foreach ($links as $link) {
             // nothing to do, package is already present in the "require" section
@@ -197,12 +202,12 @@ class Unpacker
         $lockData['content-hash'] = Locker::getContentHash($jsonContent);
         $lockFile = new JsonFile(substr($json->getPath(), 0, -4).'lock', null, $io);
 
-        if (!$this->dryRun) {
-            $lockFile->write($lockData);
-        }
+        $lockFile->write($lockData);
 
-        // force removal of files under vendor/
         $locker = new Locker($io, $lockFile, $this->composer->getInstallationManager(), $jsonContent);
         $this->composer->setLocker($locker);
+
+        $localRepo = $this->composer->getRepositoryManager()->getLocalRepository();
+        $localRepo->write($localRepo->getDevMode() ?? true, $this->composer->getInstallationManager());
     }
 }

@@ -71,7 +71,7 @@ class UnpackerTest extends TestCase
 
         $resolver = $this->getMockBuilder(PackageResolver::class)->disableOriginalConstructor()->getMock();
 
-        $unpacker = new Unpacker($composer, $resolver, false);
+        $unpacker = new Unpacker($composer, $resolver);
 
         $operation = new Operation(true, false);
         $operation->addPackage('pack_foo', '*', false);

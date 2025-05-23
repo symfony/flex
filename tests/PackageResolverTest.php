@@ -128,6 +128,9 @@ class PackageResolverTest extends TestCase
                 'validator' => 'symfony/validator',
                 'lock' => 'symfony/lock',
             ]);
+        $downloader->expects($this->any())
+            ->method('getSymfonyPacks')
+            ->willReturn([]);
 
         return new PackageResolver($downloader);
     }

@@ -18,6 +18,7 @@ use Composer\DependencyResolver\Operation\UninstallOperation;
 use Composer\DependencyResolver\Operation\UpdateOperation;
 use Composer\IO\IOInterface;
 use Composer\Json\JsonFile;
+use Composer\Package\BasePackage;
 use Composer\Util\Http\Response as ComposerResponse;
 use Composer\Util\HttpDownloader;
 use Composer\Util\Loop;
@@ -314,6 +315,30 @@ class Downloader
     public function removeRecipeFromIndex(string $packageName, string $version)
     {
         unset($this->index[$packageName][$version]);
+    }
+
+    public function getSymfonyPacks(array $packages)
+    {
+        $packs = [];
+        foreach ($this->composer->getRepositoryManager()->getRepositories() as $repo) {
+            if (!$packages) {
+                break;
+            }
+
+            $result = $repo->loadPackages($packages, BasePackage::$stabilities, []);
+
+            foreach ($result['packages'] ?? [] as $package) {
+                if (!isset($packages[$package->getName()])) {
+                    continue;
+                }
+                if ('symfony-pack' === $package->getType()) {
+                    $packs[$package->getName()] = true;
+                }
+                unset($packages[$package->getName()]);
+            }
+        }
+
+        return array_keys($packs);
     }
 
     /**

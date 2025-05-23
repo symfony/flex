@@ -15,6 +15,7 @@ use Composer\Composer;
 use Composer\Config;
 use Composer\DependencyResolver\Operation\InstallOperation;
 use Composer\Factory;
+use Composer\Installer\InstallationManager;
 use Composer\Installer\PackageEvent;
 use Composer\IO\BufferIO;
 use Composer\Package\Link;
@@ -29,6 +30,8 @@ use Composer\Repository\WritableRepositoryInterface;
 use Composer\Script\Event;
 use Composer\Script\ScriptEvents;
 use Composer\Semver\Constraint\MatchAllConstraint;
+use Composer\Util\HttpDownloader;
+use Composer\Util\Loop;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Flex\Configurator;
@@ -458,6 +461,10 @@ EOF
         $composer->setConfig($config);
         $composer->setLocker($locker);
         $composer->setPackage($package);
+        $composer->setInstallationManager($this->getMockBuilder(InstallationManager::class)->disableOriginalConstructor()->getMock());
+
+        $loop = new Loop(new HttpDownloader(new BufferIO('', OutputInterface::VERBOSITY_VERBOSE), $config));
+        $composer->setLoop($loop);
 
         return $composer;
     }
