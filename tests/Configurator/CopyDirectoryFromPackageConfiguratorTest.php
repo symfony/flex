@@ -194,7 +194,7 @@ class CopyDirectoryFromPackageConfiguratorTest extends TestCase
 
     private function createConfigurator(): CopyFromPackageConfigurator
     {
-        return new CopyFromPackageConfigurator($this->composer, $this->io, new Options(['root-dir' => FLEX_TEST_DIR], $this->io));
+        return new CopyFromPackageConfigurator($this->composer, $this->io, new Options(['root-dir' => FLEX_TEST_DIR]));
     }
 
     private function cleanUpTargetFiles()

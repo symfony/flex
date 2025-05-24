@@ -31,7 +31,7 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
     public function unconfigure(Recipe $recipe, $config, Lock $lock)
     {
         $this->write('Removing files from recipe');
-        $this->removeFiles($config, $this->getRemovableFilesFromRecipeAndLock($recipe, $lock), $this->options->get('root-dir'));
+        $this->removeFiles($config, $this->options->getRemovableFilesFromRecipeAndLock($recipe), $this->options->get('root-dir'));
     }
 
     public function update(RecipeUpdate $recipeUpdate, array $originalConfig, array $newConfig): void
@@ -64,32 +64,6 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
         }
 
         return $path;
-    }
-
-    private function getRemovableFilesFromRecipeAndLock(Recipe $recipe, Lock $lock): array
-    {
-        $lockedFiles = array_unique(
-            array_reduce(
-                array_column($lock->all(), 'files'),
-                function (array $carry, array $package) {
-                    return array_merge($carry, $package);
-                },
-                []
-            )
-        );
-
-        $removableFiles = $recipe->getFiles();
-
-        $lockedFiles = array_map('realpath', $lockedFiles);
-
-        // Compare file paths by their real path to abstract OS differences
-        foreach (array_keys($removableFiles) as $file) {
-            if (\in_array(realpath($file), $lockedFiles)) {
-                unset($removableFiles[$file]);
-            }
-        }
-
-        return $removableFiles;
     }
 
     private function copyFiles(array $manifest, array $files, array $options): array

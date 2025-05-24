@@ -301,7 +301,7 @@ class CopyFromRecipeConfiguratorTest extends TestCase
 
     private function createConfigurator(): CopyFromRecipeConfigurator
     {
-        return new CopyFromRecipeConfigurator($this->getMockBuilder(Composer::class)->getMock(), $this->io, new Options(['root-dir' => FLEX_TEST_DIR, 'config-dir' => 'config'], $this->io));
+        return new CopyFromRecipeConfigurator($this->getMockBuilder(Composer::class)->getMock(), $this->io, new Options(['root-dir' => FLEX_TEST_DIR, 'config-dir' => 'config']));
     }
 
     private function cleanUpTargetFiles()

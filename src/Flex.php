@@ -111,7 +111,13 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $this->composer = $composer;
         $this->io = $io;
         $this->config = $composer->getConfig();
-        $this->options = $this->initOptions();
+
+        $composerFile = Factory::getComposerFile();
+        $composerLock = 'json' === pathinfo($composerFile, \PATHINFO_EXTENSION) ? substr($composerFile, 0, -4).'lock' : $composerFile.'.lock';
+        $symfonyLock = str_replace('composer', 'symfony', basename($composerLock));
+        $this->lock = new Lock(getenv('SYMFONY_LOCKFILE') ?: \dirname($composerLock).'/'.(basename($composerLock) !== $symfonyLock ? $symfonyLock : 'symfony.lock'));
+
+        $this->options = $this->initOptions($this->io, $this->lock);
 
         // if Flex is being upgraded, the original operations from the original Flex
         // instance are stored in the static property, so we can reuse them now.
@@ -130,12 +136,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             $this->filter = new PackageFilter($io, $symfonyRequire, $this->downloader);
         }
 
-        $composerFile = Factory::getComposerFile();
-        $composerLock = 'json' === pathinfo($composerFile, \PATHINFO_EXTENSION) ? substr($composerFile, 0, -4).'lock' : $composerFile.'.lock';
-        $symfonyLock = str_replace('composer', 'symfony', basename($composerLock));
-
         $this->configurator = new Configurator($composer, $io, $this->options);
-        $this->lock = new Lock(getenv('SYMFONY_LOCKFILE') ?: \dirname($composerLock).'/'.(basename($composerLock) !== $symfonyLock ? $symfonyLock : 'symfony.lock'));
 
         $disable = true;
         foreach (array_merge($composer->getPackage()->getRequires() ?? [], $composer->getPackage()->getDevRequires() ?? []) as $link) {
@@ -701,7 +702,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         return $this->lock;
     }
 
-    private function initOptions(): Options
+    private function initOptions(IOInterface $io, Lock $lock): Options
     {
         $extra = $this->composer->getPackage()->getExtra();
 
@@ -716,7 +717,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             'runtime' => $extra['runtime'] ?? [],
         ], $extra);
 
-        return new Options($options, $this->io);
+        return new Options($options, new FilesManager($io, $lock, $options['root-dir']));
     }
 
     private function formatOrigin(Recipe $recipe): string
