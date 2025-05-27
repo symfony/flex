@@ -70,7 +70,7 @@ class PackageResolver
     {
         $guess = 'guess' === ($version ?: 'guess');
 
-        if (0 !== strpos($package, 'symfony/')) {
+        if (!str_starts_with($package, 'symfony/')) {
             return $guess ? '' : ':'.$version;
         }
 
@@ -108,7 +108,7 @@ class PackageResolver
             $skippedPackages[] = 'lock';
         }
 
-        if (false !== strpos($argument, '/') || preg_match(PlatformRepository::PLATFORM_PACKAGE_REGEX, $argument) || preg_match('{(?<=[a-z0-9_/-])\*|\*(?=[a-z0-9_/-])}i', $argument) || \in_array($argument, $skippedPackages)) {
+        if (str_contains($argument, '/') || preg_match(PlatformRepository::PLATFORM_PACKAGE_REGEX, $argument) || preg_match('{(?<=[a-z0-9_/-])\*|\*(?=[a-z0-9_/-])}i', $argument) || \in_array($argument, $skippedPackages)) {
             return $argument;
         }
 
@@ -140,7 +140,7 @@ class PackageResolver
         $alternatives = [];
         foreach ($this->downloader->getAliases() as $alias => $package) {
             $lev = levenshtein($argument, $alias);
-            if ($lev <= \strlen($argument) / 3 || ('' !== $argument && false !== strpos($alias, $argument))) {
+            if ($lev <= \strlen($argument) / 3 || ('' !== $argument && str_contains($alias, $argument))) {
                 $alternatives[$package][] = $alias;
             }
         }

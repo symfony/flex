@@ -60,9 +60,9 @@ class Downloader
 
         if (null === $endpoint = $composer->getPackage()->getExtra()['symfony']['endpoint'] ?? null) {
             $this->endpoints = self::DEFAULT_ENDPOINTS;
-        } elseif (\is_array($endpoint) || false !== strpos($endpoint, '.json') || 'flex://defaults' === $endpoint) {
+        } elseif (\is_array($endpoint) || str_contains($endpoint, '.json') || 'flex://defaults' === $endpoint) {
             $this->endpoints = array_values((array) $endpoint);
-            if (\is_string($endpoint) && false !== strpos($endpoint, '.json')) {
+            if (\is_string($endpoint) && str_contains($endpoint, '.json')) {
                 $this->endpoints[] = 'flex://defaults';
             }
         } else {
@@ -71,7 +71,7 @@ class Downloader
 
         if (false === $endpoint = getenv('SYMFONY_ENDPOINT')) {
             // no-op
-        } elseif (false !== strpos($endpoint, '.json') || 'flex://defaults' === $endpoint) {
+        } elseif (str_contains($endpoint, '.json') || 'flex://defaults' === $endpoint) {
             $this->endpoints ?? $this->endpoints = self::DEFAULT_ENDPOINTS;
             array_unshift($this->endpoints, $endpoint);
             $this->legacyEndpoint = null;
@@ -174,7 +174,7 @@ class Downloader
             if ($operation instanceof InformationOperation && $operation->getVersion()) {
                 $version = $operation->getVersion();
             }
-            if (0 === strpos($version, 'dev-') && isset($package->getExtra()['branch-alias'])) {
+            if (str_starts_with($version, 'dev-') && isset($package->getExtra()['branch-alias'])) {
                 $branchAliases = $package->getExtra()['branch-alias'];
                 if (
                     (isset($branchAliases[$version]) && $alias = $branchAliases[$version])

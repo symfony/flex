@@ -260,7 +260,7 @@ class DockerComposeConfigurator extends AbstractConfigurator
                 }
 
                 // Skip blank lines and comments
-                if (('' !== $ltrimedLine && 0 === strpos($ltrimedLine, '#')) || '' === trim($line)) {
+                if (('' !== $ltrimedLine && str_starts_with($ltrimedLine, '#')) || '' === trim($line)) {
                     continue;
                 }
 
@@ -349,7 +349,7 @@ class DockerComposeConfigurator extends AbstractConfigurator
         $updatedContents = [];
         foreach ($files as $file) {
             $localPath = $file;
-            if (0 === strpos($file, $rootDir)) {
+            if (str_starts_with($file, $rootDir)) {
                 $localPath = substr($file, \strlen($rootDir) + 1);
             }
             $localPath = ltrim($localPath, '/\\');

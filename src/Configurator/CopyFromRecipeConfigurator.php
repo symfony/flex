@@ -58,7 +58,7 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
     private function resolveTargetFolder(string $path, array $config): string
     {
         foreach ($config as $key => $target) {
-            if (0 === strpos($path, $key)) {
+            if (str_starts_with($path, $key)) {
                 return $this->options->expandTargetDir($target).substr($path, \strlen($key));
             }
         }
@@ -116,7 +116,7 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
     {
         $copiedFiles = [];
         foreach ($files as $file => $data) {
-            if (0 === strpos($file, $source)) {
+            if (str_starts_with($file, $source)) {
                 $file = $this->path->concatenate([$target, substr($file, \strlen($source))]);
                 $copiedFiles[] = $this->copyFile($file, $data['contents'], $data['executable'], $options);
             }
@@ -160,7 +160,7 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
 
             if ('/' === substr($source, -1)) {
                 foreach (array_keys($files) as $file) {
-                    if (0 === strpos($file, $source)) {
+                    if (str_starts_with($file, $source)) {
                         $this->removeFile($this->path->concatenate([$to, $target, substr($file, \strlen($source))]));
                     }
                 }
