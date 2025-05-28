@@ -61,7 +61,7 @@ class CopyFromRecipeConfiguratorTest extends TestCase
     public function testConfigureAndOverwriteFiles()
     {
         if (!file_exists($this->targetDirectory)) {
-            mkdir($this->targetDirectory);
+            @mkdir($this->targetDirectory, 0777, true);
         }
         file_put_contents($this->targetFile, '-');
         $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
@@ -99,17 +99,22 @@ class CopyFromRecipeConfiguratorTest extends TestCase
     public function testUnconfigureKeepsLockedFiles()
     {
         if (!file_exists($this->sourceDirectory)) {
-            mkdir($this->sourceDirectory);
+            @mkdir($this->sourceDirectory, 0777, true);
         }
+        if (!file_exists($this->targetDirectory)) {
+            @mkdir($this->targetDirectory, 0777, true);
+        }
+        file_put_contents($this->targetFile, '');
         file_put_contents($this->sourceFile, '-');
-        $this->assertFileExists($this->sourceFile);
 
         $lock = new Lock(FLEX_TEST_DIR.'/test.lock');
-        $lock->set('other-recipe', ['files' => ['./'.$this->targetFileRelativePath]]);
+        $lock->set('other-recipe', ['files' => [$this->targetFileRelativePath]]);
 
+        $this->recipe->method('getName')->willReturn('test-recipe');
         $this->createConfigurator()->unconfigure($this->recipe, [$this->targetFileRelativePath], $lock);
 
         $this->assertFileExists($this->sourceFile);
+        $this->assertFileExists($this->targetFile);
     }
 
     public function testUnconfigure()
@@ -118,11 +123,12 @@ class CopyFromRecipeConfiguratorTest extends TestCase
         $this->io->expects($this->at(1))->method('writeError')->with(['      Removed <fg=green>"./config/file"</>']);
 
         if (!file_exists($this->targetDirectory)) {
-            mkdir($this->targetDirectory);
+            @mkdir($this->targetDirectory, 0777, true);
         }
         file_put_contents($this->targetFile, '');
         $this->assertFileExists($this->targetFile);
         $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
+        $this->recipe->method('getName')->willReturn('test-recipe');
         $this->createConfigurator()->unconfigure($this->recipe, [$this->targetFileRelativePath], $lock);
         $this->assertFileDoesNotExist($this->targetFile);
     }
@@ -270,8 +276,6 @@ class CopyFromRecipeConfiguratorTest extends TestCase
 
     protected function setUp(): void
     {
-        parent::setUp();
-
         $this->sourceDirectory = FLEX_TEST_DIR.'/source';
         $this->sourceFileRelativePath = 'source/file';
         $this->sourceFile = $this->sourceDirectory.'/file';
@@ -294,14 +298,16 @@ class CopyFromRecipeConfiguratorTest extends TestCase
 
     protected function tearDown(): void
     {
-        parent::tearDown();
-
         $this->cleanUpTargetFiles();
     }
 
     private function createConfigurator(): CopyFromRecipeConfigurator
     {
-        return new CopyFromRecipeConfigurator($this->getMockBuilder(Composer::class)->getMock(), $this->io, new Options(['root-dir' => FLEX_TEST_DIR, 'config-dir' => 'config'], $this->io));
+        $lock = new Lock(FLEX_TEST_DIR.'/test.lock');
+        $lock->set('test-recipe', ['files' => [$this->targetFileRelativePath]]);
+        $options = new Options(['root-dir' => FLEX_TEST_DIR, 'config-dir' => 'config'], $this->io, $lock);
+
+        return new CopyFromRecipeConfigurator($this->getMockBuilder(Composer::class)->getMock(), $this->io, $options);
     }
 
     private function cleanUpTargetFiles()

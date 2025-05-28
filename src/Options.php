@@ -22,11 +22,13 @@ class Options
     private $options;
     private $writtenFiles = [];
     private $io;
+    private $lockData;
 
-    public function __construct(array $options = [], ?IOInterface $io = null)
+    public function __construct(array $options = [], ?IOInterface $io = null, ?Lock $lock = null)
     {
         $this->options = $options;
         $this->io = $io;
+        $this->lockData = $lock?->all() ?? [];
     }
 
     public function get(string $name)
@@ -99,6 +101,38 @@ class Options
         $name = \strlen($output[0]) - \strlen($name) === strrpos($output[0], $name) ? substr($output[0], 3) : $name;
 
         return $this->io && $this->io->askConfirmation(\sprintf('File "%s" has uncommitted changes, overwrite? [y/N] ', $name), false);
+    }
+
+    public function getRemovableFiles(Recipe $recipe, Lock $lock): array
+    {
+        if (null === $removableFiles = $this->lockData[$recipe->getName()]['files'] ?? null) {
+            $removableFiles = [];
+            foreach (array_keys($recipe->getFiles()) as $source => $target) {
+                if (str_ends_with($source, '/')) {
+                    $removableFiles[] = $this->expandTargetDir($target);
+                }
+            }
+        }
+
+        unset($this->lockData[$recipe->getName()]);
+        $lockedFiles = array_count_values(array_merge(...array_column($lock->all(), 'files')));
+
+        $nonRemovableFiles = [];
+        foreach ($removableFiles as $i => $file) {
+            if (isset($lockedFiles[$file])) {
+                $nonRemovableFiles[] = $file;
+                unset($removableFiles[$i]);
+            }
+        }
+
+        if ($nonRemovableFiles && $this->io) {
+            $this->io?->writeError('    <warning>The following files are still referenced by other recipes, you might need to adjust them manually:</warning>');
+            foreach ($nonRemovableFiles as $file) {
+                $this->io?->writeError('      - '.$file);
+            }
+        }
+
+        return array_values($removableFiles);
     }
 
     public function toArray(): array

@@ -111,13 +111,19 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $this->composer = $composer;
         $this->io = $io;
         $this->config = $composer->getConfig();
+
+        $composerFile = Factory::getComposerFile();
+        $composerLock = 'json' === pathinfo($composerFile, \PATHINFO_EXTENSION) ? substr($composerFile, 0, -4).'lock' : $composerFile.'.lock';
+        $symfonyLock = str_replace('composer', 'symfony', basename($composerLock));
+
+        $this->lock = new Lock(getenv('SYMFONY_LOCKFILE') ?: \dirname($composerLock).'/'.(basename($composerLock) !== $symfonyLock ? $symfonyLock : 'symfony.lock'));
         $this->options = $this->initOptions();
 
         // if Flex is being upgraded, the original operations from the original Flex
         // instance are stored in the static property, so we can reuse them now.
-        if (property_exists(self::class, 'storedOperations') && self::$storedOperations) {
-            $this->operations = self::$storedOperations;
-            self::$storedOperations = [];
+        if (property_exists(Flex::class, 'storedOperations') && Flex::$storedOperations) {
+            $this->operations = Flex::$storedOperations;
+            Flex::$storedOperations = [];
         }
 
         $symfonyRequire = preg_replace('/\.x$/', '.x-dev', getenv('SYMFONY_REQUIRE') ?: ($composer->getPackage()->getExtra()['symfony']['require'] ?? ''));
@@ -130,12 +136,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             $this->filter = new PackageFilter($io, $symfonyRequire, $this->downloader);
         }
 
-        $composerFile = Factory::getComposerFile();
-        $composerLock = 'json' === pathinfo($composerFile, \PATHINFO_EXTENSION) ? substr($composerFile, 0, -4).'lock' : $composerFile.'.lock';
-        $symfonyLock = str_replace('composer', 'symfony', basename($composerLock));
-
         $this->configurator = new Configurator($composer, $io, $this->options);
-        $this->lock = new Lock(getenv('SYMFONY_LOCKFILE') ?: \dirname($composerLock).'/'.(basename($composerLock) !== $symfonyLock ? $symfonyLock : 'symfony.lock'));
 
         $disable = true;
         foreach (array_merge($composer->getPackage()->getRequires() ?? [], $composer->getPackage()->getDevRequires() ?? []) as $link) {
@@ -210,8 +211,9 @@ class Flex implements PluginInterface, EventSubscriberInterface
      */
     public function deactivate(Composer $composer, IOInterface $io)
     {
-        // store operations in case Flex is being upgraded
-        self::$storedOperations = $this->operations;
+        // Using `Flex::` instead of `self::` to avoid issues when
+        // composer renames plugin classes when upgrading them
+        Flex::$storedOperations = $this->operations;
         self::$activated = false;
     }
 
@@ -707,7 +709,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             'runtime' => $extra['runtime'] ?? [],
         ], $extra);
 
-        return new Options($options, $this->io);
+        return new Options($options, $this->io, $this->lock);
     }
 
     private function formatOrigin(Recipe $recipe): string
