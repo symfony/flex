@@ -233,7 +233,7 @@ class RecipePatcher
                 return true;
             }
 
-            if (false !== strpos($this->processExecutor->getErrorOutput(), 'with conflicts')) {
+            if (str_contains($this->processExecutor->getErrorOutput(), 'with conflicts')) {
                 // successful with conflicts
                 return false;
             }

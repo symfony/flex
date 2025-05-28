@@ -142,7 +142,7 @@ class GithubApi
         $bestItem = null;
         foreach ($data['items'] as $item) {
             // make sure the PR referenced isn't from a different repository
-            if (false === strpos($item['html_url'], \sprintf('%s/pull', $repositoryName))) {
+            if (!str_contains($item['html_url'], \sprintf('%s/pull', $repositoryName))) {
                 continue;
             }
 
@@ -186,7 +186,7 @@ class GithubApi
     private function getRepositoryName(string $repo): ?string
     {
         // only supports public repository placement
-        if (0 !== strpos($repo, 'github.com')) {
+        if (!str_starts_with($repo, 'github.com')) {
             return null;
         }
 

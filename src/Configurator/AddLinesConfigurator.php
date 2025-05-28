@@ -168,7 +168,7 @@ class AddLinesConfigurator extends AbstractConfigurator
     {
         $fileContents = $this->readFile($file);
 
-        if (false !== strpos($fileContents, $value)) {
+        if (str_contains($fileContents, $value)) {
             return $fileContents; // already includes value, skip
         }
 
@@ -185,7 +185,7 @@ class AddLinesConfigurator extends AbstractConfigurator
                 $lines = explode("\n", $fileContents);
                 $targetFound = false;
                 foreach ($lines as $key => $line) {
-                    if (false !== strpos($line, $target)) {
+                    if (str_contains($line, $target)) {
                         array_splice($lines, $key + 1, 0, $value);
                         $targetFound = true;
 
@@ -214,13 +214,13 @@ class AddLinesConfigurator extends AbstractConfigurator
     {
         $fileContents = $this->readFile($file);
 
-        if (false === strpos($fileContents, $value)) {
+        if (!str_contains($fileContents, $value)) {
             return $fileContents; // value already gone!
         }
 
-        if (false !== strpos($fileContents, "\n".$value)) {
+        if (str_contains($fileContents, "\n".$value)) {
             $value = "\n".$value;
-        } elseif (false !== strpos($fileContents, $value."\n")) {
+        } elseif (str_contains($fileContents, $value."\n")) {
             $value .= "\n";
         }
 
@@ -249,7 +249,7 @@ class AddLinesConfigurator extends AbstractConfigurator
     private function relativize(string $path): string
     {
         $rootDir = $this->options->get('root-dir');
-        if (0 === strpos($path, $rootDir)) {
+        if (str_starts_with($path, $rootDir)) {
             $path = substr($path, \strlen($rootDir) + 1);
         }
 

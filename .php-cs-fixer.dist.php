@@ -8,7 +8,6 @@ return (new PhpCsFixer\Config())
         '@Symfony' => true,
         '@Symfony:risky' => true,
         'fopen_flags' => false,
-        'modernize_strpos' => false, // requires PHP 8
         'protected_to_private' => false,
     ])
     ->setRiskyAllowed(true)
