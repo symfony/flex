@@ -15,6 +15,7 @@ use Composer\IO\IOInterface;
 use Composer\Util\ProcessExecutor;
 use Symfony\Component\Filesystem\Exception\IOException;
 use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Flex\Lock;
 
 class RecipePatcher
 {
@@ -22,12 +23,14 @@ class RecipePatcher
     private $filesystem;
     private $io;
     private $processExecutor;
+    private $symfonyLock;
 
-    public function __construct(string $rootDir, IOInterface $io)
+    public function __construct(string $rootDir, IOInterface $io, Lock $symfonyLock)
     {
         $this->rootDir = $rootDir;
         $this->filesystem = new Filesystem();
         $this->io = $io;
+        $this->symfonyLock = $symfonyLock;
         $this->processExecutor = new ProcessExecutor($io);
     }
 
@@ -36,14 +39,33 @@ class RecipePatcher
      *
      * @return bool returns true if fully successful, false if conflicts were encountered
      */
-    public function applyPatch(RecipePatch $patch): bool
+    public function applyPatch(RecipePatch $patch, ?string $packageName = null): bool
     {
         $withConflicts = $this->_applyPatchFile($patch);
+        $lockedFiles = $packageName ? array_count_values(array_merge(...array_column(array_filter($this->symfonyLock->all(), fn ($package) => $package !== $packageName, \ARRAY_FILTER_USE_KEY), 'files'))) : [];
 
+        $nonRemovableFiles = [];
         foreach ($patch->getDeletedFiles() as $deletedFile) {
-            if (file_exists($this->rootDir.'/'.$deletedFile)) {
-                $this->execute(\sprintf('git rm %s', ProcessExecutor::escape($deletedFile)), $this->rootDir);
+            if (!file_exists($this->rootDir.'/'.$deletedFile)) {
+                continue;
             }
+
+            if (isset($lockedFiles[$deletedFile])) {
+                $nonRemovableFiles[] = $deletedFile;
+
+                continue;
+            }
+
+            $this->execute(\sprintf('git rm %s', ProcessExecutor::escape($deletedFile)), $this->rootDir);
+        }
+
+        if ($nonRemovableFiles) {
+            $this->io->writeError('  <warning>The following files were removed in the recipe, but are still referenced by other recipes. You might need to adjust them manually:</warning>');
+            foreach ($nonRemovableFiles as $file) {
+                $this->io->writeError('      - '.$file);
+            }
+
+            $this->io->writeError('');
         }
 
         return $withConflicts;
