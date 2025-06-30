@@ -19,6 +19,7 @@ use Composer\Util\ProcessExecutor;
 use Symfony\Component\Console\Exception\RuntimeException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Flex\Configurator;
 use Symfony\Flex\Downloader;
@@ -57,6 +58,7 @@ class UpdateRecipesCommand extends BaseCommand
             ->setAliases(['recipes:update'])
             ->setDescription('Updates an already-installed recipe to the latest version.')
             ->addArgument('package', InputArgument::OPTIONAL, 'Recipe that should be updated.')
+            ->addOption('next', null, InputOption::VALUE_NONE, 'Update recipe of next outdated package.')
         ;
     }
 
@@ -81,7 +83,7 @@ class UpdateRecipesCommand extends BaseCommand
         $packageName = $input->getArgument('package');
         $symfonyLock = $this->flex->getLock();
         if (!$packageName) {
-            $packageName = $this->askForPackage($io, $symfonyLock);
+            $packageName = $this->getNextOrAskForPackage($io, $symfonyLock, $input->getOption('next'));
 
             if (null === $packageName) {
                 $io->writeError('All packages appear to be up-to-date!');
@@ -353,7 +355,7 @@ class UpdateRecipesCommand extends BaseCommand
         return $lines;
     }
 
-    private function askForPackage(IOInterface $io, Lock $symfonyLock): ?string
+    private function getNextOrAskForPackage(IOInterface $io, Lock $symfonyLock, bool $next = false): ?string
     {
         $installedRepo = $this->getComposer()->getRepositoryManager()->getLocalRepository();
 
@@ -373,6 +375,10 @@ class UpdateRecipesCommand extends BaseCommand
             $lockRef = $symfonyLock->get($name)['recipe']['ref'] ?? null;
 
             if (null !== $lockRef && $recipe->getRef() !== $lockRef && !$recipe->isAuto()) {
+                if ($next) {
+                    return $name;
+                }
+
                 $outdatedRecipes[] = $name;
             }
         }

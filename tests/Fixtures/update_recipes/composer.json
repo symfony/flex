@@ -3,11 +3,18 @@
     "license": "proprietary",
     "require": {
         "php": ">=7.1",
-        "symfony/console": "5.4.*"
+        "symfony/console": "5.4.*",
+        "symfony/flex": "@dev"
     },
     "config": {
         "allow-plugins": {
             "symfony/flex": true
         }
-    }
+    },
+    "repositories": [
+        {
+            "type": "path",
+            "url": ".."
+        }
+    ]
 }

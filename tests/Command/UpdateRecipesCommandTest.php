@@ -57,8 +57,10 @@ class UpdateRecipesCommandTest extends TestCase
      * that we can easily use to assert.
      *
      * @requires PHP >= 7.2
+     *
+     * @dataProvider provideCommandInput
      */
-    public function testCommandUpdatesRecipe()
+    public function testCommandUpdatesRecipe(array $input)
     {
         @mkdir(FLEX_TEST_DIR);
         (new Process(['git', 'init'], FLEX_TEST_DIR))->mustRun();
@@ -75,10 +77,10 @@ class UpdateRecipesCommandTest extends TestCase
         (new Process(['git', 'add', '-A'], FLEX_TEST_DIR))->mustRun();
         (new Process(['git', 'commit', '-m', 'setup of original console files'], FLEX_TEST_DIR))->mustRun();
 
-        (new Process([__DIR__.'/../../vendor/bin/composer', 'install'], FLEX_TEST_DIR))->mustRun();
+        (new Process([__DIR__.'/../../vendor/bin/composer', 'install', '--no-plugins'], FLEX_TEST_DIR))->mustRun();
 
         $command = $this->createCommandUpdateRecipes();
-        $command->execute(['package' => 'symfony/console']);
+        $command->execute($input);
 
         $this->assertSame(0, $command->getStatusCode());
         $this->assertStringContainsString('Recipe updated', $this->io->getOutput());
@@ -86,6 +88,14 @@ class UpdateRecipesCommandTest extends TestCase
         $this->assertStringNotContainsString('vendor/autoload.php', file_get_contents(FLEX_TEST_DIR.'/bin/console'));
         // assert the recipe was updated
         $this->assertStringNotContainsString('c6d02bdfba9da13c22157520e32a602dbee8a75c', file_get_contents(FLEX_TEST_DIR.'/symfony.lock'));
+    }
+
+    public function provideCommandInput()
+    {
+        return [
+            [['package' => 'symfony/console']],
+            [['--next' => true]],
+        ];
     }
 
     private function createCommandUpdateRecipes(): CommandTester
