@@ -237,8 +237,12 @@ class AddLinesConfigurator extends AbstractConfigurator
 
         $installedRepo = $this->composer->getRepositoryManager()->getLocalRepository();
 
-        foreach ($packages as $packageName) {
-            if (null === $installedRepo->findPackage($packageName, '*')) {
+        foreach ($packages as $package) {
+            $package = explode(':', $package, 2);
+            $packageName = $package[0];
+            $constraint = $package[1] ?? '*';
+
+            if (null === $installedRepo->findPackage($packageName, $constraint)) {
                 return false;
             }
         }

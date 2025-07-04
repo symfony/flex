@@ -321,6 +321,80 @@ EOF
             $actualContents);
     }
 
+    public function testLineSkippedIfRequiredPackageVersionIsWrong()
+    {
+        $this->saveFile('phpunit.dist.xml', <<<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit>
+    <extensions>
+    </extensions>
+</phpunit>
+EOF
+        );
+
+        $composer = $this->createComposerMockWithPackagesInstalled([
+            'phpunit/phpunit:9',
+        ]);
+
+        $this->runConfigure([
+            [
+                'file' => 'phpunit.dist.xml',
+                'position' => 'after_target',
+                'target' => '<extensions>',
+                'content' => '        <bootstrap class="Symfony\Component\Panther\ServerExtension" />',
+                'requires' => 'phpunit/phpunit:12',
+            ],
+        ], $composer);
+        $actualContents = $this->readFile('phpunit.dist.xml');
+        $this->assertSame(<<<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit>
+    <extensions>
+    </extensions>
+</phpunit>
+EOF
+            ,
+            $actualContents);
+    }
+
+    public function testLineProcessedIfRequiredPackageVersionIsRight()
+    {
+        $this->saveFile('phpunit.dist.xml', <<<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit>
+    <extensions>
+    </extensions>
+</phpunit>
+EOF
+        );
+
+        $composer = $this->createComposerMockWithPackagesInstalled([
+            'phpunit/phpunit:12',
+        ]);
+
+        $this->runConfigure([
+            [
+                'file' => 'phpunit.dist.xml',
+                'position' => 'after_target',
+                'target' => '<extensions>',
+                'content' => '        <bootstrap class="Symfony\Component\Panther\ServerExtension" />',
+                'requires' => 'phpunit/phpunit:12',
+            ],
+        ], $composer);
+
+        $actualContents = $this->readFile('phpunit.dist.xml');
+        $this->assertSame(<<<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit>
+    <extensions>
+        <bootstrap class="Symfony\Component\Panther\ServerExtension" />
+    </extensions>
+</phpunit>
+EOF
+            ,
+            $actualContents);
+    }
+
     /**
      * @dataProvider getUnconfigureTests
      */
@@ -611,11 +685,16 @@ EOF
 
     private function createComposerMockWithPackagesInstalled(array $packages)
     {
+        $packages = array_map(fn ($package) => explode(':', $package), $packages);
+
+        $packageNames = array_column($packages, 0);
+        $constraints = array_column($packages, 1);
+
         $repository = $this->getMockBuilder(InstalledRepositoryInterface::class)->getMock();
         $repository->expects($this->any())
             ->method('findPackage')
-            ->willReturnCallback(function ($name) use ($packages) {
-                if (\in_array($name, $packages)) {
+            ->willReturnCallback(function ($name, $constraint) use ($packageNames, $constraints) {
+                if (\in_array($name, $packageNames) && ('*' === $constraint || \in_array($constraint, $constraints))) {
                     return new Package($name, '1.0.0', '1.0.0');
                 }
 
