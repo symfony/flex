@@ -121,9 +121,9 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
         // if Flex is being upgraded, the original operations from the original Flex
         // instance are stored in the static property, so we can reuse them now.
-        if (property_exists(self::class, 'storedOperations') && self::$storedOperations) {
-            $this->operations = self::$storedOperations;
-            self::$storedOperations = [];
+        if (property_exists(Flex::class, 'storedOperations') && Flex::$storedOperations) {
+            $this->operations = Flex::$storedOperations;
+            Flex::$storedOperations = [];
         }
 
         $symfonyRequire = preg_replace('/\.x$/', '.x-dev', getenv('SYMFONY_REQUIRE') ?: ($composer->getPackage()->getExtra()['symfony']['require'] ?? ''));
@@ -213,7 +213,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
     {
         // Using `Flex::` instead of `self::` to avoid issues when
         // composer renames plugin classes when upgrading them
-        self::$storedOperations = $this->operations;
+        Flex::$storedOperations = $this->operations;
         self::$activated = false;
     }
 
