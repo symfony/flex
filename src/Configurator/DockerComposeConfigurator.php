@@ -101,7 +101,7 @@ class DockerComposeConfigurator extends AbstractConfigurator
         }
 
         if (null !== $dockerPreference = $composer->getPackage()->getExtra()['symfony']['docker'] ?? null) {
-            self::$configureDockerRecipes = $dockerPreference;
+            self::$configureDockerRecipes = filter_var($dockerPreference, \FILTER_VALIDATE_BOOLEAN);
 
             return self::$configureDockerRecipes;
         }
