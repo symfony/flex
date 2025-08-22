@@ -153,11 +153,11 @@ class UpdateRecipesCommand extends BaseCommand
         $recipeUpdate = new RecipeUpdate($originalRecipe, $newRecipe, $symfonyLock, $this->rootDir);
         $this->configurator->populateUpdate($recipeUpdate);
         $originalComposerJsonHash = $this->flex->getComposerJsonHash();
-        $patcher = new RecipePatcher($this->rootDir, $io);
+        $patcher = new RecipePatcher($this->rootDir, $io, $symfonyLock);
 
         try {
             $patch = $patcher->generatePatch($recipeUpdate->getOriginalFiles(), $recipeUpdate->getNewFiles());
-            $hasConflicts = !$patcher->applyPatch($patch);
+            $hasConflicts = !$patcher->applyPatch($patch, $packageName);
         } catch (\Throwable $throwable) {
             $io->writeError([
                 '<bg=red;fg=white>There was an error applying the recipe update patch</>',
