@@ -497,7 +497,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
     private function synchronizePackageJson(string $rootDir)
     {
-        if (!($this->composer->getPackage()->getExtra()['symfony/flex']['synchronize_package_json'] ?? true)) {
+        if (!(filter_var($this->composer->getPackage()->getExtra()['symfony/flex']['synchronize_package_json'] ?? true, FILTER_VALIDATE_BOOLEAN))) {
             $this->io->writeError('<info>Skip synchronizing package.json with PHP packages</>');
 
             return;
