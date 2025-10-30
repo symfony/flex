@@ -31,6 +31,7 @@ class CopyFromPackageConfiguratorTest extends TestCase
     private $targetDirectory;
     private $io;
     private $recipe;
+    private $composer;
 
     public function testNoFilesCopied()
     {
@@ -55,8 +56,8 @@ class CopyFromPackageConfiguratorTest extends TestCase
         file_put_contents($this->targetFile, '-');
         $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
 
-        $this->io->expects($this->at(0))->method('writeError')->with(['    Copying files from package']);
-        $this->io->expects($this->at(2))->method('writeError')->with(['      Created <fg=green>"./public/file"</>']);
+        $ioCalls = [];
+        $this->io->method('writeError')->willReturnCallback(static function (array $lines) use (&$ioCalls) { $ioCalls[] = $lines; });
         $this->io->method('askConfirmation')->with('File "build/public/file" has uncommitted changes, overwrite? [y/N] ')->willReturn(true);
 
         $this->assertFileExists($this->targetFile);
@@ -68,6 +69,12 @@ class CopyFromPackageConfiguratorTest extends TestCase
         );
         $this->assertFileExists($this->targetFile);
         $this->assertFileEquals($this->sourceFile, $this->targetFile);
+
+        $expected = [
+            ['    Copying files from package'],
+            ['      Created <fg=green>"./public/file"</>'],
+        ];
+        $this->assertSame($expected, $ioCalls);
     }
 
     public function testSourceFileNotExist()
@@ -88,20 +95,26 @@ class CopyFromPackageConfiguratorTest extends TestCase
             file_put_contents($this->sourceFile, '');
         }
 
-        $this->io->expects($this->at(0))->method('writeError')->with(['    Copying files from package']);
-        $this->io->expects($this->at(1))->method('writeError')->with(['      Created <fg=green>"./public/"</>']);
-        $this->io->expects($this->at(2))->method('writeError')->with(['      Created <fg=green>"./public/file"</>']);
+        $ioCalls = [];
+        $this->io->method('writeError')->willReturnCallback(static function (array $lines) use (&$ioCalls) { $ioCalls[] = $lines; });
 
         $this->assertFileDoesNotExist($this->targetFile);
         $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
         $this->createConfigurator()->configure($this->recipe, [$this->sourceFileRelativePath => $this->targetFileRelativePath], $lock);
         $this->assertFileExists($this->targetFile);
+
+        $expected = [
+            ['    Copying files from package'],
+            ['      Created <fg=green>"./public/"</>'],
+            ['      Created <fg=green>"./public/file"</>'],
+        ];
+        $this->assertSame($expected, $ioCalls);
     }
 
     public function testUnconfigure()
     {
-        $this->io->expects($this->at(0))->method('writeError')->with(['    Removing files from package']);
-        $this->io->expects($this->at(1))->method('writeError')->with(['      Removed <fg=green>"./public/file"</>']);
+        $ioCalls = [];
+        $this->io->method('writeError')->willReturnCallback(static function (array $lines) use (&$ioCalls) { $ioCalls[] = $lines; });
 
         if (!file_exists($this->targetDirectory)) {
             mkdir($this->targetDirectory);
@@ -115,6 +128,12 @@ class CopyFromPackageConfiguratorTest extends TestCase
             $lock
         );
         $this->assertFileDoesNotExist($this->targetFile);
+
+        $expected = [
+            ['    Removing files from package'],
+            ['      Removed <fg=green>"./public/file"</>'],
+        ];
+        $this->assertSame($expected, $ioCalls);
     }
 
     public function testNoFilesRemoved()

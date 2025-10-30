@@ -97,11 +97,10 @@ class FlexTest extends TestCase
         $this->assertSame(
             <<<EOF
 
-Symfony operations: 1 recipe ()
-  - Configuring dummy/dummy (>=1.0): From github.com/symfony/recipes:main
+                Symfony operations: 1 recipe ()
+                  - Configuring dummy/dummy (>=1.0): From github.com/symfony/recipes:main
 
-EOF
-            ,
+                EOF,
             str_replace("\r\n", "\n", $io->getOutput())
         );
     }
@@ -506,15 +505,13 @@ EOF
 
     private function mockFlexCustom(BufferIO $io, Composer $composer, Configurator $configurator, Downloader $downloader, Lock $lock): Flex
     {
-        return \Closure::bind(function () use ($composer, $io, $configurator, $downloader, $lock) {
+        return \Closure::bind(static function () use ($composer, $io, $configurator, $downloader, $lock) {
             $flex = new Flex();
             $flex->composer = $composer;
             $flex->config = $composer->getConfig();
             $flex->io = $io;
             $flex->configurator = $configurator;
             $flex->downloader = $downloader;
-            $flex->runningCommand = function () {
-            };
             $flex->options = new Options(['config-dir' => 'config', 'var-dir' => 'var', 'root-dir' => '.']);
             $flex->lock = $lock;
 

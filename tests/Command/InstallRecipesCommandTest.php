@@ -30,7 +30,7 @@ class InstallRecipesCommandTest extends TestCase
 
         $command = new InstallRecipesCommand($flex, __DIR__);
         $application = new Application();
-        $application->add($command);
+        $application->{'add'.(method_exists($application, 'addCommand') ? 'Command' : '')}($command);
         $command = $application->find('symfony:recipes:install');
 
         $tester = new CommandTester($command);

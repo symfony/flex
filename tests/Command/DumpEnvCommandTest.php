@@ -210,7 +210,7 @@ EOF
         );
 
         $application = new Application();
-        $application->add($command);
+        $application->{'add'.(method_exists($application, 'addCommand') ? 'Command' : '')}($command);
         $command = $application->find('dump-env');
 
         return new CommandTester($command);

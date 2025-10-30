@@ -76,16 +76,16 @@ class MakefileConfigurator extends AbstractConfigurator
             file_put_contents(
                 $this->options->get('root-dir').'/Makefile',
                 <<<EOF
-ifndef {$envKey}
-	include {$dotenvPath}
-endif
+                    ifndef {$envKey}
+                        include {$dotenvPath}
+                    endif
 
-.DEFAULT_GOAL := help
-.PHONY: help
-help:
-	@awk 'BEGIN {FS = ":.*?## "}; /^[a-zA-Z-]+:.*?## .*$$/ {printf "\033[32m%-15s\033[0m %s\\n", $$1, $$2}' Makefile | sort
+                    .DEFAULT_GOAL := help
+                    .PHONY: help
+                    help:
+                        @awk 'BEGIN {FS = ":.*?## "}; /^[a-zA-Z-]+:.*?## .*$$/ {printf "\033[32m%-15s\033[0m %s\\n", $$1, $$2}' Makefile | sort
 
-EOF
+                    EOF
             );
         }
 
