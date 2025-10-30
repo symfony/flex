@@ -17,8 +17,10 @@ use Composer\Package\Link;
 use Composer\Package\Loader\ArrayLoader;
 use Composer\Package\PackageInterface;
 use Composer\Package\RootPackage;
+use Composer\Package\RootPackageInterface;
 use Composer\Semver\Constraint\Constraint;
 use PHPUnit\Framework\TestCase;
+use Symfony\Flex\Downloader;
 use Symfony\Flex\PackageFilter;
 
 /**
@@ -206,5 +208,55 @@ class PackageFilterTest extends TestCase
         yield 'root-constraints-are-preserved' => [$packages, $packages, '~2.8', ['splits' => [
             'symfony/bar' => ['2.8', '3.0'],
         ]]];
+    }
+
+    public function testIgnoreUnstableReleasesFiltersPreReleases()
+    {
+        $io = new NullIO();
+        $downloader = $this->getMockBuilder(Downloader::class)->disableOriginalConstructor()->getMock();
+        $filter = new PackageFilter($io, '', $downloader, true);
+
+        $stablePkg = $this->createPackageMock('pkg/stable', 'stable');
+        $devPkg = $this->createPackageMock('pkg/dev', 'dev');
+        $alphaPkg = $this->createPackageMock('pkg/alpha', 'alpha');
+        $betaPkg = $this->createPackageMock('pkg/beta', 'beta');
+        $rcPkg = $this->createPackageMock('pkg/rc', 'RC');
+
+        $root = $this->getMockBuilder(RootPackageInterface::class)->disableOriginalConstructor()->getMock();
+
+        $result = $filter->removeLegacyPackages([$stablePkg, $devPkg, $alphaPkg, $betaPkg, $rcPkg], $root, []);
+
+        $this->assertSame([$stablePkg, $devPkg], $result);
+    }
+
+    public function testWithoutIgnoreUnstableReleasesKeepsAll()
+    {
+        $io = new NullIO();
+        $downloader = $this->getMockBuilder(Downloader::class)->disableOriginalConstructor()->getMock();
+        $filter = new PackageFilter($io, '', $downloader, false);
+
+        $packages = [
+            $this->createPackageMock('pkg/stable', 'stable'),
+            $this->createPackageMock('pkg/dev', 'dev'),
+            $this->createPackageMock('pkg/alpha', 'alpha'),
+            $this->createPackageMock('pkg/beta', 'beta'),
+            $this->createPackageMock('pkg/rc', 'RC'),
+        ];
+
+        $root = $this->getMockBuilder(RootPackageInterface::class)->disableOriginalConstructor()->getMock();
+
+        $result = $filter->removeLegacyPackages($packages, $root, []);
+
+        $this->assertSame($packages, $result);
+    }
+
+    private function createPackageMock(string $name, string $stability): PackageInterface
+    {
+        $package = $this->getMockBuilder(PackageInterface::class)->getMock();
+        $package->method('getName')->willReturn($name);
+        $package->method('getVersion')->willReturn('1.0.0');
+        $package->method('getStability')->willReturn($stability);
+
+        return $package;
     }
 }

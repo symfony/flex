@@ -31,7 +31,6 @@ use Composer\IO\IOInterface;
 use Composer\IO\NullIO;
 use Composer\Json\JsonFile;
 use Composer\Json\JsonManipulator;
-use Composer\Package\BasePackage;
 use Composer\Package\Locker;
 use Composer\Package\Package;
 use Composer\Plugin\PluginEvents;
@@ -77,6 +76,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
     private $operations = [];
     private $lock;
     private $displayThanksReminder = 0;
+    private $ignoreUnstableReleases = false;
     private $reinstall;
     private static $activated = true;
     private static $aliasResolveCommands = [
@@ -126,16 +126,8 @@ class Flex implements PluginInterface, EventSubscriberInterface
             Flex::$storedOperations = [];
         }
 
-        $symfonyRequire = preg_replace('/\.x$/', '.x-dev', getenv('SYMFONY_REQUIRE') ?: ($composer->getPackage()->getExtra()['symfony']['require'] ?? ''));
-
         $rfs = $composer->getLoop()->getHttpDownloader();
-
         $this->downloader = $downloader = new Downloader($composer, $io, $rfs);
-
-        if ($symfonyRequire) {
-            $this->filter = new PackageFilter($io, $symfonyRequire, $this->downloader);
-        }
-
         $this->configurator = new Configurator($composer, $io, $this->options);
 
         $disable = true;
@@ -190,12 +182,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
                 }
             }
 
-            if ($input->hasParameterOption('--prefer-lowest', true)) {
-                // When prefer-lowest is set and no stable version has been released,
-                // we consider "dev" more stable than "alpha", "beta" or "RC". This
-                // allows testing lowest versions with potential fixes applied.
-                BasePackage::$stabilities['dev'] = 1 + BasePackage::STABILITY_STABLE;
-            }
+            $this->ignoreUnstableReleases = $input->hasParameterOption('--prefer-lowest', true) && $input->hasParameterOption('--prefer-stable', true);
 
             $addCommand = 'add'.(method_exists($app, 'addCommand') ? 'Command' : '');
             $app->$addCommand(new Command\RecipesCommand($this, $this->lock, $rfs));
@@ -204,6 +191,12 @@ class Flex implements PluginInterface, EventSubscriberInterface
             $app->$addCommand(new Command\DumpEnvCommand($this->config, $this->options));
 
             break;
+        }
+
+        $symfonyRequire = preg_replace('/\.x$/', '.x-dev', getenv('SYMFONY_REQUIRE') ?: ($composer->getPackage()->getExtra()['symfony']['require'] ?? ''));
+
+        if ($symfonyRequire || $this->ignoreUnstableReleases) {
+            $this->filter = new PackageFilter($io, $symfonyRequire, $this->downloader, $this->ignoreUnstableReleases);
         }
     }
 
