@@ -136,7 +136,7 @@ class DumpEnvCommand extends BaseCommand
                 }
             }
 
-            unset($_ENV['SYMFONY_DOTENV_VARS']);
+            unset($_ENV['SYMFONY_DOTENV_VARS'], $_ENV['SYMFONY_DOTENV_PATH']);
             $env = $_ENV;
         } finally {
             list($_SERVER, $_ENV) = $globalsBackup;
