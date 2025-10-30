@@ -32,6 +32,7 @@ class CopyDirectoryFromPackageConfiguratorTest extends TestCase
     private $targetDirectory;
     private $io;
     private $recipe;
+    private $composer;
 
     public function testConfigureDirectory()
     {

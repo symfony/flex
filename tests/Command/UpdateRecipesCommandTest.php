@@ -112,7 +112,7 @@ class UpdateRecipesCommandTest extends TestCase
         $command->setComposer($composer);
 
         $application = new Application();
-        $application->add($command);
+        $application->{'add'.(method_exists($application, 'addCommand') ? 'Command' : '')}($command);
         $command = $application->find('recipes:update');
 
         return new CommandTester($command);

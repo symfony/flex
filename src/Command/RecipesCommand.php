@@ -44,7 +44,7 @@ class RecipesCommand extends BaseCommand
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this->setName('symfony:recipes')
             ->setAliases(['recipes'])

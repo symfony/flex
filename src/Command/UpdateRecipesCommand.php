@@ -51,7 +51,7 @@ class UpdateRecipesCommand extends BaseCommand
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this->setName('symfony:recipes:update')
             ->setAliases(['recipes:update'])

@@ -66,8 +66,8 @@ class CopyFromRecipeConfiguratorTest extends TestCase
         file_put_contents($this->targetFile, '-');
         $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
 
-        $this->io->expects($this->at(0))->method('writeError')->with(['    Copying files from recipe']);
-        $this->io->expects($this->at(2))->method('writeError')->with(['      Created <fg=green>"./config/file"</>']);
+        $ioCalls = [];
+        $this->io->method('writeError')->willReturnCallback(static function (array $lines) use (&$ioCalls) { $ioCalls[] = $lines; });
         $this->io->method('askConfirmation')->with('File "build/config/file" has uncommitted changes, overwrite? [y/N] ')->willReturn(true);
 
         $this->assertFileExists($this->targetFile);
@@ -79,12 +79,18 @@ class CopyFromRecipeConfiguratorTest extends TestCase
         );
         $this->assertFileExists($this->targetFile);
         $this->assertSame('somecontent', file_get_contents($this->targetFile));
+
+        $expected = [
+            ['    Copying files from recipe'],
+            ['      Created <fg=green>"./config/file"</>'],
+        ];
+        $this->assertSame($expected, $ioCalls);
     }
 
     public function testConfigure()
     {
-        $this->io->expects($this->at(0))->method('writeError')->with(['    Copying files from recipe']);
-        $this->io->expects($this->at(1))->method('writeError')->with(['      Created <fg=green>"./config/file"</>']);
+        $ioCalls = [];
+        $this->io->method('writeError')->willReturnCallback(static function (array $lines) use (&$ioCalls) { $ioCalls[] = $lines; });
 
         $this->assertFileDoesNotExist($this->targetFile);
         $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
@@ -94,6 +100,12 @@ class CopyFromRecipeConfiguratorTest extends TestCase
             $lock
         );
         $this->assertFileExists($this->targetFile);
+
+        $expected = [
+            ['    Copying files from recipe'],
+            ['      Created <fg=green>"./config/file"</>'],
+        ];
+        $this->assertSame($expected, $ioCalls);
     }
 
     public function testUnconfigureKeepsLockedFiles()
@@ -119,8 +131,8 @@ class CopyFromRecipeConfiguratorTest extends TestCase
 
     public function testUnconfigure()
     {
-        $this->io->expects($this->at(0))->method('writeError')->with(['    Removing files from recipe']);
-        $this->io->expects($this->at(1))->method('writeError')->with(['      Removed <fg=green>"./config/file"</>']);
+        $ioCalls = [];
+        $this->io->method('writeError')->willReturnCallback(static function (array $lines) use (&$ioCalls) { $ioCalls[] = $lines; });
 
         if (!file_exists($this->targetDirectory)) {
             @mkdir($this->targetDirectory, 0777, true);
@@ -131,6 +143,12 @@ class CopyFromRecipeConfiguratorTest extends TestCase
         $this->recipe->method('getName')->willReturn('test-recipe');
         $this->createConfigurator()->unconfigure($this->recipe, [$this->targetFileRelativePath], $lock);
         $this->assertFileDoesNotExist($this->targetFile);
+
+        $expected = [
+            ['    Removing files from recipe'],
+            ['      Removed <fg=green>"./config/file"</>'],
+        ];
+        $this->assertSame($expected, $ioCalls);
     }
 
     public function testNoFilesRemoved()

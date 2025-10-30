@@ -38,7 +38,7 @@ class InstallRecipesCommand extends BaseCommand
         parent::__construct();
     }
 
-    protected function configure()
+    protected function configure(): void
     {
         $this->setName('symfony:recipes:install')
             ->setAliases(['recipes:install', 'symfony:sync-recipes', 'sync-recipes', 'fix-recipes'])
