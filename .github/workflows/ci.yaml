@@ -20,13 +20,12 @@ jobs:
             fail-fast: false
             matrix:
                 include:
-                  - php: '8.0'
-                    composer: 2.2.x
                   - php: '8.1'
+                    composer: 2.1.x
                   - php: '8.2'
                   - php: '8.3'
                   - php: '8.4'
-                  - php: '8.1'
+                  - php: '8.5'
                     mode: low-deps
 
         steps:
@@ -40,7 +39,7 @@ jobs:
                   php-version: ${{ matrix.php }}
                   tools: composer:${{ matrix.composer }}
 
-            - if: matrix.php == '8.0'
+            - if: matrix.php == '8.1'
               name: "Lint PHP files"
               run: |
                 find src/ -name '*.php' | xargs -n1 php -l
@@ -53,6 +52,7 @@ jobs:
               run: |
                 if [[ "${{ matrix.mode }}" = low-deps ]]; then
                     composer u --prefer-lowest --prefer-stable --ansi
+                    composer u symfony/phpunit-bridge
                 else
                     composer u --ansi
                 fi
