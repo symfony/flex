@@ -11,6 +11,7 @@
 
 namespace Symfony\Flex;
 
+use Composer\Command\BaseConfigCommand;
 use Composer\Command\GlobalCommand;
 use Composer\Composer;
 use Composer\Console\Application;
@@ -76,7 +77,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
     private $operations = [];
     private $lock;
     private $displayThanksReminder = 0;
-    private $ignoreUnstableReleases = false;
+    private $ignorePreleases = false;
     private $reinstall;
     private static $activated = true;
     private static $aliasResolveCommands = [
@@ -182,7 +183,12 @@ class Flex implements PluginInterface, EventSubscriberInterface
                 }
             }
 
-            $this->ignoreUnstableReleases = $input->hasParameterOption('--prefer-lowest', true) && $input->hasParameterOption('--prefer-stable', true);
+            if (class_exists(BaseConfigCommand::class)) {
+                // composer 2.9+
+                $_SERVER['COMPOSER_PREFER_DEV_OVER_PRERELEASE'] = '1';
+            } else {
+                $this->ignorePreleases = $input->hasParameterOption('--prefer-lowest', true) && $input->hasParameterOption('--prefer-stable', true);
+            }
 
             $addCommand = 'add'.(method_exists($app, 'addCommand') ? 'Command' : '');
             $app->$addCommand(new Command\RecipesCommand($this, $this->lock, $rfs));
@@ -195,8 +201,8 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
         $symfonyRequire = preg_replace('/\.x$/', '.x-dev', getenv('SYMFONY_REQUIRE') ?: ($composer->getPackage()->getExtra()['symfony']['require'] ?? ''));
 
-        if ($symfonyRequire || $this->ignoreUnstableReleases) {
-            $this->filter = new PackageFilter($io, $symfonyRequire, $this->downloader, $this->ignoreUnstableReleases);
+        if ($symfonyRequire || $this->ignorePreleases) {
+            $this->filter = new PackageFilter($io, $symfonyRequire, $this->downloader, $this->ignorePreleases);
         }
     }
 

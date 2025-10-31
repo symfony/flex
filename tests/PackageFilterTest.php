@@ -210,7 +210,7 @@ class PackageFilterTest extends TestCase
         ]]];
     }
 
-    public function testIgnoreUnstableReleasesFiltersPreReleases()
+    public function testIgnorePreleases()
     {
         $io = new NullIO();
         $downloader = $this->getMockBuilder(Downloader::class)->disableOriginalConstructor()->getMock();
@@ -229,7 +229,7 @@ class PackageFilterTest extends TestCase
         $this->assertSame([$stablePkg, $devPkg], $result);
     }
 
-    public function testWithoutIgnoreUnstableReleasesKeepsAll()
+    public function testWithoutIgnorePreleases()
     {
         $io = new NullIO();
         $downloader = $this->getMockBuilder(Downloader::class)->disableOriginalConstructor()->getMock();
