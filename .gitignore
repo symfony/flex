@@ -1,5 +1,5 @@
 /vendor/
 /build/
-.phpunit.result.cache
+/.phpunit.cache
 .php_cs.cache
 composer.lock

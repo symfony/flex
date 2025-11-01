@@ -30,17 +30,17 @@ class MakefileConfiguratorTest extends TestCase
     public function testConfigure()
     {
         $configurator = new MakefileConfigurator(
-            $this->getMockBuilder(Composer::class)->getMock(),
-            $this->getMockBuilder(IOInterface::class)->getMock(),
+            $this->createStub(Composer::class),
+            $this->createStub(IOInterface::class),
             new Options(['root-dir' => FLEX_TEST_DIR])
         );
-        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
+        $lock = $this->createStub(Lock::class);
 
-        $recipe1 = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
-        $recipe1->expects($this->any())->method('getName')->willReturn('FooBundle');
+        $recipe1 = $this->createStub(Recipe::class);
+        $recipe1->method('getName')->willReturn('FooBundle');
 
-        $recipe2 = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
-        $recipe2->expects($this->any())->method('getName')->willReturn('BarBundle');
+        $recipe2 = $this->createStub(Recipe::class);
+        $recipe2->method('getName')->willReturn('BarBundle');
 
         $makefile = FLEX_TEST_DIR.'/Makefile';
         @unlink($makefile);
@@ -92,13 +92,13 @@ EOF
     public function testConfigureForce()
     {
         $configurator = new MakefileConfigurator(
-            $this->getMockBuilder(Composer::class)->getMock(),
-            $this->getMockBuilder(IOInterface::class)->getMock(),
+            $this->createStub(Composer::class),
+            $this->createStub(IOInterface::class),
             new Options(['root-dir' => FLEX_TEST_DIR])
         );
 
-        $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
-        $recipe->expects($this->any())->method('getName')->willReturn('FooBundle');
+        $recipe = $this->createStub(Recipe::class);
+        $recipe->method('getName')->willReturn('FooBundle');
 
         $makefile = FLEX_TEST_DIR.'/Makefile';
         @unlink($makefile);
@@ -120,7 +120,7 @@ EOF
             ["###< FooBundle ###\n\n# new content"]
         ));
 
-        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
+        $lock = $this->createStub(Lock::class);
 
         $configurator->configure($recipe, $bundleLinesConfigure, $lock);
         file_put_contents($makefile, "\n# new content", \FILE_APPEND);
@@ -135,18 +135,18 @@ EOF
     public function testUpdate()
     {
         $configurator = new MakefileConfigurator(
-            $this->getMockBuilder(Composer::class)->getMock(),
-            $this->getMockBuilder(IOInterface::class)->getMock(),
+            $this->createStub(Composer::class),
+            $this->createStub(IOInterface::class),
             new Options(['root-dir' => FLEX_TEST_DIR])
         );
 
-        $recipe = $this->createMock(Recipe::class);
+        $recipe = $this->createStub(Recipe::class);
         $recipe->method('getName')
             ->willReturn('symfony/foo-bundle');
         $recipeUpdate = new RecipeUpdate(
             $recipe,
             $recipe,
-            $this->createMock(Lock::class),
+            $this->createStub(Lock::class),
             FLEX_TEST_DIR
         );
 

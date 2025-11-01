@@ -11,20 +11,21 @@
 
 namespace Symfony\Flex\Tests;
 
+use Composer\Composer;
+use Composer\Config;
 use Composer\Package\Package;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Flex\SymfonyBundle;
 
 class SymfonyBundleTest extends TestCase
 {
-    /**
-     * @dataProvider getNamespaces
-     */
+    #[DataProvider('getNamespaces')]
     public function testGetClassNamesForInstall($package, $autoload, $classes, $type = null)
     {
-        $config = $this->getMockBuilder('Composer\Config')->getMock();
-        $config->expects($this->any())->method('get')->willReturn(__DIR__.'/Fixtures/vendor');
-        $composer = $this->getMockBuilder('Composer\Composer')->getMock();
+        $config = $this->createStub(Config::class);
+        $config->method('get')->willReturn(__DIR__.'/Fixtures/vendor');
+        $composer = $this->getMockBuilder(Composer::class)->getMock();
         $composer->expects($this->once())->method('getConfig')->willReturn($config);
         $package = new Package($package, '1.0', '1.0');
         $package->setAutoload($autoload);
@@ -36,10 +37,8 @@ class SymfonyBundleTest extends TestCase
         $this->assertSame($classes, $bundle->getClassNames());
     }
 
-    public function getNamespaces()
+    public static function getNamespaces()
     {
-        $return = [];
-
         $packages = FlexTest::getTestPackages();
         foreach ($packages as $name => $info) {
             $packageData = [$name, $info['autoload'], $info['bundles']];
@@ -47,9 +46,7 @@ class SymfonyBundleTest extends TestCase
                 $packageData[] = $info['type'];
             }
 
-            $return[] = $packageData;
+            yield $packageData;
         }
-
-        return $return;
     }
 }

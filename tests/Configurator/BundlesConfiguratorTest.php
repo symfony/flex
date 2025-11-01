@@ -27,13 +27,13 @@ class BundlesConfiguratorTest extends TestCase
         $config = FLEX_TEST_DIR.'/config/bundles.php';
 
         $configurator = new BundlesConfigurator(
-            $this->getMockBuilder(Composer::class)->getMock(),
-            $this->getMockBuilder(IOInterface::class)->getMock(),
+            $this->createStub(Composer::class),
+            $this->createStub(IOInterface::class),
             new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
         );
 
-        $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
-        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
+        $recipe = $this->createStub(Recipe::class);
+        $lock = $this->createStub(Lock::class);
 
         @unlink($config);
         $configurator->configure($recipe, [
@@ -65,13 +65,13 @@ class BundlesConfiguratorTest extends TestCase
         );
 
         $configurator = new BundlesConfigurator(
-            $this->getMockBuilder(Composer::class)->getMock(),
-            $this->getMockBuilder(IOInterface::class)->getMock(),
+            $this->createStub(Composer::class),
+            $this->createStub(IOInterface::class),
             new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
         );
 
-        $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
-        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
+        $recipe = $this->createStub(Recipe::class);
+        $lock = $this->createStub(Lock::class);
 
         $configurator->configure($recipe, [
             'FooBundle' => ['dev', 'test'],
@@ -105,13 +105,13 @@ class BundlesConfiguratorTest extends TestCase
         );
 
         $configurator = new BundlesConfigurator(
-            $this->getMockBuilder(Composer::class)->getMock(),
-            $this->getMockBuilder(IOInterface::class)->getMock(),
+            $this->createStub(Composer::class),
+            $this->createStub(IOInterface::class),
             new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
         );
 
-        $recipe = $this->createMock(Recipe::class);
-        $lock = $this->createMock(Lock::class);
+        $recipe = $this->createStub(Recipe::class);
+        $lock = $this->createStub(Lock::class);
 
         $configurator->unconfigure($recipe, [
             'BarBundle' => ['dev', 'all'],
@@ -132,15 +132,15 @@ class BundlesConfiguratorTest extends TestCase
     public function testUpdate()
     {
         $configurator = new BundlesConfigurator(
-            $this->createMock(Composer::class),
-            $this->createMock(IOInterface::class),
+            $this->createStub(Composer::class),
+            $this->createStub(IOInterface::class),
             new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
         );
 
         $recipeUpdate = new RecipeUpdate(
-            $this->createMock(Recipe::class),
-            $this->createMock(Recipe::class),
-            $this->createMock(Lock::class),
+            $this->createStub(Recipe::class),
+            $this->createStub(Recipe::class),
+            $this->createStub(Lock::class),
             FLEX_TEST_DIR
         );
 

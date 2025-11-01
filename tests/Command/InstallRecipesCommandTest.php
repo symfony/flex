@@ -22,7 +22,7 @@ class InstallRecipesCommandTest extends TestCase
 {
     public function testCommandFlagsPassedDown()
     {
-        $flex = $this->createMock(Flex::class);
+        $flex = $this->createStub(Flex::class);
         $flex->method('update')->willReturnCallback(function (UpdateEvent $event) {
             $this->assertTrue($event->reset());
             $this->assertTrue($event->assumeYesForPrompts());

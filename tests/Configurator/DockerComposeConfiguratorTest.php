@@ -14,6 +14,8 @@ namespace Symfony\Flex\Tests\Configurator;
 use Composer\Composer;
 use Composer\IO\IOInterface;
 use Composer\Package\RootPackage;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\MockObject\Stub;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Flex\Configurator\DockerComposeConfigurator;
@@ -97,24 +99,11 @@ class DockerComposeConfiguratorTest extends TestCase
         'docker-compose.override.yml' => self::CONFIG_DB,
     ];
 
-    /** @var Recipe|\PHPUnit\Framework\MockObject\MockObject */
-    private $recipeDb;
-
-    /** @var Lock|\PHPUnit\Framework\MockObject\MockObject */
-    private $lock;
-
-    /** @var Composer|\PHPUnit\Framework\MockObject\MockObject */
-    private $composer;
-
-    /** @var IOInterface|\PHPUnit\Framework\MockObject\MockObject */
-    private $io;
-
-    /** @var DockerComposeConfigurator */
-    private $configurator;
-
-    /** @var RootPackage */
-    private $package;
-
+    private Recipe&Stub $recipeDb;
+    private Lock&Stub $lock;
+    private Composer&Stub $composer;
+    private DockerComposeConfigurator $configurator;
+    private RootPackage $package;
     private $originalEnvComposer;
 
     protected function setUp(): void
@@ -130,24 +119,22 @@ class DockerComposeConfiguratorTest extends TestCase
         DockerComposeConfigurator::$configureDockerRecipes = null;
 
         // Recipe
-        $this->recipeDb = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
+        $this->recipeDb = $this->createStub(Recipe::class);
         $this->recipeDb->method('getName')->willReturn('doctrine/doctrine-bundle');
 
         // Lock
-        $this->lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
+        $this->lock = $this->createStub(Lock::class);
 
         // Configurator
         $this->package = new RootPackage('dummy/dummy', '1.0.0', '1.0.0');
         $this->package->setExtra(['symfony' => ['docker' => true]]);
 
-        $this->composer = $this->getMockBuilder(Composer::class)->getMock();
+        $this->composer = $this->createStub(Composer::class);
         $this->composer->method('getPackage')->willReturn($this->package);
-
-        $this->io = $this->getMockBuilder(IOInterface::class)->getMock();
 
         $this->configurator = new DockerComposeConfigurator(
             $this->composer,
-            $this->io,
+            $this->createStub(IOInterface::class),
             new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
         );
     }
@@ -185,9 +172,7 @@ class DockerComposeConfiguratorTest extends TestCase
         yield ['docker-compose.yml'];
     }
 
-    /**
-     * @dataProvider dockerComposerFileProvider
-     */
+    #[DataProvider('dockerComposerFileProvider')]
     public function testConfigure(string $fileName)
     {
         $dockerComposeFile = FLEX_TEST_DIR."/$fileName";
@@ -232,9 +217,7 @@ class DockerComposeConfiguratorTest extends TestCase
         $this->assertFileDoesNotExist(FLEX_TEST_DIR.'/docker-compose.yaml');
     }
 
-    /**
-     * @dataProvider getInteractiveDockerPreferenceTests
-     */
+    #[DataProvider('getInteractiveDockerPreferenceTests')]
     public function testPreferenceAskedInteractively(string $userInput, bool $expectedIsConfigured, bool $expectedIsComposerJsonUpdated)
     {
         $composerJsonPath = FLEX_TEST_DIR.'/composer.json';
@@ -242,9 +225,16 @@ class DockerComposeConfiguratorTest extends TestCase
 
         $this->package->setExtra(['symfony' => []]);
         $this->recipeDb->method('getJob')->willReturn('install');
-        $this->io->method('isInteractive')->willReturn(true);
-        $this->io->expects($this->once())->method('askAndValidate')->willReturn($userInput);
 
+        $io = $this->createMock(IOInterface::class);
+        $io->method('isInteractive')->willReturn(true);
+        $io->expects($this->once())->method('askAndValidate')->willReturn($userInput);
+
+        $this->configurator = new DockerComposeConfigurator(
+            $this->composer,
+            $io,
+            new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
+        );
         $this->configurator->configure($this->recipeDb, self::CONFIG_DB, $this->lock);
 
         if ($expectedIsConfigured) {
@@ -262,7 +252,7 @@ class DockerComposeConfiguratorTest extends TestCase
         }
     }
 
-    public function getInteractiveDockerPreferenceTests()
+    public static function getInteractiveDockerPreferenceTests()
     {
         yield 'yes_once' => ['y', true, false];
         yield 'no_once' => ['n', false, false];
@@ -277,7 +267,15 @@ class DockerComposeConfiguratorTest extends TestCase
 
         $this->package->setExtra(['symfony' => []]);
         $this->recipeDb->method('getJob')->willReturn('install');
-        $this->io->expects($this->never())->method('askAndValidate');
+
+        $io = $this->createMock(IOInterface::class);
+        $io->expects($this->never())->method('askAndValidate');
+
+        $this->configurator = new DockerComposeConfigurator(
+            $this->composer,
+            $io,
+            new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
+        );
 
         $_SERVER['SYMFONY_DOCKER'] = 1;
         $this->configurator->configure($this->recipeDb, self::CONFIG_DB, $this->lock);
@@ -369,8 +367,8 @@ class DockerComposeConfiguratorTest extends TestCase
         $dockerComposeFile = FLEX_TEST_DIR.'/docker-compose.yml';
         file_put_contents($dockerComposeFile, $originalContent);
 
-        /** @var Recipe|\PHPUnit\Framework\MockObject\MockObject $recipe */
-        $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
+        /** @var Recipe&Stub $recipe */
+        $recipe = $this->createStub(Recipe::class);
         $recipe->method('getName')->willReturn('symfony/mercure-bundle');
 
         $config = [
@@ -499,10 +497,6 @@ class DockerComposeConfiguratorTest extends TestCase
         $dockerComposeFile = FLEX_TEST_DIR.'/docker-compose.yml';
         file_put_contents($dockerComposeFile, $originalContent);
 
-        /** @var Recipe|\PHPUnit\Framework\MockObject\MockObject $recipe */
-        $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
-        $recipe->method('getName')->willReturn('symfony/messenger');
-
         $this->configurator->unconfigure($this->recipeDb, self::CONFIG_DB, $this->lock);
         $this->assertStringEqualsFile($dockerComposeFile, $contentWithoutDoctrine);
     }
@@ -595,9 +589,10 @@ class DockerComposeConfiguratorTest extends TestCase
 
     public function testConfigureFileInParentDir()
     {
+        $io = $this->createStub(IOInterface::class);
         $this->configurator = new DockerComposeConfigurator(
             $this->composer,
-            $this->getMockBuilder(IOInterface::class)->getMock(),
+            $io,
             new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR.'/child'])
         );
 
@@ -674,14 +669,10 @@ class DockerComposeConfiguratorTest extends TestCase
 
     public function testUpdate()
     {
-        $recipe = $this->createMock(Recipe::class);
-        $recipe->method('getName')
-            ->willReturn('doctrine/doctrine-bundle');
-
         $recipeUpdate = new RecipeUpdate(
-            $recipe,
-            $recipe,
-            $this->createMock(Lock::class),
+            $this->recipeDb,
+            $this->recipeDb,
+            $this->createStub(Lock::class),
             FLEX_TEST_DIR
         );
 

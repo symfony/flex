@@ -275,7 +275,9 @@ class DockerComposeConfigurator extends AbstractConfigurator
                 }
 
                 // Keep end in memory (check break line on previous line)
-                $endAt[$node] = !$i || '' !== trim($lines[$i - 1]) ? $i : $i - 1;
+                if (null !== $node) {
+                    $endAt[$node] = !$i || '' !== trim($lines[$i - 1]) ? $i : $i - 1;
+                }
                 $node = $matches[1];
                 if (!isset($nodesLines[$node])) {
                     $nodesLines[$node] = [];
@@ -285,7 +287,9 @@ class DockerComposeConfigurator extends AbstractConfigurator
                     $startAt[$node] = $i + 1;
                 }
             }
-            $endAt[$node] = \count($lines) + 1;
+            if (null !== $node) {
+                $endAt[$node] = \count($lines) + 1;
+            }
 
             foreach ($extra as $key => $value) {
                 if (isset($endAt[$key])) {

@@ -16,6 +16,7 @@ use Composer\IO\IOInterface;
 use Composer\Package\Package;
 use Composer\Repository\InstalledRepositoryInterface;
 use Composer\Repository\RepositoryManager;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Flex\Configurator\AddLinesConfigurator;
@@ -395,9 +396,7 @@ class AddLinesConfiguratorTest extends TestCase
         );
     }
 
-    /**
-     * @dataProvider getUnconfigureTests
-     */
+    #[DataProvider('getUnconfigureTests')]
     public function testUnconfigure(string $originalContents, string $value, string $expectedContents)
     {
         $this->saveFile('assets/app.js', $originalContents);
@@ -434,7 +433,7 @@ class AddLinesConfiguratorTest extends TestCase
         );
     }
 
-    public function getUnconfigureTests()
+    public static function getUnconfigureTests()
     {
         yield 'found_middle' => [
             <<<JS
@@ -515,9 +514,7 @@ class AddLinesConfiguratorTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider getUpdateTests
-     */
+    #[DataProvider('getUpdateTests')]
     public function testUpdate(array $originalFiles, array $originalConfig, array $newConfig, array $expectedFiles)
     {
         foreach ($originalFiles as $filename => $originalContents) {
@@ -528,8 +525,8 @@ class AddLinesConfiguratorTest extends TestCase
             'symfony/installed-package',
         ]);
         $configurator = $this->createConfigurator($composer);
-        $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
-        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
+        $recipe = $this->createStub(Recipe::class);
+        $lock = $this->createStub(Lock::class);
 
         $recipeUpdate = new RecipeUpdate($recipe, $recipe, $lock, FLEX_TEST_DIR);
         $configurator->update($recipeUpdate, $originalConfig, $newConfig);
@@ -541,7 +538,7 @@ class AddLinesConfiguratorTest extends TestCase
         }
     }
 
-    public function getUpdateTests()
+    public static function getUpdateTests()
     {
         $appJsOriginal = <<<JS
             import * as Turbo from '@hotwired/turbo';
@@ -640,8 +637,8 @@ class AddLinesConfiguratorTest extends TestCase
     {
         $configurator = $this->createConfigurator($composer);
 
-        $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
-        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
+        $recipe = $this->createStub(Recipe::class);
+        $lock = $this->createStub(Lock::class);
         $configurator->configure($recipe, $config, $lock);
     }
 
@@ -649,16 +646,16 @@ class AddLinesConfiguratorTest extends TestCase
     {
         $configurator = $this->createConfigurator();
 
-        $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
-        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
+        $recipe = $this->createStub(Recipe::class);
+        $lock = $this->createStub(Lock::class);
         $configurator->unconfigure($recipe, $config, $lock);
     }
 
     private function createConfigurator(?Composer $composer = null)
     {
         return new AddLinesConfigurator(
-            $composer ?: $this->getMockBuilder(Composer::class)->getMock(),
-            $this->getMockBuilder(IOInterface::class)->getMock(),
+            $composer ?: $this->createStub(Composer::class),
+            $this->createStub(IOInterface::class),
             new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
         );
     }
@@ -684,8 +681,8 @@ class AddLinesConfiguratorTest extends TestCase
         $packageNames = array_column($packages, 0);
         $constraints = array_column($packages, 1);
 
-        $repository = $this->getMockBuilder(InstalledRepositoryInterface::class)->getMock();
-        $repository->expects($this->any())
+        $repository = $this->createStub(InstalledRepositoryInterface::class);
+        $repository
             ->method('findPackage')
             ->willReturnCallback(function ($name, $constraint) use ($packageNames, $constraints) {
                 if (\in_array($name, $packageNames) && ('*' === $constraint || \in_array($constraint, $constraints))) {
@@ -694,12 +691,12 @@ class AddLinesConfiguratorTest extends TestCase
 
                 return null;
             });
-        $repositoryManager = $this->getMockBuilder(RepositoryManager::class)->disableOriginalConstructor()->getMock();
-        $repositoryManager->expects($this->any())
+        $repositoryManager = $this->createStub(RepositoryManager::class);
+        $repositoryManager
             ->method('getLocalRepository')
             ->willReturn($repository);
-        $composer = $this->getMockBuilder(Composer::class)->getMock();
-        $composer->expects($this->any())
+        $composer = $this->createStub(Composer::class);
+        $composer
             ->method('getRepositoryManager')
             ->willReturn($repositoryManager);
 

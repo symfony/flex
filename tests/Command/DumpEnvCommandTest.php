@@ -13,6 +13,8 @@ namespace Symfony\Flex\Tests\Command;
 
 use Composer\Config;
 use Composer\Console\Application;
+use PHPUnit\Framework\Attributes\BackupGlobals;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Tester\CommandTester;
 use Symfony\Flex\Command\DumpEnvCommand;
@@ -82,9 +84,7 @@ class DumpEnvCommandTest extends TestCase
         unlink($envLocal);
     }
 
-    /**
-     * @backupGlobals enabled
-     */
+    #[BackupGlobals(true)]
     public function testEnvCanBeReferenced()
     {
         @mkdir(FLEX_TEST_DIR);
@@ -164,9 +164,7 @@ class DumpEnvCommandTest extends TestCase
         unlink($envLocalPhp);
     }
 
-    /**
-     * @runInSeparateProcess
-     */
+    #[RunInSeparateProcess]
     public function testLoadLocalEnvWhenTestEnvIsNotEqual()
     {
         @mkdir(FLEX_TEST_DIR);

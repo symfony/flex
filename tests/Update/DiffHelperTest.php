@@ -11,14 +11,13 @@
 
 namespace Symfony\Flex\Tests\Update;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Flex\Update\DiffHelper;
 
 class DiffHelperTest extends TestCase
 {
-    /**
-     * @dataProvider getRemoveFilesFromPatchTests
-     */
+    #[DataProvider('getRemoveFilesFromPatchTests')]
     public function testRemoveFilesFromPatch(string $patch, array $filesToRemove, string $expectedPatch, array $expectedRemovedPatches)
     {
         $removedPatches = [];
@@ -27,7 +26,7 @@ class DiffHelperTest extends TestCase
         $this->assertSame($expectedRemovedPatches, $removedPatches);
     }
 
-    public function getRemoveFilesFromPatchTests(): iterable
+    public static function getRemoveFilesFromPatchTests(): iterable
     {
         $patch = <<<DIFF
             diff --git a/.env b/.env

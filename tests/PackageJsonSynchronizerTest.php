@@ -33,7 +33,7 @@ class PackageJsonSynchronizerTest extends TestCase
             $this->tempDir,
             'vendor',
             $this->scriptExecutor,
-            $this->createMock(IOInterface::class)
+            $this->createStub(IOInterface::class)
         );
     }
 
@@ -44,6 +44,8 @@ class PackageJsonSynchronizerTest extends TestCase
 
     public function testSynchronizeNoPackage()
     {
+        $this->scriptExecutor->expects($this->never())->method('execute');
+
         $this->synchronizer->synchronize([]);
 
         $this->assertSame(
@@ -89,6 +91,8 @@ class PackageJsonSynchronizerTest extends TestCase
 
     public function testSynchronizeExistingPackage()
     {
+        $this->scriptExecutor->expects($this->never())->method('execute');
+
         $this->synchronizer->synchronize([
             [
                 'name' => 'symfony/existing-package',
@@ -137,6 +141,8 @@ class PackageJsonSynchronizerTest extends TestCase
 
     public function testSynchronizeNewPackage()
     {
+        $this->scriptExecutor->expects($this->never())->method('execute');
+
         $this->synchronizer->synchronize([
             [
                 'name' => 'symfony/existing-package',
@@ -197,6 +203,8 @@ class PackageJsonSynchronizerTest extends TestCase
 
     public function testArrayFormattingHasNotChanged()
     {
+        $this->scriptExecutor->expects($this->never())->method('execute');
+
         $this->synchronizer->synchronize([
             [
                 'name' => 'symfony/existing-package',
@@ -226,6 +234,8 @@ class PackageJsonSynchronizerTest extends TestCase
     public function testExistingElevatedPackage()
     {
         (new Filesystem())->copy($this->tempDir.'/elevated_dependencies_package.json', $this->tempDir.'/package.json', true);
+
+        $this->scriptExecutor->expects($this->never())->method('execute');
 
         $this->synchronizer->synchronize([
             [
@@ -261,6 +271,8 @@ class PackageJsonSynchronizerTest extends TestCase
 
         (new Filesystem())->copy($this->tempDir.'/stricter_constraints_package.json', $this->tempDir.'/package.json', true);
 
+        $this->scriptExecutor->expects($this->never())->method('execute');
+
         $this->synchronizer->synchronize([
             [
                 'name' => 'symfony/existing-package',
@@ -289,6 +301,8 @@ class PackageJsonSynchronizerTest extends TestCase
 
     public function testSynchronizePackageWithoutNeedingFilePackage()
     {
+        $this->scriptExecutor->expects($this->never())->method('execute');
+
         $this->synchronizer->synchronize([
             [
                 'name' => 'symfony/existing-package',
@@ -326,14 +340,10 @@ class PackageJsonSynchronizerTest extends TestCase
         $entrypointPath = $this->tempDir.'/vendor/symfony/new-package/assets/entry.js';
         $secondEntrypointPath = $this->tempDir.'/vendor/symfony/new-package/assets/entry2.js';
 
+        $actualArguments = [];
         $this->scriptExecutor->expects($this->exactly(4))
             ->method('execute')
-            ->withConsecutive(
-                ['symfony-cmd', 'importmap:require', ['@hotcake/foo@^1.9.0']],
-                ['symfony-cmd', 'importmap:require', ['@symfony/new-package', '--path='.$fileModulePath]],
-                ['symfony-cmd', 'importmap:require', ['@symfony/new-package/entry.js', '--path='.$entrypointPath, '--entrypoint']],
-                ['symfony-cmd', 'importmap:require', ['@symfony/new-package/entry2.js', '--path='.$secondEntrypointPath, '--entrypoint']],
-            );
+            ->willReturnCallback(function (...$arguments) use (&$actualArguments) { $actualArguments[] = $arguments; });
 
         $this->synchronizer->synchronize([
             [
@@ -391,6 +401,15 @@ class PackageJsonSynchronizerTest extends TestCase
             ],
             json_decode(file_get_contents($this->tempDir.'/assets/controllers.json'), true)
         );
+
+        $expectedArguments = [
+            ['symfony-cmd', 'importmap:require', ['@hotcake/foo@^1.9.0']],
+            ['symfony-cmd', 'importmap:require', ['@symfony/new-package', '--path='.$fileModulePath]],
+            ['symfony-cmd', 'importmap:require', ['@symfony/new-package/entry.js', '--path='.$entrypointPath, '--entrypoint']],
+            ['symfony-cmd', 'importmap:require', ['@symfony/new-package/entry2.js', '--path='.$secondEntrypointPath, '--entrypoint']],
+        ];
+
+        $this->assertSame($expectedArguments, $actualArguments);
     }
 
     public function testSynchronizeAssetMapperUpgradesPackageIfNeeded()
@@ -407,14 +426,10 @@ class PackageJsonSynchronizerTest extends TestCase
         $entrypointPath = $this->tempDir.'/vendor/symfony/new-package/assets/entry.js';
         $secondEntrypointPath = $this->tempDir.'/vendor/symfony/new-package/assets/entry2.js';
 
+        $actualArguments = [];
         $this->scriptExecutor->expects($this->exactly(4))
             ->method('execute')
-            ->withConsecutive(
-                ['symfony-cmd', 'importmap:require', ['@hotcake/foo@^1.9.0']],
-                ['symfony-cmd', 'importmap:require', ['@symfony/new-package', '--path='.$fileModulePath]],
-                ['symfony-cmd', 'importmap:require', ['@symfony/new-package/entry.js', '--path='.$entrypointPath, '--entrypoint']],
-                ['symfony-cmd', 'importmap:require', ['@symfony/new-package/entry2.js', '--path='.$secondEntrypointPath, '--entrypoint']]
-            );
+            ->willReturnCallback(function (...$arguments) use (&$actualArguments) { $actualArguments[] = $arguments; });
 
         $this->synchronizer->synchronize([
             [
@@ -422,6 +437,15 @@ class PackageJsonSynchronizerTest extends TestCase
                 'keywords' => ['symfony-ux'],
             ],
         ]);
+
+        $expectedArguments = [
+            ['symfony-cmd', 'importmap:require', ['@hotcake/foo@^1.9.0']],
+            ['symfony-cmd', 'importmap:require', ['@symfony/new-package', '--path='.$fileModulePath]],
+            ['symfony-cmd', 'importmap:require', ['@symfony/new-package/entry.js', '--path='.$entrypointPath, '--entrypoint']],
+            ['symfony-cmd', 'importmap:require', ['@symfony/new-package/entry2.js', '--path='.$secondEntrypointPath, '--entrypoint']],
+        ];
+
+        $this->assertSame($expectedArguments, $actualArguments);
     }
 
     public function testSynchronizeAssetMapperSkipsUpgradeIfAlreadySatisfied()
@@ -441,12 +465,10 @@ class PackageJsonSynchronizerTest extends TestCase
         $fileModulePath = $this->tempDir.'/vendor/symfony/new-package/assets/dist/loader.js';
         $entrypointPath = $this->tempDir.'/vendor/symfony/new-package/assets/entry.js';
 
+        $actualArguments = [];
         $this->scriptExecutor->expects($this->exactly(2))
             ->method('execute')
-            ->withConsecutive(
-                ['symfony-cmd', 'importmap:require', ['@symfony/new-package', '--path='.$fileModulePath]],
-                ['symfony-cmd', 'importmap:require', ['@symfony/new-package/entry.js', '--path='.$entrypointPath, '--entrypoint']],
-            );
+            ->willReturnCallback(function (...$arguments) use (&$actualArguments) { $actualArguments[] = $arguments; });
 
         $this->synchronizer->synchronize([
             [
@@ -454,11 +476,20 @@ class PackageJsonSynchronizerTest extends TestCase
                 'keywords' => ['symfony-ux'],
             ],
         ]);
+
+        $expectedArguments = [
+            ['symfony-cmd', 'importmap:require', ['@symfony/new-package', '--path='.$fileModulePath]],
+            ['symfony-cmd', 'importmap:require', ['@symfony/new-package/entry.js', '--path='.$entrypointPath, '--entrypoint']],
+        ];
+
+        $this->assertSame($expectedArguments, $actualArguments);
     }
 
     public function testExceptionWhenInvalidImportMapConstraint()
     {
         file_put_contents($this->tempDir.'/importmap.php', '<?php return [];');
+
+        $this->scriptExecutor->expects($this->never())->method('execute');
 
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Invalid constraint config for key "@symfony/test": "true" given, array or string expected.');

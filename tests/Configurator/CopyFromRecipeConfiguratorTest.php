@@ -28,7 +28,6 @@ class CopyFromRecipeConfiguratorTest extends TestCase
     private $targetFile;
     private $targetFileRelativePath;
     private $targetDirectory;
-    private $io;
     private $recipe;
 
     public function testNoFilesCopied()
@@ -37,9 +36,10 @@ class CopyFromRecipeConfiguratorTest extends TestCase
             @mkdir($this->targetDirectory, 0777, true);
         }
         file_put_contents($this->targetFile, '');
-        $this->io->expects($this->exactly(1))->method('writeError')->with(['    Copying files from recipe']);
-        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
-        $this->createConfigurator()->configure($this->recipe, [$this->sourceFileRelativePath => $this->targetFileRelativePath], $lock);
+        $io = $this->createMock(IOInterface::class);
+        $io->expects($this->once())->method('writeError')->with(['    Copying files from recipe']);
+        $lock = $this->createStub(Lock::class);
+        $this->createConfigurator($io)->configure($this->recipe, [$this->sourceFileRelativePath => $this->targetFileRelativePath], $lock);
     }
 
     public function testConfigureLocksFiles()
@@ -47,7 +47,8 @@ class CopyFromRecipeConfiguratorTest extends TestCase
         $this->recipe->method('getName')->willReturn('test-recipe');
         $lock = new Lock($this->targetDirectory.'/symfony.lock');
 
-        $this->createConfigurator()->configure(
+        $io = $this->createStub(IOInterface::class);
+        $this->createConfigurator($io)->configure(
             $this->recipe,
             [$this->sourceFileRelativePath => $this->targetFileRelativePath],
             $lock
@@ -64,14 +65,15 @@ class CopyFromRecipeConfiguratorTest extends TestCase
             @mkdir($this->targetDirectory, 0777, true);
         }
         file_put_contents($this->targetFile, '-');
-        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
+        $lock = $this->createStub(Lock::class);
 
         $ioCalls = [];
-        $this->io->method('writeError')->willReturnCallback(static function (array $lines) use (&$ioCalls) { $ioCalls[] = $lines; });
-        $this->io->method('askConfirmation')->with('File "build/config/file" has uncommitted changes, overwrite? [y/N] ')->willReturn(true);
+        $io = $this->createStub(IOInterface::class);
+        $io->method('writeError')->willReturnCallback(static function (array $lines) use (&$ioCalls) { $ioCalls[] = $lines; });
+        $io->method('askConfirmation')->with('File "build/config/file" has uncommitted changes, overwrite? [y/N] ')->willReturn(true);
 
         $this->assertFileExists($this->targetFile);
-        $this->createConfigurator()->configure(
+        $this->createConfigurator($io)->configure(
             $this->recipe,
             [$this->sourceFileRelativePath => $this->targetFileRelativePath],
             $lock,
@@ -90,11 +92,12 @@ class CopyFromRecipeConfiguratorTest extends TestCase
     public function testConfigure()
     {
         $ioCalls = [];
-        $this->io->method('writeError')->willReturnCallback(static function (array $lines) use (&$ioCalls) { $ioCalls[] = $lines; });
+        $io = $this->createStub(IOInterface::class);
+        $io->method('writeError')->willReturnCallback(static function (array $lines) use (&$ioCalls) { $ioCalls[] = $lines; });
 
         $this->assertFileDoesNotExist($this->targetFile);
-        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
-        $this->createConfigurator()->configure(
+        $lock = $this->createStub(Lock::class);
+        $this->createConfigurator($io)->configure(
             $this->recipe,
             [$this->sourceFileRelativePath => $this->targetFileRelativePath],
             $lock
@@ -123,7 +126,8 @@ class CopyFromRecipeConfiguratorTest extends TestCase
         $lock->set('other-recipe', ['files' => [$this->targetFileRelativePath]]);
 
         $this->recipe->method('getName')->willReturn('test-recipe');
-        $this->createConfigurator()->unconfigure($this->recipe, [$this->targetFileRelativePath], $lock);
+        $io = $this->createStub(IOInterface::class);
+        $this->createConfigurator($io)->unconfigure($this->recipe, [$this->targetFileRelativePath], $lock);
 
         $this->assertFileExists($this->sourceFile);
         $this->assertFileExists($this->targetFile);
@@ -132,16 +136,17 @@ class CopyFromRecipeConfiguratorTest extends TestCase
     public function testUnconfigure()
     {
         $ioCalls = [];
-        $this->io->method('writeError')->willReturnCallback(static function (array $lines) use (&$ioCalls) { $ioCalls[] = $lines; });
+        $io = $this->createStub(IOInterface::class);
+        $io->method('writeError')->willReturnCallback(static function (array $lines) use (&$ioCalls) { $ioCalls[] = $lines; });
 
         if (!file_exists($this->targetDirectory)) {
             @mkdir($this->targetDirectory, 0777, true);
         }
         file_put_contents($this->targetFile, '');
         $this->assertFileExists($this->targetFile);
-        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
+        $lock = $this->createStub(Lock::class);
         $this->recipe->method('getName')->willReturn('test-recipe');
-        $this->createConfigurator()->unconfigure($this->recipe, [$this->targetFileRelativePath], $lock);
+        $this->createConfigurator($io)->unconfigure($this->recipe, [$this->targetFileRelativePath], $lock);
         $this->assertFileDoesNotExist($this->targetFile);
 
         $expected = [
@@ -154,14 +159,16 @@ class CopyFromRecipeConfiguratorTest extends TestCase
     public function testNoFilesRemoved()
     {
         $this->assertFileDoesNotExist($this->targetFile);
-        $this->io->expects($this->exactly(1))->method('writeError')->with(['    Removing files from recipe']);
-        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
-        $this->createConfigurator()->unconfigure($this->recipe, [$this->sourceFileRelativePath => $this->targetFileRelativePath], $lock);
+        $io = $this->createMock(IOInterface::class);
+        $io->expects($this->once())->method('writeError')->with(['    Removing files from recipe']);
+        $lock = $this->createStub(Lock::class);
+        $this->createConfigurator($io)->unconfigure($this->recipe, [$this->sourceFileRelativePath => $this->targetFileRelativePath], $lock);
     }
 
     public function testUpdate()
     {
-        $configurator = $this->createConfigurator();
+        $io = $this->createStub(IOInterface::class);
+        $configurator = $this->createConfigurator($io);
 
         $lock = $this->createMock(Lock::class);
         $lock->expects($this->once())
@@ -187,13 +194,13 @@ class CopyFromRecipeConfiguratorTest extends TestCase
             $newRecipeFileData[$file] = ['contents' => $contents, 'executable' => false];
         }
 
-        $originalRecipe = $this->createMock(Recipe::class);
+        $originalRecipe = $this->createStub(Recipe::class);
         $originalRecipe->method('getName')
             ->willReturn('test-package');
         $originalRecipe->method('getFiles')
             ->willReturn($originalRecipeFileData);
 
-        $newRecipe = $this->createMock(Recipe::class);
+        $newRecipe = $this->createStub(Recipe::class);
         $newRecipe->method('getFiles')
             ->willReturn($newRecipeFileData);
 
@@ -216,7 +223,8 @@ class CopyFromRecipeConfiguratorTest extends TestCase
 
     public function testUpdateResolveDirectories()
     {
-        $configurator = $this->createConfigurator();
+        $io = $this->createStub(IOInterface::class);
+        $configurator = $this->createConfigurator($io);
 
         $lock = $this->createMock(Lock::class);
         $lock->expects($this->once())
@@ -250,13 +258,13 @@ class CopyFromRecipeConfiguratorTest extends TestCase
             $newRecipeFileData[$file] = ['contents' => $contents, 'executable' => false];
         }
 
-        $originalRecipe = $this->createMock(Recipe::class);
+        $originalRecipe = $this->createStub(Recipe::class);
         $originalRecipe->method('getName')
             ->willReturn('test-package');
         $originalRecipe->method('getFiles')
             ->willReturn($originalRecipeFileData);
 
-        $newRecipe = $this->createMock(Recipe::class);
+        $newRecipe = $this->createStub(Recipe::class);
         $newRecipe->method('getFiles')
             ->willReturn($newRecipeFileData);
 
@@ -302,9 +310,8 @@ class CopyFromRecipeConfiguratorTest extends TestCase
         $this->targetFileRelativePath = 'config/file';
         $this->targetFile = $this->targetDirectory.'/file';
 
-        $this->io = $this->getMockBuilder(IOInterface::class)->getMock();
-        $this->recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
-        $this->recipe->expects($this->any())->method('getFiles')->willReturn([
+        $this->recipe = $this->createStub(Recipe::class);
+        $this->recipe->method('getFiles')->willReturn([
             $this->sourceFileRelativePath => [
                 'contents' => 'somecontent',
                 'executable' => false,
@@ -319,13 +326,13 @@ class CopyFromRecipeConfiguratorTest extends TestCase
         $this->cleanUpTargetFiles();
     }
 
-    private function createConfigurator(): CopyFromRecipeConfigurator
+    private function createConfigurator(IOInterface $io): CopyFromRecipeConfigurator
     {
         $lock = new Lock(FLEX_TEST_DIR.'/test.lock');
         $lock->set('test-recipe', ['files' => [$this->targetFileRelativePath]]);
-        $options = new Options(['root-dir' => FLEX_TEST_DIR, 'config-dir' => 'config'], $this->io, $lock);
+        $options = new Options(['root-dir' => FLEX_TEST_DIR, 'config-dir' => 'config'], $io, $lock);
 
-        return new CopyFromRecipeConfigurator($this->getMockBuilder(Composer::class)->getMock(), $this->io, $options);
+        return new CopyFromRecipeConfigurator($this->createStub(Composer::class), $io, $options);
     }
 
     private function cleanUpTargetFiles()

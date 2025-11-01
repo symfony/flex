@@ -29,7 +29,6 @@ class CopyFromPackageConfiguratorTest extends TestCase
     private $targetFile;
     private $targetFileRelativePath;
     private $targetDirectory;
-    private $io;
     private $recipe;
     private $composer;
 
@@ -39,9 +38,10 @@ class CopyFromPackageConfiguratorTest extends TestCase
             mkdir($this->targetDirectory);
         }
         file_put_contents($this->targetFile, '');
-        $this->io->expects($this->exactly(1))->method('writeError')->with(['    Copying files from package']);
-        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
-        $this->createConfigurator()->configure($this->recipe, [$this->sourceFileRelativePath => $this->targetFileRelativePath], $lock);
+        $io = $this->createMock(IOInterface::class);
+        $io->expects($this->once())->method('writeError')->with(['    Copying files from package']);
+        $lock = $this->createStub(Lock::class);
+        $this->createConfigurator($io)->configure($this->recipe, [$this->sourceFileRelativePath => $this->targetFileRelativePath], $lock);
     }
 
     public function testConfigureAndOverwriteFiles()
@@ -54,14 +54,15 @@ class CopyFromPackageConfiguratorTest extends TestCase
         }
         file_put_contents($this->sourceFile, 'somecontent');
         file_put_contents($this->targetFile, '-');
-        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
+        $lock = $this->createStub(Lock::class);
 
         $ioCalls = [];
-        $this->io->method('writeError')->willReturnCallback(static function (array $lines) use (&$ioCalls) { $ioCalls[] = $lines; });
-        $this->io->method('askConfirmation')->with('File "build/public/file" has uncommitted changes, overwrite? [y/N] ')->willReturn(true);
+        $io = $this->createStub(IOInterface::class);
+        $io->method('writeError')->willReturnCallback(static function (array $lines) use (&$ioCalls) { $ioCalls[] = $lines; });
+        $io->method('askConfirmation')->with('File "build/public/file" has uncommitted changes, overwrite? [y/N] ')->willReturn(true);
 
         $this->assertFileExists($this->targetFile);
-        $this->createConfigurator()->configure(
+        $this->createConfigurator($io)->configure(
             $this->recipe,
             [$this->sourceFileRelativePath => $this->targetFileRelativePath],
             $lock,
@@ -79,11 +80,12 @@ class CopyFromPackageConfiguratorTest extends TestCase
 
     public function testSourceFileNotExist()
     {
-        $this->io->expects($this->once())->method('writeError')->with(['    Copying files from package']);
+        $io = $this->createMock(IOInterface::class);
+        $io->expects($this->once())->method('writeError')->with(['    Copying files from package']);
         $this->expectException(\LogicException::class);
         $this->expectExceptionMessage(\sprintf('File "%s" does not exist!', $this->sourceFile));
-        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
-        $this->createConfigurator()->configure($this->recipe, [$this->sourceFileRelativePath => $this->targetFileRelativePath], $lock);
+        $lock = $this->createStub(Lock::class);
+        $this->createConfigurator($io)->configure($this->recipe, [$this->sourceFileRelativePath => $this->targetFileRelativePath], $lock);
     }
 
     public function testConfigure()
@@ -96,11 +98,12 @@ class CopyFromPackageConfiguratorTest extends TestCase
         }
 
         $ioCalls = [];
-        $this->io->method('writeError')->willReturnCallback(static function (array $lines) use (&$ioCalls) { $ioCalls[] = $lines; });
+        $io = $this->createStub(IOInterface::class);
+        $io->method('writeError')->willReturnCallback(static function (array $lines) use (&$ioCalls) { $ioCalls[] = $lines; });
 
         $this->assertFileDoesNotExist($this->targetFile);
-        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
-        $this->createConfigurator()->configure($this->recipe, [$this->sourceFileRelativePath => $this->targetFileRelativePath], $lock);
+        $lock = $this->createStub(Lock::class);
+        $this->createConfigurator($io)->configure($this->recipe, [$this->sourceFileRelativePath => $this->targetFileRelativePath], $lock);
         $this->assertFileExists($this->targetFile);
 
         $expected = [
@@ -114,15 +117,16 @@ class CopyFromPackageConfiguratorTest extends TestCase
     public function testUnconfigure()
     {
         $ioCalls = [];
-        $this->io->method('writeError')->willReturnCallback(static function (array $lines) use (&$ioCalls) { $ioCalls[] = $lines; });
+        $io = $this->createStub(IOInterface::class);
+        $io->method('writeError')->willReturnCallback(static function (array $lines) use (&$ioCalls) { $ioCalls[] = $lines; });
 
         if (!file_exists($this->targetDirectory)) {
             mkdir($this->targetDirectory);
         }
         file_put_contents($this->targetFile, '');
         $this->assertFileExists($this->targetFile);
-        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
-        $this->createConfigurator()->unconfigure(
+        $lock = $this->createStub(Lock::class);
+        $this->createConfigurator($io)->unconfigure(
             $this->recipe,
             [$this->sourceFileRelativePath => $this->targetFileRelativePath, 'missingdir/' => ''],
             $lock
@@ -139,9 +143,10 @@ class CopyFromPackageConfiguratorTest extends TestCase
     public function testNoFilesRemoved()
     {
         $this->assertFileDoesNotExist($this->targetFile);
-        $this->io->expects($this->exactly(1))->method('writeError')->with(['    Removing files from package']);
-        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
-        $this->createConfigurator()->unconfigure($this->recipe, [$this->sourceFileRelativePath => $this->targetFileRelativePath], $lock);
+        $io = $this->createMock(IOInterface::class);
+        $io->expects($this->once())->method('writeError')->with(['    Removing files from package']);
+        $lock = $this->createStub(Lock::class);
+        $this->createConfigurator($io)->unconfigure($this->recipe, [$this->sourceFileRelativePath => $this->targetFileRelativePath], $lock);
     }
 
     protected function setUp(): void
@@ -156,20 +161,18 @@ class CopyFromPackageConfiguratorTest extends TestCase
         $this->targetFileRelativePath = 'public/file';
         $this->targetFile = $this->targetDirectory.'/file';
 
-        $this->io = $this->getMockBuilder(IOInterface::class)->getMock();
-
-        $package = $this->getMockBuilder(PackageInterface::class)->getMock();
+        $package = $this->createStub(PackageInterface::class);
         $this->recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
-        $this->recipe->expects($this->exactly(1))->method('getPackage')->willReturn($package);
+        $this->recipe->expects($this->once())->method('getPackage')->willReturn($package);
 
         $installationManager = $this->getMockBuilder(InstallationManager::class)->disableOriginalConstructor()->getMock();
-        $installationManager->expects($this->exactly(1))
+        $installationManager->expects($this->once())
             ->method('getInstallPath')
             ->with($package)
             ->willReturn(FLEX_TEST_DIR)
         ;
         $this->composer = $this->getMockBuilder(Composer::class)->getMock();
-        $this->composer->expects($this->exactly(1))
+        $this->composer->expects($this->once())
             ->method('getInstallationManager')
             ->willReturn($installationManager)
         ;
@@ -185,9 +188,9 @@ class CopyFromPackageConfiguratorTest extends TestCase
         $this->cleanUpTargetFiles();
     }
 
-    private function createConfigurator(): CopyFromPackageConfigurator
+    private function createConfigurator(IOInterface $io): CopyFromPackageConfigurator
     {
-        return new CopyFromPackageConfigurator($this->composer, $this->io, new Options(['root-dir' => FLEX_TEST_DIR], $this->io));
+        return new CopyFromPackageConfigurator($this->composer, $io, new Options(['root-dir' => FLEX_TEST_DIR], $io));
     }
 
     private function cleanUpTargetFiles()
