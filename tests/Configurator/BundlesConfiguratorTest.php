@@ -41,26 +41,27 @@ class BundlesConfiguratorTest extends TestCase
             'Symfony\Bundle\FrameworkBundle\FrameworkBundle' => ['all'],
         ], $lock);
         $this->assertEquals(<<<EOF
-<?php
+            <?php
 
-return [
-    Symfony\Bundle\FrameworkBundle\FrameworkBundle::class => ['all' => true],
-    FooBundle::class => ['dev' => true, 'test' => true],
-];
+            return [
+                Symfony\Bundle\FrameworkBundle\FrameworkBundle::class => ['all' => true],
+                FooBundle::class => ['dev' => true, 'test' => true],
+            ];
 
-EOF
-            , file_get_contents($config));
+            EOF,
+            file_get_contents($config)
+        );
     }
 
     public function testConfigureWhenBundlesAlreadyExists()
     {
         $this->saveBundlesFile(<<<EOF
-<?php
+            <?php
 
-return [
-    BarBundle::class => ['prod' => false, 'all' => true],
-];
-EOF
+            return [
+                BarBundle::class => ['prod' => false, 'all' => true],
+            ];
+            EOF
         );
 
         $configurator = new BundlesConfigurator(
@@ -77,29 +78,30 @@ EOF
             'Symfony\Bundle\FrameworkBundle\FrameworkBundle' => ['all'],
         ], $lock);
         $this->assertEquals(<<<EOF
-<?php
+            <?php
 
-return [
-    BarBundle::class => ['prod' => false, 'all' => true],
-    Symfony\Bundle\FrameworkBundle\FrameworkBundle::class => ['all' => true],
-    FooBundle::class => ['dev' => true, 'test' => true],
-];
+            return [
+                BarBundle::class => ['prod' => false, 'all' => true],
+                Symfony\Bundle\FrameworkBundle\FrameworkBundle::class => ['all' => true],
+                FooBundle::class => ['dev' => true, 'test' => true],
+            ];
 
-EOF
-            , file_get_contents(FLEX_TEST_DIR.'/config/bundles.php'));
+            EOF,
+            file_get_contents(FLEX_TEST_DIR.'/config/bundles.php')
+        );
     }
 
     public function testUnconfigure()
     {
         $this->saveBundlesFile(<<<EOF
-<?php
+            <?php
 
-return [
-    Symfony\Bundle\FrameworkBundle\FrameworkBundle::class => ['all' => true],
-    BarBundle::class => ['prod' => false, 'all' => true],
-    OtherBundle::class => ['all' => true],
-];
-EOF
+            return [
+                Symfony\Bundle\FrameworkBundle\FrameworkBundle::class => ['all' => true],
+                BarBundle::class => ['prod' => false, 'all' => true],
+                OtherBundle::class => ['all' => true],
+            ];
+            EOF
         );
 
         $configurator = new BundlesConfigurator(
@@ -115,15 +117,16 @@ EOF
             'BarBundle' => ['dev', 'all'],
         ], $lock);
         $this->assertEquals(<<<EOF
-<?php
+            <?php
 
-return [
-    Symfony\Bundle\FrameworkBundle\FrameworkBundle::class => ['all' => true],
-    OtherBundle::class => ['all' => true],
-];
+            return [
+                Symfony\Bundle\FrameworkBundle\FrameworkBundle::class => ['all' => true],
+                OtherBundle::class => ['all' => true],
+            ];
 
-EOF
-            , file_get_contents(FLEX_TEST_DIR.'/config/bundles.php'));
+            EOF,
+            file_get_contents(FLEX_TEST_DIR.'/config/bundles.php')
+        );
     }
 
     public function testUpdate()
@@ -142,14 +145,14 @@ EOF
         );
 
         $this->saveBundlesFile(<<<EOF
-<?php
+            <?php
 
-return [
-    BarBundle::class => ['prod' => false, 'all' => true],
-    FooBundle::class => ['dev' => true, 'test' => true],
-    BazBundle::class => ['all' => true],
-];
-EOF
+            return [
+                BarBundle::class => ['prod' => false, 'all' => true],
+                FooBundle::class => ['dev' => true, 'test' => true],
+                BazBundle::class => ['all' => true],
+            ];
+            EOF
         );
 
         $configurator->update(
@@ -158,31 +161,39 @@ EOF
             ['FooBundle' => ['all'], 'NewBundle' => ['all']]
         );
 
-        $this->assertSame(['config/bundles.php' => <<<EOF
-<?php
+        $this->assertSame(
+            [
+                'config/bundles.php' => <<<EOF
+                    <?php
 
-return [
-    BarBundle::class => ['prod' => false, 'all' => true],
-    FooBundle::class => ['dev' => true, 'test' => true],
-    BazBundle::class => ['all' => true],
-];
+                    return [
+                        BarBundle::class => ['prod' => false, 'all' => true],
+                        FooBundle::class => ['dev' => true, 'test' => true],
+                        BazBundle::class => ['all' => true],
+                    ];
 
-EOF
-        ], $recipeUpdate->getOriginalFiles());
+                    EOF,
+            ],
+            $recipeUpdate->getOriginalFiles()
+        );
 
         // FooBundle::class => ['dev' => true, 'test' => true]: configured envs should not be overwritten
-        $this->assertSame(['config/bundles.php' => <<<EOF
-<?php
+        $this->assertSame(
+            [
+                'config/bundles.php' => <<<EOF
+                    <?php
 
-return [
-    BarBundle::class => ['prod' => false, 'all' => true],
-    FooBundle::class => ['all' => true],
-    BazBundle::class => ['all' => true],
-    NewBundle::class => ['all' => true],
-];
+                    return [
+                        BarBundle::class => ['prod' => false, 'all' => true],
+                        FooBundle::class => ['all' => true],
+                        BazBundle::class => ['all' => true],
+                        NewBundle::class => ['all' => true],
+                    ];
 
-EOF
-        ], $recipeUpdate->getNewFiles());
+                    EOF,
+            ],
+            $recipeUpdate->getNewFiles()
+        );
     }
 
     private function saveBundlesFile(string $contents)

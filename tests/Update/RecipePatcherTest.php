@@ -85,56 +85,56 @@ class RecipePatcherTest extends TestCase
         yield 'updated_file' => [
             ['file1.txt' => 'Original contents', 'file2.txt' => 'Original file2'],
             ['file1.txt' => 'Updated contents', 'file2.txt' => 'Updated file2'],
-            <<<EOF
-diff --git a/file1.txt b/file1.txt
-index 7d30dc7..1a78767 100644
---- a/file1.txt
-+++ b/file1.txt
-@@ -1 +1 @@
--Original contents
-\ No newline at end of file
-+Updated contents
-\ No newline at end of file
-diff --git a/file2.txt b/file2.txt
-index b3b20af..4e66429 100644
---- a/file2.txt
-+++ b/file2.txt
-@@ -1 +1 @@
--Original file2
-\ No newline at end of file
-+Updated file2
-\ No newline at end of file
-EOF,
+            <<<DIFF
+                diff --git a/file1.txt b/file1.txt
+                index 7d30dc7..1a78767 100644
+                --- a/file1.txt
+                +++ b/file1.txt
+                @@ -1 +1 @@
+                -Original contents
+                \ No newline at end of file
+                +Updated contents
+                \ No newline at end of file
+                diff --git a/file2.txt b/file2.txt
+                index b3b20af..4e66429 100644
+                --- a/file2.txt
+                +++ b/file2.txt
+                @@ -1 +1 @@
+                -Original file2
+                \ No newline at end of file
+                +Updated file2
+                \ No newline at end of file
+                DIFF,
         ];
 
         yield 'file_created_in_update_because_missing' => [
             [],
             ['file1.txt' => 'New file'],
-            <<<EOF
-diff --git a/file1.txt b/file1.txt
-new file mode 100644
-index 0000000..b78ca63
---- /dev/null
-+++ b/file1.txt
-@@ -0,0 +1 @@
-+New file
-\ No newline at end of file
-EOF,
+            <<<DIFF
+                diff --git a/file1.txt b/file1.txt
+                new file mode 100644
+                index 0000000..b78ca63
+                --- /dev/null
+                +++ b/file1.txt
+                @@ -0,0 +1 @@
+                +New file
+                \ No newline at end of file
+                DIFF,
         ];
 
         yield 'file_created_in_update_because_null' => [
             ['file1.txt' => null],
             ['file1.txt' => 'New file'],
-            <<<EOF
-diff --git a/file1.txt b/file1.txt
-new file mode 100644
-index 0000000..b78ca63
---- /dev/null
-+++ b/file1.txt
-@@ -0,0 +1 @@
-+New file
-\ No newline at end of file
-EOF,
+            <<<DIFF
+                diff --git a/file1.txt b/file1.txt
+                new file mode 100644
+                index 0000000..b78ca63
+                --- /dev/null
+                +++ b/file1.txt
+                @@ -0,0 +1 @@
+                +New file
+                \ No newline at end of file
+                DIFF,
         ];
 
         yield 'file_deleted_in_update_because_missing' => [
@@ -154,26 +154,25 @@ EOF,
         yield 'mixture_of_added_updated_removed' => [
             ['file1.txt' => 'Original file1', 'will_be_deleted.txt' => 'file to delete'],
             ['file1.txt' => 'Updated file1', 'will_be_created.text' => 'file to create'],
-            <<<EOF
-diff --git a/file1.txt b/file1.txt
-index aed3283..cdbcdc0 100644
---- a/file1.txt
-+++ b/file1.txt
-@@ -1 +1 @@
--Original file1
-\ No newline at end of file
-+Updated file1
-\ No newline at end of file
-diff --git a/will_be_created.text b/will_be_created.text
-new file mode 100644
-index 0000000..f5074b6
---- /dev/null
-+++ b/will_be_created.text
-@@ -0,0 +1 @@
-+file to create
-\ No newline at end of file
-EOF
-            ,
+            <<<DIFF
+                diff --git a/file1.txt b/file1.txt
+                index aed3283..cdbcdc0 100644
+                --- a/file1.txt
+                +++ b/file1.txt
+                @@ -1 +1 @@
+                -Original file1
+                \ No newline at end of file
+                +Updated file1
+                \ No newline at end of file
+                diff --git a/will_be_created.text b/will_be_created.text
+                new file mode 100644
+                index 0000000..f5074b6
+                --- /dev/null
+                +++ b/will_be_created.text
+                @@ -0,0 +1 @@
+                +file to create
+                \ No newline at end of file
+                DIFF,
             ['will_be_deleted.txt'],
         ];
 
@@ -245,7 +244,6 @@ EOF
         file_put_contents($dir.'/security.yaml', '# contents');
         (new Process(['git', 'add', '-A'], FLEX_TEST_DIR))->mustRun();
         (new Process(['git', 'commit', '-m', 'Committing original files'], FLEX_TEST_DIR))->mustRun();
-
 
         $lock = $this->createMock(Lock::class);
         $lock->expects($this->any())->method('all')->willReturn([
@@ -478,136 +476,136 @@ EOF
             'dot_env_clean' => [
                 'filename' => '.env',
                 'original_recipe' => <<<EOF
-###> symfony/framework-bundle ###
-APP_ENV=dev
-APP_SECRET=cd0019c56963e76bacd77eee67e1b222
-###< symfony/framework-bundle ###
+                    ###> symfony/framework-bundle ###
+                    APP_ENV=dev
+                    APP_SECRET=cd0019c56963e76bacd77eee67e1b222
+                    ###< symfony/framework-bundle ###
 
-###> doctrine/doctrine-bundle ###
-# Format described at https://www.doctrine-project.org/projects/doctrine-dbal/en/latest/reference/configuration.html#connecting-using-a-url
-# For an SQLite database, use: "sqlite:///%kernel.project_dir%/var/data.db"
-DATABASE_URL=sqlite:///%kernel.project_dir%/var/data.db
-###< doctrine/doctrine-bundle ###
-EOF
-                , 'updated_recipe' => <<<EOF
-###> symfony/framework-bundle ###
-APP_ENV=dev
-APP_SECRET=cd0019c56963e76bacd77eee67e1b222
-###< symfony/framework-bundle ###
+                    ###> doctrine/doctrine-bundle ###
+                    # Format described at https://www.doctrine-project.org/projects/doctrine-dbal/en/latest/reference/configuration.html#connecting-using-a-url
+                    # For an SQLite database, use: "sqlite:///%kernel.project_dir%/var/data.db"
+                    DATABASE_URL=sqlite:///%kernel.project_dir%/var/data.db
+                    ###< doctrine/doctrine-bundle ###
+                    EOF,
+                'updated_recipe' => <<<EOF
+                    ###> symfony/framework-bundle ###
+                    APP_ENV=dev
+                    APP_SECRET=cd0019c56963e76bacd77eee67e1b222
+                    ###< symfony/framework-bundle ###
 
-###> doctrine/doctrine-bundle ###
-# Format described at https://www.doctrine-project.org/projects/doctrine-dbal/en/latest/reference/configuration.html#connecting-using-a-url
-# For an SQL-HEAVY database, use: "sqlheavy:///%kernel.project_dir%/var/data.db"
-DATABASE_URL=sqlite:///%kernel.project_dir%/var/data.db
-###< doctrine/doctrine-bundle ###
-EOF
-                , 'in_app' => <<<EOF
-###> symfony/framework-bundle ###
-APP_ENV=CHANGED_TO_PROD_ENVIRONMENT
-APP_SECRET=cd0019c56963e76bacd77eee67e1b222
-###< symfony/framework-bundle ###
+                    ###> doctrine/doctrine-bundle ###
+                    # Format described at https://www.doctrine-project.org/projects/doctrine-dbal/en/latest/reference/configuration.html#connecting-using-a-url
+                    # For an SQL-HEAVY database, use: "sqlheavy:///%kernel.project_dir%/var/data.db"
+                    DATABASE_URL=sqlite:///%kernel.project_dir%/var/data.db
+                    ###< doctrine/doctrine-bundle ###
+                    EOF,
+                'in_app' => <<<EOF
+                    ###> symfony/framework-bundle ###
+                    APP_ENV=CHANGED_TO_PROD_ENVIRONMENT
+                    APP_SECRET=cd0019c56963e76bacd77eee67e1b222
+                    ###< symfony/framework-bundle ###
 
-###> doctrine/doctrine-bundle ###
-# Format described at https://www.doctrine-project.org/projects/doctrine-dbal/en/latest/reference/configuration.html#connecting-using-a-url
-# For an SQLite database, use: "sqlite:///%kernel.project_dir%/var/data.db"
-DATABASE_URL=sqlite:///%kernel.project_dir%/var/data.db
-###< doctrine/doctrine-bundle ###
-EOF
-                , 'expected' => <<<EOF
-###> symfony/framework-bundle ###
-APP_ENV=CHANGED_TO_PROD_ENVIRONMENT
-APP_SECRET=cd0019c56963e76bacd77eee67e1b222
-###< symfony/framework-bundle ###
+                    ###> doctrine/doctrine-bundle ###
+                    # Format described at https://www.doctrine-project.org/projects/doctrine-dbal/en/latest/reference/configuration.html#connecting-using-a-url
+                    # For an SQLite database, use: "sqlite:///%kernel.project_dir%/var/data.db"
+                    DATABASE_URL=sqlite:///%kernel.project_dir%/var/data.db
+                    ###< doctrine/doctrine-bundle ###
+                    EOF,
+                'expected' => <<<EOF
+                    ###> symfony/framework-bundle ###
+                    APP_ENV=CHANGED_TO_PROD_ENVIRONMENT
+                    APP_SECRET=cd0019c56963e76bacd77eee67e1b222
+                    ###< symfony/framework-bundle ###
 
-###> doctrine/doctrine-bundle ###
-# Format described at https://www.doctrine-project.org/projects/doctrine-dbal/en/latest/reference/configuration.html#connecting-using-a-url
-# For an SQL-HEAVY database, use: "sqlheavy:///%kernel.project_dir%/var/data.db"
-DATABASE_URL=sqlite:///%kernel.project_dir%/var/data.db
-###< doctrine/doctrine-bundle ###
-EOF,
+                    ###> doctrine/doctrine-bundle ###
+                    # Format described at https://www.doctrine-project.org/projects/doctrine-dbal/en/latest/reference/configuration.html#connecting-using-a-url
+                    # For an SQL-HEAVY database, use: "sqlheavy:///%kernel.project_dir%/var/data.db"
+                    DATABASE_URL=sqlite:///%kernel.project_dir%/var/data.db
+                    ###< doctrine/doctrine-bundle ###
+                    EOF,
             ],
 
             // package.json
             'package_json_conflict' => [
                 'filename' => 'package.json',
-                'original_recipe' => <<<EOF
-{
-    "devDependencies": {
-        "@hotwired/stimulus": "^2.0.0",
-        "@symfony/stimulus-bridge": "^3.0.0",
-        "@symfony/webpack-encore": "^1.4.0"
-    }
-}
-EOF
-                , 'updated_recipe' => <<<EOF
-{
-    "devDependencies": {
-        "@hotwired/stimulus": "^3.0.0",
-        "@symfony/stimulus-bridge": "^3.0.0",
-        "@symfony/webpack-encore": "^1.7.0"
-    }
-}
-EOF
-                , 'in_app' => <<<EOF
-{
-    "devDependencies": {
-        "@hotwired/stimulus": "^2.1.0",
-        "@symfony/stimulus-bridge": "^3.0.0",
-        "@symfony/webpack-encore": "^1.4.0"
-    }
-}
-EOF
-                , 'expected' => <<<EOF
-{
-    "devDependencies": {
-<<<<<<< ours
-        "@hotwired/stimulus": "^2.1.0",
-=======
-        "@hotwired/stimulus": "^3.0.0",
->>>>>>> theirs
-        "@symfony/stimulus-bridge": "^3.0.0",
-        "@symfony/webpack-encore": "^1.7.0"
-    }
-}
-EOF,
+                'original_recipe' => <<<JSON
+                    {
+                        "devDependencies": {
+                            "@hotwired/stimulus": "^2.0.0",
+                            "@symfony/stimulus-bridge": "^3.0.0",
+                            "@symfony/webpack-encore": "^1.4.0"
+                        }
+                    }
+                    JSON,
+                'updated_recipe' => <<<JSON
+                    {
+                        "devDependencies": {
+                            "@hotwired/stimulus": "^3.0.0",
+                            "@symfony/stimulus-bridge": "^3.0.0",
+                            "@symfony/webpack-encore": "^1.7.0"
+                        }
+                    }
+                    JSON,
+                'in_app' => <<<JSON
+                    {
+                        "devDependencies": {
+                            "@hotwired/stimulus": "^2.1.0",
+                            "@symfony/stimulus-bridge": "^3.0.0",
+                            "@symfony/webpack-encore": "^1.4.0"
+                        }
+                    }
+                    JSON,
+                'expected' => <<<JSON
+                    {
+                        "devDependencies": {
+                    <<<<<<< ours
+                            "@hotwired/stimulus": "^2.1.0",
+                    =======
+                            "@hotwired/stimulus": "^3.0.0",
+                    >>>>>>> theirs
+                            "@symfony/stimulus-bridge": "^3.0.0",
+                            "@symfony/webpack-encore": "^1.7.0"
+                        }
+                    }
+                    JSON,
             ],
 
             // config/packages/webpack_encore.yaml
             'webpack_encore_added' => [
                 'filename' => 'config/packages/webpack_encore.yaml',
                 'original_recipe' => null,
-                'updated_recipe' => <<<EOF
-webpack_encore:
-    # The path where Encore is building the assets - i.e. Encore.setOutputPath()
-    output_path: '%kernel.project_dir%/public/build'
-    # If multiple builds are defined (as shown below), you can disable the default build:
-    # output_path: false
-EOF
-                , 'in_app' => null,
-                'expected' => <<<EOF
-webpack_encore:
-    # The path where Encore is building the assets - i.e. Encore.setOutputPath()
-    output_path: '%kernel.project_dir%/public/build'
-    # If multiple builds are defined (as shown below), you can disable the default build:
-    # output_path: false
-EOF,
+                'updated_recipe' => <<<YAML
+                    webpack_encore:
+                        # The path where Encore is building the assets - i.e. Encore.setOutputPath()
+                        output_path: '%kernel.project_dir%/public/build'
+                        # If multiple builds are defined (as shown below), you can disable the default build:
+                        # output_path: false
+                    YAML,
+                'in_app' => null,
+                'expected' => <<<YAML
+                    webpack_encore:
+                        # The path where Encore is building the assets - i.e. Encore.setOutputPath()
+                        output_path: '%kernel.project_dir%/public/build'
+                        # If multiple builds are defined (as shown below), you can disable the default build:
+                        # output_path: false
+                    YAML,
             ],
 
             // config/packages/security.yaml
             'security_removed' => [
                 'filename' => 'config/packages/security.yaml',
-                'original_recipe' => <<<EOF
-security:
-    password_hashers:
-        Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
-EOF
-                , 'updated_recipe' => null,
-                'in_app' => <<<EOF
-security:
-    password_hashers:
-        Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
-EOF
-                , 'expected' => null,
+                'original_recipe' => <<<YAML
+                    security:
+                        password_hashers:
+                            Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
+                    YAML,
+                'updated_recipe' => null,
+                'in_app' => <<<YAML
+                    security:
+                        password_hashers:
+                            Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
+                    YAML,
+                'expected' => null,
             ],
         ];
 

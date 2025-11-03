@@ -70,24 +70,24 @@ class ComposerScriptsConfiguratorTest extends TestCase
             'do:cool-stuff' => 'symfony-cmd',
         ], $lock);
         $this->assertEquals(<<<EOF
-{
-    "scripts": {
-        "auto-scripts": {
-            "cache:clear": "symfony-cmd",
-            "assets:install %PUBLIC_DIR%": "symfony-cmd",
-            "do:cool-stuff": "symfony-cmd"
-        },
-        "post-install-cmd": [
-            "@auto-scripts"
-        ],
-        "post-update-cmd": [
-            "@auto-scripts"
-        ]
-    }
-}
+            {
+                "scripts": {
+                    "auto-scripts": {
+                        "cache:clear": "symfony-cmd",
+                        "assets:install %PUBLIC_DIR%": "symfony-cmd",
+                        "do:cool-stuff": "symfony-cmd"
+                    },
+                    "post-install-cmd": [
+                        "@auto-scripts"
+                    ],
+                    "post-update-cmd": [
+                        "@auto-scripts"
+                    ]
+                }
+            }
 
-EOF
-            , file_get_contents(FLEX_TEST_DIR.'/composer.json')
+            EOF,
+            file_get_contents(FLEX_TEST_DIR.'/composer.json')
         );
     }
 
@@ -118,22 +118,22 @@ EOF
             'cache:clear' => 'symfony-cmd',
         ], $lock);
         $this->assertEquals(<<<EOF
-{
-    "scripts": {
-        "auto-scripts": {
-            "assets:install %PUBLIC_DIR%": "symfony-cmd"
-        },
-        "post-install-cmd": [
-            "@auto-scripts"
-        ],
-        "post-update-cmd": [
-            "@auto-scripts"
-        ]
-    }
-}
+            {
+                "scripts": {
+                    "auto-scripts": {
+                        "assets:install %PUBLIC_DIR%": "symfony-cmd"
+                    },
+                    "post-install-cmd": [
+                        "@auto-scripts"
+                    ],
+                    "post-update-cmd": [
+                        "@auto-scripts"
+                    ]
+                }
+            }
 
-EOF
-            , file_get_contents(FLEX_TEST_DIR.'/composer.json')
+            EOF,
+            file_get_contents(FLEX_TEST_DIR.'/composer.json')
         );
     }
 
@@ -170,44 +170,42 @@ EOF
         );
 
         $expectedComposerJsonOriginal = <<<EOF
-{
-    "scripts": {
-        "auto-scripts": {
-            "cache:clear": "symfony-cmd",
-            "assets:install %PUBLIC_DIR%": "symfony-cmd"
-        },
-        "post-install-cmd": [
-            "@auto-scripts"
-        ],
-        "post-update-cmd": [
-            "@auto-scripts"
-        ]
-    }
-}
+            {
+                "scripts": {
+                    "auto-scripts": {
+                        "cache:clear": "symfony-cmd",
+                        "assets:install %PUBLIC_DIR%": "symfony-cmd"
+                    },
+                    "post-install-cmd": [
+                        "@auto-scripts"
+                    ],
+                    "post-update-cmd": [
+                        "@auto-scripts"
+                    ]
+                }
+            }
 
-EOF
-        ;
+            EOF;
         $this->assertSame(['composer.json' => $expectedComposerJsonOriginal], $recipeUpdate->getOriginalFiles());
 
         $expectedComposerJsonNew = <<<EOF
-{
-    "scripts": {
-        "auto-scripts": {
-            "cache:clear": "other-cmd",
-            "assets:install %PUBLIC_DIR%": "symfony-cmd",
-            "do:cool-stuff": "symfony-cmd"
-        },
-        "post-install-cmd": [
-            "@auto-scripts"
-        ],
-        "post-update-cmd": [
-            "@auto-scripts"
-        ]
-    }
-}
+            {
+                "scripts": {
+                    "auto-scripts": {
+                        "cache:clear": "other-cmd",
+                        "assets:install %PUBLIC_DIR%": "symfony-cmd",
+                        "do:cool-stuff": "symfony-cmd"
+                    },
+                    "post-install-cmd": [
+                        "@auto-scripts"
+                    ],
+                    "post-update-cmd": [
+                        "@auto-scripts"
+                    ]
+                }
+            }
 
-EOF
-        ;
+            EOF;
         $this->assertSame(['composer.json' => $expectedComposerJsonNew], $recipeUpdate->getNewFiles());
     }
 }

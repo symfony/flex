@@ -35,13 +35,13 @@ class ContainerConfiguratorTest extends TestCase
         @mkdir(\dirname($config));
         file_put_contents(
             $config,
-            <<<EOF
-# comment
-parameters:
+            <<<YAML
+                # comment
+                parameters:
 
-services:
+                services:
 
-EOF
+                YAML
         );
         $configurator = new ContainerConfigurator(
             $this->getMockBuilder(Composer::class)->getMock(),
@@ -49,25 +49,27 @@ EOF
             new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
         );
         $configurator->configure($recipe, ['locale' => 'en'], $lock);
-        $this->assertEquals(<<<EOF
-# comment
-parameters:
-    locale: 'en'
+        $this->assertEquals(<<<YAML
+            # comment
+            parameters:
+                locale: 'en'
 
-services:
+            services:
 
-EOF
-            , file_get_contents($config));
+            YAML,
+            file_get_contents($config)
+        );
 
         $configurator->unconfigure($recipe, ['locale' => 'en'], $lock);
-        $this->assertEquals(<<<EOF
-# comment
-parameters:
+        $this->assertEquals(<<<YAML
+            # comment
+            parameters:
 
-services:
+            services:
 
-EOF
-            , file_get_contents($config));
+            YAML,
+            file_get_contents($config)
+        );
     }
 
     public function testConfigureWithoutParametersKey()
@@ -77,10 +79,10 @@ EOF
         $config = FLEX_TEST_DIR.'/config/services.yaml';
         file_put_contents(
             $config,
-            <<<EOF
-services:
+            <<<YAML
+                services:
 
-EOF
+                YAML
         );
         $configurator = new ContainerConfigurator(
             $this->getMockBuilder(Composer::class)->getMock(),
@@ -88,23 +90,25 @@ EOF
             new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
         );
         $configurator->configure($recipe, ['locale' => 'en'], $lock);
-        $this->assertEquals(<<<EOF
-parameters:
-    locale: 'en'
+        $this->assertEquals(<<<YAML
+            parameters:
+                locale: 'en'
 
-services:
+            services:
 
-EOF
-            , file_get_contents($config));
+            YAML,
+            file_get_contents($config)
+        );
 
         $configurator->unconfigure($recipe, ['locale' => 'en'], $lock);
-        $this->assertEquals(<<<EOF
-parameters:
+        $this->assertEquals(<<<YAML
+            parameters:
 
-services:
+            services:
 
-EOF
-            , file_get_contents($config));
+            YAML,
+            file_get_contents($config)
+        );
     }
 
     public function testConfigureWithoutDuplicated()
@@ -114,13 +118,13 @@ EOF
         $config = FLEX_TEST_DIR.'/config/services.yaml';
         file_put_contents(
             $config,
-            <<<EOF
-parameters:
-    locale: es
+            <<<YAML
+                parameters:
+                    locale: es
 
-services:
+                services:
 
-EOF
+                YAML
         );
         $configurator = new ContainerConfigurator(
             $this->getMockBuilder(Composer::class)->getMock(),
@@ -128,23 +132,25 @@ EOF
             new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
         );
         $configurator->configure($recipe, ['locale' => 'en'], $lock);
-        $this->assertEquals(<<<EOF
-parameters:
-    locale: es
+        $this->assertEquals(<<<YAML
+            parameters:
+                locale: es
 
-services:
+            services:
 
-EOF
-            , file_get_contents($config));
+            YAML,
+            file_get_contents($config)
+        );
 
         $configurator->unconfigure($recipe, ['locale' => 'en'], $lock);
-        $this->assertEquals(<<<EOF
-parameters:
+        $this->assertEquals(<<<YAML
+            parameters:
 
-services:
+            services:
 
-EOF
-            , file_get_contents($config));
+            YAML,
+            file_get_contents($config)
+        );
     }
 
     public function testConfigureWithComplexContent()
@@ -154,17 +160,17 @@ EOF
         $config = FLEX_TEST_DIR.'/config/services.yaml';
         file_put_contents(
             $config,
-            <<<EOF
-parameters:
-    # comment 1
-    locale: es
+            <<<YAML
+                parameters:
+                    # comment 1
+                    locale: es
 
-    # comment 2
-    foo: bar
+                    # comment 2
+                    foo: bar
 
-services:
+                services:
 
-EOF
+                YAML
         );
         $configurator = new ContainerConfigurator(
             $this->getMockBuilder(Composer::class)->getMock(),
@@ -172,32 +178,34 @@ EOF
             new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
         );
         $configurator->configure($recipe, ['locale' => 'en', 'foobar' => 'baz'], $lock);
-        $this->assertEquals(<<<EOF
-parameters:
-    # comment 1
-    locale: es
+        $this->assertEquals(<<<YAML
+            parameters:
+                # comment 1
+                locale: es
 
-    # comment 2
-    foo: bar
-    foobar: 'baz'
+                # comment 2
+                foo: bar
+                foobar: 'baz'
 
-services:
+            services:
 
-EOF
-            , file_get_contents($config));
+            YAML,
+            file_get_contents($config)
+        );
 
         $configurator->unconfigure($recipe, ['locale' => 'en', 'foobar' => 'baz'], $lock);
-        $this->assertEquals(<<<EOF
-parameters:
-    # comment 1
+        $this->assertEquals(<<<YAML
+            parameters:
+                # comment 1
 
-    # comment 2
-    foo: bar
+                # comment 2
+                foo: bar
 
-services:
+            services:
 
-EOF
-            , file_get_contents($config));
+            YAML,
+            file_get_contents($config)
+        );
     }
 
     public function testConfigureWithComplexContent2()
@@ -207,14 +215,14 @@ EOF
         $config = FLEX_TEST_DIR.'/config/services.yaml';
         file_put_contents(
             $config,
-            <<<EOF
-parameters:
-    # comment 1
-    locale: es
+            <<<YAML
+                parameters:
+                    # comment 1
+                    locale: es
 
-services:
+                services:
 
-EOF
+                YAML
         );
         $configurator = new ContainerConfigurator(
             $this->getMockBuilder(Composer::class)->getMock(),
@@ -222,32 +230,34 @@ EOF
             new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
         );
         $configurator->configure($recipe, ['locale' => 'en', 'foobar' => 'baz', 'array' => ['key1' => 'value', 'key2' => "Escape ' one quote"], 'key1' => 'Keep It'], $lock);
-        $this->assertEquals(<<<EOF
-parameters:
-    # comment 1
-    locale: es
-    foobar: 'baz'
-    array:
-        key1: 'value'
-        key2: 'Escape '' one quote'
-    key1: 'Keep It'
+        $this->assertEquals(<<<YAML
+            parameters:
+                # comment 1
+                locale: es
+                foobar: 'baz'
+                array:
+                    key1: 'value'
+                    key2: 'Escape '' one quote'
+                key1: 'Keep It'
 
-services:
+            services:
 
-EOF
-            , file_get_contents($config));
+            YAML,
+            file_get_contents($config)
+        );
 
         $configurator->unconfigure($recipe, ['locale' => 'en', 'array' => ['key1' => 'value', 'key2' => "Escape ' one quote"]], $lock);
-        $this->assertEquals(<<<EOF
-parameters:
-    # comment 1
-    foobar: 'baz'
-    key1: 'Keep It'
+        $this->assertEquals(<<<YAML
+            parameters:
+                # comment 1
+                foobar: 'baz'
+                key1: 'Keep It'
 
-services:
+            services:
 
-EOF
-            , file_get_contents($config));
+            YAML,
+            file_get_contents($config)
+        );
     }
 
     public function testConfigureWithEnvVariable()
@@ -257,14 +267,14 @@ EOF
         $config = FLEX_TEST_DIR.'/config/services.yaml';
         file_put_contents(
             $config,
-            <<<EOF
-# comment
-parameters:
-    env(APP_ENV): ''
+            <<<YAML
+                # comment
+                parameters:
+                    env(APP_ENV): ''
 
-services:
+                services:
 
-EOF
+                YAML
         );
         $configurator = new ContainerConfigurator(
             $this->getMockBuilder(Composer::class)->getMock(),
@@ -272,25 +282,27 @@ EOF
             new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
         );
         $configurator->configure($recipe, ['env(APP_ENV)' => ''], $lock);
-        $this->assertEquals(<<<EOF
-# comment
-parameters:
-    env(APP_ENV): ''
+        $this->assertEquals(<<<YAML
+            # comment
+            parameters:
+                env(APP_ENV): ''
 
-services:
+            services:
 
-EOF
-            , file_get_contents($config));
+            YAML,
+            file_get_contents($config)
+        );
 
         $configurator->unconfigure($recipe, ['env(APP_ENV)' => ''], $lock);
-        $this->assertEquals(<<<EOF
-# comment
-parameters:
+        $this->assertEquals(<<<YAML
+            # comment
+            parameters:
 
-services:
+            services:
 
-EOF
-            , file_get_contents($config));
+            YAML,
+            file_get_contents($config)
+        );
     }
 
     public function testUpdate()
@@ -311,17 +323,17 @@ EOF
         @mkdir(FLEX_TEST_DIR.'/config');
         file_put_contents(
             FLEX_TEST_DIR.'/config/services.yaml',
-            <<<EOF
-parameters:
-    # comment 1
-    locale: es
+            <<<YAML
+                parameters:
+                    # comment 1
+                    locale: es
 
-    # comment 2
-    foo: bar
+                    # comment 2
+                    foo: bar
 
-services:
+                services:
 
-EOF
+                YAML
         );
 
         $configurator->update(
@@ -330,34 +342,42 @@ EOF
             ['locale' => 'fr', 'foobar' => 'baz', 'new_one' => 'hallo']
         );
 
-        $this->assertSame(['config/services.yaml' => <<<EOF
-parameters:
-    # comment 1
-    locale: en
+        $this->assertSame(
+            [
+                'config/services.yaml' => <<<YAML
+                    parameters:
+                        # comment 1
+                        locale: en
 
-    # comment 2
-    foo: bar
-    foobar: 'baz'
+                        # comment 2
+                        foo: bar
+                        foobar: 'baz'
 
-services:
+                    services:
 
-EOF
-        ], $recipeUpdate->getOriginalFiles());
+                    YAML,
+            ],
+            $recipeUpdate->getOriginalFiles()
+        );
 
-        $this->assertSame(['config/services.yaml' => <<<EOF
-parameters:
-    # comment 1
-    locale: fr
+        $this->assertSame(
+            [
+                'config/services.yaml' => <<<YAML
+                    parameters:
+                        # comment 1
+                        locale: fr
 
-    # comment 2
-    foo: bar
-    foobar: 'baz'
-    new_one: 'hallo'
+                        # comment 2
+                        foo: bar
+                        foobar: 'baz'
+                        new_one: 'hallo'
 
-services:
+                    services:
 
-EOF
-        ], $recipeUpdate->getNewFiles());
+                    YAML,
+            ],
+            $recipeUpdate->getNewFiles()
+        );
     }
 
     public function testUpdateWithNoRemovedKeysInUpdate()
@@ -378,14 +398,14 @@ EOF
         @mkdir(FLEX_TEST_DIR.'/config');
         file_put_contents(
             FLEX_TEST_DIR.'/config/services.yaml',
-            <<<EOF
-parameters:
-    locale: es
-    something: else
+            <<<YAML
+                parameters:
+                    locale: es
+                    something: else
 
-services:
-    foo_router: '@router'
-EOF
+                services:
+                    foo_router: '@router'
+                YAML
         );
 
         $configurator->update(
@@ -394,23 +414,31 @@ EOF
             []
         );
 
-        $this->assertSame(['config/services.yaml' => <<<EOF
-parameters:
-    locale: en
-    something: else
+        $this->assertSame(
+            [
+                'config/services.yaml' => <<<YAML
+                    parameters:
+                        locale: en
+                        something: else
 
-services:
-    foo_router: '@router'
-EOF
-        ], $recipeUpdate->getOriginalFiles());
+                    services:
+                        foo_router: '@router'
+                    YAML,
+            ],
+            $recipeUpdate->getOriginalFiles()
+        );
 
-        $this->assertSame(['config/services.yaml' => <<<EOF
-parameters:
-    something: else
+        $this->assertSame(
+            [
+                'config/services.yaml' => <<<YAML
+                    parameters:
+                        something: else
 
-services:
-    foo_router: '@router'
-EOF
-        ], $recipeUpdate->getNewFiles());
+                    services:
+                        foo_router: '@router'
+                    YAML,
+            ],
+            $recipeUpdate->getNewFiles()
+        );
     }
 }

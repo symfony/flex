@@ -42,11 +42,11 @@ class AddLinesConfiguratorTest extends TestCase
 
     public function testLinesAddedToTopOfFile()
     {
-        $this->saveFile('assets/app.js', <<<EOF
-import * as Turbo from '@hotwired/turbo';
+        $this->saveFile('assets/app.js', <<<JS
+            import * as Turbo from '@hotwired/turbo';
 
-console.log(Turbo);
-EOF
+            console.log(Turbo);
+            JS
         );
 
         $this->runConfigure([
@@ -57,14 +57,14 @@ EOF
             ],
         ]);
         $actualContents = $this->readFile('assets/app.js');
-        $this->assertSame(<<<EOF
-import './bootstrap';
-import * as Turbo from '@hotwired/turbo';
+        $this->assertSame(<<<JS
+            import './bootstrap';
+            import * as Turbo from '@hotwired/turbo';
 
-console.log(Turbo);
-EOF
-            ,
-            $actualContents);
+            console.log(Turbo);
+            JS,
+            $actualContents
+        );
     }
 
     public function testExpandTargetDirWhenConfiguring()
@@ -80,20 +80,20 @@ EOF
         ]);
         $actualContents = $this->readFile('config/file.txt');
         $this->assertSame(<<<EOF
-NewFirstLine
-FirstLine
-EOF
-            ,
-            $actualContents);
+            NewFirstLine
+            FirstLine
+            EOF,
+            $actualContents
+        );
     }
 
     public function testLinesAddedToBottomOfFile()
     {
-        $this->saveFile('assets/app.js', <<<EOF
-import * as Turbo from '@hotwired/turbo';
+        $this->saveFile('assets/app.js', <<<JS
+            import * as Turbo from '@hotwired/turbo';
 
-console.log(Turbo);
-EOF
+            console.log(Turbo);
+            JS
         );
 
         $this->runConfigure([
@@ -104,33 +104,33 @@ EOF
             ],
         ]);
         $actualContents = $this->readFile('assets/app.js');
-        $this->assertSame(<<<EOF
-import * as Turbo from '@hotwired/turbo';
+        $this->assertSame(<<<JS
+            import * as Turbo from '@hotwired/turbo';
 
-console.log(Turbo);
-import './bootstrap';
-EOF
-            ,
-            $actualContents);
+            console.log(Turbo);
+            import './bootstrap';
+            JS,
+            $actualContents
+        );
     }
 
     public function testLinesAddedAfterTarget()
     {
-        $this->saveFile('webpack.config.js', <<<EOF
-const Encore = require('@symfony/webpack-encore');
+        $this->saveFile('webpack.config.js', <<<JS
+            const Encore = require('@symfony/webpack-encore');
 
-Encore
-    .setOutputPath('public/build/')
-    .setPublicPath('/build')
+            Encore
+                .setOutputPath('public/build/')
+                .setPublicPath('/build')
 
-    .addEntry('app', './assets/app.js')
+                .addEntry('app', './assets/app.js')
 
-    // When enabled, Webpack "splits" your files into smaller pieces for greater optimization.
-    .splitEntryChunks()
-;
+                // When enabled, Webpack "splits" your files into smaller pieces for greater optimization.
+                .splitEntryChunks()
+            ;
 
-module.exports = Encore.getWebpackConfig();
-EOF
+            module.exports = Encore.getWebpackConfig();
+            JS
         );
 
         $this->runConfigure([
@@ -138,48 +138,48 @@ EOF
                 'file' => 'webpack.config.js',
                 'position' => 'after_target',
                 'target' => '.addEntry(\'app\', \'./assets/app.js\')',
-                'content' => <<<EOF
+                'content' => <<<JS
 
-    // enables the Symfony UX Stimulus bridge (used in assets/bootstrap.js)
-    .enableStimulusBridge('./assets/controllers.json')
-EOF,
+                    // enables the Symfony UX Stimulus bridge (used in assets/bootstrap.js)
+                    .enableStimulusBridge('./assets/controllers.json')
+                JS,
             ],
         ]);
 
         $actualContents = $this->readFile('webpack.config.js');
-        $this->assertSame(<<<EOF
-const Encore = require('@symfony/webpack-encore');
+        $this->assertSame(<<<JS
+            const Encore = require('@symfony/webpack-encore');
 
-Encore
-    .setOutputPath('public/build/')
-    .setPublicPath('/build')
+            Encore
+                .setOutputPath('public/build/')
+                .setPublicPath('/build')
 
-    .addEntry('app', './assets/app.js')
+                .addEntry('app', './assets/app.js')
 
-    // enables the Symfony UX Stimulus bridge (used in assets/bootstrap.js)
-    .enableStimulusBridge('./assets/controllers.json')
+                // enables the Symfony UX Stimulus bridge (used in assets/bootstrap.js)
+                .enableStimulusBridge('./assets/controllers.json')
 
-    // When enabled, Webpack "splits" your files into smaller pieces for greater optimization.
-    .splitEntryChunks()
-;
+                // When enabled, Webpack "splits" your files into smaller pieces for greater optimization.
+                .splitEntryChunks()
+            ;
 
-module.exports = Encore.getWebpackConfig();
-EOF
-            ,
-            $actualContents);
+            module.exports = Encore.getWebpackConfig();
+            JS,
+            $actualContents
+        );
     }
 
     public function testSkippedIfTargetCannotBeFound()
     {
-        $originalContent = <<<EOF
-const Encore = require('@symfony/webpack-encore');
+        $originalContent = <<<JS
+            const Encore = require('@symfony/webpack-encore');
 
-Encore
-    .setOutputPath('public/build/')
-;
+            Encore
+                .setOutputPath('public/build/')
+            ;
 
-module.exports = Encore.getWebpackConfig();
-EOF;
+            module.exports = Encore.getWebpackConfig();
+            JS;
 
         $this->saveFile('webpack.config.js', $originalContent);
 
@@ -188,10 +188,10 @@ EOF;
                 'file' => 'webpack.config.js',
                 'position' => 'after_target',
                 'target' => '.addEntry(\'app\', \'./assets/app.js\')',
-                'content' => <<<EOF
+                'content' => <<<JS
 
-    // some new line
-EOF,
+                    // some new line
+                JS,
             ],
         ]);
 
@@ -200,12 +200,12 @@ EOF,
 
     public function testPatchIgnoredIfValueAlreadyExists()
     {
-        $originalContents = <<<EOF
-import * as Turbo from '@hotwired/turbo';
-import './bootstrap';
+        $originalContents = <<<JS
+            import * as Turbo from '@hotwired/turbo';
+            import './bootstrap';
 
-console.log(Turbo);
-EOF;
+            console.log(Turbo);
+            JS;
 
         $this->saveFile('assets/app.js', $originalContents);
 
@@ -222,14 +222,14 @@ EOF;
 
     public function testLinesAddedToMultipleFiles()
     {
-        $this->saveFile('assets/app.js', <<<EOF
-import * as Turbo from '@hotwired/turbo';
-EOF
+        $this->saveFile('assets/app.js', <<<JS
+            import * as Turbo from '@hotwired/turbo';
+            JS
         );
 
-        $this->saveFile('assets/bootstrap.js', <<<EOF
-console.log('bootstrap.js');
-EOF
+        $this->saveFile('assets/bootstrap.js', <<<JS
+            console.log('bootstrap.js');
+            JS
         );
 
         $this->runConfigure([
@@ -245,28 +245,28 @@ EOF
             ],
         ]);
 
-        $this->assertSame(<<<EOF
-import './bootstrap';
-import * as Turbo from '@hotwired/turbo';
-EOF
-            ,
-            $this->readFile('assets/app.js'));
+        $this->assertSame(<<<JS
+            import './bootstrap';
+            import * as Turbo from '@hotwired/turbo';
+            JS,
+            $this->readFile('assets/app.js')
+        );
 
-        $this->assertSame(<<<EOF
-console.log('bootstrap.js');
-console.log('on the bottom');
-EOF
-            ,
-            $this->readFile('assets/bootstrap.js'));
+        $this->assertSame(<<<JS
+            console.log('bootstrap.js');
+            console.log('on the bottom');
+            JS,
+            $this->readFile('assets/bootstrap.js')
+        );
     }
 
     public function testLineSkippedIfRequiredPackageMissing()
     {
-        $this->saveFile('assets/app.js', <<<EOF
-import * as Turbo from '@hotwired/turbo';
+        $this->saveFile('assets/app.js', <<<JS
+            import * as Turbo from '@hotwired/turbo';
 
-console.log(Turbo);
-EOF
+            console.log(Turbo);
+            JS
         );
 
         $composer = $this->createComposerMockWithPackagesInstalled([]);
@@ -279,22 +279,22 @@ EOF
             ],
         ], $composer);
         $actualContents = $this->readFile('assets/app.js');
-        $this->assertSame(<<<EOF
-import * as Turbo from '@hotwired/turbo';
+        $this->assertSame(<<<JS
+            import * as Turbo from '@hotwired/turbo';
 
-console.log(Turbo);
-EOF
-            ,
-            $actualContents);
+            console.log(Turbo);
+            JS,
+            $actualContents
+        );
     }
 
     public function testLineProcessedIfRequiredPackageIsPresent()
     {
-        $this->saveFile('assets/app.js', <<<EOF
-import * as Turbo from '@hotwired/turbo';
+        $this->saveFile('assets/app.js', <<<JS
+            import * as Turbo from '@hotwired/turbo';
 
-console.log(Turbo);
-EOF
+            console.log(Turbo);
+            JS
         );
 
         $composer = $this->createComposerMockWithPackagesInstalled([
@@ -311,25 +311,25 @@ EOF
         ], $composer);
 
         $actualContents = $this->readFile('assets/app.js');
-        $this->assertSame(<<<EOF
-import './bootstrap';
-import * as Turbo from '@hotwired/turbo';
+        $this->assertSame(<<<JS
+            import './bootstrap';
+            import * as Turbo from '@hotwired/turbo';
 
-console.log(Turbo);
-EOF
-            ,
-            $actualContents);
+            console.log(Turbo);
+            JS,
+            $actualContents
+        );
     }
 
     public function testLineSkippedIfRequiredPackageVersionIsWrong()
     {
-        $this->saveFile('phpunit.dist.xml', <<<EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<phpunit>
-    <extensions>
-    </extensions>
-</phpunit>
-EOF
+        $this->saveFile('phpunit.dist.xml', <<<XML
+            <?xml version="1.0" encoding="UTF-8"?>
+            <phpunit>
+                <extensions>
+                </extensions>
+            </phpunit>
+            XML
         );
 
         $composer = $this->createComposerMockWithPackagesInstalled([
@@ -346,26 +346,26 @@ EOF
             ],
         ], $composer);
         $actualContents = $this->readFile('phpunit.dist.xml');
-        $this->assertSame(<<<EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<phpunit>
-    <extensions>
-    </extensions>
-</phpunit>
-EOF
-            ,
-            $actualContents);
+        $this->assertSame(<<<XML
+            <?xml version="1.0" encoding="UTF-8"?>
+            <phpunit>
+                <extensions>
+                </extensions>
+            </phpunit>
+            XML,
+            $actualContents
+        );
     }
 
     public function testLineProcessedIfRequiredPackageVersionIsRight()
     {
-        $this->saveFile('phpunit.dist.xml', <<<EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<phpunit>
-    <extensions>
-    </extensions>
-</phpunit>
-EOF
+        $this->saveFile('phpunit.dist.xml', <<<XML
+            <?xml version="1.0" encoding="UTF-8"?>
+            <phpunit>
+                <extensions>
+                </extensions>
+            </phpunit>
+            XML
         );
 
         $composer = $this->createComposerMockWithPackagesInstalled([
@@ -383,16 +383,16 @@ EOF
         ], $composer);
 
         $actualContents = $this->readFile('phpunit.dist.xml');
-        $this->assertSame(<<<EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<phpunit>
-    <extensions>
-        <bootstrap class="Symfony\Component\Panther\ServerExtension" />
-    </extensions>
-</phpunit>
-EOF
-            ,
-            $actualContents);
+        $this->assertSame(<<<XML
+            <?xml version="1.0" encoding="UTF-8"?>
+            <phpunit>
+                <extensions>
+                    <bootstrap class="Symfony\Component\Panther\ServerExtension" />
+                </extensions>
+            </phpunit>
+            XML,
+            $actualContents
+        );
     }
 
     /**
@@ -414,11 +414,10 @@ EOF
 
     public function testExpandTargetDirWhenUnconfiguring()
     {
-        $this->saveFile('config/file.txt',
-            <<<EOF
-Line1
-Line2
-EOF
+        $this->saveFile('config/file.txt', <<<EOF
+            Line1
+            Line2
+            EOF
         );
 
         $this->runUnconfigure([
@@ -429,94 +428,90 @@ EOF
         ]);
         $actualContents = $this->readFile('config/file.txt');
         $this->assertSame(<<<EOF
-Line2
-EOF
-            , $actualContents);
+            Line2
+            EOF,
+            $actualContents
+        );
     }
 
     public function getUnconfigureTests()
     {
         yield 'found_middle' => [
-            <<<EOF
-import * as Turbo from '@hotwired/turbo';
-import './bootstrap';
+            <<<JS
+                import * as Turbo from '@hotwired/turbo';
+                import './bootstrap';
 
-console.log(Turbo);
-EOF
-            ,
+                console.log(Turbo);
+                JS,
             "import './bootstrap';",
-            <<<EOF
-import * as Turbo from '@hotwired/turbo';
+            <<<JS
+                import * as Turbo from '@hotwired/turbo';
 
-console.log(Turbo);
-EOF,
+                console.log(Turbo);
+                JS,
         ];
 
         yield 'found_top' => [
-            <<<EOF
-import * as Turbo from '@hotwired/turbo';
-import './bootstrap';
+            <<<JS
+                import * as Turbo from '@hotwired/turbo';
+                import './bootstrap';
 
-console.log(Turbo);
-EOF
-            ,
+                console.log(Turbo);
+                JS,
             "import * as Turbo from '@hotwired/turbo';",
-            <<<EOF
-import './bootstrap';
+            <<<JS
+                import './bootstrap';
 
-console.log(Turbo);
-EOF,
+                console.log(Turbo);
+                JS,
         ];
 
         yield 'found_bottom' => [
-            <<<EOF
-import * as Turbo from '@hotwired/turbo';
-import './bootstrap';
+            <<<JS
+                import * as Turbo from '@hotwired/turbo';
+                import './bootstrap';
 
-console.log(Turbo);
-EOF
-            ,
+                console.log(Turbo);
+                JS,
             'console.log(Turbo);',
-            <<<EOF
-import * as Turbo from '@hotwired/turbo';
-import './bootstrap';
+            <<<JS
+                import * as Turbo from '@hotwired/turbo';
+                import './bootstrap';
 
-EOF,
+                JS,
         ];
 
         yield 'not_found' => [
-            <<<EOF
-import * as Turbo from '@hotwired/turbo';
-import './bootstrap';
+            <<<JS
+                import * as Turbo from '@hotwired/turbo';
+                import './bootstrap';
 
-console.log(Turbo);
-EOF
-            ,
+                console.log(Turbo);
+                JS,
             "console.log('not found');",
-            <<<EOF
-import * as Turbo from '@hotwired/turbo';
-import './bootstrap';
+            <<<JS
+                import * as Turbo from '@hotwired/turbo';
+                import './bootstrap';
 
-console.log(Turbo);
-EOF,
+                console.log(Turbo);
+                JS,
         ];
 
         yield 'found_twice_in_file' => [
-            <<<EOF
-import * as Turbo from '@hotwired/turbo';
-import './bootstrap';
+            <<<JS
+                import * as Turbo from '@hotwired/turbo';
+                import './bootstrap';
 
-console.log(Turbo);
-console.log(Turbo);
-EOF
-            ,
+                console.log(Turbo);
+                console.log(Turbo);
+                JS,
             'console.log(Turbo);',
-            <<<EOF
-import * as Turbo from '@hotwired/turbo';
-import './bootstrap';
+            <<<JS
+                import * as Turbo from '@hotwired/turbo';
+                import './bootstrap';
 
-console.log(Turbo);
-EOF,
+                console.log(Turbo);
+                JS,
         ];
     }
 
@@ -548,18 +543,18 @@ EOF,
 
     public function getUpdateTests()
     {
-        $appJsOriginal = <<<EOF
-import * as Turbo from '@hotwired/turbo';
-import './bootstrap';
+        $appJsOriginal = <<<JS
+            import * as Turbo from '@hotwired/turbo';
+            import './bootstrap';
 
-console.log(Turbo);
-EOF;
+            console.log(Turbo);
+            JS;
 
-        $bootstrapJsOriginal = <<<EOF
-console.log('bootstrap.js');
+        $bootstrapJsOriginal = <<<JS
+            console.log('bootstrap.js');
 
-console.log('on the bottom');
-EOF;
+            console.log('on the bottom');
+            JS;
 
         yield 'recipe_changes_patch_contents' => [
             ['assets/app.js' => $appJsOriginal],
@@ -569,12 +564,12 @@ EOF;
             [
                 ['file' => 'assets/app.js', 'position' => 'top', 'content' => "import './stimulus_bootstrap';"],
             ],
-            ['assets/app.js' => <<<EOF
-import './stimulus_bootstrap';
-import * as Turbo from '@hotwired/turbo';
+            ['assets/app.js' => <<<JS
+                import './stimulus_bootstrap';
+                import * as Turbo from '@hotwired/turbo';
 
-console.log(Turbo);
-EOF
+                console.log(Turbo);
+                JS
             ],
         ];
 
@@ -598,18 +593,17 @@ EOF
                 ['file' => 'assets/bootstrap.js', 'position' => 'top', 'content' => "import * as Turbo from '@hotwired/turbo';"],
             ],
             [
-                'assets/app.js' => <<<EOF
-import './bootstrap';
+                'assets/app.js' => <<<JS
+                    import './bootstrap';
 
-console.log(Turbo);
-EOF
-                ,
-                'assets/bootstrap.js' => <<<EOF
-import * as Turbo from '@hotwired/turbo';
-console.log('bootstrap.js');
+                    console.log(Turbo);
+                    JS,
+                'assets/bootstrap.js' => <<<JS
+                    import * as Turbo from '@hotwired/turbo';
+                    console.log('bootstrap.js');
 
-console.log('on the bottom');
-EOF,
+                    console.log('on the bottom');
+                    JS,
             ],
         ];
 
@@ -632,12 +626,12 @@ EOF,
             [
                 ['file' => 'assets/app.js', 'position' => 'top', 'content' => "import './stimulus_bootstrap';", 'requires' => 'symfony/installed-package'],
             ],
-            ['assets/app.js' => <<<EOF
-import './stimulus_bootstrap';
-import * as Turbo from '@hotwired/turbo';
+            ['assets/app.js' => <<<JS
+                import './stimulus_bootstrap';
+                import * as Turbo from '@hotwired/turbo';
 
-console.log(Turbo);
-EOF
+                console.log(Turbo);
+                JS
             ],
         ];
     }
