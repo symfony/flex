@@ -29,9 +29,9 @@ class DumpEnvCommandTest extends TestCase
         @unlink($envLocal);
 
         $envContent = <<<EOF
-APP_ENV=dev
-APP_SECRET=abcdefgh123456789
-EOF;
+            APP_ENV=dev
+            APP_SECRET=abcdefgh123456789
+            EOF;
         file_put_contents($env, $envContent);
 
         $command = $this->createCommandDumpEnv();
@@ -60,9 +60,9 @@ EOF;
         @unlink($envLocal);
 
         $envContent = <<<EOF
-APP_ENV=dev
-APP_SECRET=abcdefgh123456789
-EOF;
+            APP_ENV=dev
+            APP_SECRET=abcdefgh123456789
+            EOF;
         file_put_contents($env, $envContent);
 
         $command = $this->createCommandDumpEnv();
@@ -94,9 +94,9 @@ EOF;
         @unlink($envLocal);
 
         $envContent = <<<'EOF'
-BAR=$FOO
-FOO=123
-EOF;
+            BAR=$FOO
+            FOO=123
+            EOF;
         file_put_contents($env, $envContent);
 
         $_SERVER['FOO'] = 'Foo';
@@ -179,9 +179,9 @@ EOF;
 
         file_put_contents($env, 'APP_ENV=dev');
         file_put_contents($envLocal, <<<EOF
-APP_ENV=test
-APP_SECRET=abcdefgh123456789
-EOF
+            APP_ENV=test
+            APP_SECRET=abcdefgh123456789
+            EOF
         );
 
         $command = $this->createCommandDumpEnv(['runtime' => ['test_envs' => []]]);
@@ -200,6 +200,39 @@ EOF
         unlink($env);
         unlink($envLocal);
         unlink($envLocalPhp);
+    }
+
+    public function testEnvVarReferenceInDumpedFile()
+    {
+        @mkdir(FLEX_TEST_DIR);
+        $env = FLEX_TEST_DIR.'/.env';
+        $envLocal = FLEX_TEST_DIR.'/.env.local.php';
+
+        @unlink($env);
+        @unlink($envLocal);
+
+        $envContent = <<<'EOF'
+            APP_ENV=prod
+            APP_SHARE_DIR=$APP_PROJECT_DIR/var/share
+            EOF;
+        file_put_contents($env, $envContent);
+
+        $command = $this->createCommandDumpEnv();
+        $command->execute(['env' => 'prod']);
+
+        $dumpedContent = file_get_contents($envLocal);
+        $this->assertStringContainsString("\$_ENV['APP_PROJECT_DIR']", $dumpedContent);
+        $this->assertStringContainsString("\$_SERVER['APP_PROJECT_DIR']", $dumpedContent);
+
+        $_ENV['APP_PROJECT_DIR'] = '/path/to/project';
+        $vars = require $envLocal;
+        $this->assertSame([
+            'APP_ENV' => 'prod',
+            'APP_SHARE_DIR' => '/path/to/project/var/share',
+        ], $vars);
+
+        unlink($env);
+        unlink($envLocal);
     }
 
     private function createCommandDumpEnv(array $options = [])

@@ -55,6 +55,7 @@ class DumpEnvCommand extends BaseCommand
         }
 
         $path = $this->options->get('root-dir').'/'.($runtime['dotenv_path'] ?? '.env');
+        $GLOBALS['SYMFONY_DOTENV_VARS'] = [];
 
         if (!$env || !$input->getOption('empty')) {
             $vars = $this->loadEnv($path, $env, $runtime);
@@ -66,6 +67,18 @@ class DumpEnvCommand extends BaseCommand
         }
 
         $vars = var_export($vars, true);
+
+        foreach ($GLOBALS['SYMFONY_DOTENV_VARS'] as $k => $v) {
+            $k = var_export($k, true);
+            $vars = str_replace($v, "'.(\$_ENV[{$k}] ?? ".(str_starts_with($k, "'HTTP_") ? '' : "\$_SERVER[{$k}] ?? ")."'').'", $vars);
+        }
+        unset($GLOBALS['SYMFONY_DOTENV_VARS']);
+        $vars = strtr($vars, [
+            "''.(" => '(',
+            ").''.(" => ').(',
+            ").''" => ')',
+        ]);
+
         $vars = <<<EOF
             <?php
 
@@ -144,4 +157,15 @@ class DumpEnvCommand extends BaseCommand
 
         return $env;
     }
+}
+
+namespace Symfony\Component\Dotenv;
+
+function getenv(?string $name = null, bool $local_only = false): string|array|false
+{
+    if (null === $name) {
+        return \getenv($name, $local_only);
+    }
+
+    return $GLOBALS['SYMFONY_DOTENV_VARS'][$name] ??= md5(random_bytes(10));
 }
