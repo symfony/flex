@@ -101,11 +101,7 @@ class DumpEnvCommand extends BaseCommand
         putenv('SYMFONY_DOTENV_VARS='.$_SERVER['SYMFONY_DOTENV_VARS']);
 
         try {
-            if (method_exists(Dotenv::class, 'usePutenv')) {
-                $dotenv = new Dotenv();
-            } else {
-                $dotenv = new Dotenv(false);
-            }
+            $dotenv = new Dotenv();
 
             if (!$env && file_exists($p = "$path.local")) {
                 $env = $_ENV[$envKey] = $dotenv->parse(file_get_contents($p), $p)[$envKey] ?? null;
@@ -117,29 +113,12 @@ class DumpEnvCommand extends BaseCommand
 
             $testEnvs = $runtime['test_envs'] ?? ['test'];
 
-            if (method_exists($dotenv, 'loadEnv')) {
-                $dotenv->loadEnv($path, $envKey, 'dev', $testEnvs);
-            } else {
-                // fallback code in case your Dotenv component is not 4.2 or higher (when loadEnv() was added)
-                $dotenv->load(file_exists($path) || !file_exists($p = "$path.dist") ? $path : $p);
-
-                if (!\in_array($env, $testEnvs, true) && file_exists($p = "$path.local")) {
-                    $dotenv->load($p);
-                }
-
-                if (file_exists($p = "$path.$env")) {
-                    $dotenv->load($p);
-                }
-
-                if (file_exists($p = "$path.$env.local")) {
-                    $dotenv->load($p);
-                }
-            }
+            $dotenv->loadEnv($path, $envKey, 'dev', $testEnvs);
 
             unset($_ENV['SYMFONY_DOTENV_VARS'], $_ENV['SYMFONY_DOTENV_PATH']);
             $env = $_ENV;
         } finally {
-            list($_SERVER, $_ENV) = $globalsBackup;
+            [$_SERVER, $_ENV] = $globalsBackup;
         }
 
         return $env;
