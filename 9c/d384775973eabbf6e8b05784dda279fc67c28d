@@ -1,0 +1,5 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2025-11-14T18:09:55Z
+
+We might also want to make framework-bundle conflict with affected versions of flex so that ppl are forced to update flex when moving to 7.4 and don't fall into this issue.
