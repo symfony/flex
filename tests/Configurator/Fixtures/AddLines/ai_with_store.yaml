@@ -1,0 +1,5 @@
+ai:
+    store:
+        pinecone:
+            default:
+                api_key: 'xxx'

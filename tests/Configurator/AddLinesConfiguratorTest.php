@@ -198,6 +198,66 @@ class AddLinesConfiguratorTest extends TestCase
         $this->assertSame($originalContent, $this->readFile('webpack.config.js'));
     }
 
+    public function testCreateIfMissingCreatesTargetAndAddsContent()
+    {
+        $this->copyFixture('ai_without_store.yaml', 'config/packages/ai.yaml');
+
+        $this->runConfigure([
+            [
+                'file' => 'config/packages/ai.yaml',
+                'position' => 'after_target',
+                'target' => '    store:',
+                'create_if_missing' => '    store:',
+                'content' => "        azuresearch:\n            default:\n                endpoint: '%env(AZURE_SEARCH_ENDPOINT)%'",
+            ],
+        ]);
+
+        $this->assertSame(
+            $this->loadFixture('ai_without_store_expected.yaml'),
+            $this->readFile('config/packages/ai.yaml')
+        );
+    }
+
+    public function testCreateIfMissingWithExistingTarget()
+    {
+        $this->copyFixture('ai_with_store.yaml', 'config/packages/ai.yaml');
+
+        $this->runConfigure([
+            [
+                'file' => 'config/packages/ai.yaml',
+                'position' => 'after_target',
+                'target' => '    store:',
+                'create_if_missing' => '    store:',
+                'content' => "        azuresearch:\n            default:\n                endpoint: '%env(AZURE_SEARCH_ENDPOINT)%'",
+            ],
+        ]);
+
+        $this->assertSame(
+            $this->loadFixture('ai_with_store_expected.yaml'),
+            $this->readFile('config/packages/ai.yaml')
+        );
+    }
+
+    public function testCreateIfMissingNotUsedWhenOptionNotSet()
+    {
+        $this->copyFixture('ai_without_store.yaml', 'config/packages/ai.yaml');
+
+        $this->runConfigure([
+            [
+                'file' => 'config/packages/ai.yaml',
+                'position' => 'after_target',
+                'target' => '    store:',
+                'content' => "        azuresearch:\n            default:\n                endpoint: '%env(AZURE_SEARCH_ENDPOINT)%'",
+            ],
+        ]);
+
+        // Content should remain unchanged since target was not found and no create_if_missing was provided
+        $this->assertSame(
+            $this->loadFixture('ai_without_store.yaml'),
+            $this->readFile('config/packages/ai.yaml')
+        );
+    }
+
     public function testPatchIgnoredIfValueAlreadyExists()
     {
         $originalContents = <<<JS
@@ -675,6 +735,16 @@ class AddLinesConfiguratorTest extends TestCase
     private function readFile(string $filename): string
     {
         return file_get_contents(FLEX_TEST_DIR.'/'.$filename);
+    }
+
+    private function loadFixture(string $filename): string
+    {
+        return rtrim(file_get_contents(__DIR__.'/Fixtures/AddLines/'.$filename), "\n");
+    }
+
+    private function copyFixture(string $fixtureName, string $targetPath): void
+    {
+        $this->saveFile($targetPath, $this->loadFixture($fixtureName));
     }
 
     private function createComposerMockWithPackagesInstalled(array $packages)

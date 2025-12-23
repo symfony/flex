@@ -1,0 +1,4 @@
+ai:
+    platform:
+        default:
+            api_key: '%env(OPENAI_API_KEY)%'

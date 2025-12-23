@@ -1,0 +1,8 @@
+ai:
+    store:
+        azuresearch:
+            default:
+                endpoint: '%env(AZURE_SEARCH_ENDPOINT)%'
+        pinecone:
+            default:
+                api_key: 'xxx'

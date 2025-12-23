@@ -129,8 +129,9 @@ class AddLinesConfigurator extends AbstractConfigurator
                 continue;
             }
             $target = isset($patch['target']) ? $patch['target'] : null;
+            $createIfMissing = isset($patch['create_if_missing']) ? $patch['create_if_missing'] : null;
 
-            $newContents = $this->getPatchedContents($file, $content, $position, $target, $warnIfMissing);
+            $newContents = $this->getPatchedContents($file, $content, $position, $target, $warnIfMissing, $createIfMissing);
             $this->fileContents[$file] = $newContents;
         }
     }
@@ -164,7 +165,7 @@ class AddLinesConfigurator extends AbstractConfigurator
         }
     }
 
-    private function getPatchedContents(string $file, string $value, string $position, ?string $target, bool $warnIfMissing): string
+    private function getPatchedContents(string $file, string $value, string $position, ?string $target, bool $warnIfMissing, ?string $createIfMissing = null): string
     {
         $fileContents = $this->readFile($file);
 
@@ -192,6 +193,15 @@ class AddLinesConfigurator extends AbstractConfigurator
                         break;
                     }
                 }
+
+                if (!$targetFound && null !== $createIfMissing) {
+                    // Insert the create_if_missing content at the end of the file, then add the value after the target
+                    $createIfMissingLines = explode("\n", $createIfMissing);
+                    $lines = array_merge($lines, $createIfMissingLines);
+                    $lines[] = $value;
+                    $targetFound = true;
+                }
+
                 $fileContents = implode("\n", $lines);
 
                 if (!$targetFound) {

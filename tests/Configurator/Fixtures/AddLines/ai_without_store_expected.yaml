@@ -1,0 +1,8 @@
+ai:
+    platform:
+        default:
+            api_key: '%env(OPENAI_API_KEY)%'
+    store:
+        azuresearch:
+            default:
+                endpoint: '%env(AZURE_SEARCH_ENDPOINT)%'
