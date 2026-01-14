@@ -44,6 +44,11 @@ use Symfony\Flex\Response;
 
 class FlexTest extends TestCase
 {
+    protected function tearDown(): void
+    {
+        @unlink(__DIR__.'/Fixtures/symfony.lock');
+    }
+
     public function testPostInstall()
     {
         $data = [
@@ -122,6 +127,56 @@ EOF
         $flex->activate($composer, $io);
 
         $this->assertTrue(class_exists(Response::class, false));
+    }
+
+    public function testContribRecipeNotApprovedIsRemovedFromLock()
+    {
+        $data = [
+            'manifests' => [
+                'contrib/package' => [
+                    'manifest' => [
+                        'bundles' => [
+                            'Contrib\\Package\\ContribBundle' => ['all'],
+                        ],
+                    ],
+                    'origin' => 'contrib/package:1.0@github.com/symfony/recipes-contrib:main',
+                    'is_contrib' => true,
+                ],
+            ],
+            'locks' => [
+                'contrib/package' => [
+                    'recipe' => [
+                        'repo' => 'github.com/symfony/recipes-contrib',
+                        'version' => '1.0',
+                    ],
+                    'version' => '1.0.0',
+                ],
+            ],
+        ];
+
+        // Non-interactive mode with allow-contrib disabled (BufferIO is non-interactive by default)
+        $io = new BufferIO('', OutputInterface::VERBOSITY_VERBOSE);
+
+        $package = new Package('contrib/package', '1.0.0', '1.0.0');
+        $rootPackage = $this->mockRootPackage([]); // no allow-contrib
+
+        $downloader = $this->mockDownloader($data);
+        $configurator = $this->getMockBuilder(Configurator::class)->disableOriginalConstructor()->getMock();
+        // Recipe should NOT be installed
+        $configurator->expects($this->never())->method('install');
+
+        $lock = new Lock(__DIR__.'/Fixtures/symfony.lock');
+        $composer = $this->mockComposer($this->mockLocker(), $rootPackage);
+        $flex = $this->mockFlexCustom($io, $composer, $configurator, $downloader, $lock);
+
+        $flex->record($this->mockPackageEvent($package));
+        $flex->install($this->mockFlexEvent());
+        $this->assertSame(['version' => '1.0.0'], $lock->get('contrib/package'));
+
+        // Verify the warning message was displayed
+        $output = $io->getOutput();
+        $this->assertStringContainsString('IGNORING', $output);
+        $this->assertStringContainsString('contrib/package', $output);
     }
 
     /**
