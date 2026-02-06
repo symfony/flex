@@ -73,6 +73,7 @@ class MakefileConfigurator extends AbstractConfigurator
         if (!file_exists($makefile)) {
             $envKey = $this->options->get('runtime')['env_var_name'] ?? 'APP_ENV';
             $dotenvPath = $this->options->get('runtime')['dotenv_path'] ?? '.env';
+            $tab = "\t";
             file_put_contents(
                 $this->options->get('root-dir').'/Makefile',
                 <<<EOF
@@ -83,7 +84,7 @@ class MakefileConfigurator extends AbstractConfigurator
                     .DEFAULT_GOAL := help
                     .PHONY: help
                     help:
-                        @awk 'BEGIN {FS = ":.*?## "}; /^[a-zA-Z-]+:.*?## .*$$/ {printf "\033[32m%-15s\033[0m %s\\n", $$1, $$2}' Makefile | sort
+                    {$tab}@awk 'BEGIN {FS = ":.*?## "}; /^[a-zA-Z-]+:.*?## .*$$/ {printf "\033[32m%-15s\033[0m %s\\n", $$1, $$2}' Makefile | sort
 
                     EOF
             );
