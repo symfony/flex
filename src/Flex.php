@@ -293,11 +293,11 @@ class Flex implements PluginInterface, EventSubscriberInterface
             $packages[] = new Package($name, $versionParser->normalize($info['version']), $info['version']);
         }
 
-        $transation = \Closure::bind(function () use ($packages, $event) {
+        $transaction = \Closure::bind(function () use ($packages, $event) {
             return new Transaction($packages, $event->getTransaction()->resultPackageMap);
         }, null, Transaction::class)();
 
-        foreach ($transation->getOperations() as $operation) {
+        foreach ($transaction->getOperations() as $operation) {
             if (!$operation instanceof UninstallOperation && $this->shouldRecordOperation($operation, $event->isDevMode(), $event->getComposer())) {
                 $this->operations[] = $operation;
             }
