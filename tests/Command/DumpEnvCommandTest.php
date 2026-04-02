@@ -13,6 +13,8 @@ namespace Symfony\Flex\Tests\Command;
 
 use Composer\Config;
 use Composer\Console\Application;
+use Composer\InstalledVersions;
+use Composer\Semver\VersionParser;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Tester\CommandTester;
 use Symfony\Flex\Command\DumpEnvCommand;
@@ -109,10 +111,14 @@ class DumpEnvCommandTest extends TestCase
 
         $this->assertFileExists($envLocal);
 
+        // With dotenv >= 6.4.35/7.4.7/8.0.7, variable resolution is deferred so BAR=$FOO
+        // resolves using .env's FOO value. With older versions, eager resolution uses system env.
+        $deferredResolution = InstalledVersions::satisfies(new VersionParser(), 'symfony/dotenv', '^6.4.35 | ^7.4.7 | >=8.0.7');
+
         $vars = require $envLocal;
         $this->assertSame([
             'APP_ENV' => 'prod',
-            'BAR' => 'Foo',
+            'BAR' => $deferredResolution ? '123' : 'Foo',
             'FOO' => '123',
         ], $vars);
 
