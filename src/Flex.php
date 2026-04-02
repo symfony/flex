@@ -420,6 +420,8 @@ class Flex implements PluginInterface, EventSubscriberInterface
                     'n'
                 );
                 if ('n' === $answer) {
+                    // Keep the package in lock but without recipe info, so the recipe can be applied later
+                    $this->lock->set($recipe->getName(), ['version' => $recipe->getPackage()->getPrettyVersion()]);
                     continue;
                 }
                 if ('a' === $answer) {
