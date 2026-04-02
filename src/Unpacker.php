@@ -38,7 +38,7 @@ class Unpacker
         $this->versionParser = new VersionParser();
     }
 
-    public function unpack(Operation $op, ?Result $result = null, &$links = [], bool $devRequire = false): Result
+    public function unpack(Operation $op, ?Result $result = null, &$links = [], bool $devRequire = false, &$replaces = [], &$provides = []): Result
     {
         if (null === $result) {
             $result = new Result();
@@ -95,7 +95,7 @@ class Unpacker
                         if ('symfony-pack' === $subPkg->getType()) {
                             $subOp = new Operation(true, $op->shouldSort());
                             $subOp->addPackage($subPkg->getName(), $constraint, $dev);
-                            $result = $this->unpack($subOp, $result, $links, $dev);
+                            $result = $this->unpack($subOp, $result, $links, $dev, $replaces, $provides);
                             continue;
                         }
 
@@ -126,6 +126,13 @@ class Unpacker
                         ];
                     }
                 }
+            }
+
+            foreach ($pkg->getReplaces() as $link) {
+                $replaces[$link->getTarget()] = $link->getPrettyConstraint();
+            }
+            foreach ($pkg->getProvides() as $link) {
+                $provides[$link->getTarget()] = $link->getPrettyConstraint();
             }
         }
 
@@ -167,6 +174,18 @@ class Unpacker
 
             if (!$jsonManipulator->addLink($link['type'], $link['name'], $constraint->getPrettyString(), $op->shouldSort())) {
                 throw new \RuntimeException(\sprintf('Unable to unpack package "%s".', $link['name']));
+            }
+        }
+
+        foreach ($replaces as $name => $constraint) {
+            if (!isset($jsonStored['replace'][$name])) {
+                $jsonManipulator->addLink('replace', $name, $constraint, $op->shouldSort());
+            }
+        }
+
+        foreach ($provides as $name => $constraint) {
+            if (!isset($jsonStored['provide'][$name])) {
+                $jsonManipulator->addLink('provide', $name, $constraint, $op->shouldSort());
             }
         }
 

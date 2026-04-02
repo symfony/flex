@@ -29,7 +29,7 @@ class UnpackerTest extends TestCase
      *
      *   - "real" package MUST be present ONLY in "require" section
      */
-    public function testDoNotDuplicateEntry(): void
+    public function testDoNotDuplicateEntry()
     {
         // Setup project
 
@@ -86,6 +86,82 @@ class UnpackerTest extends TestCase
         $this->assertArrayHasKey('require', $composerJson);
         $this->assertArrayHasKey('real', $composerJson['require']);
         $this->assertArrayNotHasKey('require-dev', $composerJson);
+
+        // Restore
+
+        if ($originalEnvComposer) {
+            $_SERVER['COMPOSER'] = $originalEnvComposer;
+        } else {
+            unset($_SERVER['COMPOSER']);
+        }
+        // composer 2.1 and lower support
+        putenv('COMPOSER='.$originalEnvComposer);
+        @unlink($composerJsonPath);
+    }
+
+    /**
+     * When unpacking a pack, its "replace" and "provide" entries must be
+     * copied to the root composer.json.
+     */
+    public function testUnpackCopiesReplaceAndProvide()
+    {
+        // Setup project
+
+        $composerJsonPath = FLEX_TEST_DIR.'/composer.json';
+
+        @mkdir(FLEX_TEST_DIR);
+        @unlink($composerJsonPath);
+        file_put_contents($composerJsonPath, '{}');
+
+        $originalEnvComposer = $_SERVER['COMPOSER'];
+        $_SERVER['COMPOSER'] = $composerJsonPath;
+        // composer 2.1 and lower support
+        putenv('COMPOSER='.$composerJsonPath);
+
+        // Setup packages
+
+        $realPkg = new Package('real', '1.0.0', '1.0.0');
+        $realPkgLink = new Link('lorem', 'real', new MatchAllConstraint(), 'wraps', '1.0.0');
+
+        $virtualPkg = new Package('pack_foo', '1.0.0', '1.0.0');
+        $virtualPkg->setType('symfony-pack');
+        $virtualPkg->setRequires(['real' => $realPkgLink]);
+        $virtualPkg->setReplaces([
+            'old/package' => new Link('pack_foo', 'old/package', new MatchAllConstraint(), 'replaces', 'self.version'),
+        ]);
+        $virtualPkg->setProvides([
+            'some/capability' => new Link('pack_foo', 'some/capability', new MatchAllConstraint(), 'provides', 'self.version'),
+        ]);
+
+        $packages = [$realPkg, $virtualPkg];
+
+        // Setup Composer
+
+        $repManager = $this->getMockBuilder(RepositoryManager::class)->disableOriginalConstructor()->getMock();
+        $repManager->expects($this->any())->method('getLocalRepository')->willReturn(new InstalledArrayRepository($packages));
+
+        $composer = new Composer();
+        $composer->setRepositoryManager($repManager);
+
+        // Unpack
+
+        $resolver = $this->getMockBuilder(PackageResolver::class)->disableOriginalConstructor()->getMock();
+
+        $unpacker = new Unpacker($composer, $resolver);
+
+        $operation = new Operation(true, false);
+        $operation->addPackage('pack_foo', '*', false);
+
+        $unpacker->unpack($operation);
+
+        // Check
+
+        $composerJson = json_decode(file_get_contents($composerJsonPath), true);
+
+        $this->assertArrayHasKey('replace', $composerJson);
+        $this->assertArrayHasKey('old/package', $composerJson['replace']);
+        $this->assertArrayHasKey('provide', $composerJson);
+        $this->assertArrayHasKey('some/capability', $composerJson['provide']);
 
         // Restore
 
