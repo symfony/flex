@@ -231,4 +231,29 @@ endif
 EOF
         ], $recipeUpdate->getNewFiles());
     }
+
+    public function testConfigureCreatesBoilerplateWithTabIndentation()
+    {
+        $configurator = new MakefileConfigurator(
+            $this->getMockBuilder(Composer::class)->getMock(),
+            $this->getMockBuilder(IOInterface::class)->getMock(),
+            new Options(['root-dir' => FLEX_TEST_DIR])
+        );
+        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
+
+        $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
+        $recipe->expects($this->any())->method('getName')->willReturn('FooBundle');
+
+        $makefile = FLEX_TEST_DIR.'/Makefile';
+        @unlink($makefile);
+
+        $configurator->configure($recipe, ['foo: ## Do foo'], $lock);
+
+        $this->assertFileExists($makefile);
+        $contents = file_get_contents($makefile);
+        $this->assertStringContainsString("ifndef APP_ENV\n    include .env\nendif", $contents);
+        $this->assertStringContainsString('.DEFAULT_GOAL := help', $contents);
+        $this->assertStringContainsString('.PHONY: help', $contents);
+        $this->assertStringContainsString("help:\n\t@awk", $contents, 'The help target must use a tab for indentation, not spaces');
+    }
 }
