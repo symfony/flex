@@ -26,6 +26,7 @@ jobs:
                   - php: '8.3'
                   - php: '8.4'
                   - php: '8.5'
+                  - php: '8.5'
                     mode: low-deps
 
         steps:
