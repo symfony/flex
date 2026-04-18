@@ -19,6 +19,7 @@ use Composer\Util\ProcessExecutor;
 use Symfony\Component\Console\Exception\RuntimeException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Flex\Configurator;
 use Symfony\Flex\Downloader;
@@ -57,6 +58,7 @@ class UpdateRecipesCommand extends BaseCommand
             ->setAliases(['recipes:update'])
             ->setDescription('Updates an already-installed recipe to the latest version.')
             ->addArgument('package', InputArgument::OPTIONAL, 'Recipe that should be updated.')
+            ->addOption('no-changelog', null, InputOption::VALUE_NONE, 'Do not generate the changelog after updating the recipe.')
         ;
     }
 
@@ -247,7 +249,7 @@ class UpdateRecipesCommand extends BaseCommand
             }
         }
 
-        if ($patch->getPatch()) {
+        if ($patch->getPatch() && !$input->getOption('no-changelog')) {
             $io->write('');
             $io->write('  Calculating CHANGELOG...', false);
             $changelog = $this->generateChangelog($originalRecipe);

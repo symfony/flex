@@ -52,13 +52,42 @@ class UpdateRecipesCommandTest extends TestCase
         $filesystem->remove(FLEX_TEST_DIR);
     }
 
-    /**
-     * Skip 7.1, simply because there isn't a newer recipe version available
-     * that we can easily use to assert.
-     *
-     * @requires PHP >= 7.2
-     */
     public function testCommandUpdatesRecipe()
+    {
+        $this->prepareRecipeUpdateFixture();
+
+        $command = $this->createCommandUpdateRecipes();
+        $command->execute(['package' => 'symfony/console']);
+
+        $this->assertSame(0, $command->getStatusCode());
+        $this->assertStringContainsString('Recipe updated', $this->io->getOutput());
+        // assert bin/console has changed
+        $this->assertStringNotContainsString('vendor/autoload.php', file_get_contents(FLEX_TEST_DIR.'/bin/console'));
+        // assert the recipe was updated
+        $this->assertStringNotContainsString('c6d02bdfba9da13c22157520e32a602dbee8a75c', file_get_contents(FLEX_TEST_DIR.'/symfony.lock'));
+    }
+
+    public function testCommandUpdatesRecipeWithNoChangelog()
+    {
+        $this->prepareRecipeUpdateFixture();
+
+        $command = $this->createCommandUpdateRecipes();
+        $command->execute([
+            'package' => 'symfony/console',
+            '--no-changelog' => true,
+        ]);
+
+        $this->assertSame(0, $command->getStatusCode());
+        $this->assertStringContainsString('Recipe updated', $this->io->getOutput());
+        $this->assertStringNotContainsString('Calculating CHANGELOG', $this->io->getOutput());
+        $this->assertStringNotContainsString('No CHANGELOG could be calculated.', $this->io->getOutput());
+        // assert bin/console has changed
+        $this->assertStringNotContainsString('vendor/autoload.php', file_get_contents(FLEX_TEST_DIR.'/bin/console'));
+        // assert the recipe was updated
+        $this->assertStringNotContainsString('c6d02bdfba9da13c22157520e32a602dbee8a75c', file_get_contents(FLEX_TEST_DIR.'/symfony.lock'));
+    }
+
+    private function prepareRecipeUpdateFixture(): void
     {
         @mkdir(FLEX_TEST_DIR);
         (new Process(['git', 'init'], FLEX_TEST_DIR))->mustRun();
@@ -76,16 +105,6 @@ class UpdateRecipesCommandTest extends TestCase
         (new Process(['git', 'commit', '-m', 'setup of original console files'], FLEX_TEST_DIR))->mustRun();
 
         (new Process([__DIR__.'/../../vendor/bin/composer', 'install'], FLEX_TEST_DIR))->mustRun();
-
-        $command = $this->createCommandUpdateRecipes();
-        $command->execute(['package' => 'symfony/console']);
-
-        $this->assertSame(0, $command->getStatusCode());
-        $this->assertStringContainsString('Recipe updated', $this->io->getOutput());
-        // assert bin/console has changed
-        $this->assertStringNotContainsString('vendor/autoload.php', file_get_contents(FLEX_TEST_DIR.'/bin/console'));
-        // assert the recipe was updated
-        $this->assertStringNotContainsString('c6d02bdfba9da13c22157520e32a602dbee8a75c', file_get_contents(FLEX_TEST_DIR.'/symfony.lock'));
     }
 
     private function createCommandUpdateRecipes(): CommandTester
