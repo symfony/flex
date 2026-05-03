@@ -91,6 +91,159 @@ class ComposerScriptsConfiguratorTest extends TestCase
         );
     }
 
+    public function testConfigureAddsHooksWhenMissing()
+    {
+        file_put_contents(FLEX_TEST_DIR.'/composer.json', json_encode([
+            'scripts' => [
+                'auto-scripts' => [
+                    'cache:clear' => 'symfony-cmd',
+                ],
+            ],
+        ], \JSON_PRETTY_PRINT));
+
+        $configurator = new ComposerScriptsConfigurator(
+            $this->createMock(Composer::class),
+            $this->createMock(IOInterface::class),
+            new Options(['root-dir' => FLEX_TEST_DIR])
+        );
+
+        $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
+        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
+
+        $configurator->configure($recipe, [
+            'do:cool-stuff' => 'symfony-cmd',
+        ], $lock);
+        $this->assertEquals(<<<EOF
+            {
+                "scripts": {
+                    "auto-scripts": {
+                        "cache:clear": "symfony-cmd",
+                        "do:cool-stuff": "symfony-cmd"
+                    },
+                    "post-install-cmd": ["@auto-scripts"],
+                    "post-update-cmd": ["@auto-scripts"]
+                }
+            }
+
+            EOF,
+            file_get_contents(FLEX_TEST_DIR.'/composer.json')
+        );
+    }
+
+    public function testConfigureAppendsToExistingHookArray()
+    {
+        file_put_contents(FLEX_TEST_DIR.'/composer.json', json_encode([
+            'scripts' => [
+                'auto-scripts' => [
+                    'cache:clear' => 'symfony-cmd',
+                ],
+                'post-install-cmd' => ['@some-other'],
+                'post-update-cmd' => ['@some-other'],
+            ],
+        ], \JSON_PRETTY_PRINT));
+
+        $configurator = new ComposerScriptsConfigurator(
+            $this->createMock(Composer::class),
+            $this->createMock(IOInterface::class),
+            new Options(['root-dir' => FLEX_TEST_DIR])
+        );
+
+        $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
+        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
+
+        $configurator->configure($recipe, [
+            'do:cool-stuff' => 'symfony-cmd',
+        ], $lock);
+        $this->assertEquals(<<<EOF
+            {
+                "scripts": {
+                    "auto-scripts": {
+                        "cache:clear": "symfony-cmd",
+                        "do:cool-stuff": "symfony-cmd"
+                    },
+                    "post-install-cmd": ["@some-other", "@auto-scripts"],
+                    "post-update-cmd": ["@some-other", "@auto-scripts"]
+                }
+            }
+
+            EOF,
+            file_get_contents(FLEX_TEST_DIR.'/composer.json')
+        );
+    }
+
+    public function testConfigureConvertsScalarHookToArray()
+    {
+        file_put_contents(FLEX_TEST_DIR.'/composer.json', json_encode([
+            'scripts' => [
+                'auto-scripts' => [
+                    'cache:clear' => 'symfony-cmd',
+                ],
+                'post-install-cmd' => '@some-other',
+                'post-update-cmd' => '@some-other',
+            ],
+        ], \JSON_PRETTY_PRINT));
+
+        $configurator = new ComposerScriptsConfigurator(
+            $this->createMock(Composer::class),
+            $this->createMock(IOInterface::class),
+            new Options(['root-dir' => FLEX_TEST_DIR])
+        );
+
+        $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
+        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
+
+        $configurator->configure($recipe, [
+            'do:cool-stuff' => 'symfony-cmd',
+        ], $lock);
+        $this->assertEquals(<<<EOF
+            {
+                "scripts": {
+                    "auto-scripts": {
+                        "cache:clear": "symfony-cmd",
+                        "do:cool-stuff": "symfony-cmd"
+                    },
+                    "post-install-cmd": ["@some-other", "@auto-scripts"],
+                    "post-update-cmd": ["@some-other", "@auto-scripts"]
+                }
+            }
+
+            EOF,
+            file_get_contents(FLEX_TEST_DIR.'/composer.json')
+        );
+    }
+
+    public function testConfigureIsIdempotentWhenAutoScriptsAlreadyWired()
+    {
+        file_put_contents(FLEX_TEST_DIR.'/composer.json', json_encode([
+            'scripts' => [
+                'auto-scripts' => [
+                    'do:cool-stuff' => 'symfony-cmd',
+                ],
+                'post-install-cmd' => ['@auto-scripts'],
+                'post-update-cmd' => ['@auto-scripts'],
+            ],
+        ], \JSON_PRETTY_PRINT));
+
+        $configurator = new ComposerScriptsConfigurator(
+            $this->createMock(Composer::class),
+            $this->createMock(IOInterface::class),
+            new Options(['root-dir' => FLEX_TEST_DIR])
+        );
+
+        $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
+        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
+
+        $configurator->configure($recipe, [
+            'do:cool-stuff' => 'symfony-cmd',
+        ], $lock);
+        $afterFirst = file_get_contents(FLEX_TEST_DIR.'/composer.json');
+
+        $configurator->configure($recipe, [
+            'do:cool-stuff' => 'symfony-cmd',
+        ], $lock);
+        $this->assertSame($afterFirst, file_get_contents(FLEX_TEST_DIR.'/composer.json'));
+    }
+
     public function testUnconfigure()
     {
         file_put_contents(FLEX_TEST_DIR.'/composer.json', json_encode([
