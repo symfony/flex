@@ -209,6 +209,29 @@ class DockerComposeConfiguratorTest extends TestCase
         $this->assertEquals(self::ORIGINAL_CONTENT, file_get_contents($dockerComposeFile));
     }
 
+    public function testReconfigureDoesNotDuplicateLaterTopLevelKey()
+    {
+        $this->configurator->configure($this->recipeDb, self::CONFIG_DB, $this->lock);
+
+        $servicesOnlyRecipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
+        $servicesOnlyRecipe->method('getName')->willReturn('acme/services-only');
+        $servicesOnlyConfig = [
+            'services' => [
+                'cache:',
+                '  image: redis:alpine',
+            ],
+        ];
+
+        $this->configurator->configure($servicesOnlyRecipe, $servicesOnlyConfig, $this->lock);
+        $afterFirstConfigure = file_get_contents(FLEX_TEST_DIR.'/compose.yaml');
+
+        $this->configurator->configure($servicesOnlyRecipe, $servicesOnlyConfig, $this->lock, ['force' => true]);
+        $afterSecondConfigure = file_get_contents(FLEX_TEST_DIR.'/compose.yaml');
+
+        $this->assertSame(1, substr_count($afterSecondConfigure, "\nvolumes:\n"), 'compose.yaml must contain exactly one top-level "volumes:" key');
+        $this->assertSame($afterFirstConfigure, $afterSecondConfigure, 'configure must be idempotent when re-run');
+    }
+
     public function testNotConfiguredIfConfigSet()
     {
         $this->package->setExtra(['symfony' => ['docker' => false]]);
