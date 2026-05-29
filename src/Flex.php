@@ -40,6 +40,7 @@ use Composer\Plugin\PrePoolCreateEvent;
 use Composer\Script\Event;
 use Composer\Script\ScriptEvents;
 use Composer\Semver\VersionParser;
+use Symfony\Component\Console\Exception\ExceptionInterface as ConsoleExceptionInterface;
 use Symfony\Component\Console\Input\ArgvInput;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Flex\Event\UpdateEvent;
@@ -161,9 +162,11 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
             $resolver = new PackageResolver($this->downloader);
 
+            $commandObj = null;
             try {
                 $command = $input->getFirstArgument();
-                $command = $command ? $app->find($command)->getName() : null;
+                $commandObj = $command ? $app->find($command) : null;
+                $command = $commandObj ? $commandObj->getName() : null;
             } catch (\InvalidArgumentException $e) {
             }
 
@@ -178,8 +181,25 @@ class Flex implements PluginInterface, EventSubscriberInterface
             }
 
             if (isset(self::$aliasResolveCommands[$command])) {
+                // When the command name is abbreviated (e.g. "req" for "require"), Composer
+                // activates plugins early to look up potential script commands, before the
+                // input has been bound to the command definition. In that case "packages"
+                // isn't a known argument yet, so bind the command definition first.
+                if (null !== $commandObj && !$input->hasArgument('packages')) {
+                    $commandObj->mergeApplicationDefinition();
+                    try {
+                        $input->bind($commandObj->getDefinition());
+                    } catch (ConsoleExceptionInterface $e) {
+                    }
+                }
                 if ($input->hasArgument('packages')) {
-                    $input->setArgument('packages', $resolver->resolve($input->getArgument('packages'), self::$aliasResolveCommands[$command]));
+                    $packages = $input->getArgument('packages');
+                    $resolved = $resolver->resolve($packages, self::$aliasResolveCommands[$command]);
+                    $input->setArgument('packages', $resolved);
+                    // The command will bind its definition again at execution time, which
+                    // re-parses the raw tokens. Rewrite them too so the resolved package
+                    // names survive that rebinding.
+                    $this->rewritePackageTokens($input, $packages, $resolved);
                 }
             }
 
@@ -204,6 +224,36 @@ class Flex implements PluginInterface, EventSubscriberInterface
         if ($symfonyRequire || $this->ignorePreleases) {
             $this->filter = new PackageFilter($io, $symfonyRequire, $this->downloader, $this->ignorePreleases);
         }
+    }
+
+    /**
+     * Rewrites the raw input tokens so resolved package names survive a later rebinding
+     * of the input to the command definition (which re-parses the tokens from scratch).
+     */
+    private function rewritePackageTokens(ArgvInput $input, array $original, array $resolved): void
+    {
+        if ($original === $resolved) {
+            return;
+        }
+
+        try {
+            $property = new \ReflectionProperty(ArgvInput::class, 'tokens');
+        } catch (\ReflectionException $e) {
+            return;
+        }
+        $tokens = $property->getValue($input);
+
+        // Drop the tokens matching the original package arguments (each one once, keeping
+        // options and the command name in place), then append the resolved ones at the end.
+        // Argument order relative to options is irrelevant when the tokens are re-parsed.
+        $remaining = $original;
+        foreach ($tokens as $i => $token) {
+            if (false !== $pos = array_search($token, $remaining, true)) {
+                unset($tokens[$i], $remaining[$pos]);
+            }
+        }
+
+        $property->setValue($input, array_merge(array_values($tokens), $resolved));
     }
 
     /**
