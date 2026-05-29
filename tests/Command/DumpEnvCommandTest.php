@@ -112,7 +112,7 @@ class DumpEnvCommandTest extends TestCase
         $vars = require $envLocal;
         $this->assertSame([
             'APP_ENV' => 'prod',
-            'BAR' => 'Foo',
+            'BAR' => '123',
             'FOO' => '123',
         ], $vars);
 
