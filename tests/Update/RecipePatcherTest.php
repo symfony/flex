@@ -12,6 +12,7 @@
 namespace Symfony\Flex\Tests\Update;
 
 use Composer\IO\IOInterface;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Process\Process;
@@ -21,21 +22,19 @@ use Symfony\Flex\Update\RecipePatcher;
 
 class RecipePatcherTest extends TestCase
 {
-    private $filesystem;
+    private static $filesystem;
 
     protected function setUp(): void
     {
-        $this->getFilesystem()->remove(FLEX_TEST_DIR);
-        $this->getFilesystem()->mkdir(FLEX_TEST_DIR);
+        self::getFilesystem()->remove(FLEX_TEST_DIR);
+        self::getFilesystem()->mkdir(FLEX_TEST_DIR);
     }
 
-    /**
-     * @dataProvider getGeneratePatchTests
-     */
+    #[DataProvider('getGeneratePatchTests')]
     public function testGeneratePatch(array $originalFiles, array $newFiles, string $expectedPatch, array $expectedDeletedFiles = [])
     {
-        $this->getFilesystem()->remove(FLEX_TEST_DIR);
-        $this->getFilesystem()->mkdir(FLEX_TEST_DIR);
+        self::getFilesystem()->remove(FLEX_TEST_DIR);
+        self::getFilesystem()->mkdir(FLEX_TEST_DIR);
         // original files need to be present to avoid patcher thinking they were deleting and skipping patch
         foreach ($originalFiles as $file => $contents) {
             touch(FLEX_TEST_DIR.'/'.$file);
@@ -53,7 +52,7 @@ class RecipePatcherTest extends TestCase
             (new Process(['git', 'commit', '-m', '"original files"'], FLEX_TEST_DIR))->mustRun();
         }
 
-        $patcher = new RecipePatcher(FLEX_TEST_DIR, $this->createMock(IOInterface::class), $this->createMock(Lock::class));
+        $patcher = new RecipePatcher(FLEX_TEST_DIR, $this->createStub(IOInterface::class), $this->createStub(Lock::class));
 
         $patch = $patcher->generatePatch($originalFiles, $newFiles);
         $this->assertSame($expectedPatch, rtrim($patch->getPatch(), "\n"));
@@ -80,7 +79,7 @@ class RecipePatcherTest extends TestCase
         $this->assertSame($expectedBlobs, $actualShortenedBlobs);
     }
 
-    public function getGeneratePatchTests(): iterable
+    public static function getGeneratePatchTests(): iterable
     {
         yield 'updated_file' => [
             ['file1.txt' => 'Original contents', 'file2.txt' => 'Original file2'],
@@ -186,19 +185,17 @@ class RecipePatcherTest extends TestCase
     public function testGeneratePatchOnDeletedFile()
     {
         // make sure the target directory is empty
-        $this->getFilesystem()->remove(FLEX_TEST_DIR);
-        $this->getFilesystem()->mkdir(FLEX_TEST_DIR);
+        self::getFilesystem()->remove(FLEX_TEST_DIR);
+        self::getFilesystem()->mkdir(FLEX_TEST_DIR);
 
-        $patcher = new RecipePatcher(FLEX_TEST_DIR, $this->createMock(IOInterface::class), $this->createMock(Lock::class));
+        $patcher = new RecipePatcher(FLEX_TEST_DIR, $this->createStub(IOInterface::class), $this->createStub(Lock::class));
 
         // try to update a file that does not exist in the project
         $patch = $patcher->generatePatch(['.env' => 'original contents'], ['.env' => 'new contents']);
         $this->assertSame('', $patch->getPatch());
     }
 
-    /**
-     * @dataProvider getApplyPatchTests
-     */
+    #[DataProvider('provideApplyPatchCases')]
     public function testApplyPatch(array $filesCurrentlyInApp, RecipePatch $recipePatch, array $expectedFiles, bool $expectedConflicts)
     {
         (new Process(['git', 'init'], FLEX_TEST_DIR))->mustRun();
@@ -217,7 +214,7 @@ class RecipePatcherTest extends TestCase
             (new Process(['git', 'commit', '-m', 'Committing original files'], FLEX_TEST_DIR))->mustRun();
         }
 
-        $patcher = new RecipePatcher(FLEX_TEST_DIR, $this->createMock(IOInterface::class), $this->createMock(Lock::class));
+        $patcher = new RecipePatcher(FLEX_TEST_DIR, $this->createStub(IOInterface::class), $this->createStub(Lock::class));
         $hadConflicts = !$patcher->applyPatch($recipePatch);
 
         foreach ($expectedFiles as $file => $expectedContents) {
@@ -245,12 +242,12 @@ class RecipePatcherTest extends TestCase
         (new Process(['git', 'add', '-A'], FLEX_TEST_DIR))->mustRun();
         (new Process(['git', 'commit', '-m', 'Committing original files'], FLEX_TEST_DIR))->mustRun();
 
-        $lock = $this->createMock(Lock::class);
-        $lock->expects($this->any())->method('all')->willReturn([
+        $lock = $this->createStub(Lock::class);
+        $lock->method('all')->willReturn([
             'symfony/security-bundle' => ['files' => ['config/packages/security.yaml']],
             'symfony/security' => ['files' => ['config/packages/security.yaml']],
         ]);
-        $patcher = new RecipePatcher(FLEX_TEST_DIR, $this->createMock(IOInterface::class), $lock);
+        $patcher = new RecipePatcher(FLEX_TEST_DIR, $this->createStub(IOInterface::class), $lock);
 
         $patchData = $this->generatePatchData('config/packages/security.yaml', '# contents', null);
         $hadConflicts = !$patcher->applyPatch(new RecipePatch(
@@ -264,9 +261,12 @@ class RecipePatcherTest extends TestCase
         $this->assertFalse($hadConflicts);
     }
 
-    /**
-     * @dataProvider getApplyPatchTests
-     */
+    public static function provideApplyPatchCases(): iterable
+    {
+        yield from self::getApplyPatchTests('');
+    }
+
+    #[DataProvider('provideApplyPatchOnSubfolderCases')]
     public function testApplyPatchOnSubfolder(array $filesCurrentlyInApp, RecipePatch $recipePatch, array $expectedFiles, bool $expectedConflicts)
     {
         $mainProjectPath = FLEX_TEST_DIR;
@@ -292,7 +292,7 @@ class RecipePatcherTest extends TestCase
             (new Process(['git', 'commit', '-m', 'Committing original files'], $subProjectPath))->mustRun();
         }
 
-        $patcher = new RecipePatcher($subProjectPath, $this->createMock(IOInterface::class), $this->createMock(Lock::class));
+        $patcher = new RecipePatcher($subProjectPath, $this->createStub(IOInterface::class), $this->createStub(Lock::class));
         $hadConflicts = !$patcher->applyPatch($recipePatch);
 
         foreach ($expectedFiles as $file => $expectedContents) {
@@ -308,10 +308,14 @@ class RecipePatcherTest extends TestCase
         $this->assertSame($expectedConflicts, $hadConflicts);
     }
 
-    public function getApplyPatchTests(string $testMethodName): iterable
+    public static function provideApplyPatchOnSubfolderCases(): iterable
     {
-        $projectRootPath = ('testApplyPatchOnSubfolder' === $testMethodName) ? 'ProjectA/' : '';
-        $files = $this->getFilesForPatching($projectRootPath);
+        yield from self::getApplyPatchTests('ProjectA/');
+    }
+
+    public static function getApplyPatchTests(string $projectRootPath): iterable
+    {
+        $files = self::getFilesForPatching($projectRootPath);
         $dotEnvClean = $files['dot_env_clean'];
         $packageJsonConflict = $files['package_json_conflict'];
         $webpackEncoreAdded = $files['webpack_encore_added'];
@@ -393,12 +397,10 @@ class RecipePatcherTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider getIntegrationTests
-     */
+    #[DataProvider('getIntegrationTests')]
     public function testIntegration(bool $useNullForMissingFiles)
     {
-        $files = $this->getFilesForPatching();
+        $files = self::getFilesForPatching();
         (new Process(['git', 'init'], FLEX_TEST_DIR))->mustRun();
         (new Process(['git', 'config', 'user.name', 'Unit test'], FLEX_TEST_DIR))->mustRun();
         (new Process(['git', 'config', 'user.email', ''], FLEX_TEST_DIR))->mustRun();
@@ -421,7 +423,7 @@ class RecipePatcherTest extends TestCase
         (new Process(['git', 'add', '-A'], FLEX_TEST_DIR))->mustRun();
         (new Process(['git', 'commit', '-m', 'committing in app start files'], FLEX_TEST_DIR))->mustRun();
 
-        $patcher = new RecipePatcher(FLEX_TEST_DIR, $this->createMock(IOInterface::class), $this->createMock(Lock::class));
+        $patcher = new RecipePatcher(FLEX_TEST_DIR, $this->createStub(IOInterface::class), $this->createStub(Lock::class));
         $originalFiles = [
             '.env' => $files['dot_env_clean']['original_recipe'],
             'package.json' => $files['package_json_conflict']['original_recipe'],
@@ -452,7 +454,7 @@ class RecipePatcherTest extends TestCase
         $this->assertFileDoesNotExist(FLEX_TEST_DIR.'/security.yaml');
     }
 
-    public function getIntegrationTests(): iterable
+    public static function getIntegrationTests(): iterable
     {
         yield 'missing_files_set_to_null' => [true];
         yield 'missing_files_not_in_array' => [false];
@@ -469,7 +471,7 @@ class RecipePatcherTest extends TestCase
      *      * original_recipe
      *      * updated_recipe.
      */
-    private function getFilesForPatching(string $projectPath = ''): array
+    private static function getFilesForPatching(string $projectPath = ''): array
     {
         $files = [
             // .env
@@ -614,18 +616,18 @@ class RecipePatcherTest extends TestCase
         foreach ($files as $key => $data) {
             $files[$key] = array_merge(
                 $data,
-                $this->generatePatchData($projectPath.$data['filename'], $data['original_recipe'], $data['updated_recipe'])
+                self::generatePatchData($projectPath.$data['filename'], $data['original_recipe'], $data['updated_recipe'])
             );
         }
 
         return $files;
     }
 
-    private function generatePatchData(string $filename, ?string $start, ?string $end): array
+    private static function generatePatchData(string $filename, ?string $start, ?string $end): array
     {
         $dir = sys_get_temp_dir().'/_flex_diff';
         if (file_exists($dir)) {
-            $this->getFilesystem()->remove($dir);
+            self::getFilesystem()->remove($dir);
         }
         @mkdir($dir);
         (new Process(['git', 'init'], $dir))->mustRun();
@@ -667,12 +669,12 @@ class RecipePatcherTest extends TestCase
         ];
     }
 
-    private function getFilesystem(): Filesystem
+    private static function getFilesystem(): Filesystem
     {
-        if (null === $this->filesystem) {
-            $this->filesystem = new Filesystem();
+        if (null === self::$filesystem) {
+            self::$filesystem = new Filesystem();
         }
 
-        return $this->filesystem;
+        return self::$filesystem;
     }
 }

@@ -29,8 +29,8 @@ class ContainerConfiguratorTest extends TestCase
 
     public function testConfigure()
     {
-        $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
-        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
+        $recipe = $this->createStub(Recipe::class);
+        $lock = $this->createStub(Lock::class);
         $config = FLEX_TEST_DIR.'/config/services.yaml';
         @mkdir(\dirname($config));
         file_put_contents(
@@ -44,8 +44,8 @@ class ContainerConfiguratorTest extends TestCase
                 YAML
         );
         $configurator = new ContainerConfigurator(
-            $this->getMockBuilder(Composer::class)->getMock(),
-            $this->getMockBuilder(IOInterface::class)->getMock(),
+            $this->createStub(Composer::class),
+            $this->createStub(IOInterface::class),
             new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
         );
         $configurator->configure($recipe, ['locale' => 'en'], $lock);
@@ -74,8 +74,8 @@ class ContainerConfiguratorTest extends TestCase
 
     public function testConfigureWithoutParametersKey()
     {
-        $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
-        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
+        $recipe = $this->createStub(Recipe::class);
+        $lock = $this->createStub(Lock::class);
         $config = FLEX_TEST_DIR.'/config/services.yaml';
         file_put_contents(
             $config,
@@ -85,8 +85,8 @@ class ContainerConfiguratorTest extends TestCase
                 YAML
         );
         $configurator = new ContainerConfigurator(
-            $this->getMockBuilder(Composer::class)->getMock(),
-            $this->getMockBuilder(IOInterface::class)->getMock(),
+            $this->createStub(Composer::class),
+            $this->createStub(IOInterface::class),
             new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
         );
         $configurator->configure($recipe, ['locale' => 'en'], $lock);
@@ -113,8 +113,8 @@ class ContainerConfiguratorTest extends TestCase
 
     public function testConfigureWithoutDuplicated()
     {
-        $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
-        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
+        $recipe = $this->createStub(Recipe::class);
+        $lock = $this->createStub(Lock::class);
         $config = FLEX_TEST_DIR.'/config/services.yaml';
         file_put_contents(
             $config,
@@ -127,8 +127,8 @@ class ContainerConfiguratorTest extends TestCase
                 YAML
         );
         $configurator = new ContainerConfigurator(
-            $this->getMockBuilder(Composer::class)->getMock(),
-            $this->getMockBuilder(IOInterface::class)->getMock(),
+            $this->createStub(Composer::class),
+            $this->createStub(IOInterface::class),
             new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
         );
         $configurator->configure($recipe, ['locale' => 'en'], $lock);
@@ -155,8 +155,8 @@ class ContainerConfiguratorTest extends TestCase
 
     public function testConfigureWithComplexContent()
     {
-        $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
-        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
+        $recipe = $this->createStub(Recipe::class);
+        $lock = $this->createStub(Lock::class);
         $config = FLEX_TEST_DIR.'/config/services.yaml';
         file_put_contents(
             $config,
@@ -173,8 +173,8 @@ class ContainerConfiguratorTest extends TestCase
                 YAML
         );
         $configurator = new ContainerConfigurator(
-            $this->getMockBuilder(Composer::class)->getMock(),
-            $this->getMockBuilder(IOInterface::class)->getMock(),
+            $this->createStub(Composer::class),
+            $this->createStub(IOInterface::class),
             new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
         );
         $configurator->configure($recipe, ['locale' => 'en', 'foobar' => 'baz'], $lock);
@@ -210,8 +210,8 @@ class ContainerConfiguratorTest extends TestCase
 
     public function testConfigureWithComplexContent2()
     {
-        $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
-        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
+        $recipe = $this->createStub(Recipe::class);
+        $lock = $this->createStub(Lock::class);
         $config = FLEX_TEST_DIR.'/config/services.yaml';
         file_put_contents(
             $config,
@@ -225,8 +225,8 @@ class ContainerConfiguratorTest extends TestCase
                 YAML
         );
         $configurator = new ContainerConfigurator(
-            $this->getMockBuilder(Composer::class)->getMock(),
-            $this->getMockBuilder(IOInterface::class)->getMock(),
+            $this->createStub(Composer::class),
+            $this->createStub(IOInterface::class),
             new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
         );
         $configurator->configure($recipe, ['locale' => 'en', 'foobar' => 'baz', 'array' => ['key1' => 'value', 'key2' => "Escape ' one quote"], 'key1' => 'Keep It'], $lock);
@@ -262,8 +262,8 @@ class ContainerConfiguratorTest extends TestCase
 
     public function testConfigureWithEnvVariable()
     {
-        $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
-        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
+        $recipe = $this->createStub(Recipe::class);
+        $lock = $this->createStub(Lock::class);
         $config = FLEX_TEST_DIR.'/config/services.yaml';
         file_put_contents(
             $config,
@@ -277,8 +277,8 @@ class ContainerConfiguratorTest extends TestCase
                 YAML
         );
         $configurator = new ContainerConfigurator(
-            $this->getMockBuilder(Composer::class)->getMock(),
-            $this->getMockBuilder(IOInterface::class)->getMock(),
+            $this->createStub(Composer::class),
+            $this->createStub(IOInterface::class),
             new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
         );
         $configurator->configure($recipe, ['env(APP_ENV)' => ''], $lock);
@@ -308,15 +308,15 @@ class ContainerConfiguratorTest extends TestCase
     public function testUpdate()
     {
         $configurator = new ContainerConfigurator(
-            $this->createMock(Composer::class),
-            $this->createMock(IOInterface::class),
+            $this->createStub(Composer::class),
+            $this->createStub(IOInterface::class),
             new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
         );
 
         $recipeUpdate = new RecipeUpdate(
-            $this->createMock(Recipe::class),
-            $this->createMock(Recipe::class),
-            $this->createMock(Lock::class),
+            $this->createStub(Recipe::class),
+            $this->createStub(Recipe::class),
+            $this->createStub(Lock::class),
             FLEX_TEST_DIR
         );
 
@@ -383,15 +383,15 @@ class ContainerConfiguratorTest extends TestCase
     public function testUpdateWithNoRemovedKeysInUpdate()
     {
         $configurator = new ContainerConfigurator(
-            $this->createMock(Composer::class),
-            $this->createMock(IOInterface::class),
+            $this->createStub(Composer::class),
+            $this->createStub(IOInterface::class),
             new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
         );
 
         $recipeUpdate = new RecipeUpdate(
-            $this->createMock(Recipe::class),
-            $this->createMock(Recipe::class),
-            $this->createMock(Lock::class),
+            $this->createStub(Recipe::class),
+            $this->createStub(Recipe::class),
+            $this->createStub(Lock::class),
             FLEX_TEST_DIR
         );
 

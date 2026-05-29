@@ -101,8 +101,8 @@ class DockerfileConfiguratorTest extends TestCase
 
             EOF;
 
-        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
-        $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
+        $lock = $this->createStub(Lock::class);
+        $recipe = $this->createStub(Recipe::class);
         $recipe->method('getName')->willReturn('doctrine/doctrine-bundle');
 
         $config = FLEX_TEST_DIR.'/Dockerfile';
@@ -189,14 +189,14 @@ class DockerfileConfiguratorTest extends TestCase
     public function testUpdate()
     {
         $configurator = $this->createConfigurator();
-        $recipe = $this->createMock(Recipe::class);
+        $recipe = $this->createStub(Recipe::class);
         $recipe->method('getName')
             ->willReturn('dummy/dummy');
 
         $recipeUpdate = new RecipeUpdate(
             $recipe,
             $recipe,
-            $this->createMock(Lock::class),
+            $this->createStub(Lock::class),
             FLEX_TEST_DIR
         );
 
@@ -290,12 +290,12 @@ class DockerfileConfiguratorTest extends TestCase
         $package = new RootPackage('dummy/dummy', '1.0.0', '1.0.0');
         $package->setExtra(['symfony' => ['docker' => true]]);
 
-        $composer = $this->getMockBuilder(Composer::class)->getMock();
+        $composer = $this->createStub(Composer::class);
         $composer->method('getPackage')->willReturn($package);
 
         return new DockerfileConfigurator(
             $composer,
-            $this->getMockBuilder(IOInterface::class)->getMock(),
+            $this->createStub(IOInterface::class),
             new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
         );
     }

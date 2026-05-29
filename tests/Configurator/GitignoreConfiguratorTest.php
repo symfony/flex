@@ -26,17 +26,17 @@ class GitignoreConfiguratorTest extends TestCase
     {
         @mkdir(FLEX_TEST_DIR);
         $configurator = new GitignoreConfigurator(
-            $this->getMockBuilder(Composer::class)->getMock(),
-            $this->getMockBuilder(IOInterface::class)->getMock(),
+            $this->createStub(Composer::class),
+            $this->createStub(IOInterface::class),
             new Options(['public-dir' => 'public', 'root-dir' => FLEX_TEST_DIR])
         );
-        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
+        $lock = $this->createStub(Lock::class);
 
-        $recipe1 = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
-        $recipe1->expects($this->any())->method('getName')->willReturn('FooBundle');
+        $recipe1 = $this->createStub(Recipe::class);
+        $recipe1->method('getName')->willReturn('FooBundle');
 
-        $recipe2 = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
-        $recipe2->expects($this->any())->method('getName')->willReturn('BarBundle');
+        $recipe2 = $this->createStub(Recipe::class);
+        $recipe2->method('getName')->willReturn('BarBundle');
 
         $gitignore = FLEX_TEST_DIR.'/.gitignore';
         @unlink($gitignore);
@@ -87,13 +87,13 @@ EOF;
     {
         @mkdir(FLEX_TEST_DIR);
         $configurator = new GitignoreConfigurator(
-            $this->getMockBuilder(Composer::class)->getMock(),
-            $this->getMockBuilder(IOInterface::class)->getMock(),
+            $this->createStub(Composer::class),
+            $this->createStub(IOInterface::class),
             new Options(['public-dir' => 'public', 'root-dir' => FLEX_TEST_DIR])
         );
 
-        $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
-        $recipe->expects($this->any())->method('getName')->willReturn('FooBundle');
+        $recipe = $this->createStub(Recipe::class);
+        $recipe->method('getName')->willReturn('FooBundle');
 
         $gitignore = FLEX_TEST_DIR.'/.gitignore';
         @unlink($gitignore);
@@ -120,7 +120,7 @@ EOF;
 # new content
 EOF;
 
-        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
+        $lock = $this->createStub(Lock::class);
         $configurator->configure($recipe, [
             '.env',
         ], $lock);
@@ -141,18 +141,18 @@ EOF;
     public function testUpdate()
     {
         $configurator = new GitignoreConfigurator(
-            $this->getMockBuilder(Composer::class)->getMock(),
-            $this->getMockBuilder(IOInterface::class)->getMock(),
+            $this->createStub(Composer::class),
+            $this->createStub(IOInterface::class),
             new Options(['public-dir' => 'public', 'root-dir' => FLEX_TEST_DIR])
         );
 
-        $recipe = $this->createMock(Recipe::class);
+        $recipe = $this->createStub(Recipe::class);
         $recipe->method('getName')
             ->willReturn('symfony/foo-bundle');
         $recipeUpdate = new RecipeUpdate(
             $recipe,
             $recipe,
-            $this->createMock(Lock::class),
+            $this->createStub(Lock::class),
             FLEX_TEST_DIR
         );
 

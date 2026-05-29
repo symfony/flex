@@ -11,6 +11,7 @@
 
 namespace Symfony\Flex\Tests;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Flex\Path;
 
@@ -23,9 +24,7 @@ class PathTest extends TestCase
         $this->assertEquals('c:\\my-project/src/kernel.php', $path->concatenate(['c:\\my-project', 'src/', 'kernel.php']));
     }
 
-    /**
-     * @dataProvider providePathsForConcatenation
-     */
+    #[DataProvider('providePathsForConcatenation')]
     public function testConcatenate($part1, $part2, $expectedPath)
     {
         $path = new Path('');
@@ -35,7 +34,7 @@ class PathTest extends TestCase
         $this->assertEquals($expectedPath, $actualPath);
     }
 
-    public function providePathsForConcatenation()
+    public static function providePathsForConcatenation()
     {
         return [
             [__DIR__, 'foo/bar.txt', __DIR__.'/foo/bar.txt'],

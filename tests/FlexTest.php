@@ -32,6 +32,7 @@ use Composer\Script\ScriptEvents;
 use Composer\Semver\Constraint\MatchAllConstraint;
 use Composer\Util\HttpDownloader;
 use Composer\Util\Loop;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Flex\Configurator;
@@ -178,9 +179,7 @@ class FlexTest extends TestCase
         $this->assertStringContainsString('contrib/package', $output);
     }
 
-    /**
-     * @dataProvider getPackagesForAutoDiscovery
-     */
+    #[DataProvider('getPackagesForAutoDiscovery')]
     public function testBundlesAutoDiscovery(Package $package, array $expectedManifest)
     {
         $io = new BufferIO('', OutputInterface::VERBOSITY_VERBOSE);
@@ -198,7 +197,7 @@ class FlexTest extends TestCase
         $flex->install($this->mockFlexEvent());
     }
 
-    public function getPackagesForAutoDiscovery(): array
+    public static function getPackagesForAutoDiscovery(): array
     {
         $return = [];
 
@@ -334,13 +333,13 @@ class FlexTest extends TestCase
         $downloader->expects($this->any())->method('isEnabled')->willReturn(true);
         $downloader->expects($this->once())->method('removeRecipeFromIndex')->with('doctrine/doctrine-bundle', '2.4');
 
-        $locker = $this->getMockBuilder(Locker::class)->disableOriginalConstructor()->getMock();
+        $locker = $this->createStub(Locker::class);
         $lockedRepository = $this->getMockBuilder(
             // LockArrayRepository does not exist on composer 1.0.2 fallback to RepositoryInterface
             class_exists(LockArrayRepository::class) ? LockArrayRepository::class : RepositoryInterface::class
         )->disableOriginalConstructor()->getMock();
         // make the conflicted package show up
-        $locker->expects($this->any())
+        $locker
             ->method('getLockedRepository')
             ->willReturn($lockedRepository);
         $lockedRepository->expects($this->once())
@@ -383,9 +382,7 @@ class FlexTest extends TestCase
         );
     }
 
-    /**
-     * @dataProvider getDataForTestInstallWithoutPackageJsonToSynchronizeSkipped
-     */
+    #[DataProvider('getDataForTestInstallWithoutPackageJsonToSynchronizeSkipped')]
     public function testInstallWithoutPackageJsonToSynchronizeSkipped(array $extra)
     {
         $io = new BufferIO('', OutputInterface::VERBOSITY_VERBOSE);
@@ -400,7 +397,7 @@ class FlexTest extends TestCase
         );
     }
 
-    public function getDataForTestInstallWithoutPackageJsonToSynchronizeSkipped(): array
+    public static function getDataForTestInstallWithoutPackageJsonToSynchronizeSkipped(): array
     {
         return [
             'default_behavior' => [[]],
@@ -466,22 +463,23 @@ class FlexTest extends TestCase
 
     private function mockPackageEvent(Package $package): PackageEvent
     {
-        $event = $this->getMockBuilder(PackageEvent::class, ['getOperation'])->disableOriginalConstructor()->getMock();
-        $event->expects($this->any())->method('getOperation')->willReturn(new InstallOperation($package));
-        $event->expects($this->any())->method('isDevMode')->willReturn(true);
+        $event = $this->createStub(PackageEvent::class);
+        $event->method('getOperation')->willReturn(new InstallOperation($package));
+        $event->method('isDevMode')->willReturn(true);
 
         return $event;
     }
 
     private function mockConfigurator(?Recipe $recipe = null): Configurator
     {
-        $configurator = $this->getMockBuilder(Configurator::class)->disableOriginalConstructor()->getMock();
-
         if ($recipe) {
+            $configurator = $this->getMockBuilder(Configurator::class)->disableOriginalConstructor()->getMock();
             $configurator->expects($this->once())->method('install')->with($this->equalTo($recipe));
+
+            return $configurator;
         }
 
-        return $configurator;
+        return $this->createStub(Configurator::class);
     }
 
     private function mockDownloader(array $recipes = []): Downloader
@@ -496,10 +494,10 @@ class FlexTest extends TestCase
 
     private function mockLocker(array $lockData = []): Locker
     {
-        $locker = $this->getMockBuilder(Locker::class)->disableOriginalConstructor()->getMock();
+        $locker = $this->createStub(Locker::class);
 
         $lockData = array_merge(['content-hash' => 'random', 'packages-dev' => []], $lockData);
-        $locker->expects($this->any())->method('getLockData')->willReturn($lockData);
+        $locker->method('getLockData')->willReturn($lockData);
 
         return $locker;
     }
@@ -507,15 +505,15 @@ class FlexTest extends TestCase
     private function mockComposer(Locker $locker, RootPackageInterface $package, ?Config $config = null): Composer
     {
         if (null === $config) {
-            $config = $this->getMockBuilder(Config::class)->getMock();
-            $config->expects($this->any())->method('get')->willReturn(__DIR__.'/Fixtures/vendor');
+            $config = $this->createStub(Config::class);
+            $config->method('get')->willReturn(__DIR__.'/Fixtures/vendor');
         }
 
         $composer = new Composer();
         $composer->setConfig($config);
         $composer->setLocker($locker);
         $composer->setPackage($package);
-        $composer->setInstallationManager($this->getMockBuilder(InstallationManager::class)->disableOriginalConstructor()->getMock());
+        $composer->setInstallationManager($this->createStub(InstallationManager::class));
 
         $loop = new Loop(new HttpDownloader(new BufferIO('', OutputInterface::VERBOSITY_VERBOSE), $config));
         $composer->setLoop($loop);
@@ -525,25 +523,25 @@ class FlexTest extends TestCase
 
     private function mockRootPackage(array $extraData = []): RootPackageInterface
     {
-        $package = $this->getMockBuilder(RootPackageInterface::class)->disableOriginalConstructor()->getMock();
+        $package = $this->createStub(RootPackageInterface::class);
 
-        $package->expects($this->any())->method('getExtra')->willReturn($extraData);
+        $package->method('getExtra')->willReturn($extraData);
 
         return $package;
     }
 
     private function mockLock(): Lock
     {
-        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
-        $lock->expects($this->any())->method('has')->willReturn(false);
+        $lock = $this->createStub(Lock::class);
+        $lock->method('has')->willReturn(false);
 
         return $lock;
     }
 
     private function mockFlexEvent(): Event
     {
-        $event = $this->getMockBuilder(Event::class)->disableOriginalConstructor()->getMock();
-        $event->expects($this->any())->method('getName')->willReturn(ScriptEvents::POST_UPDATE_CMD);
+        $event = $this->createStub(Event::class);
+        $event->method('getName')->willReturn(ScriptEvents::POST_UPDATE_CMD);
 
         return $event;
     }

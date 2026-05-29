@@ -18,23 +18,22 @@ use Composer\Package\Loader\ArrayLoader;
 use Composer\Package\PackageInterface;
 use Composer\Package\RootPackage;
 use Composer\Package\RootPackageInterface;
+use Composer\Plugin\PrePoolCreateEvent;
 use Composer\Semver\Constraint\Constraint;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\RequiresMethod;
 use PHPUnit\Framework\TestCase;
 use Symfony\Flex\Downloader;
 use Symfony\Flex\PackageFilter;
 
-/**
- * @requires function \Composer\Plugin\PrePoolCreateEvent::__construct
- */
+#[RequiresMethod(PrePoolCreateEvent::class, '__construct')]
 class PackageFilterTest extends TestCase
 {
-    /**
-     * @dataProvider provideRemoveLegacyPackages
-     */
+    #[DataProvider('provideRemoveLegacyPackages')]
     public function testRemoveLegacyPackages(array $expected, array $packages, string $symfonyRequire, array $versions, array $lockedPackages = [])
     {
-        $downloader = $this->getMockBuilder('Symfony\Flex\Downloader')->disableOriginalConstructor()->getMock();
-        $downloader->expects($this->any())
+        $downloader = $this->createStub(Downloader::class);
+        $downloader
             ->method('getVersions')
             ->willReturn($versions);
         $filter = new PackageFilter(new NullIO(), $symfonyRequire, $downloader);
@@ -89,7 +88,7 @@ class PackageFilterTest extends TestCase
         return $packages;
     }
 
-    public function provideRemoveLegacyPackages()
+    public static function provideRemoveLegacyPackages()
     {
         $branchAlias = function ($versionAlias) {
             return [
@@ -213,7 +212,7 @@ class PackageFilterTest extends TestCase
     public function testIgnorePreleases()
     {
         $io = new NullIO();
-        $downloader = $this->getMockBuilder(Downloader::class)->disableOriginalConstructor()->getMock();
+        $downloader = $this->createStub(Downloader::class);
         $filter = new PackageFilter($io, '', $downloader, true);
 
         $stablePkg = $this->createPackageMock('pkg/stable', 'stable');
@@ -222,7 +221,7 @@ class PackageFilterTest extends TestCase
         $betaPkg = $this->createPackageMock('pkg/beta', 'beta');
         $rcPkg = $this->createPackageMock('pkg/rc', 'RC');
 
-        $root = $this->getMockBuilder(RootPackageInterface::class)->disableOriginalConstructor()->getMock();
+        $root = $this->createStub(RootPackageInterface::class);
 
         $result = $filter->removeLegacyPackages([$stablePkg, $devPkg, $alphaPkg, $betaPkg, $rcPkg], $root, []);
 
@@ -232,7 +231,7 @@ class PackageFilterTest extends TestCase
     public function testWithoutIgnorePreleases()
     {
         $io = new NullIO();
-        $downloader = $this->getMockBuilder(Downloader::class)->disableOriginalConstructor()->getMock();
+        $downloader = $this->createStub(Downloader::class);
         $filter = new PackageFilter($io, '', $downloader, false);
 
         $packages = [
@@ -243,7 +242,7 @@ class PackageFilterTest extends TestCase
             $this->createPackageMock('pkg/rc', 'RC'),
         ];
 
-        $root = $this->getMockBuilder(RootPackageInterface::class)->disableOriginalConstructor()->getMock();
+        $root = $this->createStub(RootPackageInterface::class);
 
         $result = $filter->removeLegacyPackages($packages, $root, []);
 
@@ -252,7 +251,7 @@ class PackageFilterTest extends TestCase
 
     private function createPackageMock(string $name, string $stability): PackageInterface
     {
-        $package = $this->getMockBuilder(PackageInterface::class)->getMock();
+        $package = $this->createStub(PackageInterface::class);
         $package->method('getName')->willReturn($name);
         $package->method('getVersion')->willReturn('1.0.0');
         $package->method('getStability')->willReturn($stability);

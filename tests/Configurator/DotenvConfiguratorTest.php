@@ -26,14 +26,14 @@ class DotenvConfiguratorTest extends TestCase
     {
         @mkdir(FLEX_TEST_DIR);
         $configurator = new DotenvConfigurator(
-            $this->getMockBuilder(Composer::class)->getMock(),
-            $this->getMockBuilder(IOInterface::class)->getMock(),
+            $this->createStub(Composer::class),
+            $this->createStub(IOInterface::class),
             new Options(['root-dir' => FLEX_TEST_DIR])
         );
-        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
+        $lock = $this->createStub(Lock::class);
 
-        $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
-        $recipe->expects($this->any())->method('getName')->willReturn('FooBundle');
+        $recipe = $this->createStub(Recipe::class);
+        $recipe->method('getName')->willReturn('FooBundle');
 
         $env = FLEX_TEST_DIR.'/.env.local';
         @unlink($env);
@@ -112,14 +112,14 @@ EOF
     {
         @mkdir(FLEX_TEST_DIR);
         $configurator = new DotenvConfigurator(
-            $this->getMockBuilder(Composer::class)->getMock(),
-            $this->getMockBuilder(IOInterface::class)->getMock(),
+            $this->createStub(Composer::class),
+            $this->createStub(IOInterface::class),
             new Options(['root-dir' => FLEX_TEST_DIR])
         );
-        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
+        $lock = $this->createStub(Lock::class);
 
-        $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
-        $recipe->expects($this->any())->method('getName')->willReturn('FooBundle');
+        $recipe = $this->createStub(Recipe::class);
+        $recipe->method('getName')->willReturn('FooBundle');
 
         $env = FLEX_TEST_DIR.'/.env.local';
         @unlink($env);
@@ -146,13 +146,13 @@ EOF
     {
         @mkdir(FLEX_TEST_DIR);
         $configurator = new DotenvConfigurator(
-            $this->getMockBuilder(Composer::class)->getMock(),
-            $this->getMockBuilder(IOInterface::class)->getMock(),
+            $this->createStub(Composer::class),
+            $this->createStub(IOInterface::class),
             new Options(['root-dir' => FLEX_TEST_DIR])
         );
 
-        $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
-        $recipe->expects($this->any())->method('getName')->willReturn('FooBundle');
+        $recipe = $this->createStub(Recipe::class);
+        $recipe->method('getName')->willReturn('FooBundle');
 
         $env = FLEX_TEST_DIR.'/.env.local';
         @unlink($env);
@@ -181,7 +181,7 @@ OOF=rab
 
 EOT;
 
-        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
+        $lock = $this->createStub(Lock::class);
 
         $configurator->configure($recipe, [
             'local' => [
@@ -210,18 +210,18 @@ EOT;
     public function testUpdate()
     {
         $configurator = new DotenvConfigurator(
-            $this->createMock(Composer::class),
-            $this->createMock(IOInterface::class),
+            $this->createStub(Composer::class),
+            $this->createStub(IOInterface::class),
             new Options(['root-dir' => FLEX_TEST_DIR])
         );
 
-        $recipe = $this->createMock(Recipe::class);
+        $recipe = $this->createStub(Recipe::class);
         $recipe->method('getName')
             ->willReturn('symfony/foo-bundle');
         $recipeUpdate = new RecipeUpdate(
             $recipe,
             $recipe,
-            $this->createMock(Lock::class),
+            $this->createStub(Lock::class),
             FLEX_TEST_DIR
         );
 

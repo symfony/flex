@@ -26,8 +26,8 @@ class RecipeUpdateTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->originalRecipe = $this->createMock(Recipe::class);
-        $this->newRecipe = $this->createMock(Recipe::class);
+        $this->originalRecipe = $this->createStub(Recipe::class);
+        $this->newRecipe = $this->createStub(Recipe::class);
         $this->lock = new Lock('lock_file');
         $this->rootDir = '/path/to/here';
         $this->update = new RecipeUpdate($this->originalRecipe, $this->newRecipe, $this->lock, $this->rootDir);

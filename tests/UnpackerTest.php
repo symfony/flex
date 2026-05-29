@@ -29,7 +29,7 @@ class UnpackerTest extends TestCase
      *
      *   - "real" package MUST be present ONLY in "require" section
      */
-    public function testDoNotDuplicateEntry(): void
+    public function testDoNotDuplicateEntry()
     {
         // Setup project
 
@@ -39,7 +39,7 @@ class UnpackerTest extends TestCase
         @unlink($composerJsonPath);
         file_put_contents($composerJsonPath, '{}');
 
-        $originalEnvComposer = $_SERVER['COMPOSER'];
+        $originalEnvComposer = $_SERVER['COMPOSER'] ?? null;
         $_SERVER['COMPOSER'] = $composerJsonPath;
         // composer 2.1 and lower support
         putenv('COMPOSER='.$composerJsonPath);
@@ -61,15 +61,15 @@ class UnpackerTest extends TestCase
 
         // Setup Composer
 
-        $repManager = $this->getMockBuilder(RepositoryManager::class)->disableOriginalConstructor()->getMock();
-        $repManager->expects($this->any())->method('getLocalRepository')->willReturn(new InstalledArrayRepository($packages));
+        $repManager = $this->createStub(RepositoryManager::class);
+        $repManager->method('getLocalRepository')->willReturn(new InstalledArrayRepository($packages));
 
         $composer = new Composer();
         $composer->setRepositoryManager($repManager);
 
         // Unpack
 
-        $resolver = $this->getMockBuilder(PackageResolver::class)->disableOriginalConstructor()->getMock();
+        $resolver = $this->createStub(PackageResolver::class);
 
         $unpacker = new Unpacker($composer, $resolver);
 

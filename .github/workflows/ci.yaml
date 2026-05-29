@@ -4,11 +4,7 @@ on:
     pull_request:
     push:
         branches:
-            - '1.x'
             - '2.x'
-
-env:
-    SYMFONY_PHPUNIT_DIR: "$HOME/symfony-bridge/.phpunit"
 
 jobs:
     tests:
@@ -22,7 +18,9 @@ jobs:
                 include:
                   - php: '8.1'
                     composer: 2.1.x
+                    phpunit: 10
                   - php: '8.2'
+                    phpunit: 11
                   - php: '8.3'
                   - php: '8.4'
                   - php: '8.5'
@@ -50,14 +48,18 @@ jobs:
 
             - name: "Install dependencies"
               run: |
+                if [[ -n "${{ matrix.phpunit }}" ]]; then
+                    composer r --dev --no-update phpunit/phpunit:^${{ matrix.phpunit }} --ansi
+                fi
+                if [[ "${{ matrix.phpunit }}" = 10 ]]; then
+                    sed -i 's/ *ignoreIndirectDeprecations="true"//g' phpunit.xml.dist
+                fi
+
                 if [[ "${{ matrix.mode }}" = low-deps ]]; then
                     composer u --prefer-lowest --prefer-stable --ansi
-                    composer u symfony/phpunit-bridge
                 else
                     composer u --ansi
                 fi
 
-            - name: "Install PHPUnit"
-              run: vendor/bin/simple-phpunit install
-
-            - run: vendor/bin/simple-phpunit
+            - name: "Run tests"
+              run: vendor/bin/phpunit

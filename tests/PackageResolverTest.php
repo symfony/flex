@@ -11,21 +11,20 @@
 
 namespace Symfony\Flex\Tests;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\Flex\Downloader;
 use Symfony\Flex\PackageResolver;
 
 class PackageResolverTest extends TestCase
 {
-    /**
-     * @dataProvider getPackages
-     */
+    #[DataProvider('getPackages')]
     public function testResolve($packages, $resolved, bool $isRequire = false)
     {
         $this->assertEquals($resolved, $this->getResolver()->resolve($packages, $isRequire));
     }
 
-    public function getPackages()
+    public static function getPackages()
     {
         return [
             [
@@ -73,9 +72,7 @@ class PackageResolverTest extends TestCase
         ];
     }
 
-    /**
-     * @dataProvider getWrongPackages
-     */
+    #[DataProvider('getWrongPackages')]
     public function testResolveWithErrors($packages, $error)
     {
         $this->expectException(\UnexpectedValueException::class);
@@ -83,7 +80,7 @@ class PackageResolverTest extends TestCase
         $this->getResolver()->resolve($packages);
     }
 
-    public function getWrongPackages()
+    public static function getWrongPackages()
     {
         return [
             [
@@ -107,8 +104,8 @@ class PackageResolverTest extends TestCase
 
     private function getResolver()
     {
-        $downloader = $this->getMockBuilder(Downloader::class)->disableOriginalConstructor()->getMock();
-        $downloader->expects($this->any())
+        $downloader = $this->createStub(Downloader::class);
+        $downloader
             ->method('getVersions')
             ->willReturn([
                 'lts' => '3.4',
@@ -119,7 +116,7 @@ class PackageResolverTest extends TestCase
                     'symfony/validator' => ['3.4'],
                 ],
             ]);
-        $downloader->expects($this->any())
+        $downloader
             ->method('getAliases')
             ->willReturn([
                 'cli' => 'symfony/console',
@@ -128,7 +125,7 @@ class PackageResolverTest extends TestCase
                 'validator' => 'symfony/validator',
                 'lock' => 'symfony/lock',
             ]);
-        $downloader->expects($this->any())
+        $downloader
             ->method('getSymfonyPacks')
             ->willReturn([]);
 
