@@ -1,0 +1,55 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2025-10-15T08:25:06Z
+
+Let's bump to v12?
+
+---------------------------------------------------------------------------
+
+by HypeMC at 2025-10-15T11:36:49Z
+
+@nicolas-grekas PHPUnit 12 requires PHP 8.3, so I had to allow older versions for lower PHP versions.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2025-10-30T17:48:17Z
+
+I did the bump to PHP >= 8.1 in #1067
+Rebase needed for any follow up here :)
+
+---------------------------------------------------------------------------
+
+by HypeMC at 2025-11-01T08:44:23Z
+
+> I did the bump to PHP >= 8.1 in #1067 Rebase needed for any follow up here :)
+
+@nicolas-grekas Done
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2025-11-03T19:30:28Z
+
+I forced-pushed a rebase, then realized that while tests are green, they have things to fix (one risky, and `N` ones?)
+
+---------------------------------------------------------------------------
+
+by HypeMC at 2025-11-03T19:42:45Z
+
+@nicolas-grekas Oh, the N test are because of PHPUnit 12.5-dev, guess that's something new, I'll have to check it out.
+
+---------------------------------------------------------------------------
+
+by HypeMC at 2025-11-19T00:59:27Z
+
+@nicolas-grekas Should be good now, see https://github.com/symfony/flex/pull/1056/commits/4dc8127fd171072fe07b47107337f2bd212c8c39.
+
+The main issue was:
+
+> No expectations were configured for the mock object for \<class\>. You should refactor your test code and use a test stub instead.
+
+Also, using `$this->any()` resulted in the same error, eg:
+
+```php
+$repository = $this->createMock(InstalledRepositoryInterface::class);
+$repository->expects($this->any());
+```
