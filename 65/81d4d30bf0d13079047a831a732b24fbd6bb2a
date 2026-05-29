@@ -1,0 +1,5 @@
+---------------------------------------------------------------------------
+
+by 7ochem at 2026-04-29T19:42:56Z
+
+Tests are currently failing. @GromNaN issued a PR here symfony/flex#1084 to fix this. Once this PR has been merged, I can rebase and tests will be green...
