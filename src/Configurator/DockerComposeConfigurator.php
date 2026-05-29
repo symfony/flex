@@ -277,6 +277,13 @@ class DockerComposeConfigurator extends AbstractConfigurator
                 // Keep end in memory (check break line on previous line)
                 if (null !== $node) {
                     $endAt[$node] = !$i || '' !== trim($lines[$i - 1]) ? $i : $i - 1;
+                    // Prune nodesLines[old node] to match the range the splice will replace.
+                    if (isset($nodesLines[$node][$i])) {
+                        unset($nodesLines[$node][$i]);
+                        if ('' === trim($lines[$i - 1])) {
+                            unset($nodesLines[$node][$i - 1]);
+                        }
+                    }
                 }
                 $node = $matches[1];
                 if (!isset($nodesLines[$node])) {
@@ -307,14 +314,15 @@ class DockerComposeConfigurator extends AbstractConfigurator
                     array_splice($lines, $startAt[$key], $length, ltrim($updatedContents, "\n"));
 
                     // reset any start/end positions after this to the new positions
+                    $shift = $length - 1;
                     foreach ($startAt as $sectionKey => $at) {
                         if ($at > $originalEndAt) {
-                            $startAt[$sectionKey] = $at - $length - 1;
+                            $startAt[$sectionKey] = $at - $shift;
                         }
                     }
                     foreach ($endAt as $sectionKey => $at) {
                         if ($at > $originalEndAt) {
-                            $endAt[$sectionKey] = $at - $length;
+                            $endAt[$sectionKey] = $at - $shift;
                         }
                     }
 
