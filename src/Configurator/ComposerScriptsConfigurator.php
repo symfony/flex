@@ -74,6 +74,31 @@ class ComposerScriptsConfigurator extends AbstractConfigurator
         $manipulator = new JsonManipulator(file_get_contents($json->getPath()));
         $manipulator->addSubNode('scripts', 'auto-scripts', $autoScripts);
 
+        foreach (['post-install-cmd', 'post-update-cmd'] as $hook) {
+            $current = $jsonContents['scripts'][$hook] ?? null;
+            $wired = $this->ensureAutoScriptsHook($current);
+            if ($wired !== $current) {
+                $manipulator->addSubNode('scripts', $hook, $wired);
+            }
+        }
+
         return $manipulator->getContents();
+    }
+
+    private function ensureAutoScriptsHook($current): array
+    {
+        if (null === $current) {
+            return ['@auto-scripts'];
+        }
+
+        if (!\is_array($current)) {
+            $current = [$current];
+        }
+
+        if (!\in_array('@auto-scripts', $current, true)) {
+            $current[] = '@auto-scripts';
+        }
+
+        return $current;
     }
 }
