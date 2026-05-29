@@ -76,7 +76,7 @@ class FlexTest extends TestCase
         $package = new Package('dummy/dummy', '1.0.0', '1.0.0');
         $recipe = new Recipe($package, 'dummy/dummy', 'install', $data['manifests']['dummy/dummy'], $data['locks']['dummy/dummy']);
 
-        $rootPackage = $this->mockRootPackage(['symfony' => ['allow-contrib' => true]]);
+        $rootPackage = $this->mockRootPackage();
         $flex = $this->mockFlex($io, $rootPackage, $recipe, $data);
         $flex->record($this->mockPackageEvent($package));
         $flex->install($this->mockFlexEvent());
@@ -115,7 +115,7 @@ class FlexTest extends TestCase
     {
         $io = new BufferIO('', OutputInterface::VERBOSITY_VERBOSE);
 
-        $package = $this->mockRootPackage(['symfony' => ['allow-contrib' => true]]);
+        $package = $this->mockRootPackage();
         $package->method('getRequires')->willReturn([new Link('dummy', 'symfony/flex', class_exists(MatchAllConstraint::class) ? new MatchAllConstraint() : null)]);
 
         $composer = $this->mockComposer($this->mockLocker(), $package, Factory::createConfig($io));
@@ -247,7 +247,7 @@ class FlexTest extends TestCase
         ];
 
         $io = new BufferIO('', OutputInterface::VERBOSITY_VERBOSE);
-        $rootPackage = $this->mockRootPackage(['symfony' => ['allow-contrib' => true]]);
+        $rootPackage = $this->mockRootPackage();
 
         $flex = $this->mockFlex($io, $rootPackage, null, [
             'manifests' => array_reduce($packages, static function (array $manifests, array $packageInfo) {
@@ -324,7 +324,7 @@ class FlexTest extends TestCase
         ];
 
         $io = new BufferIO('', OutputInterface::VERBOSITY_VERBOSE);
-        $rootPackage = $this->mockRootPackage(['symfony' => ['allow-contrib' => true]]);
+        $rootPackage = $this->mockRootPackage();
 
         $downloader = $this->getMockBuilder(Downloader::class)->disableOriginalConstructor()->getMock();
         $downloader->expects($this->exactly(2))
@@ -364,6 +364,61 @@ class FlexTest extends TestCase
             'doctrine/doctrine-bundle',
         ], array_keys($recipes));
         $this->assertSame('2.3', $recipes['doctrine/doctrine-bundle']->getVersion());
+    }
+
+    public function testInstallWithSymfonyAllowContribEnvVar()
+    {
+        $data = [
+            'manifests' => [
+                'dummy/contrib-package' => [
+                    'manifest' => [
+                        'bundles' => [
+                            'Dummy\\ContribBundle\\ContribBundle' => ['all'],
+                        ],
+                    ],
+                    'origin' => 'dummy/contrib-package:1.0@github.com/symfony/recipes-contrib:main',
+                    'is_contrib' => true,
+                ],
+            ],
+            'locks' => [
+                'dummy/contrib-package' => [
+                    'recipe' => [],
+                    'version' => '1.0',
+                ],
+            ],
+        ];
+
+        $package = new Package('dummy/contrib-package', '1.0.0', '1.0.0');
+
+        // SYMFONY_ALLOW_CONTRIB=1 should install contrib recipes even without config
+        putenv('SYMFONY_ALLOW_CONTRIB=1');
+        $io = new BufferIO('', OutputInterface::VERBOSITY_VERBOSE);
+        $recipe = new Recipe($package, 'dummy/contrib-package', 'install', $data['manifests']['dummy/contrib-package'], $data['locks']['dummy/contrib-package']);
+        $rootPackage = $this->mockRootPackage(['symfony' => []]);
+        $flex = $this->mockFlex($io, $rootPackage, $recipe, $data);
+        $flex->record($this->mockPackageEvent($package));
+        $flex->install($this->mockFlexEvent());
+
+        $output = $io->getOutput();
+        $this->assertStringContainsString('Configuring dummy/contrib-package', $output);
+        $this->assertStringNotContainsString('IGNORING', $output);
+
+        // SYMFONY_ALLOW_CONTRIB=0 should skip contrib recipes even with config allow-contrib=true
+        putenv('SYMFONY_ALLOW_CONTRIB=0');
+        $io = new BufferIO('', OutputInterface::VERBOSITY_NORMAL);
+        $recipe = new Recipe($package, 'dummy/contrib-package', 'install', $data['manifests']['dummy/contrib-package'], $data['locks']['dummy/contrib-package']);
+        $rootPackage = $this->mockRootPackage(['symfony' => ['allow-contrib' => true]]);
+        // For this test, we expect the recipe NOT to be installed, so pass null as recipe to configurator
+        $flex = $this->mockFlex($io, $rootPackage, null, $data);
+        $flex->record($this->mockPackageEvent($package));
+        $flex->install($this->mockFlexEvent());
+
+        $output = $io->getOutput();
+        $this->assertStringContainsString('IGNORING', $output);
+        $this->assertStringNotContainsString('Configuring dummy/contrib-package', $output);
+
+        // Cleanup
+        putenv('SYMFONY_ALLOW_CONTRIB');
     }
 
     public function testInstallWithPackageJsonToSynchronizeSkipped()

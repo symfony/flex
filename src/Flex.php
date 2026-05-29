@@ -436,7 +436,12 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
 
         $this->io->writeError(\sprintf('<info>Symfony operations: %d recipe%s (%s)</>', \count($recipes), \count($recipes) > 1 ? 's' : '', $this->downloader->getSessionId()));
-        $installContribs = $this->composer->getPackage()->getExtra()['symfony']['allow-contrib'] ?? false;
+        if (false === $installContribs = getenv('SYMFONY_ALLOW_CONTRIB')) {
+            $installContribs = $this->composer->getPackage()->getExtra()['symfony']['allow-contrib'] ?? false;
+        }
+        if (!\is_bool($installContribs)) {
+            $installContribs = filter_var($installContribs, \FILTER_VALIDATE_BOOL);
+        }
         $manifest = null;
         $originalComposerJsonHash = $this->getComposerJsonHash();
         $postInstallRecipes = [];
