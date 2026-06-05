@@ -162,6 +162,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
             $resolver = new PackageResolver($this->downloader);
 
+            $command = null;
             $commandObj = null;
             try {
                 $command = $input->getFirstArgument();
@@ -180,7 +181,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
                 $symfonyRequire = null;
             }
 
-            if (isset(self::$aliasResolveCommands[$command])) {
+            if (null !== $command && isset(self::$aliasResolveCommands[$command])) {
                 // When the command name is abbreviated (e.g. "req" for "require"), Composer
                 // activates plugins early to look up potential script commands, before the
                 // input has been bound to the command definition. In that case "packages"
