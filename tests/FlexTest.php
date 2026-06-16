@@ -112,7 +112,7 @@ class FlexTest extends TestCase
     }
 
     #[DataProvider('getSymfonyRequireConstraints')]
-    public function testSymfonyRequireExactVersionWarning(string $constraint, bool $expectWarning): void
+    public function testSymfonyRequireExactVersionWarning(string $constraint, bool $expectWarning)
     {
         $io = new BufferIO('', OutputInterface::VERBOSITY_VERBOSE);
 

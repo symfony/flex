@@ -39,6 +39,7 @@ use Composer\Plugin\PluginInterface;
 use Composer\Plugin\PrePoolCreateEvent;
 use Composer\Script\Event;
 use Composer\Script\ScriptEvents;
+use Composer\Semver\Constraint\Constraint;
 use Composer\Semver\VersionParser;
 use Symfony\Component\Console\Exception\ExceptionInterface as ConsoleExceptionInterface;
 use Symfony\Component\Console\Input\ArgvInput;
@@ -219,10 +220,14 @@ class Flex implements PluginInterface, EventSubscriberInterface
             break;
         }
 
-        $symfonyRequire = preg_replace('/\.x$/', '.x-dev', getenv('SYMFONY_REQUIRE') ?: ($composer->getPackage()->getExtra()['symfony']['require'] ?? ''));
+        $rawSymfonyRequire = getenv('SYMFONY_REQUIRE') ?: ($composer->getPackage()->getExtra()['symfony']['require'] ?? '');
+        $symfonyRequire = preg_replace('/\.x$/', '.x-dev', $rawSymfonyRequire);
 
-        if ($symfonyRequire && preg_match('/^\d+(\.\d+)*$/', $symfonyRequire)) {
-            $io->writeError(\sprintf('<warning>SYMFONY_REQUIRE="%s" is an exact version constraint. Did you mean "%s.*" or "^%s"?</>', $symfonyRequire, $symfonyRequire, $symfonyRequire));
+        if ($rawSymfonyRequire) {
+            $parsedConstraint = (new VersionParser())->parseConstraints($rawSymfonyRequire);
+            if ($parsedConstraint instanceof Constraint && '==' === $parsedConstraint->getOperator()) {
+                $io->writeError(\sprintf('<warning>SYMFONY_REQUIRE="%s" is an exact version constraint. Did you mean "%s.*" or "^%s"?</>', $rawSymfonyRequire, $rawSymfonyRequire, $rawSymfonyRequire));
+            }
         }
 
         if ($symfonyRequire || $this->ignorePreleases) {
