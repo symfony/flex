@@ -111,6 +111,47 @@ class FlexTest extends TestCase
         );
     }
 
+    #[DataProvider('getSymfonyRequireConstraints')]
+    public function testSymfonyRequireExactVersionWarning(string $constraint, bool $expectWarning)
+    {
+        $io = new BufferIO('', OutputInterface::VERBOSITY_VERBOSE);
+
+        $package = $this->mockRootPackage();
+        $package->method('getRequires')->willReturn([new Link('dummy', 'symfony/flex', class_exists(MatchAllConstraint::class) ? new MatchAllConstraint() : null)]);
+
+        $composer = $this->mockComposer($this->mockLocker(), $package, Factory::createConfig($io));
+        if (version_compare('2.0.0', PluginInterface::PLUGIN_API_VERSION, '>')) {
+            $composer->setRepositoryManager($this->mockManager());
+        }
+
+        putenv('SYMFONY_REQUIRE='.$constraint);
+        try {
+            (new Flex())->activate($composer, $io);
+        } finally {
+            putenv('SYMFONY_REQUIRE');
+        }
+
+        if ($expectWarning) {
+            $this->assertStringContainsString(\sprintf('SYMFONY_REQUIRE="%s" is an exact version constraint', $constraint), $io->getOutput());
+        } else {
+            $this->assertStringNotContainsString('is an exact version constraint', $io->getOutput());
+        }
+    }
+
+    public static function getSymfonyRequireConstraints(): array
+    {
+        return [
+            'exact major' => ['7', true],
+            'exact minor' => ['7.4', true],
+            'exact patch' => ['7.4.1', true],
+            'caret' => ['^7.4', false],
+            'tilde' => ['~7.4', false],
+            'wildcard' => ['7.4.*', false],
+            'greater or equal' => ['>=7.4', false],
+            'x-range' => ['7.4.x', false],
+        ];
+    }
+
     public function testActivateLoadsClasses()
     {
         $io = new BufferIO('', OutputInterface::VERBOSITY_VERBOSE);
