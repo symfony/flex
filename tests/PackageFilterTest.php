@@ -11,6 +11,7 @@
 
 namespace Symfony\Flex\Tests;
 
+use Composer\IO\BufferIO;
 use Composer\IO\NullIO;
 use Composer\Package\CompletePackage;
 use Composer\Package\Link;
@@ -234,6 +235,33 @@ class PackageFilterTest extends TestCase
         yield 'major is exact' => [['7.0.0'], '7'];
         yield 'patch is exact' => [['7.4.1'], '7.4.1'];
         yield 'operator with x-range' => [['7.4.x-dev', '8.0.0'], '>=7.4.x'];
+    }
+
+    #[DataProvider('provideExactSymfonyRequire')]
+    public function testExactSymfonyRequireWarning(string $symfonyRequire, ?string $expectedSuggestion)
+    {
+        $io = new BufferIO();
+        new PackageFilter($io, $symfonyRequire, $this->createStub(Downloader::class));
+
+        if (null !== $expectedSuggestion) {
+            $this->assertStringContainsString(\sprintf('SYMFONY_REQUIRE="%s" is an exact version constraint. Did you mean %s?', $symfonyRequire, $expectedSuggestion), $io->getOutput());
+        } else {
+            $this->assertStringNotContainsString('is an exact version constraint', $io->getOutput());
+        }
+    }
+
+    public static function provideExactSymfonyRequire(): iterable
+    {
+        yield 'major' => ['7', '"7.*" or "^7"'];
+        yield 'patch' => ['7.4.1', '"7.4.*" or "^7.4"'];
+        yield 'equal operator' => ['=7.4', '"7.4.*" or "^7.4"'];
+        yield 'minor' => ['7.4', null];
+        yield 'x-range' => ['7.4.x', null];
+        yield 'wildcard' => ['7.4.*', null];
+        yield 'caret' => ['^7.4', null];
+        yield 'tilde' => ['~7.4', null];
+        yield 'greater or equal' => ['>=7.4', null];
+        yield 'greater or equal x-range' => ['>=5.x', null];
     }
 
     public function testIgnorePreleases()

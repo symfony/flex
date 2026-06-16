@@ -38,6 +38,11 @@ class PackageFilter
         // "7.4" and "7.4.x" mean "7.4.*", while ">=7.4.x" needs "7.4.x-dev" to be parsed
         $this->symfonyRequire = preg_replace(['/^v?(\d++(?:\.\d++)?)\.x$/i', '/^v?(\d++\.\d++)$/', '/\.x$/'], ['$1.*', '$1.*', '.x-dev'], $symfonyRequire);
         $this->symfonyConstraints = '' !== $symfonyRequire ? $this->versionParser->parseConstraints($this->symfonyRequire) : null;
+
+        if ($this->symfonyConstraints instanceof Constraint && '==' === $this->symfonyConstraints->getOperator() && preg_match('/^[=v\s]*+(\d++(?:\.\d++)?)/', $symfonyRequire, $m)) {
+            $io->writeError(\sprintf('<warning>SYMFONY_REQUIRE="%s" is an exact version constraint. Did you mean "%s.*" or "^%2$s"?</>', $symfonyRequire, $m[1]));
+        }
+
         $this->downloader = $downloader;
         $this->io = $io;
         $this->ignorePreleases = $ignorePreleases;
