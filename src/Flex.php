@@ -221,6 +221,10 @@ class Flex implements PluginInterface, EventSubscriberInterface
 
         $symfonyRequire = preg_replace('/\.x$/', '.x-dev', getenv('SYMFONY_REQUIRE') ?: ($composer->getPackage()->getExtra()['symfony']['require'] ?? ''));
 
+        if ($symfonyRequire && preg_match('/^\d+(\.\d+)*$/', $symfonyRequire)) {
+            $io->writeError(\sprintf('<warning>SYMFONY_REQUIRE="%s" is an exact version constraint. Did you mean "%s.*" or "^%s"?</>', $symfonyRequire, $symfonyRequire, $symfonyRequire));
+        }
+
         if ($symfonyRequire || $this->ignorePreleases) {
             $this->filter = new PackageFilter($io, $symfonyRequire, $this->downloader, $this->ignorePreleases);
         }
