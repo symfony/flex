@@ -51,6 +51,7 @@ class DotenvConfiguratorTest extends TestCase
                 '#2' => 'Comment 3',
                 '#TRUSTED_SECRET' => 's3cretf0rt3st"<>',
                 'APP_SECRET' => 's3cretf0rt3st"<>',
+                'ALLOWED_LANGUAGES' => '\'["en","de","es"]\'',
             ],
         ], $lock);
 
@@ -67,6 +68,7 @@ MAILER_USER=fabien
 # Comment 3
 #TRUSTED_SECRET="s3cretf0rt3st\"<>"
 APP_SECRET="s3cretf0rt3st\"<>"
+ALLOWED_LANGUAGES='["en","de","es"]'
 ###< FooBundle ###
 
 EOF;

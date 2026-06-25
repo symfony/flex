@@ -93,7 +93,7 @@ class EnvConfigurator extends AbstractConfigurator
                 }
 
                 $value = $this->options->expandTargetDir($value);
-                if (false !== strpbrk($value, " \t\n&!\"")) {
+                if (!str_starts_with($value, "'") && !str_ends_with($value, "'") && false !== strpbrk($value, " \t\n&!\"")) {
                     $value = '"'.str_replace(['\\', '"', "\t", "\n"], ['\\\\', '\\"', '\t', '\n'], $value).'"';
                 }
                 $data .= "$key=$value\n";
