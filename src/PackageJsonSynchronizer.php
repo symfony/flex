@@ -11,6 +11,7 @@
 
 namespace Symfony\Flex;
 
+use Composer\EventDispatcher\ScriptExecutionException;
 use Composer\IO\IOInterface;
 use Composer\Json\JsonFile;
 use Composer\Json\JsonManipulator;
@@ -265,6 +266,7 @@ class PackageJsonSynchronizer
 
         $importMapData = include $this->rootDir.'/importmap.php';
 
+        $failed = [];
         foreach ($importMapEntries as $name => $importMapEntry) {
             if (isset($importMapData[$name])) {
                 if (!isset($importMapData[$name]['version'])) {
@@ -288,32 +290,28 @@ class PackageJsonSynchronizer
                 if (isset($importMapEntry['entrypoint']) && true === $importMapEntry['entrypoint']) {
                     $arguments[] = '--entrypoint';
                 }
-
-                $this->scriptExecutor->execute(
-                    'symfony-cmd',
-                    'importmap:require',
-                    $arguments
-                );
-
-                continue;
-            }
-
-            if (isset($importMapEntry['version'])) {
+            } elseif (isset($importMapEntry['version'])) {
                 $packageName = $importMapEntry['package'].'@'.$importMapEntry['version'];
                 if ($importMapEntry['package'] !== $name) {
                     $packageName .= '='.$name;
                 }
                 $arguments = [$packageName];
-                $this->scriptExecutor->execute(
-                    'symfony-cmd',
-                    'importmap:require',
-                    $arguments
-                );
-
-                continue;
+            } else {
+                throw new \InvalidArgumentException(\sprintf('Invalid importmap entry: "%s".', var_export($importMapEntry, true)));
             }
 
-            throw new \InvalidArgumentException(\sprintf('Invalid importmap entry: "%s".', var_export($importMapEntry, true)));
+            try {
+                $this->scriptExecutor->execute('symfony-cmd', 'importmap:require', $arguments);
+            } catch (ScriptExecutionException) {
+                $failed[] = $name;
+            }
+        }
+
+        if ($failed) {
+            $this->io->writeError([
+                \sprintf('<warning>Could not add the following packages to your importmap: %s.</>', implode(', ', $failed)),
+                '<warning>Run "composer update --lock" to try again.</>',
+            ]);
         }
     }
 
