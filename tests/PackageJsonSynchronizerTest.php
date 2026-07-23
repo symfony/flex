@@ -525,4 +525,112 @@ class PackageJsonSynchronizerTest extends TestCase
             ],
         ]);
     }
+
+    public function testSynchronizeAssetMapperRemovesObsoleteImportMapEntries()
+    {
+        $importMap = [
+            'app' => [
+                'path' => './assets/app.js',
+                'entrypoint' => true,
+            ],
+            '@hotcake/foo' => [
+                // constraint in package.json is ^1.9.0
+                'version' => '1.9.1',
+            ],
+            '@removed/package' => [
+                'version' => '3.0.0',
+            ],
+            '@removed/package/script.js' => [
+                'path' => './vendor/removed/package/assets/script.js',
+            ],
+            '@symfony/new-package' => [
+                'path' => './vendor/symfony/new-package/assets/dist/loader.js',
+            ],
+            '@symfony/new-package/entry.js' => [
+                'path' => './vendor/symfony/new-package/assets/entry.js',
+                'entrypoint' => true,
+            ],
+            '@symfony/new-package/entry2.js' => [
+                'path' => './vendor/symfony/new-package/assets/entry2.js',
+                'entrypoint' => true,
+            ],
+        ];
+        file_put_contents($this->tempDir.'/importmap.php', \sprintf('<?php return %s;', var_export($importMap, true)));
+
+        $actualArguments = [];
+        $this->scriptExecutor->expects($this->once())
+            ->method('execute')
+            ->willReturnCallback(static function (...$arguments) use (&$actualArguments) { $actualArguments[] = $arguments; });
+
+        $this->synchronizer->synchronize(
+            [
+                [
+                    'name' => 'symfony/new-package',
+                    'keywords' => ['symfony-ux'],
+                ],
+            ],
+            [
+                // obsolete, must be removed
+                '@removed/package',
+                '@removed/package/script.js',
+                // still declared by symfony/new-package, must be kept
+                '@hotcake/foo',
+                // not in the importmap (e.g. already removed by hand), must be ignored
+                '@removed/package/other.js',
+            ]
+        );
+
+        $this->assertSame(
+            [
+                ['symfony-cmd', 'importmap:remove', ['@removed/package', '@removed/package/script.js']],
+            ],
+            $actualArguments
+        );
+    }
+
+    public function testSynchronizeAssetMapperDoesNotAbortWhenImportmapRemoveFails()
+    {
+        file_put_contents($this->tempDir.'/importmap.php', \sprintf('<?php return %s;', var_export(['@removed/package' => ['version' => '3.0.0']], true)));
+
+        $this->scriptExecutor->expects($this->once())
+            ->method('execute')
+            ->with('symfony-cmd', 'importmap:remove', ['@removed/package'])
+            ->willThrowException(new ScriptExecutionException('importmap:remove', 1));
+
+        $io = new BufferIO();
+        $synchronizer = new PackageJsonSynchronizer($this->tempDir, 'vendor', $this->scriptExecutor, $io);
+        $synchronizer->synchronize([], ['@removed/package']);
+
+        $this->assertStringContainsString('Could not remove the following packages from your importmap: @removed/package.', $io->getOutput());
+    }
+
+    public function testResolveImportMapEntryNames()
+    {
+        $this->scriptExecutor->expects($this->never())->method('execute');
+
+        $this->assertSame(
+            [
+                '@hotcake/foo',
+                '@symfony/new-package',
+                '@symfony/new-package/entry.js',
+                '@symfony/new-package/entry2.js',
+            ],
+            $this->synchronizer->resolveImportMapEntryNames([
+                'name' => 'symfony/new-package',
+                'keywords' => ['symfony-ux'],
+            ])
+        );
+
+        // package without the "symfony-ux" keyword
+        $this->assertSame([], $this->synchronizer->resolveImportMapEntryNames([
+            'name' => 'symfony/new-package',
+            'keywords' => [],
+        ]));
+
+        // package without importmap config
+        $this->assertSame([], $this->synchronizer->resolveImportMapEntryNames([
+            'name' => 'symfony/existing-package',
+            'keywords' => ['symfony-ux'],
+        ]));
+    }
 }
