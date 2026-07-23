@@ -32,6 +32,7 @@ use Composer\IO\IOInterface;
 use Composer\IO\NullIO;
 use Composer\Json\JsonFile;
 use Composer\Json\JsonManipulator;
+use Composer\Package\CompletePackageInterface;
 use Composer\Package\Locker;
 use Composer\Package\Package;
 use Composer\Plugin\PluginEvents;
@@ -76,6 +77,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
     private $installer;
     private $postInstallOutput = [''];
     private $operations = [];
+    private $uninstalledImportMapEntryNames = [];
     private $lock;
     private $displayThanksReminder = 0;
     private $ignorePreleases = false;
@@ -327,6 +329,24 @@ class Flex implements PluginInterface, EventSubscriberInterface
         }
     }
 
+    public function recordUninstalledImportMapEntryNames(PackageEvent $event): void
+    {
+        $operation = $event->getOperation();
+        if (!$operation instanceof UninstallOperation) {
+            return;
+        }
+
+        // the importmap entries of the package must be resolved now, while its files still exist
+        $package = $operation->getPackage();
+        $synchronizer = $this->createPackageJsonSynchronizer($this->options->get('root-dir'));
+        $entryNames = $synchronizer->resolveImportMapEntryNames([
+            'name' => $package->getName(),
+            'keywords' => $package instanceof CompletePackageInterface ? ($package->getKeywords() ?: []) : [],
+        ]);
+
+        $this->uninstalledImportMapEntryNames = array_merge($this->uninstalledImportMapEntryNames, $entryNames);
+    }
+
     public function recordOperations(InstallerEvent $event)
     {
         if (!$event->isExecutingOperations()) {
@@ -566,21 +586,27 @@ class Flex implements PluginInterface, EventSubscriberInterface
             return;
         }
 
-        $rootDir = realpath($rootDir);
-        $vendorDir = trim((new Filesystem())->makePathRelative($this->config->get('vendor-dir'), $rootDir), '/');
-
-        $executor = new ScriptExecutor($this->composer, $this->io, $this->options);
-        $synchronizer = new PackageJsonSynchronizer($rootDir, $vendorDir, $executor, $this->io);
+        $synchronizer = $this->createPackageJsonSynchronizer($rootDir);
 
         if ($synchronizer->shouldSynchronize()) {
             $lockData = $this->composer->getLocker()->getLockData();
 
-            if ($synchronizer->synchronize(array_merge($lockData['packages'] ?? [], $lockData['packages-dev'] ?? []))) {
+            if ($synchronizer->synchronize(array_merge($lockData['packages'] ?? [], $lockData['packages-dev'] ?? []), $this->uninstalledImportMapEntryNames)) {
                 $this->io->writeError('<info>Synchronizing package.json with PHP packages</>');
                 $this->io->writeError('<warning>Don\'t forget to run npm install --force or yarn install --force to refresh your JavaScript dependencies!</>');
                 $this->io->writeError('');
             }
+
+            $this->uninstalledImportMapEntryNames = [];
         }
+    }
+
+    private function createPackageJsonSynchronizer(string $rootDir): PackageJsonSynchronizer
+    {
+        $rootDir = realpath($rootDir);
+        $vendorDir = trim((new Filesystem())->makePathRelative($this->config->get('vendor-dir'), $rootDir), '/');
+
+        return new PackageJsonSynchronizer($rootDir, $vendorDir, new ScriptExecutor($this->composer, $this->io, $this->options), $this->io);
     }
 
     /**
@@ -899,6 +925,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $events = [
             PackageEvents::POST_PACKAGE_UPDATE => 'enableThanksReminder',
             PackageEvents::POST_PACKAGE_INSTALL => 'recordFlexInstall',
+            PackageEvents::PRE_PACKAGE_UNINSTALL => 'recordUninstalledImportMapEntryNames',
             PackageEvents::POST_PACKAGE_UNINSTALL => 'record',
             InstallerEvents::PRE_OPERATIONS_EXEC => 'recordOperations',
             PluginEvents::PRE_POOL_CREATE => 'truncatePackages',

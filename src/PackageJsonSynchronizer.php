@@ -44,10 +44,14 @@ class PackageJsonSynchronizer
         return $this->rootDir && (file_exists($this->rootDir.'/package.json') || file_exists($this->rootDir.'/importmap.php'));
     }
 
-    public function synchronize(array $phpPackages): bool
+    /**
+     * @param string[] $obsoleteImportMapEntryNames importmap entry names declared by packages
+     *                                              that have just been uninstalled
+     */
+    public function synchronize(array $phpPackages, array $obsoleteImportMapEntryNames = []): bool
     {
         if (file_exists($this->rootDir.'/importmap.php')) {
-            $this->synchronizeForAssetMapper($phpPackages);
+            $this->synchronizeForAssetMapper($phpPackages, $obsoleteImportMapEntryNames);
 
             return false;
         }
@@ -78,7 +82,24 @@ class PackageJsonSynchronizer
         return $didChangePackageJson;
     }
 
-    private function synchronizeForAssetMapper(array $phpPackages): void
+    /**
+     * Returns the importmap entry names declared by a PHP package.
+     *
+     * Useful to capture the entries of a package about to be uninstalled, while
+     * its files still exist.
+     *
+     * @return string[]
+     */
+    public function resolveImportMapEntryNames(array $phpPackage): array
+    {
+        if (!$packageJson = $this->resolvePackageJson($phpPackage)) {
+            return [];
+        }
+
+        return array_keys($packageJson->read()['symfony']['importmap'] ?? []);
+    }
+
+    private function synchronizeForAssetMapper(array $phpPackages, array $obsoleteImportMapEntryNames): void
     {
         $importMapEntries = [];
         $phpPackages = $this->normalizePhpPackages($phpPackages);
@@ -88,6 +109,7 @@ class PackageJsonSynchronizer
             }
         }
 
+        $this->removeObsoleteImportMapEntries($obsoleteImportMapEntryNames, $importMapEntries);
         $this->updateImportMap($importMapEntries);
         $this->updateControllersJsonFile($phpPackages);
     }
@@ -251,6 +273,38 @@ class PackageJsonSynchronizer
             return !$existingConstraint->matches($constraint);
         } catch (\UnexpectedValueException $e) {
             return true;
+        }
+    }
+
+    /**
+     * @param string[]                                                                                   $obsoleteImportMapEntryNames
+     * @param array<string, array{path?: string, package?: string, version?: string, entrypoint?: bool}> $keptImportMapEntries
+     */
+    private function removeObsoleteImportMapEntries(array $obsoleteImportMapEntryNames, array $keptImportMapEntries): void
+    {
+        if (!$obsoleteImportMapEntryNames) {
+            return;
+        }
+
+        $importMapData = include $this->rootDir.'/importmap.php';
+
+        $toRemove = [];
+        foreach (array_unique($obsoleteImportMapEntryNames) as $name) {
+            // the entry is still declared by an installed package
+            if (isset($keptImportMapEntries[$name])) {
+                continue;
+            }
+
+            // the entry is not in the importmap (e.g. already removed by hand)
+            if (!isset($importMapData[$name])) {
+                continue;
+            }
+
+            $toRemove[] = $name;
+        }
+
+        if ($toRemove) {
+            $this->scriptExecutor->execute('symfony-cmd', 'importmap:remove', $toRemove);
         }
     }
 
