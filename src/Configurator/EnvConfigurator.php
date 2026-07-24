@@ -93,7 +93,7 @@ class EnvConfigurator extends AbstractConfigurator
                 }
 
                 $value = $this->options->expandTargetDir($value);
-                if (false !== strpbrk($value, " \t\n&!\"")) {
+                if (!$this->isSingleQuotedLiteral($value) && false !== strpbrk($value, " \t\n&!\"")) {
                     $value = '"'.str_replace(['\\', '"', "\t", "\n"], ['\\\\', '\\"', '\t', '\n'], $value).'"';
                 }
                 $data .= "$key=$value\n";
@@ -126,7 +126,7 @@ class EnvConfigurator extends AbstractConfigurator
                         $doc = new \DOMDocument();
                         $data .= '        '.$doc->saveXML($doc->createComment(' '.$value.' '))."\n";
                     } else {
-                        $value = $this->options->expandTargetDir($value);
+                        $value = $this->unquoteLiteral($this->options->expandTargetDir($value));
                         $doc = new \DOMDocument();
                         $fragment = $doc->createElement('env');
                         $fragment->setAttribute('name', substr($key, 1));
@@ -134,7 +134,7 @@ class EnvConfigurator extends AbstractConfigurator
                         $data .= '        '.str_replace(['<', '/>'], ['<!-- ', ' -->'], $doc->saveXML($fragment))."\n";
                     }
                 } else {
-                    $value = $this->options->expandTargetDir($value);
+                    $value = $this->unquoteLiteral($this->options->expandTargetDir($value));
                     $doc = new \DOMDocument();
                     $fragment = $doc->createElement('env');
                     $fragment->setAttribute('name', $key);
@@ -187,6 +187,24 @@ class EnvConfigurator extends AbstractConfigurator
             $this->write(\sprintf('Removing environment variables from %s', $file));
             file_put_contents($phpunit, $contents);
         }
+    }
+
+    /**
+     * Single-quoted values are dotenv literals (no variable interpolation, no
+     * escape sequences, e.g. to store JSON content) and must be written as-is.
+     */
+    private function isSingleQuotedLiteral(string $value): bool
+    {
+        return \strlen($value) > 1 && str_starts_with($value, "'") && str_ends_with($value, "'");
+    }
+
+    /**
+     * The quotes of a dotenv literal are syntax, not part of the value: strip
+     * them where the raw value is expected, like a phpunit.xml env attribute.
+     */
+    private function unquoteLiteral(string $value): string
+    {
+        return $this->isSingleQuotedLiteral($value) ? substr($value, 1, -1) : $value;
     }
 
     /**
