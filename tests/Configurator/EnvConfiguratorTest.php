@@ -52,6 +52,7 @@ class EnvConfiguratorTest extends TestCase
             'DATABASE_URL' => 'mysql://root@127.0.0.1:3306/symfony?charset=utf8mb4&serverVersion=5.7',
             'MAILER_URL' => 'null://localhost',
             'MAILER_USER' => 'fabien',
+            'ALLOWED_LANGUAGES' => '\'["en","de","es"]\'',
             '#1' => 'Comment 1',
             '#2' => 'Comment 3',
             '#TRUSTED_SECRET' => 's3cretf0rt3st"<>',
@@ -67,6 +68,7 @@ APP_PARAGRAPH="foo\\n\\"bar\\"\\\\t"
 DATABASE_URL="mysql://root@127.0.0.1:3306/symfony?charset=utf8mb4&serverVersion=5.7"
 MAILER_URL=null://localhost
 MAILER_USER=fabien
+ALLOWED_LANGUAGES='["en","de","es"]'
 # Comment 1
 # Comment 3
 #TRUSTED_SECRET="s3cretf0rt3st\"<>"
@@ -95,6 +97,7 @@ EOF;
         <env name="DATABASE_URL" value="mysql://root@127.0.0.1:3306/symfony?charset=utf8mb4&amp;serverVersion=5.7"/>
         <env name="MAILER_URL" value="null://localhost"/>
         <env name="MAILER_USER" value="fabien"/>
+        <env name="ALLOWED_LANGUAGES" value="[&quot;en&quot;,&quot;de&quot;,&quot;es&quot;]"/>
         <!-- Comment 1 -->
         <!-- Comment 3 -->
         <!-- env name="TRUSTED_SECRET" value="s3cretf0rt3st&quot;&lt;&gt;" -->
