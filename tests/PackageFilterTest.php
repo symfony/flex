@@ -11,6 +11,7 @@
 
 namespace Symfony\Flex\Tests;
 
+use Composer\IO\BufferIO;
 use Composer\IO\NullIO;
 use Composer\Package\CompletePackage;
 use Composer\Package\Link;
@@ -207,6 +208,33 @@ class PackageFilterTest extends TestCase
         yield 'root-constraints-are-preserved' => [$packages, $packages, '~2.8', ['splits' => [
             'symfony/bar' => ['2.8', '3.0'],
         ]]];
+    }
+
+    public function testRootConstraintWithoutIntersectionIsPreservedButWarnedAbout()
+    {
+        $io = new BufferIO();
+        $downloader = $this->createStub(Downloader::class);
+        $downloader
+            ->method('getVersions')
+            ->willReturn(['splits' => ['symfony/bar' => ['2.8', '3.0']]]);
+        $filter = new PackageFilter($io, '~2.8', $downloader);
+
+        $l = new ArrayLoader();
+        $packages = [];
+        foreach (['2.8.0', '3.0.0'] as $version) {
+            $packages[] = $l->load(['name' => 'symfony/bar', 'version' => $version], CompletePackage::class);
+        }
+
+        $rootPackage = new RootPackage('test/test', '1.0.0.0', '1.0');
+        $rootPackage->setRequires([
+            'symfony/bar' => new Link('__root__', 'symfony/bar', new Constraint('>=', '3.0.0.0'), Link::TYPE_REQUIRE, '>=3.0'),
+        ]);
+
+        $this->assertSame($packages, $filter->removeLegacyPackages($packages, $rootPackage, []));
+
+        $output = $io->getOutput();
+        $this->assertStringContainsString('Version constraint ">= 3.0.0.0" for "symfony/bar" has no intersection with "~2.8", keeping the package unrestricted', $output);
+        $this->assertSame(1, substr_count($output, 'no intersection'), 'the warning should be emitted once per package, not once per version');
     }
 
     public function testIgnorePreleases()

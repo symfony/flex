@@ -31,6 +31,8 @@ class PackageFilter
     private $downloader;
     private $io;
     private $ignorePreleases;
+    private $notifiedRestriction = false;
+    private $warnedPackages = [];
 
     public function __construct(IOInterface $io, string $symfonyRequire, Downloader $downloader, bool $ignorePreleases = false)
     {
@@ -91,9 +93,21 @@ class PackageFilter
             if ('symfony/symfony' !== $name && (
                 array_intersect($versions, $lockedVersions[$name] ?? [])
                 || (($knownVersions ??= $this->getVersions()) && !isset($knownVersions['splits'][$name]))
-                || (isset($rootConstraints[$name]) && !Intervals::haveIntersections($this->symfonyConstraints, $rootConstraints[$name]))
                 || ('symfony/psr-http-message-bridge' === $name && 6.4 > $versions[0])
             )) {
+                $filteredPackages[] = $package;
+                continue;
+            }
+
+            if ('symfony/symfony' !== $name && isset($rootConstraints[$name]) && !Intervals::haveIntersections($this->symfonyConstraints, $rootConstraints[$name])) {
+                // the root constraint wins when it has no intersection with the
+                // "symfony/*" one, e.g. to allow requiring a dev version; be
+                // loud about it as this also triggers when the root constraint
+                // simply misses the versions the user asked for
+                if (null !== $this->io && !isset($this->warnedPackages[$name])) {
+                    $this->warnedPackages[$name] = true;
+                    $this->io->writeError(\sprintf('<warning>Version constraint "%s" for "%s" has no intersection with "%s", keeping the package unrestricted</>', $rootConstraints[$name]->getPrettyString(), $name, $this->symfonyRequire));
+                }
                 $filteredPackages[] = $package;
                 continue;
             }
@@ -112,9 +126,9 @@ class PackageFilter
 
             if ('symfony/symfony' === $name) {
                 $symfonyPackages[] = $package;
-            } elseif (null !== $this->io) {
+            } elseif (null !== $this->io && !$this->notifiedRestriction) {
+                $this->notifiedRestriction = true;
                 $this->io->writeError(\sprintf('<info>Restricting packages listed in "symfony/symfony" to "%s"</>', $this->symfonyRequire));
-                $this->io = null;
             }
         }
 
