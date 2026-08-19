@@ -31,6 +31,8 @@ class PackageFilter
     private $downloader;
     private $io;
     private $ignorePreleases;
+    private $notifiedRestriction = false;
+    private $warnedPackages = [];
 
     public function __construct(IOInterface $io, string $symfonyRequire, Downloader $downloader, bool $ignorePreleases = false)
     {
@@ -77,6 +79,7 @@ class PackageFilter
         foreach ($rootPackage->getRequires() + $rootPackage->getDevRequires() as $name => $link) {
             $rootConstraints[$name] = $link->getConstraint();
         }
+        $stabilityFlags = $rootPackage->getStabilityFlags();
 
         $knownVersions = null;
         $filteredPackages = [];
@@ -92,9 +95,19 @@ class PackageFilter
             if ('symfony/symfony' !== $name && (
                 array_intersect($versions, $lockedVersions[$name] ?? [])
                 || (($knownVersions ??= $this->getVersions()) && !isset($knownVersions['splits'][$name]))
-                || (isset($rootConstraints[$name]) && !Intervals::haveIntersections($this->symfonyConstraints, $rootConstraints[$name]))
                 || ('symfony/psr-http-message-bridge' === $name && 6.4 > $versions[0])
             )) {
+                $filteredPackages[] = $package;
+                continue;
+            }
+
+            if ('symfony/symfony' !== $name && isset($rootConstraints[$name]) && !Intervals::haveIntersections($this->symfonyConstraints, $rootConstraints[$name])) {
+                // the root constraint wins, e.g. to allow requiring a dev version,
+                // but one that doesn't ask for unstable versions is likely a mistake
+                if (!isset($stabilityFlags[$name]) && !isset($this->warnedPackages[$name])) {
+                    $this->warnedPackages[$name] = true;
+                    $this->io->writeError(\sprintf('<warning>Version constraint "%s" for "%s" has no intersection with "%s", keeping the package unrestricted</>', $rootConstraints[$name]->getPrettyString(), $name, $this->symfonyRequire));
+                }
                 $filteredPackages[] = $package;
                 continue;
             }
@@ -113,9 +126,9 @@ class PackageFilter
 
             if ('symfony/symfony' === $name) {
                 $symfonyPackages[] = $package;
-            } elseif (null !== $this->io) {
+            } elseif (!$this->notifiedRestriction) {
+                $this->notifiedRestriction = true;
                 $this->io->writeError(\sprintf('<info>Restricting packages listed in "symfony/symfony" to "%s"</>', $this->symfonyRequire));
-                $this->io = null;
             }
         }
 
