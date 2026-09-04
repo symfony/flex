@@ -22,6 +22,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Flex\GithubApi;
 use Symfony\Flex\InformationOperation;
 use Symfony\Flex\Lock;
+use Symfony\Flex\Options;
 use Symfony\Flex\Recipe;
 
 /**
@@ -34,12 +35,14 @@ class RecipesCommand extends BaseCommand
 
     private Lock $symfonyLock;
     private GithubApi $githubApi;
+    private ?Options $options;
 
-    public function __construct(/* cannot be type-hinted */ $flex, Lock $symfonyLock, HttpDownloader $downloader)
+    public function __construct(/* cannot be type-hinted */ $flex, Lock $symfonyLock, HttpDownloader $downloader, ?Options $options = null)
     {
         $this->flex = $flex;
         $this->symfonyLock = $symfonyLock;
         $this->githubApi = new GithubApi($downloader);
+        $this->options = $options;
 
         parent::__construct();
     }
@@ -243,6 +246,17 @@ class RecipesCommand extends BaseCommand
             $tree = $this->generateFilesTree($lockFiles);
 
             $this->displayFilesTree($tree);
+        }
+
+        $postInstallOutput = $recipe->getManifest()['post-install-output'] ?? [];
+
+        if ($postInstallOutput) {
+            $io->write('<info>instructions</info>     : ');
+            $io->write('');
+
+            foreach ($postInstallOutput as $line) {
+                $io->write($this->options ? $this->options->expandTargetDir($line) : $line);
+            }
         }
 
         if ($lockRef !== $recipe->getRef()) {

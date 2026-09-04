@@ -211,7 +211,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             }
 
             $addCommand = 'add'.(method_exists($app, 'addCommand') ? 'Command' : '');
-            $app->$addCommand(new Command\RecipesCommand($this, $this->lock, $rfs));
+            $app->$addCommand(new Command\RecipesCommand($this, $this->lock, $rfs, $this->options));
             $app->$addCommand(new Command\InstallRecipesCommand($this, $this->options->get('root-dir'), $this->options->get('runtime')['dotenv_path'] ?? '.env'));
             $app->$addCommand(new Command\UpdateRecipesCommand($this, $this->downloader, $rfs, $this->configurator, $this->options->get('root-dir')));
             $app->$addCommand(new Command\DumpEnvCommand($this->config, $this->options));
