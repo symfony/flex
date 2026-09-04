@@ -209,6 +209,43 @@ class DockerComposeConfiguratorTest extends TestCase
         $this->assertEquals(self::ORIGINAL_CONTENT, file_get_contents($dockerComposeFile));
     }
 
+    public function testTheDockerComposeInstructionsAreNotHiddenBehindVerboseMode()
+    {
+        $dockerComposeFile = FLEX_TEST_DIR.'/compose.yaml';
+        file_put_contents($dockerComposeFile, self::ORIGINAL_CONTENT);
+
+        $messages = [];
+        $io = $this->createStub(IOInterface::class);
+        $io->method('writeError')->willReturnCallback(
+            static function ($message, $newline = true, $verbosity = IOInterface::NORMAL) use (&$messages) {
+                foreach ((array) $message as $line) {
+                    $messages[] = [trim($line), $verbosity];
+                }
+            }
+        );
+
+        $configurator = new DockerComposeConfigurator(
+            $this->composer,
+            $io,
+            new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
+        );
+
+        $configurator->configure($this->recipeDb, self::CONFIG_DB, $this->lock);
+
+        $this->assertContains(
+            ['Docker Compose definitions have been modified. Please run "docker compose up --build" again to apply the changes.', IOInterface::NORMAL],
+            $messages
+        );
+
+        $messages = [];
+        $configurator->unconfigure($this->recipeDb, self::CONFIG_DB, $this->lock);
+
+        $this->assertContains(
+            ['Docker Compose definitions have been modified. Please run "docker compose up" again to apply the changes.', IOInterface::NORMAL],
+            $messages
+        );
+    }
+
     public function testReconfigureDoesNotDuplicateLaterTopLevelKey()
     {
         $this->configurator->configure($this->recipeDb, self::CONFIG_DB, $this->lock);
