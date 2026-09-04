@@ -46,14 +46,15 @@ class DockerComposeConfigurator extends AbstractConfigurator
             return;
         }
 
-        $this->configureDockerCompose($recipe, $config, $options['force'] ?? false);
-
-        $this->write('Docker Compose definitions have been modified. Please run "docker compose up --build" again to apply the changes.');
+        if ($this->configureDockerCompose($recipe, $config, $options['force'] ?? false)) {
+            $this->write('Docker Compose definitions have been modified. Please run "docker compose up --build" again to apply the changes.', IOInterface::NORMAL);
+        }
     }
 
     public function unconfigure(Recipe $recipe, $config, Lock $lock)
     {
         $rootDir = $this->options->get('root-dir');
+        $modified = false;
         foreach ($this->normalizeConfig($config) as $file => $extra) {
             if (null === $dockerComposeFile = $this->findDockerComposeFile($rootDir, $file)) {
                 continue;
@@ -74,9 +75,12 @@ class DockerComposeConfigurator extends AbstractConfigurator
 
             $this->write(\sprintf('Removing Docker Compose entries from "%s"', $dockerComposeFile));
             file_put_contents($dockerComposeFile, ltrim($contents, "\n"));
+            $modified = true;
         }
 
-        $this->write('Docker Compose definitions have been modified. Please run "docker compose up" again to apply the changes.');
+        if ($modified) {
+            $this->write('Docker Compose definitions have been modified. Please run "docker compose up" again to apply the changes.', IOInterface::NORMAL);
+        }
     }
 
     public function update(RecipeUpdate $recipeUpdate, array $originalConfig, array $newConfig): void
@@ -229,9 +233,10 @@ class DockerComposeConfigurator extends AbstractConfigurator
         return $line;
     }
 
-    private function configureDockerCompose(Recipe $recipe, array $config, bool $update): void
+    private function configureDockerCompose(Recipe $recipe, array $config, bool $update): bool
     {
         $rootDir = $this->options->get('root-dir');
+        $modified = false;
         foreach ($this->normalizeConfig($config) as $file => $extra) {
             $dockerComposeFile = $this->findDockerComposeFile($rootDir, $file);
             if (null === $dockerComposeFile) {
@@ -334,7 +339,10 @@ class DockerComposeConfigurator extends AbstractConfigurator
             }
 
             file_put_contents($dockerComposeFile, implode('', $lines));
+            $modified = true;
         }
+
+        return $modified;
     }
 
     private function getContentsAfterApplyingRecipe(string $rootDir, Recipe $recipe, array $config): array
