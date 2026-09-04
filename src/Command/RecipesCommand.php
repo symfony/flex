@@ -22,6 +22,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Flex\GithubApi;
 use Symfony\Flex\InformationOperation;
 use Symfony\Flex\Lock;
+use Symfony\Flex\Options;
 use Symfony\Flex\Recipe;
 
 /**
@@ -34,12 +35,14 @@ class RecipesCommand extends BaseCommand
 
     private Lock $symfonyLock;
     private GithubApi $githubApi;
+    private ?Options $options;
 
-    public function __construct(/* cannot be type-hinted */ $flex, Lock $symfonyLock, HttpDownloader $downloader)
+    public function __construct(/* cannot be type-hinted */ $flex, Lock $symfonyLock, HttpDownloader $downloader, ?Options $options = null)
     {
         $this->flex = $flex;
         $this->symfonyLock = $symfonyLock;
         $this->githubApi = new GithubApi($downloader);
+        $this->options = $options;
 
         parent::__construct();
     }
@@ -245,6 +248,15 @@ class RecipesCommand extends BaseCommand
             $this->displayFilesTree($tree);
         }
 
+        if ($postInstallOutput = $this->getPostInstallOutput($recipe, $lockRef, $lockVersion)) {
+            $io->write('<info>instructions</info>     : ');
+            $io->write('');
+
+            foreach ($postInstallOutput as $line) {
+                $io->write($this->options ? $this->options->expandTargetDir($line) : $line);
+            }
+        }
+
         if ($lockRef !== $recipe->getRef()) {
             $io->write([
                 '',
@@ -252,6 +264,21 @@ class RecipesCommand extends BaseCommand
                 \sprintf('<info>composer recipes:update %s</info>', $recipe->getName()),
             ]);
         }
+    }
+
+    private function getPostInstallOutput(Recipe $recipe, ?string $lockRef, ?string $lockVersion): array
+    {
+        if (null === $lockRef || null === $lockVersion) {
+            return [];
+        }
+
+        if ($lockRef !== $recipe->getRef()) {
+            $operation = new InformationOperation($recipe->getPackage());
+            $operation->setSpecificRecipeVersion($lockRef, $lockVersion);
+            $recipe = $this->flex->fetchRecipes([$operation], false)[$recipe->getName()] ?? null;
+        }
+
+        return $recipe?->getManifest()['post-install-output'] ?? [];
     }
 
     private function generateFilesTree(array $files): array
