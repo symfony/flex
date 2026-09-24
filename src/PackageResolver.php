@@ -83,11 +83,14 @@ class PackageResolver
         if ($guess || '*' === $version) {
             try {
                 $config = @json_decode(file_get_contents(Factory::getComposerFile()), true);
-            } finally {
-                if (!$isRequire || !isset($config['extra']['symfony']['require'])) {
-                    return '';
-                }
+            } catch (\Throwable) {
+                return '';
             }
+
+            if (!$isRequire || !isset($config['extra']['symfony']['require'])) {
+                return '';
+            }
+
             $version = $config['extra']['symfony']['require'];
         } elseif ('dev' === $version) {
             $version = '^'.$versions['dev-name'].'@dev';
