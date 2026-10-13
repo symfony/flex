@@ -193,7 +193,7 @@ class UpdateRecipesCommand extends BaseCommand
                 '  After resolving, commit your changes like normal.',
             ]);
         } else {
-            if (!$patch->getPatch()) {
+            if (!$patch->getPatch() && !$patch->getDeletedFiles()) {
                 // no changes were required
                 $io->write([
                     '  No files were changed as a result of the update.',

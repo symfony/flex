@@ -46,10 +46,6 @@ class RecipePatcher
 
         $nonRemovableFiles = [];
         foreach ($patch->getDeletedFiles() as $deletedFile) {
-            if (!file_exists($this->rootDir.'/'.$deletedFile)) {
-                continue;
-            }
-
             if (isset($lockedFiles[$deletedFile])) {
                 $nonRemovableFiles[] = $deletedFile;
 
@@ -62,6 +58,15 @@ class RecipePatcher
         if ($nonRemovableFiles) {
             $this->io->writeError('  <warning>The following files were removed in the recipe, but are still referenced by other recipes. You might need to adjust them manually:</warning>');
             foreach ($nonRemovableFiles as $file) {
+                $this->io->writeError('      - '.$file);
+            }
+
+            $this->io->writeError('');
+        }
+
+        if ($patch->getKeptFiles()) {
+            $this->io->writeError('  <warning>The following files were removed in the recipe, but they were kept because you modified them. You might need to remove them manually:</warning>');
+            foreach ($patch->getKeptFiles() as $file) {
                 $this->io->writeError('      - '.$file);
             }
 
@@ -85,12 +90,25 @@ class RecipePatcher
         }, \ARRAY_FILTER_USE_BOTH);
 
         $deletedFiles = [];
-        // find removed files & record that they are deleted
+        $keptFiles = [];
+        // find removed files & record that they are deleted, unless they were modified in the project
         // unset them from originalFiles to avoid unnecessary blobs being added
         foreach ($originalFiles as $file => $contents) {
-            if (!isset($newFiles[$file])) {
+            if (isset($newFiles[$file])) {
+                continue;
+            }
+
+            unset($originalFiles[$file]);
+
+            $path = $this->rootDir.'/'.$file;
+            if (!file_exists($path)) {
+                continue;
+            }
+
+            if (str_replace("\r\n", "\n", file_get_contents($path)) === str_replace("\r\n", "\n", $contents)) {
                 $deletedFiles[] = $file;
-                unset($originalFiles[$file]);
+            } else {
+                $keptFiles[] = $file;
             }
         }
 
@@ -136,7 +154,8 @@ class RecipePatcher
                 $patchString,
                 $blobs,
                 $deletedFiles,
-                $removedPatches
+                $removedPatches,
+                $keptFiles
             );
         } finally {
             try {
