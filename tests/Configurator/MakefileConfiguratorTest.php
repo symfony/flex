@@ -235,14 +235,14 @@ EOF
     public function testConfigureCreatesBoilerplateWithTabIndentation()
     {
         $configurator = new MakefileConfigurator(
-            $this->getMockBuilder(Composer::class)->getMock(),
-            $this->getMockBuilder(IOInterface::class)->getMock(),
+            $this->createStub(Composer::class),
+            $this->createStub(IOInterface::class),
             new Options(['root-dir' => FLEX_TEST_DIR])
         );
-        $lock = $this->getMockBuilder(Lock::class)->disableOriginalConstructor()->getMock();
+        $lock = $this->createStub(Lock::class);
 
-        $recipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
-        $recipe->expects($this->any())->method('getName')->willReturn('FooBundle');
+        $recipe = $this->createStub(Recipe::class);
+        $recipe->method('getName')->willReturn('FooBundle');
 
         $makefile = FLEX_TEST_DIR.'/Makefile';
         @unlink($makefile);

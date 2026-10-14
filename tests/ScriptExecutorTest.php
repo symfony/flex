@@ -16,7 +16,6 @@ use Composer\IO\NullIO;
 use Composer\Util\ProcessExecutor;
 use PHPUnit\Framework\Attributes\BackupGlobals;
 use PHPUnit\Framework\TestCase;
-use PHPUnit\Runner\Version;
 use Symfony\Component\Process\PhpExecutableFinder;
 use Symfony\Flex\Options;
 use Symfony\Flex\ScriptExecutor;
@@ -29,8 +28,8 @@ final class ScriptExecutorTest extends TestCase
         $command = './command.php';
         $memoryLimit = '32M';
         putenv("COMPOSER_MEMORY_LIMIT={$memoryLimit}");
-        $executorStub = $this->createStub(ProcessExecutor::class);
-        $scriptExecutor = new ScriptExecutor(new Composer(), new NullIO(), new Options(), $executorStub);
+        $executorMock = $this->createMock(ProcessExecutor::class);
+        $scriptExecutor = new ScriptExecutor(new Composer(), new NullIO(), new Options(), $executorMock);
 
         $phpFinder = new PhpExecutableFinder();
         if (!$php = $phpFinder->find(false)) {
@@ -50,15 +49,12 @@ final class ScriptExecutorTest extends TestCase
 
         $expectedCommand = ProcessExecutor::escape($php).($phpArgs ? ' '.$phpArgs : '').' '.$command;
 
-        $executorStub
+        $executorMock
+            ->expects($this->once())
             ->method('execute')
             ->with($expectedCommand)
             ->willReturn(0)
         ;
-
-        if (10 === Version::majorVersionNumber()) {
-            $this->expectNotToPerformAssertions();
-        }
 
         $scriptExecutor->execute('php-script', $command);
     }

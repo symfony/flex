@@ -68,11 +68,11 @@ class RecipePatcherTest extends TestCase
         preg_match_all('/index\ ([0-9|a-z]+)\.\./', $patch->getPatch(), $matches);
         $expectedBlobs = $matches[1];
         // new files (0000000) do not need a blob
-        $expectedBlobs = array_values(array_filter($expectedBlobs, function ($blob) {
+        $expectedBlobs = array_values(array_filter($expectedBlobs, static function ($blob) {
             return '0000000' !== $blob;
         }));
 
-        $actualShortenedBlobs = array_map(function ($blob) {
+        $actualShortenedBlobs = array_map(static function ($blob) {
             return substr($blob, 0, 7);
         }, array_keys($patch->getBlobs()));
 
@@ -380,7 +380,7 @@ class RecipePatcherTest extends TestCase
                 [
                     $dotEnvClean['hash'] => $dotEnvClean['blob'],
                     $packageJsonConflict['hash'] => $packageJsonConflict['blob'],
-                    $webpackEncoreAdded['hash'] => $webpackEncoreAdded['blob'],
+                    // no blob needed for the new webpack_encore.yaml file
                     $securityRemoved['hash'] => $securityRemoved['blob'],
                 ],
                 [

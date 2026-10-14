@@ -57,9 +57,9 @@ class CopyFromPackageConfiguratorTest extends TestCase
         $lock = $this->createStub(Lock::class);
 
         $ioCalls = [];
-        $io = $this->createStub(IOInterface::class);
+        $io = $this->createMock(IOInterface::class);
         $io->method('writeError')->willReturnCallback(static function (array $lines) use (&$ioCalls) { $ioCalls[] = $lines; });
-        $io->method('askConfirmation')->with('File "build/public/file" has uncommitted changes, overwrite? [y/N] ')->willReturn(true);
+        $io->expects($this->once())->method('askConfirmation')->with('File "build/public/file" has uncommitted changes, overwrite? [y/N] ')->willReturn(true);
 
         $this->assertFileExists($this->targetFile);
         $this->createConfigurator($io)->configure(
