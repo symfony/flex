@@ -1,0 +1,13 @@
+---------------------------------------------------------------------------
+
+by Amoifr at 2026-10-03T11:53:13Z
+
+Hi @nicolas-grekas, nudging the small Flex series from this summer in one go: this one, #1098 (importmap entries removed on uninstall), #1099 (single-quoted dotenv values written as-is) and #1100 (a warning when a root constraint bypasses `extra.symfony.require`). Fabbot is the only red check on each, and it is advisory. Happy to squash, split or drop any of them.
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-10-29T13:09:46Z
+
+I changed the hint, because `composer install` doesn't run the synchronization again. Only update, require and remove do. `composer update --lock` runs it without changing any package.
+
+About deferring the network calls, importmap.php can't describe an entry that isn't resolved yet. This would need a new feature in AssetMapper first.
