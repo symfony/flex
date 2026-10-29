@@ -334,6 +334,35 @@ class PackageJsonSynchronizerTest extends TestCase
         );
     }
 
+    public function testSynchronizeWithNumericPackageName()
+    {
+        $this->scriptExecutor->expects($this->never())->method('execute');
+
+        file_put_contents($this->tempDir.'/package.json', '{
+   "devDependencies": {
+      "123": "^1.0"
+   }
+}');
+
+        $this->synchronizer->synchronize([
+            [
+                'name' => 'symfony/new-package',
+                'keywords' => ['symfony-ux'],
+            ],
+        ]);
+
+        $this->assertSame(
+            [
+                'devDependencies' => [
+                    '123' => '^1.0',
+                    '@hotcookies/bar' => '^1.1',
+                    '@symfony/new-package' => 'file:vendor/symfony/new-package/assets',
+                ],
+            ],
+            json_decode(file_get_contents($this->tempDir.'/package.json'), true)
+        );
+    }
+
     public function testSynchronizeAssetMapperNewPackage()
     {
         file_put_contents($this->tempDir.'/importmap.php', '<?php return [];');
