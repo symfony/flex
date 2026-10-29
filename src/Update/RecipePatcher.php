@@ -52,7 +52,9 @@ class RecipePatcher
                 continue;
             }
 
-            $this->execute(\sprintf('git rm %s', ProcessExecutor::escape($deletedFile)), $this->rootDir);
+            $this->execute(\sprintf('git rm --ignore-unmatch %s', ProcessExecutor::escape(':(literal)'.$deletedFile)), $this->rootDir);
+            // git rm leaves files that are not tracked
+            $this->filesystem->remove($this->rootDir.'/'.$deletedFile);
         }
 
         if ($nonRemovableFiles) {
@@ -78,7 +80,7 @@ class RecipePatcher
 
     public function generatePatch(array $originalFiles, array $newFiles): RecipePatch
     {
-        $ignoredFiles = $this->getIgnoredFiles(array_keys($originalFiles) + array_keys($newFiles));
+        $ignoredFiles = $this->getIgnoredFiles(array_keys($originalFiles + $newFiles));
 
         // null implies "file does not exist"
         $originalFiles = array_filter($originalFiles, function ($file, $fileName) use ($ignoredFiles) {

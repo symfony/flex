@@ -257,6 +257,53 @@ class RecipePatcherTest extends TestCase
         $this->assertStringContainsString("they were kept because you modified them. You might need to remove them manually:</warning>\n      - config/packages/workflow.yaml\n", $io->getOutput());
     }
 
+    public function testDeletedFileNotTrackedInAppIsRemoved()
+    {
+        (new Process(['git', 'init'], FLEX_TEST_DIR))->mustRun();
+        (new Process(['git', 'config', 'user.name', 'Unit test'], FLEX_TEST_DIR))->mustRun();
+        (new Process(['git', 'config', 'user.email', ''], FLEX_TEST_DIR))->mustRun();
+
+        file_put_contents(FLEX_TEST_DIR.'/tracked.yaml', '# tracked');
+        (new Process(['git', 'add', '-A'], FLEX_TEST_DIR))->mustRun();
+        (new Process(['git', 'commit', '-m', 'Committing original files'], FLEX_TEST_DIR))->mustRun();
+        file_put_contents(FLEX_TEST_DIR.'/untracked.yaml', '# untracked');
+
+        $patcher = new RecipePatcher(FLEX_TEST_DIR, $this->createStub(IOInterface::class), $this->createStub(Lock::class));
+
+        $patch = $patcher->generatePatch(['tracked.yaml' => '# tracked', 'untracked.yaml' => '# untracked'], []);
+        $this->assertSame(['tracked.yaml', 'untracked.yaml'], $patch->getDeletedFiles());
+
+        $this->assertTrue($patcher->applyPatch($patch));
+        $this->assertFileDoesNotExist(FLEX_TEST_DIR.'/tracked.yaml');
+        $this->assertFileDoesNotExist(FLEX_TEST_DIR.'/untracked.yaml');
+        $this->assertSame("D  tracked.yaml\n", (new Process(['git', 'status', '--porcelain'], FLEX_TEST_DIR))->mustRun()->getOutput());
+    }
+
+    public function testDeletedFileWithGlobCharactersInItsNameIsRemoved()
+    {
+        (new Process(['git', 'init'], FLEX_TEST_DIR))->mustRun();
+        (new Process(['git', 'config', 'user.name', 'Unit test'], FLEX_TEST_DIR))->mustRun();
+        (new Process(['git', 'config', 'user.email', ''], FLEX_TEST_DIR))->mustRun();
+
+        @mkdir(FLEX_TEST_DIR.'/config', 0777, true);
+        file_put_contents(FLEX_TEST_DIR.'/config/a.yaml', '# a');
+        file_put_contents(FLEX_TEST_DIR.'/config/b.yaml', '# b');
+        (new Process(['git', 'add', '-A'], FLEX_TEST_DIR))->mustRun();
+        (new Process(['git', 'commit', '-m', 'Committing original files'], FLEX_TEST_DIR))->mustRun();
+        file_put_contents(FLEX_TEST_DIR.'/config/[ab].yaml', '# untracked');
+
+        $patcher = new RecipePatcher(FLEX_TEST_DIR, $this->createStub(IOInterface::class), $this->createStub(Lock::class));
+
+        $patch = $patcher->generatePatch(['config/[ab].yaml' => '# untracked'], []);
+        $this->assertSame(['config/[ab].yaml'], $patch->getDeletedFiles());
+
+        $this->assertTrue($patcher->applyPatch($patch));
+        $this->assertFileDoesNotExist(FLEX_TEST_DIR.'/config/[ab].yaml');
+        $this->assertFileExists(FLEX_TEST_DIR.'/config/a.yaml');
+        $this->assertFileExists(FLEX_TEST_DIR.'/config/b.yaml');
+        $this->assertSame('', (new Process(['git', 'status', '--porcelain'], FLEX_TEST_DIR))->mustRun()->getOutput());
+    }
+
     #[DataProvider('provideApplyPatchCases')]
     public function testApplyPatch(array $filesCurrentlyInApp, RecipePatch $recipePatch, array $expectedFiles, bool $expectedConflicts)
     {
@@ -904,5 +951,21 @@ class RecipePatcherTest extends TestCase
         }
 
         return self::$filesystem;
+    }
+
+    public function testGeneratePatchSkipsNewFilesIgnoredByTheProject()
+    {
+        file_put_contents(FLEX_TEST_DIR.'/.gitignore', "/ignored.txt\n");
+        file_put_contents(FLEX_TEST_DIR.'/file1.txt', 'Original contents');
+        (new Process(['git', 'init'], FLEX_TEST_DIR))->mustRun();
+        (new Process(['git', 'config', 'user.name', '"Flex Updater"'], FLEX_TEST_DIR))->mustRun();
+        (new Process(['git', 'config', 'user.email', '""'], FLEX_TEST_DIR))->mustRun();
+        (new Process(['git', 'add', '-A'], FLEX_TEST_DIR))->mustRun();
+        (new Process(['git', 'commit', '-m', '"original files"'], FLEX_TEST_DIR))->mustRun();
+
+        $patcher = new RecipePatcher(FLEX_TEST_DIR, $this->createStub(IOInterface::class), $this->createStub(Lock::class));
+
+        $patch = $patcher->generatePatch(['file1.txt' => 'Original contents'], ['ignored.txt' => 'New contents', 'file1.txt' => 'Original contents']);
+        $this->assertSame('', $patch->getPatch());
     }
 }
