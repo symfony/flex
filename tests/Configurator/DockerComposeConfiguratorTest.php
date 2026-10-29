@@ -12,6 +12,7 @@
 namespace Symfony\Flex\Tests\Configurator;
 
 use Composer\Composer;
+use Composer\IO\BufferIO;
 use Composer\IO\IOInterface;
 use Composer\Package\RootPackage;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -1044,6 +1045,39 @@ class DockerComposeConfiguratorTest extends TestCase
             ###< doctrine/doctrine-bundle ###
 
             EOF], $recipeUpdate->getNewFiles());
+        $this->assertStringEqualsFile(FLEX_TEST_DIR.'/compose.yaml', $contents);
+    }
+
+    public function testUpdateWithFileInParentDir()
+    {
+        $io = new BufferIO();
+        $this->configurator = new DockerComposeConfigurator(
+            $this->composer,
+            $io,
+            new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR.'/child'])
+        );
+        $recipeUpdate = new RecipeUpdate($this->recipeDb, $this->recipeDb, $this->createStub(Lock::class), FLEX_TEST_DIR.'/child');
+
+        @mkdir(FLEX_TEST_DIR.'/child');
+        $contents = <<<EOF
+            services:
+            ###> doctrine/doctrine-bundle ###
+              database:
+                image: postgres:13-alpine
+            ###< doctrine/doctrine-bundle ###
+
+            EOF;
+        file_put_contents(FLEX_TEST_DIR.'/compose.yaml', $contents);
+
+        $this->configurator->update(
+            $recipeUpdate,
+            ['docker-compose.yml' => ['services' => ['database:', '  image: postgres:13-alpine']]],
+            ['docker-compose.yml' => ['services' => ['database:', '  image: postgres:16-alpine']]]
+        );
+
+        $this->assertSame([], $recipeUpdate->getOriginalFiles());
+        $this->assertSame([], $recipeUpdate->getNewFiles());
+        $this->assertStringContainsString('"'.FLEX_TEST_DIR.'/compose.yaml" is outside of the project directory and was not updated.', $io->getOutput());
         $this->assertStringEqualsFile(FLEX_TEST_DIR.'/compose.yaml', $contents);
     }
 

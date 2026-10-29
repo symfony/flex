@@ -89,13 +89,24 @@ class DockerComposeConfigurator extends AbstractConfigurator
             return;
         }
 
-        $recipeUpdate->addOriginalFiles(
-            $this->getContentsAfterApplyingRecipe($recipeUpdate->getRootDir(), $recipeUpdate->getOriginalRecipe(), $originalConfig, $newConfig, $recipeUpdate->getLock())
-        );
+        $originalFiles = $this->getContentsAfterApplyingRecipe($recipeUpdate->getRootDir(), $recipeUpdate->getOriginalRecipe(), $originalConfig, $newConfig, $recipeUpdate->getLock());
+        $newFiles = $this->getContentsAfterApplyingRecipe($recipeUpdate->getRootDir(), $recipeUpdate->getNewRecipe(), $newConfig, $originalConfig, $recipeUpdate->getLock());
 
-        $recipeUpdate->addNewFiles(
-            $this->getContentsAfterApplyingRecipe($recipeUpdate->getRootDir(), $recipeUpdate->getNewRecipe(), $newConfig, $originalConfig, $recipeUpdate->getLock())
-        );
+        // files outside of the project directory cannot be patched
+        foreach ($newFiles as $file => $contents) {
+            if (!$this->filesystem->isAbsolutePath($file)) {
+                continue;
+            }
+
+            if ($contents !== $originalFiles[$file]) {
+                $this->io->writeError(\sprintf('  <warning>"%s" is outside of the project directory and was not updated. You might need to adjust it manually.</warning>', $file));
+            }
+
+            unset($originalFiles[$file], $newFiles[$file]);
+        }
+
+        $recipeUpdate->addOriginalFiles($originalFiles);
+        $recipeUpdate->addNewFiles($newFiles);
     }
 
     public static function shouldConfigureDockerRecipe(Composer $composer, IOInterface $io, Recipe $recipe): bool
@@ -374,10 +385,9 @@ class DockerComposeConfigurator extends AbstractConfigurator
         $updatedContents = [];
         foreach ($files as $file) {
             $localPath = $file;
-            if (str_starts_with($file, $rootDir)) {
+            if (str_starts_with($file, $rootDir.'/') || str_starts_with($file, $rootDir.\DIRECTORY_SEPARATOR)) {
                 $localPath = substr($file, \strlen($rootDir) + 1);
             }
-            $localPath = ltrim($localPath, '/\\');
             $updatedContents[$localPath] = file_exists($file) ? file_get_contents($file) : null;
         }
 
