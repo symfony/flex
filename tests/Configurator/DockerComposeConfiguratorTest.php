@@ -615,6 +615,21 @@ class DockerComposeConfiguratorTest extends TestCase
         $this->assertStringEqualsFile($dockerComposeOverrideFile, self::ORIGINAL_CONTENT);
     }
 
+    public function testUnconfigureMultipleFilesWhenOneHasNoRecipeEntries()
+    {
+        $dockerComposeFile = FLEX_TEST_DIR.'/docker-compose.yml';
+        file_put_contents($dockerComposeFile, self::ORIGINAL_CONTENT);
+        $dockerComposeOverrideFile = FLEX_TEST_DIR.'/docker-compose.override.yml';
+        file_put_contents($dockerComposeOverrideFile, self::ORIGINAL_CONTENT);
+
+        $this->configurator->configure($this->recipeDb, self::CONFIG_DB_MULTIPLE_FILES, $this->lock);
+        file_put_contents($dockerComposeFile, self::ORIGINAL_CONTENT);
+
+        $this->configurator->unconfigure($this->recipeDb, self::CONFIG_DB_MULTIPLE_FILES, $this->lock);
+        $this->assertStringEqualsFile($dockerComposeFile, self::ORIGINAL_CONTENT);
+        $this->assertStringEqualsFile($dockerComposeOverrideFile, self::ORIGINAL_CONTENT);
+    }
+
     public function testConfigureEnvVar()
     {
         @mkdir(FLEX_TEST_DIR.'/child/');
