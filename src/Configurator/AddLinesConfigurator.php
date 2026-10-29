@@ -61,12 +61,18 @@ class AddLinesConfigurator extends AbstractConfigurator
             return !isset($item['requires']) || $this->isPackageInstalled($item['requires']);
         });
 
+        // add the lines to the contents that other configurators computed for the file, if any
+        $originalFiles = $this->getPatchedRecipeFiles($recipeUpdate->getOriginalRecipe(), $originalConfig, $recipeUpdate->getOriginalFiles());
+        $newFiles = $this->getPatchedRecipeFiles($recipeUpdate->getNewRecipe(), $newConfig, $recipeUpdate->getNewFiles());
+
+        // otherwise, patch the current contents of the file
+        $recipeFiles = $recipeUpdate->getOriginalFiles() + $recipeUpdate->getNewFiles();
+        $isAppFile = fn (array $patch) => !isset($patch['file']) || !\array_key_exists($this->getRelativePath($patch['file']), $recipeFiles);
+
         // reset the file content cache
         $this->fileContents = [];
-        $this->executeUnconfigure($recipeUpdate->getOriginalRecipe(), $originalConfig);
-        $this->executeConfigure($recipeUpdate->getNewRecipe(), $newConfig);
-        $newFiles = [];
-        $originalFiles = [];
+        $this->executeUnconfigure($recipeUpdate->getOriginalRecipe(), array_filter($originalConfig, $isAppFile));
+        $this->executeConfigure($recipeUpdate->getNewRecipe(), array_filter($newConfig, $isAppFile));
         foreach ($this->fileContents as $file => $contents) {
             // set the original file to the current contents
             $originalFiles[$this->relativize($file)] = file_get_contents($file);
@@ -99,7 +105,7 @@ class AddLinesConfigurator extends AbstractConfigurator
 
             $file = $this->path->concatenate([$this->options->get('root-dir'), $this->options->expandTargetDir($patch['file'])]);
             $warnIfMissing = isset($patch['warn_if_missing']) && $patch['warn_if_missing'];
-            if (!is_file($file)) {
+            if (!isset($this->fileContents[$file]) && !is_file($file)) {
                 $this->writeMissingLines(\sprintf('Could not add lines to file "%s" as it does not exist. Missing lines:', $this->relativize($file)), $content, $warnIfMissing);
 
                 continue;
@@ -156,6 +162,28 @@ class AddLinesConfigurator extends AbstractConfigurator
             $newContents = $this->getUnPatchedContents($file, $value);
             $this->fileContents[$file] = $newContents;
         }
+    }
+
+    private function getPatchedRecipeFiles(Recipe $recipe, array $config, array $files): array
+    {
+        $this->fileContents = [];
+        foreach ($config as $i => $patch) {
+            if (!isset($patch['file']) || !isset($files[$file = $this->getRelativePath($patch['file'])])) {
+                unset($config[$i]);
+
+                continue;
+            }
+
+            $this->fileContents[$this->path->concatenate([$this->options->get('root-dir'), $file])] = $files[$file];
+        }
+
+        $this->executeConfigure($recipe, $config);
+        $patchedFiles = [];
+        foreach ($this->fileContents as $file => $contents) {
+            $patchedFiles[$this->relativize($file)] = $contents;
+        }
+
+        return $patchedFiles;
     }
 
     private function getPatchedContents(string $file, string $value, string $position, ?string $target, bool $warnIfMissing): string
@@ -257,6 +285,11 @@ class AddLinesConfigurator extends AbstractConfigurator
         }
 
         return ltrim($path, '/\\');
+    }
+
+    private function getRelativePath(string $file): string
+    {
+        return $this->relativize($this->path->concatenate([$this->options->get('root-dir'), $this->options->expandTargetDir($file)]));
     }
 
     private function readFile(string $file): string
