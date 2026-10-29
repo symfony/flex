@@ -42,7 +42,7 @@ class PackageFilter
         $this->symfonyConstraints = '' !== $symfonyRequire ? $this->versionParser->parseConstraints($this->symfonyRequire) : null;
 
         if ($this->symfonyConstraints instanceof Constraint && '==' === $this->symfonyConstraints->getOperator() && preg_match('/^[=v\s]*+(\d++(?:\.\d++)?)/', $symfonyRequire, $m)) {
-            $io->writeError(\sprintf('<warning>SYMFONY_REQUIRE="%s" is an exact version constraint. Did you mean "%s.*" or "^%2$s"?</>', $symfonyRequire, $m[1]));
+            $io->writeError(\sprintf('<warning>SYMFONY_REQUIRE="%s" is an exact version constraint. Did you mean "^%s"?</>', $symfonyRequire, $m[1]));
         }
 
         $this->downloader = $downloader;

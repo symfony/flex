@@ -253,9 +253,9 @@ class PackageFilterTest extends TestCase
 
     public static function provideExactSymfonyRequire(): iterable
     {
-        yield 'major' => ['7', '"7.*" or "^7"'];
-        yield 'patch' => ['7.4.1', '"7.4.*" or "^7.4"'];
-        yield 'equal operator' => ['=7.4', '"7.4.*" or "^7.4"'];
+        yield 'major' => ['7', '"^7"'];
+        yield 'patch' => ['7.4.1', '"^7.4"'];
+        yield 'equal operator' => ['=7.4', '"^7.4"'];
         yield 'minor' => ['7.4', null];
         yield 'x-range' => ['7.4.x', null];
         yield 'wildcard' => ['7.4.*', null];
