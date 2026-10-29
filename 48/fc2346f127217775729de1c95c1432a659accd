@@ -1,0 +1,5 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-10-29T13:09:48Z
+
+I skipped the warning when the root constraint asks for unstable versions, like `dev-main` or `^8.2@beta`. That's the case #713 was made for, so a warning there would be noise.
