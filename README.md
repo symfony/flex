@@ -6,5 +6,5 @@
 simple micro-style projects to the more complex ones with dozens of
 dependencies.
 
-[1]: https://symfony.com/doc/current/setup/flex.html
+[1]: https://symfony.com/doc/current/setup.html#symfony-flex
 [2]: https://symfony.com
