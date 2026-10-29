@@ -300,6 +300,26 @@ class CopyFromRecipeConfiguratorTest extends TestCase
         $this->assertSame('after', $recipeUpdate->getNewFiles()['config/packages/framework.yaml']);
     }
 
+    public function testUpdateExpandsPlaceholdersInContents()
+    {
+        $configurator = $this->createConfigurator($this->createStub(IOInterface::class));
+
+        $originalRecipe = $this->createStub(Recipe::class);
+        $originalRecipe->method('getFiles')
+            ->willReturn(['config/packages/test.yaml' => ['contents' => "dir: '%CONFIG_DIR%/before'", 'executable' => false]]);
+
+        $newRecipe = $this->createStub(Recipe::class);
+        $newRecipe->method('getFiles')
+            ->willReturn(['config/packages/test.yaml' => ['contents' => "dir: '%CONFIG_DIR%/after'", 'executable' => false]]);
+
+        $recipeUpdate = new RecipeUpdate($originalRecipe, $newRecipe, $this->createStub(Lock::class), FLEX_TEST_DIR);
+
+        $configurator->update($recipeUpdate, [], []);
+
+        $this->assertSame(['config/packages/test.yaml' => "dir: 'config/before'"], $recipeUpdate->getOriginalFiles());
+        $this->assertSame(['config/packages/test.yaml' => "dir: 'config/after'"], $recipeUpdate->getNewFiles());
+    }
+
     protected function setUp(): void
     {
         $this->sourceDirectory = FLEX_TEST_DIR.'/source';

@@ -44,13 +44,13 @@ class CopyFromRecipeConfigurator extends AbstractConfigurator
     {
         foreach ($recipeUpdate->getOriginalRecipe()->getFiles() as $filename => $data) {
             $filename = $this->resolveTargetFolder($filename, $originalConfig);
-            $recipeUpdate->setOriginalFile($filename, $data['contents']);
+            $recipeUpdate->setOriginalFile($filename, $this->options->expandTargetDir($data['contents']));
         }
 
         $files = [];
         foreach ($recipeUpdate->getNewRecipe()->getFiles() as $filename => $data) {
             $filename = $this->resolveTargetFolder($filename, $newConfig);
-            $recipeUpdate->setNewFile($filename, $data['contents']);
+            $recipeUpdate->setNewFile($filename, $this->options->expandTargetDir($data['contents']));
 
             $files[] = $this->getLocalFilePath($recipeUpdate->getRootDir(), $filename);
         }

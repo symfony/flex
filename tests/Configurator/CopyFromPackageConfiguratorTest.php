@@ -20,6 +20,7 @@ use Symfony\Flex\Configurator\CopyFromPackageConfigurator;
 use Symfony\Flex\Lock;
 use Symfony\Flex\Options;
 use Symfony\Flex\Recipe;
+use Symfony\Flex\Update\RecipeUpdate;
 
 class CopyFromPackageConfiguratorTest extends TestCase
 {
@@ -147,6 +148,22 @@ class CopyFromPackageConfiguratorTest extends TestCase
         $io->expects($this->once())->method('writeError')->with(['    Removing files from package']);
         $lock = $this->createStub(Lock::class);
         $this->createConfigurator($io)->unconfigure($this->recipe, [$this->sourceFileRelativePath => $this->targetFileRelativePath], $lock);
+    }
+
+    public function testUpdateExpandsPlaceholdersInNewFiles()
+    {
+        if (!is_dir($this->sourceDirectory)) {
+            mkdir($this->sourceDirectory, 0777, true);
+        }
+        file_put_contents($this->sourceFile, "dir: '%PUBLIC_DIR%/build'");
+
+        $io = $this->createStub(IOInterface::class);
+        $configurator = new CopyFromPackageConfigurator($this->composer, $io, new Options(['root-dir' => FLEX_TEST_DIR, 'public-dir' => 'public'], $io));
+        $recipeUpdate = new RecipeUpdate($this->recipe, $this->recipe, $this->createStub(Lock::class), FLEX_TEST_DIR);
+
+        $configurator->update($recipeUpdate, [], [$this->sourceFileRelativePath => $this->targetFileRelativePath]);
+
+        $this->assertSame([$this->targetFileRelativePath => "dir: 'public/build'"], $recipeUpdate->getNewFiles());
     }
 
     protected function setUp(): void
