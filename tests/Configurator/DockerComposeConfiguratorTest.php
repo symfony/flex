@@ -942,4 +942,54 @@ class DockerComposeConfiguratorTest extends TestCase
             new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
         );
     }
+
+    #[DataProvider('provideUpdateWithNormalizedFileNameCases')]
+    public function testUpdateWithNormalizedFileName(array $originalConfig, array $newConfig)
+    {
+        $recipeUpdate = new RecipeUpdate($this->recipeDb, $this->recipeDb, $this->createStub(Lock::class), FLEX_TEST_DIR);
+
+        $contents = <<<EOF
+            services:
+            ###> doctrine/doctrine-bundle ###
+              database:
+                image: postgres:13-alpine
+            ###< doctrine/doctrine-bundle ###
+
+            EOF;
+        file_put_contents(FLEX_TEST_DIR.'/compose.yaml', $contents);
+
+        $this->configurator->update($recipeUpdate, $originalConfig, $newConfig);
+
+        $this->assertSame(['compose.yaml' => $contents], $recipeUpdate->getOriginalFiles());
+        $this->assertSame(['compose.yaml' => str_replace('13', '16', $contents)], $recipeUpdate->getNewFiles());
+        $this->assertStringEqualsFile(FLEX_TEST_DIR.'/compose.yaml', $contents);
+    }
+
+    public function testUpdateWithoutDockerComposeFile()
+    {
+        $recipeUpdate = new RecipeUpdate($this->recipeDb, $this->recipeDb, $this->createStub(Lock::class), FLEX_TEST_DIR);
+
+        $this->configurator->update(
+            $recipeUpdate,
+            ['docker-compose.yml' => ['services' => ['database:', '  image: postgres:13-alpine']]],
+            ['docker-compose.yml' => ['services' => ['database:', '  image: postgres:16-alpine']]]
+        );
+
+        $this->assertSame(['compose.yaml'], array_keys($recipeUpdate->getOriginalFiles()));
+        $this->assertSame(['compose.yaml'], array_keys($recipeUpdate->getNewFiles()));
+        $this->assertFileDoesNotExist(FLEX_TEST_DIR.'/compose.yaml');
+    }
+
+    public static function provideUpdateWithNormalizedFileNameCases(): iterable
+    {
+        yield 'legacy file name' => [
+            ['docker-compose.yml' => ['services' => ['database:', '  image: postgres:13-alpine']]],
+            ['docker-compose.yml' => ['services' => ['database:', '  image: postgres:16-alpine']]],
+        ];
+
+        yield 'short syntax' => [
+            ['services' => ['database:', '  image: postgres:13-alpine']],
+            ['services' => ['database:', '  image: postgres:16-alpine']],
+        ];
+    }
 }
