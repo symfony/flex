@@ -266,6 +266,10 @@ class RecipePatcher
         try {
             $this->execute('git update-index --refresh', $this->rootDir);
 
+            if ($untrackedFiles = $this->getUntrackedFiles()) {
+                throw new UntrackedFilesException(\sprintf('The recipe update cannot be applied because the following files are not tracked by git: "%s". Commit them or move them away, then try again.', implode('", "', $untrackedFiles)));
+            }
+
             $output = '';
             $statusCode = $this->processExecutor->execute('git apply "_flex_recipe_update.patch" -3', $output, $this->rootDir);
 
@@ -274,12 +278,13 @@ class RecipePatcher
                 return true;
             }
 
-            if (str_contains($this->processExecutor->getErrorOutput(), 'with conflicts')) {
-                // successful with conflicts
+            // git applies all or nothing, so unmerged entries mean that the patch was applied with conflicts
+            $errorOutput = $this->processExecutor->getErrorOutput();
+            if ('' !== trim($this->execute('git ls-files --unmerged', $this->rootDir))) {
                 return false;
             }
 
-            throw new \LogicException('Error applying the patch: '.$this->processExecutor->getErrorOutput());
+            throw new \LogicException('Error applying the patch: '.$errorOutput);
         } finally {
             unlink($patchPath);
             // clean up any temporary blobs
@@ -287,6 +292,29 @@ class RecipePatcher
                 unlink($filename);
             }
         }
+    }
+
+    /**
+     * Returns the files of the patch that exist in the app but are not in the git index.
+     *
+     * "git apply -3" cannot patch or create these files, and then applies nothing.
+     */
+    private function getUntrackedFiles(): array
+    {
+        $pathspecs = [];
+        $numstat = $this->execute('git apply --numstat -z "_flex_recipe_update.patch"', $this->rootDir);
+        foreach (explode("\0", $numstat) as $line) {
+            // paths are relative to the root of the repository
+            if (preg_match('/^[-\d]+\t[-\d]+\t(.+)/s', $line, $m)) {
+                $pathspecs[] = ProcessExecutor::escape(':(top,literal)'.$m[1]);
+            }
+        }
+
+        if (!$pathspecs) {
+            return [];
+        }
+
+        return array_values(array_filter(explode("\0", $this->execute('git ls-files --others -z -- '.implode(' ', $pathspecs), $this->rootDir))));
     }
 
     private function getIgnoredFiles(array $fileNames): array

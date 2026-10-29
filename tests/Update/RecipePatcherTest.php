@@ -20,6 +20,7 @@ use Symfony\Component\Process\Process;
 use Symfony\Flex\Lock;
 use Symfony\Flex\Update\RecipePatch;
 use Symfony\Flex\Update\RecipePatcher;
+use Symfony\Flex\Update\UntrackedFilesException;
 
 class RecipePatcherTest extends TestCase
 {
@@ -299,6 +300,71 @@ class RecipePatcherTest extends TestCase
         $this->assertFileExists($dir.'/security.yaml');
         $this->assertSame('# contents', file_get_contents($dir.'/security.yaml'));
         $this->assertFalse($hadConflicts);
+    }
+
+    #[DataProvider('provideProjectRootPaths')]
+    public function testApplyPatchWithUntrackedFiles(string $projectRootPath)
+    {
+        $files = self::getFilesForPatching($projectRootPath);
+        $projectPath = FLEX_TEST_DIR.'/'.$projectRootPath;
+        (new Process(['git', 'init'], FLEX_TEST_DIR))->mustRun();
+        (new Process(['git', 'config', 'user.name', 'Unit test'], FLEX_TEST_DIR))->mustRun();
+        (new Process(['git', 'config', 'user.email', ''], FLEX_TEST_DIR))->mustRun();
+
+        @mkdir($projectPath.'config/packages', 0777, true);
+        file_put_contents($projectPath.'package.json', $files['package_json_conflict']['in_app']);
+        (new Process(['git', 'add', '-A'], FLEX_TEST_DIR))->mustRun();
+        (new Process(['git', 'commit', '-m', 'Committing original files'], FLEX_TEST_DIR))->mustRun();
+        file_put_contents($projectPath.'config/packages/webpack_encore.yaml', '# untracked');
+
+        $patcher = new RecipePatcher($projectPath, $this->createStub(IOInterface::class), $this->createStub(Lock::class));
+
+        $this->expectException(UntrackedFilesException::class);
+        $this->expectExceptionMessage('the following files are not tracked by git: "config/packages/webpack_encore.yaml"');
+
+        $patcher->applyPatch(new RecipePatch(
+            $files['package_json_conflict']['patch']."\n".$files['webpack_encore_added']['patch'],
+            [$files['package_json_conflict']['hash'] => $files['package_json_conflict']['blob']],
+            []
+        ));
+    }
+
+    public function testApplyPatchFailsWhenAFilePatchDoesNotApply()
+    {
+        $files = self::getFilesForPatching();
+        (new Process(['git', 'init'], FLEX_TEST_DIR))->mustRun();
+        (new Process(['git', 'config', 'user.name', 'Unit test'], FLEX_TEST_DIR))->mustRun();
+        (new Process(['git', 'config', 'user.email', ''], FLEX_TEST_DIR))->mustRun();
+
+        // .env is missing from the app, package.json has conflicts
+        file_put_contents(FLEX_TEST_DIR.'/package.json', $files['package_json_conflict']['in_app']);
+        (new Process(['git', 'add', '-A'], FLEX_TEST_DIR))->mustRun();
+        (new Process(['git', 'commit', '-m', 'Committing original files'], FLEX_TEST_DIR))->mustRun();
+
+        $patcher = new RecipePatcher(FLEX_TEST_DIR, $this->createStub(IOInterface::class), $this->createStub(Lock::class));
+
+        try {
+            $patcher->applyPatch(new RecipePatch(
+                $files['package_json_conflict']['patch']."\n".$files['dot_env_clean']['patch'],
+                [
+                    $files['package_json_conflict']['hash'] => $files['package_json_conflict']['blob'],
+                    $files['dot_env_clean']['hash'] => $files['dot_env_clean']['blob'],
+                ],
+                []
+            ));
+            $this->fail('An exception should have been thrown.');
+        } catch (\LogicException $e) {
+            $this->assertStringStartsWith('Error applying the patch: ', $e->getMessage());
+        }
+
+        $this->assertSame($files['package_json_conflict']['in_app'], file_get_contents(FLEX_TEST_DIR.'/package.json'));
+        $this->assertSame('', (new Process(['git', 'status', '--porcelain'], FLEX_TEST_DIR))->mustRun()->getOutput());
+    }
+
+    public static function provideProjectRootPaths(): iterable
+    {
+        yield 'root' => [''];
+        yield 'subfolder' => ['ProjectA/'];
     }
 
     public static function provideApplyPatchCases(): iterable

@@ -75,6 +75,21 @@ class UpdateRecipesCommandTest extends TestCase
         $this->assertStringNotContainsString('c6d02bdfba9da13c22157520e32a602dbee8a75c', file_get_contents(FLEX_TEST_DIR.'/symfony.lock'));
     }
 
+    public function testCommandFailsWhenFilesAreNotTracked()
+    {
+        $this->prepareRecipeUpdateFixture();
+        (new Process(['git', 'rm', '--cached', 'bin/console'], FLEX_TEST_DIR))->mustRun();
+        (new Process(['git', 'commit', '-m', 'untrack bin/console'], FLEX_TEST_DIR))->mustRun();
+
+        $command = $this->createCommandUpdateRecipes();
+        $command->execute(['package' => 'symfony/console']);
+
+        $this->assertSame(1, $command->getStatusCode());
+        $this->assertStringContainsString('the following files are not tracked by git: "bin/console"', $this->io->getOutput());
+        $this->assertStringNotContainsString('recipes:install', $this->io->getOutput());
+        $this->assertStringContainsString('vendor/autoload.php', file_get_contents(FLEX_TEST_DIR.'/bin/console'));
+    }
+
     public function testCommandUpdatesRecipeWithNoChangelog()
     {
         $this->prepareRecipeUpdateFixture();
