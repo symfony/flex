@@ -132,6 +132,39 @@ EOF
         $this->assertStringEqualsFile($makefile, $contentForce);
     }
 
+    public function testConfigureForceWithDollarsAndBackslashes()
+    {
+        $configurator = new MakefileConfigurator(
+            $this->createStub(Composer::class),
+            $this->createStub(IOInterface::class),
+            new Options(['root-dir' => FLEX_TEST_DIR])
+        );
+
+        $recipe = $this->createStub(Recipe::class);
+        $recipe->method('getName')->willReturn('FooBundle');
+
+        $makefile = FLEX_TEST_DIR.'/Makefile';
+        file_put_contents($makefile, "# preexisting content\n");
+
+        $definitions = [
+            'targets:',
+            "\t@awk -F: '/^[a-z]+:/ {print \$\$1}' Makefile | tr '\\\\' /",
+        ];
+        $contents = "# preexisting content\n\n###> FooBundle ###\n".implode("\n", $definitions)."\n###< FooBundle ###\n";
+
+        $lock = $this->createStub(Lock::class);
+
+        $configurator->configure($recipe, $definitions, $lock);
+        $this->assertStringEqualsFile($makefile, $contents);
+
+        $configurator->configure($recipe, $definitions, $lock, [
+            'force' => true,
+        ]);
+        $this->assertStringEqualsFile($makefile, $contents);
+
+        @unlink($makefile);
+    }
+
     public function testUpdate()
     {
         $configurator = new MakefileConfigurator(

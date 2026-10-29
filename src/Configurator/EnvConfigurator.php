@@ -92,6 +92,13 @@ class EnvConfigurator extends AbstractConfigurator
                     continue;
                 }
 
+                if ($value === $existingValue) {
+                    // the existing value is already escaped
+                    $data .= "$key=$value\n";
+
+                    continue;
+                }
+
                 $value = $this->options->expandTargetDir($value);
                 if (false !== strpbrk($value, " \t\n&!\"")) {
                     $value = '"'.str_replace(['\\', '"', "\t", "\n"], ['\\\\', '\\"', '\t', '\n'], $value).'"';
@@ -120,7 +127,8 @@ class EnvConfigurator extends AbstractConfigurator
 
             $data = '';
             foreach ($vars as $key => $value) {
-                $value = $this->evaluateValue($value);
+                $existingValue = $update ? $this->findExistingPhpUnitValue($key, $phpunit, $recipe) : null;
+                $value = $this->evaluateValue($value, $existingValue);
                 if ('#' === $key[0]) {
                     if (is_numeric(substr($key, 1))) {
                         $doc = new \DOMDocument();
@@ -145,7 +153,7 @@ class EnvConfigurator extends AbstractConfigurator
             $data = $this->markXmlData($recipe, $data);
 
             if (!$this->updateData($phpunit, $data)) {
-                file_put_contents($phpunit, preg_replace('{^(\s+</php>)}m', $data.'$1', file_get_contents($phpunit)));
+                file_put_contents($phpunit, preg_replace_callback('{^\s+</php>}m', static fn ($m) => $data.$m[0], file_get_contents($phpunit)));
             }
         }
     }
@@ -295,5 +303,20 @@ class EnvConfigurator extends AbstractConfigurator
         }
 
         return null;
+    }
+
+    /**
+     * Attempts to find the existing value of an environment variable in a phpunit.xml file.
+     */
+    private function findExistingPhpUnitValue(string $var, string $filename, Recipe $recipe): ?string
+    {
+        $section = \sprintf('{<!-- ###\+ %1$s ### -->.*?<!-- ###- %1$s ### -->}s', preg_quote($recipe->getName()));
+        $env = '#' === $var[0] ? '<!-- env name="'.substr($var, 1) : '<env name="'.$var;
+
+        if (!preg_match($section, file_get_contents($filename), $matches) || !preg_match('{^\s*'.preg_quote($env).'" value="([^"]*)"}m', $matches[0], $matches)) {
+            return null;
+        }
+
+        return html_entity_decode($matches[1], \ENT_QUOTES | \ENT_XML1);
     }
 }
