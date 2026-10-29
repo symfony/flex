@@ -31,6 +31,7 @@ use Symfony\Flex\Lock;
 use Symfony\Flex\Recipe;
 use Symfony\Flex\Update\RecipePatcher;
 use Symfony\Flex\Update\RecipeUpdate;
+use Symfony\Flex\Update\UntrackedFilesException;
 
 class UpdateRecipesCommand extends BaseCommand
 {
@@ -165,10 +166,15 @@ class UpdateRecipesCommand extends BaseCommand
             $io->writeError([
                 '<bg=red;fg=white>There was an error applying the recipe update patch</>',
                 $throwable->getMessage(),
-                '',
-                'Update the recipe by re-installing the latest version with:',
-                \sprintf('  <info>composer recipes:install %s --force -v</info>', $packageName),
             ]);
+
+            if (!$throwable instanceof UntrackedFilesException) {
+                $io->writeError([
+                    '',
+                    'Update the recipe by re-installing the latest version with:',
+                    \sprintf('  <info>composer recipes:install %s --force -v</info>', $packageName),
+                ]);
+            }
 
             return 1;
         }
