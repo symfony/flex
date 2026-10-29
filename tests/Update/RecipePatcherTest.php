@@ -11,6 +11,7 @@
 
 namespace Symfony\Flex\Tests\Update;
 
+use Composer\IO\BufferIO;
 use Composer\IO\IOInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -37,10 +38,7 @@ class RecipePatcherTest extends TestCase
         self::getFilesystem()->mkdir(FLEX_TEST_DIR);
         // original files need to be present to avoid patcher thinking they were deleting and skipping patch
         foreach ($originalFiles as $file => $contents) {
-            touch(FLEX_TEST_DIR.'/'.$file);
-            if ('.gitignore' === $file) {
-                file_put_contents(FLEX_TEST_DIR.'/'.$file, $contents);
-            }
+            file_put_contents(FLEX_TEST_DIR.'/'.$file, $contents ?? '');
         }
 
         // make sure the test directory is a git repo
@@ -193,6 +191,48 @@ class RecipePatcherTest extends TestCase
         // try to update a file that does not exist in the project
         $patch = $patcher->generatePatch(['.env' => 'original contents'], ['.env' => 'new contents']);
         $this->assertSame('', $patch->getPatch());
+    }
+
+    public function testDeletedFileModifiedInAppIsKept()
+    {
+        (new Process(['git', 'init'], FLEX_TEST_DIR))->mustRun();
+        (new Process(['git', 'config', 'user.name', 'Unit test'], FLEX_TEST_DIR))->mustRun();
+        (new Process(['git', 'config', 'user.email', ''], FLEX_TEST_DIR))->mustRun();
+
+        $dir = FLEX_TEST_DIR.'/config/packages';
+        @mkdir($dir, 0777, true);
+        $modifiedContents = <<<YAML
+            framework:
+                workflows:
+                    blog_publishing:
+                        places: [draft, published]
+            YAML;
+        file_put_contents($dir.'/workflow.yaml', $modifiedContents);
+        file_put_contents($dir.'/untouched.yaml', '# untouched');
+        file_put_contents($dir.'/crlf.yaml', "# untouched\r\n");
+        (new Process(['git', 'add', '-A'], FLEX_TEST_DIR))->mustRun();
+        (new Process(['git', 'commit', '-m', 'Committing original files'], FLEX_TEST_DIR))->mustRun();
+
+        $io = new BufferIO();
+        $patcher = new RecipePatcher(FLEX_TEST_DIR, $io, $this->createStub(Lock::class));
+
+        $patch = $patcher->generatePatch([
+            'config/packages/workflow.yaml' => "framework:\n    workflows: null\n",
+            'config/packages/untouched.yaml' => '# untouched',
+            'config/packages/crlf.yaml' => "# untouched\n",
+            'config/packages/missing.yaml' => '# missing',
+        ], []);
+
+        $this->assertSame('', $patch->getPatch());
+        $this->assertSame(['config/packages/untouched.yaml', 'config/packages/crlf.yaml'], $patch->getDeletedFiles());
+        $this->assertSame(['config/packages/workflow.yaml'], $patch->getKeptFiles());
+
+        $this->assertTrue($patcher->applyPatch($patch));
+        $this->assertSame($modifiedContents, file_get_contents($dir.'/workflow.yaml'));
+        $this->assertFileDoesNotExist($dir.'/untouched.yaml');
+        $this->assertFileDoesNotExist($dir.'/crlf.yaml');
+        $this->assertSame("D  config/packages/crlf.yaml\nD  config/packages/untouched.yaml\n", (new Process(['git', 'status', '--porcelain'], FLEX_TEST_DIR))->mustRun()->getOutput());
+        $this->assertStringContainsString("they were kept because you modified them. You might need to remove them manually:</warning>\n      - config/packages/workflow.yaml\n", $io->getOutput());
     }
 
     #[DataProvider('provideApplyPatchCases')]
@@ -451,7 +491,7 @@ class RecipePatcherTest extends TestCase
         $this->assertSame($files['dot_env_clean']['expected'], file_get_contents(FLEX_TEST_DIR.'/.env'));
         $this->assertSame($files['package_json_conflict']['expected'], file_get_contents(FLEX_TEST_DIR.'/package.json'));
         $this->assertSame($files['webpack_encore_added']['expected'], file_get_contents(FLEX_TEST_DIR.'/config/packages/webpack_encore.yaml'));
-        $this->assertFileDoesNotExist(FLEX_TEST_DIR.'/security.yaml');
+        $this->assertFileDoesNotExist(FLEX_TEST_DIR.'/config/packages/security.yaml');
     }
 
     public static function getIntegrationTests(): iterable

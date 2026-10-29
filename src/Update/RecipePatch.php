@@ -17,13 +17,15 @@ class RecipePatch
     private $blobs;
     private $deletedFiles;
     private $removedPatches;
+    private $keptFiles;
 
-    public function __construct(string $patch, array $blobs, array $deletedFiles, array $removedPatches = [])
+    public function __construct(string $patch, array $blobs, array $deletedFiles, array $removedPatches = [], array $keptFiles = [])
     {
         $this->patch = $patch;
         $this->blobs = $blobs;
         $this->deletedFiles = $deletedFiles;
         $this->removedPatches = $removedPatches;
+        $this->keptFiles = $keptFiles;
     }
 
     public function getPatch(): string
@@ -48,5 +50,14 @@ class RecipePatch
     public function getRemovedPatches(): array
     {
         return $this->removedPatches;
+    }
+
+    /**
+     * Files removed in the recipe that were not deleted because
+     * they have been modified in the user's project.
+     */
+    public function getKeptFiles(): array
+    {
+        return $this->keptFiles;
     }
 }
