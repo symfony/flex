@@ -663,6 +663,99 @@ class AddLinesConfiguratorTest extends TestCase
         ];
     }
 
+    public function testUpdateAddsLinesToFilesProvidedByOtherConfigurators()
+    {
+        $this->saveFile('phpunit.dist.xml', <<<XML
+            <phpunit>
+                <source>
+                </source>
+            </phpunit>
+            XML);
+        $this->saveFile('assets/bootstrap.js', <<<JS
+            import { startStimulusApp } from '@symfony/stimulus-bundle';
+            const app = startStimulusApp();
+            // register any custom controllers here
+            JS);
+        $this->saveFile('assets/app.js', <<<JS
+            import './bootstrap.js';
+            console.log('app.js');
+            JS);
+
+        $configurator = $this->createConfigurator();
+        $recipe = $this->createStub(Recipe::class);
+        $lock = $this->createStub(Lock::class);
+
+        $recipeUpdate = new RecipeUpdate($recipe, $recipe, $lock, FLEX_TEST_DIR);
+        $recipeUpdate->setOriginalFile('phpunit.dist.xml', <<<XML
+            <phpunit>
+                <source>
+                </source>
+            </phpunit>
+            XML);
+        $recipeUpdate->setNewFile('phpunit.dist.xml', <<<XML
+            <phpunit>
+                <source>
+                    <deprecationTrigger>
+                    </deprecationTrigger>
+                </source>
+            </phpunit>
+            XML);
+        $recipeUpdate->setOriginalFile('assets/bootstrap.js', '// register any custom controllers here');
+        $recipeUpdate->setNewFile('assets/stimulus_bootstrap.js', '// register any custom controllers here');
+
+        $configurator->update(
+            $recipeUpdate,
+            [
+                ['file' => 'assets/bootstrap.js', 'position' => 'top', 'content' => "import { startStimulusApp } from '@symfony/stimulus-bundle';\nconst app = startStimulusApp();"],
+                ['file' => 'assets/app.js', 'position' => 'top', 'content' => "import './bootstrap.js';"],
+            ],
+            [
+                ['file' => 'phpunit.dist.xml', 'position' => 'after_target', 'target' => '<deprecationTrigger>', 'content' => '            <method>trigger</method>'],
+                ['file' => 'assets/stimulus_bootstrap.js', 'position' => 'top', 'content' => "import { startStimulusApp } from '@symfony/stimulus-bundle';\nconst app = startStimulusApp();"],
+                ['file' => 'assets/app.js', 'position' => 'top', 'content' => "import './stimulus_bootstrap.js';"],
+            ]
+        );
+
+        $this->assertSame([
+            'phpunit.dist.xml' => <<<XML
+                <phpunit>
+                    <source>
+                    </source>
+                </phpunit>
+                XML,
+            'assets/bootstrap.js' => <<<JS
+                import { startStimulusApp } from '@symfony/stimulus-bundle';
+                const app = startStimulusApp();
+                // register any custom controllers here
+                JS,
+            'assets/app.js' => <<<JS
+                import './bootstrap.js';
+                console.log('app.js');
+                JS,
+        ], $recipeUpdate->getOriginalFiles());
+
+        $this->assertSame([
+            'phpunit.dist.xml' => <<<XML
+                <phpunit>
+                    <source>
+                        <deprecationTrigger>
+                            <method>trigger</method>
+                        </deprecationTrigger>
+                    </source>
+                </phpunit>
+                XML,
+            'assets/stimulus_bootstrap.js' => <<<JS
+                import { startStimulusApp } from '@symfony/stimulus-bundle';
+                const app = startStimulusApp();
+                // register any custom controllers here
+                JS,
+            'assets/app.js' => <<<JS
+                import './stimulus_bootstrap.js';
+                console.log('app.js');
+                JS,
+        ], $recipeUpdate->getNewFiles());
+    }
+
     private function runConfigure(array $config, ?Composer $composer = null)
     {
         $configurator = $this->createConfigurator($composer);
