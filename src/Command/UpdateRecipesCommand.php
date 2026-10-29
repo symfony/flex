@@ -263,7 +263,7 @@ class UpdateRecipesCommand extends BaseCommand
                 $changelog = $this->generateChangelog($originalRecipe);
             } catch (TransportException $e) {
                 // the GitHub API can be rate limited
-                $changelog = [\sprintf('  <warning>The CHANGELOG could not be calculated: %s</warning> Use the <comment>--no-changelog</comment> option to skip it.', $e->getMessage())];
+                $changelog = [\sprintf('  <warning>The CHANGELOG could not be calculated: %s.</warning> Use the <comment>--no-changelog</comment> option to skip it.', rtrim($e->getMessage(), '.'))];
             }
             $io->write("\r", false); // clear current line
             if ($changelog) {

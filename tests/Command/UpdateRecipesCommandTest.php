@@ -168,8 +168,8 @@ class UpdateRecipesCommandTest extends TestCase
 
         $this->assertSame(0, $tester->getStatusCode());
         $this->assertStringContainsString('Recipe updated', $io->getOutput());
-        $this->assertStringContainsString('The CHANGELOG could not be calculated: Could not authenticate against github.com', $io->getOutput());
-        $this->assertStringContainsString('--no-changelog', $io->getOutput());
+        $this->assertStringContainsString('The CHANGELOG could not be calculated: Could not authenticate against github.com.', $io->getOutput());
+        $this->assertStringContainsString('Use the --no-changelog option to skip it.', $io->getOutput());
         $this->assertSame("ref: new\n", file_get_contents(FLEX_TEST_DIR.'/config/acme.yaml'));
     }
 
