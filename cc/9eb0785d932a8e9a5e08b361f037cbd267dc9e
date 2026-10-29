@@ -1,0 +1,17 @@
+---------------------------------------------------------------------------
+
+by Kocal at 2026-07-23T19:46:59Z
+
+What if an other UX package require the same dependency from the package you are removing... does the dependency stay in importmap.php?
+
+---------------------------------------------------------------------------
+
+by Amoifr at 2026-07-24T06:03:23Z
+
+Good catch to check! Yes, it stays: the removal list is filtered against the entries still declared by the installed packages, so anything another package still needs is skipped. This exact scenario is covered by `testSynchronizeAssetMapperRemovesObsoleteImportMapEntries` (`@hotcake/foo` belongs to the removed package but is still declared by `symfony/new-package`, and it survives the uninstall). 😄
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-10-29T15:31:41Z
+
+PR updated. I made Flex ignore uninstalls done with `--no-dev`, like it already does for recipes. Otherwise, `composer update --no-dev` would remove the entries of UX packages listed in require-dev. A failing `importmap:remove` now displays a warning instead of stopping Composer before symfony.lock is written.
