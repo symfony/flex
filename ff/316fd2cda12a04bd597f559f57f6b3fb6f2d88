@@ -1,0 +1,5 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-10-29T13:09:42Z
+
+I made the comparison ignore line endings. Without this, a checkout with `core.autocrlf=true`, the default of Git for Windows, would report every removed file as modified.
