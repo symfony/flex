@@ -63,11 +63,11 @@ class PackageJsonSynchronizer
             return false;
         }
 
-        $didChangePackageJson = $this->removeObsoletePackageJsonLinks();
+        $phpPackages = $this->normalizePhpPackages($phpPackages);
+        $didChangePackageJson = $this->removeObsoletePackageJsonLinks($phpPackages);
 
         $dependencies = [];
 
-        $phpPackages = $this->normalizePhpPackages($phpPackages);
         foreach ($phpPackages as $phpPackage) {
             foreach ($this->resolvePackageJsonDependencies($phpPackage) as $dependency => $constraint) {
                 $dependencies[$dependency][$phpPackage['name']] = $constraint;
@@ -114,9 +114,16 @@ class PackageJsonSynchronizer
         $this->updateControllersJsonFile($phpPackages);
     }
 
-    private function removeObsoletePackageJsonLinks(): bool
+    private function removeObsoletePackageJsonLinks(array $phpPackages): bool
     {
         $didChangePackageJson = false;
+
+        $notInstalledPackages = [];
+        foreach ($phpPackages as $phpPackage) {
+            if (!$this->isInstalled($phpPackage)) {
+                $notInstalledPackages['@'.$phpPackage['name']] = true;
+            }
+        }
 
         $manipulator = new JsonManipulator(file_get_contents($this->rootDir.'/package.json'));
         $content = json_decode($manipulator->getContents(), true);
@@ -129,7 +136,7 @@ class PackageJsonSynchronizer
                 if (!str_starts_with($name, '@') || !str_starts_with($version, 'file:'.$this->vendorDir.'/') || !str_contains($version, '/assets')) {
                     continue;
                 }
-                if (file_exists($this->rootDir.'/'.substr($version, 5).'/package.json')) {
+                if (file_exists($this->rootDir.'/'.substr($version, 5).'/package.json') || isset($notInstalledPackages[$name])) {
                     continue;
                 }
 
@@ -392,10 +399,14 @@ class PackageJsonSynchronizer
         ];
 
         foreach ($phpPackages as $phpPackage) {
+            $name = '@'.$phpPackage['name'];
             if (!$packageJson = $this->resolvePackageJson($phpPackage)) {
+                if (isset($previousControllersJson['controllers'][$name]) && !$this->isInstalled($phpPackage)) {
+                    $newControllersJson['controllers'][$name] = $previousControllersJson['controllers'][$name];
+                }
+
                 continue;
             }
-            $name = '@'.$phpPackage['name'];
 
             foreach ($packageJson->read()['symfony']['controllers'] ?? [] as $controllerName => $defaultConfig) {
                 // If the package has just been added (no config), add the default config provided by the package
@@ -440,6 +451,14 @@ class PackageJsonSynchronizer
         }
 
         file_put_contents($controllersJsonPath, json_encode($newControllersJson, \JSON_PRETTY_PRINT | \JSON_UNESCAPED_SLASHES)."\n");
+    }
+
+    /**
+     * Packages can be locked but not installed, like the ones from require-dev when using --no-dev.
+     */
+    private function isInstalled(array $phpPackage): bool
+    {
+        return is_dir($this->rootDir.'/'.$this->vendorDir.'/'.$phpPackage['name']);
     }
 
     private function resolvePackageJson(array $phpPackage): ?JsonFile

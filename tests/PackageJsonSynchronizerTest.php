@@ -91,6 +91,26 @@ class PackageJsonSynchronizerTest extends TestCase
         );
     }
 
+    public function testSynchronizeKeepsPackagesThatAreLockedButNotInstalled()
+    {
+        $this->scriptExecutor->expects($this->never())->method('execute');
+
+        $packageJson = file_get_contents($this->tempDir.'/package.json');
+        $controllersJson = json_decode(file_get_contents($this->tempDir.'/assets/controllers.json'), true);
+        // e.g. a package from require-dev after running "composer update --no-dev"
+        (new Filesystem())->remove($this->tempDir.'/vendor/symfony/existing-package');
+
+        $this->synchronizer->synchronize([
+            [
+                'name' => 'symfony/existing-package',
+                'keywords' => ['symfony-ux'],
+            ],
+        ]);
+
+        $this->assertSame($packageJson, file_get_contents($this->tempDir.'/package.json'));
+        $this->assertSame($controllersJson, json_decode(file_get_contents($this->tempDir.'/assets/controllers.json'), true));
+    }
+
     public function testSynchronizeExistingPackage()
     {
         $this->scriptExecutor->expects($this->never())->method('execute');
