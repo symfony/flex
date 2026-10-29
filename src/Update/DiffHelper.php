@@ -13,10 +13,10 @@ namespace Symfony\Flex\Update;
 
 class DiffHelper
 {
-    public static function removeFilesFromPatch(string $patch, array $files, array &$removedPatches): string
+    public static function removeFilesFromPatch(string $patch, array $files, array &$removedPatches, string $prefix = ''): string
     {
         foreach ($files as $filename) {
-            $start = strpos($patch, \sprintf('diff --git a/%s b/%s', $filename, $filename));
+            $start = strpos($patch, \sprintf('diff --git a/%1$s%2$s b/%1$s%2$s', $prefix, $filename));
             if (false === $start) {
                 throw new \LogicException(\sprintf('Could not find file "%s" in the patch.', $filename));
             }

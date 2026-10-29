@@ -181,6 +181,27 @@ class RecipePatcherTest extends TestCase
         ];
     }
 
+    public function testGeneratePatchOnDeletedFileInSubfolder()
+    {
+        @mkdir(FLEX_TEST_DIR.'/ProjectA', 0777, true);
+        file_put_contents(FLEX_TEST_DIR.'/ProjectA/kept.txt', "kept\n");
+        (new Process(['git', 'init'], FLEX_TEST_DIR))->mustRun();
+        (new Process(['git', 'config', 'user.name', 'Unit test'], FLEX_TEST_DIR))->mustRun();
+        (new Process(['git', 'config', 'user.email', ''], FLEX_TEST_DIR))->mustRun();
+        (new Process(['git', 'add', '-A'], FLEX_TEST_DIR))->mustRun();
+        (new Process(['git', 'commit', '-m', 'Committing original files'], FLEX_TEST_DIR))->mustRun();
+
+        $patcher = new RecipePatcher(FLEX_TEST_DIR.'/ProjectA', $this->createStub(IOInterface::class), $this->createStub(Lock::class));
+
+        // removed.txt does not exist in the project
+        $patch = $patcher->generatePatch(['kept.txt' => "kept\n", 'removed.txt' => "original\n"], ['kept.txt' => "kept\nupdated\n", 'removed.txt' => "updated\n"]);
+
+        $this->assertStringContainsString('diff --git a/ProjectA/kept.txt b/ProjectA/kept.txt', $patch->getPatch());
+        $this->assertStringNotContainsString('removed.txt', $patch->getPatch());
+        $this->assertSame(['removed.txt'], array_keys($patch->getRemovedPatches()));
+        $this->assertStringContainsString('diff --git a/ProjectA/removed.txt b/ProjectA/removed.txt', $patch->getRemovedPatches()['removed.txt']);
+    }
+
     public function testGeneratePatchOnDeletedFile()
     {
         // make sure the target directory is empty
@@ -419,6 +440,36 @@ class RecipePatcherTest extends TestCase
         yield from self::getApplyPatchTests('ProjectA/');
     }
 
+    #[DataProvider('provideObjectFormats')]
+    public function testApplyPatchWithConflictsUsesTheObjectFormatOfTheApp(string $objectFormat, string $defaultObjectFormat)
+    {
+        if (0 !== (new Process(['git', 'init', '--object-format='.$objectFormat], FLEX_TEST_DIR))->run()) {
+            $this->markTestSkipped('This version of git does not support choosing the object format.');
+        }
+        (new Process(['git', 'config', 'user.name', 'Unit test'], FLEX_TEST_DIR))->mustRun();
+        (new Process(['git', 'config', 'user.email', ''], FLEX_TEST_DIR))->mustRun();
+        file_put_contents(FLEX_TEST_DIR.'/file.txt', "line 1\nline 2 in app\nline 3\n");
+        (new Process(['git', 'add', '-A'], FLEX_TEST_DIR))->mustRun();
+        (new Process(['git', 'commit', '-m', 'Committing original files'], FLEX_TEST_DIR))->mustRun();
+
+        $patcher = new RecipePatcher(FLEX_TEST_DIR, $this->createStub(IOInterface::class), $this->createStub(Lock::class));
+        $_ENV['GIT_DEFAULT_HASH'] = $defaultObjectFormat;
+        try {
+            $patch = $patcher->generatePatch(['file.txt' => "line 1\nline 2\nline 3\n"], ['file.txt' => "line 1\nline 2 in recipe\nline 3\n"]);
+        } finally {
+            unset($_ENV['GIT_DEFAULT_HASH']);
+        }
+
+        $this->assertFalse($patcher->applyPatch($patch));
+        $this->assertSame("line 1\n<<<<<<< ours\nline 2 in app\n=======\nline 2 in recipe\n>>>>>>> theirs\nline 3\n", file_get_contents(FLEX_TEST_DIR.'/file.txt'));
+    }
+
+    public static function provideObjectFormats(): iterable
+    {
+        yield 'sha256 app' => ['sha256', 'sha1'];
+        yield 'sha1 app, sha256 by default' => ['sha1', 'sha256'];
+    }
+
     public static function getApplyPatchTests(string $projectRootPath): iterable
     {
         $files = self::getFilesForPatching($projectRootPath);
@@ -564,6 +615,80 @@ class RecipePatcherTest extends TestCase
     {
         yield 'missing_files_set_to_null' => [true];
         yield 'missing_files_not_in_array' => [false];
+    }
+
+    public function testConflictsCanBeResolvedWithGit()
+    {
+        $files = self::getFilesForPatching();
+        (new Process(['git', 'init'], FLEX_TEST_DIR))->mustRun();
+        (new Process(['git', 'config', 'user.name', 'Unit test'], FLEX_TEST_DIR))->mustRun();
+        (new Process(['git', 'config', 'user.email', ''], FLEX_TEST_DIR))->mustRun();
+        file_put_contents(FLEX_TEST_DIR.'/package.json', $files['package_json_conflict']['in_app']);
+        (new Process(['git', 'add', '-A'], FLEX_TEST_DIR))->mustRun();
+        (new Process(['git', 'commit', '-m', 'Committing original files'], FLEX_TEST_DIR))->mustRun();
+
+        $patcher = new RecipePatcher(FLEX_TEST_DIR, $this->createStub(IOInterface::class), $this->createStub(Lock::class));
+        $patch = $patcher->generatePatch(
+            ['package.json' => $files['package_json_conflict']['original_recipe']],
+            ['package.json' => $files['package_json_conflict']['updated_recipe']]
+        );
+        $this->assertFalse($patcher->applyPatch($patch));
+
+        $unmergedEntries = (new Process(['git', 'ls-files', '--unmerged'], FLEX_TEST_DIR))->mustRun()->getOutput();
+        $this->assertStringContainsString($files['package_json_conflict']['hash']." 1\tpackage.json", $unmergedEntries);
+        (new Process(['git', 'cat-file', '-e', $files['package_json_conflict']['hash']], FLEX_TEST_DIR))->mustRun();
+
+        (new Process(['git', 'checkout', '-m', '--', 'package.json'], FLEX_TEST_DIR))->mustRun();
+        $this->assertSame($files['package_json_conflict']['expected'], file_get_contents(FLEX_TEST_DIR.'/package.json'));
+    }
+
+    public function testApplyPatchKeepsBlobsUsedByTheIndex()
+    {
+        (new Process(['git', 'init'], FLEX_TEST_DIR))->mustRun();
+        (new Process(['git', 'config', 'user.name', 'Unit test'], FLEX_TEST_DIR))->mustRun();
+        (new Process(['git', 'config', 'user.email', ''], FLEX_TEST_DIR))->mustRun();
+        file_put_contents(FLEX_TEST_DIR.'/file1.txt', "x\n");
+        file_put_contents(FLEX_TEST_DIR.'/file2.txt', "A\nb\nc\nd\ne\n");
+        (new Process(['git', 'add', '-A'], FLEX_TEST_DIR))->mustRun();
+        (new Process(['git', 'commit', '-m', 'Committing original files'], FLEX_TEST_DIR))->mustRun();
+
+        $patcher = new RecipePatcher(FLEX_TEST_DIR, $this->createStub(IOInterface::class), $this->createStub(Lock::class));
+        // the new contents of file1.txt are the original contents of file2.txt
+        $patch = $patcher->generatePatch(
+            ['file1.txt' => "x\n", 'file2.txt' => "a\nb\nc\nd\ne\n"],
+            ['file1.txt' => "a\nb\nc\nd\ne\n", 'file2.txt' => "a\nb\nc\nd\nE\n"]
+        );
+        $this->assertTrue($patcher->applyPatch($patch));
+
+        (new Process(['git', 'commit', '-m', 'Updating the recipe'], FLEX_TEST_DIR))->mustRun();
+        $this->assertSame("a\nb\nc\nd\ne\n", (new Process(['git', 'show', 'HEAD:file1.txt'], FLEX_TEST_DIR))->mustRun()->getOutput());
+    }
+
+    public function testApplyPatchInGitWorktree()
+    {
+        $files = self::getFilesForPatching();
+        $mainPath = FLEX_TEST_DIR.'/main';
+        $worktreePath = FLEX_TEST_DIR.'/worktree';
+        @mkdir($mainPath, 0777, true);
+        (new Process(['git', 'init'], $mainPath))->mustRun();
+        (new Process(['git', 'config', 'user.name', 'Unit test'], $mainPath))->mustRun();
+        (new Process(['git', 'config', 'user.email', ''], $mainPath))->mustRun();
+        file_put_contents($mainPath.'/.env', $files['dot_env_clean']['in_app']);
+        file_put_contents($mainPath.'/package.json', $files['package_json_conflict']['in_app']);
+        (new Process(['git', 'add', '-A'], $mainPath))->mustRun();
+        (new Process(['git', 'commit', '-m', 'Committing original files'], $mainPath))->mustRun();
+        (new Process(['git', 'worktree', 'add', '--detach', $worktreePath], $mainPath))->mustRun();
+
+        $patcher = new RecipePatcher($worktreePath, $this->createStub(IOInterface::class), $this->createStub(Lock::class));
+        $patch = $patcher->generatePatch(
+            ['.env' => $files['dot_env_clean']['original_recipe'], 'package.json' => $files['package_json_conflict']['original_recipe']],
+            ['.env' => $files['dot_env_clean']['updated_recipe'], 'package.json' => $files['package_json_conflict']['updated_recipe']]
+        );
+
+        $this->assertFalse($patcher->applyPatch($patch));
+        $this->assertSame($files['dot_env_clean']['expected'], file_get_contents($worktreePath.'/.env'));
+        $this->assertSame($files['package_json_conflict']['expected'], file_get_contents($worktreePath.'/package.json'));
+        (new Process(['git', 'checkout', '-m', '--', 'package.json'], $worktreePath))->mustRun();
     }
 
     /**
@@ -753,10 +878,7 @@ class RecipePatcherTest extends TestCase
 
             $process = (new Process(['git', 'hash-object', $filename], $dir))->mustRun();
             $hash = trim($process->getOutput());
-
-            $hashStart = substr($hash, 0, 2);
-            $hashEnd = substr($hash, 2);
-            $blob = file_get_contents($dir.'/.git/objects/'.$hashStart.'/'.$hashEnd);
+            $blob = (new Process(['git', 'cat-file', 'blob', $hash], $dir))->mustRun()->getOutput();
         }
 
         if (null === $end) {
