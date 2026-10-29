@@ -100,13 +100,7 @@ class AddLinesConfigurator extends AbstractConfigurator
             $file = $this->path->concatenate([$this->options->get('root-dir'), $this->options->expandTargetDir($patch['file'])]);
             $warnIfMissing = isset($patch['warn_if_missing']) && $patch['warn_if_missing'];
             if (!is_file($file)) {
-                $this->write([
-                    \sprintf('Could not add lines to file <info>%s</info> as it does not exist. Missing lines:', $patch['file']),
-                    '<comment>"""</comment>',
-                    $content,
-                    '<comment>"""</comment>',
-                    '',
-                ], $warnIfMissing ? IOInterface::NORMAL : IOInterface::VERBOSE);
+                $this->writeMissingLines(\sprintf('Could not add lines to file "%s" as it does not exist. Missing lines:', $this->relativize($file)), $content, $warnIfMissing);
 
                 continue;
             }
@@ -195,13 +189,7 @@ class AddLinesConfigurator extends AbstractConfigurator
                 $fileContents = implode("\n", $lines);
 
                 if (!$targetFound) {
-                    $this->write([
-                        \sprintf('Could not add lines after "%s" as no such string was found in "%s". Missing lines:', $target, $file),
-                        '<comment>"""</comment>',
-                        $value,
-                        '<comment>"""</comment>',
-                        '',
-                    ], $warnIfMissing ? IOInterface::NORMAL : IOInterface::VERBOSE);
+                    $this->writeMissingLines(\sprintf('Could not add lines after "%s" as no such string was found in "%s". Missing lines:', $target, $this->relativize($file)), $value, $warnIfMissing);
                 }
 
                 break;
@@ -227,6 +215,17 @@ class AddLinesConfigurator extends AbstractConfigurator
         $position = strpos($fileContents, $value);
 
         return substr_replace($fileContents, '', $position, \strlen($value));
+    }
+
+    private function writeMissingLines(string $message, string $lines, bool $warnIfMissing): void
+    {
+        $this->write([
+            $warnIfMissing ? '<warning>'.$message.'</warning>' : $message,
+            '<comment>"""</comment>',
+            $lines,
+            '<comment>"""</comment>',
+            '',
+        ], $warnIfMissing ? IOInterface::NORMAL : IOInterface::VERBOSE);
     }
 
     private function isPackageInstalled($packages): bool
