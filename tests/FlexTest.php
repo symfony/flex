@@ -24,7 +24,9 @@ use Composer\Package\Link;
 use Composer\Package\Locker;
 use Composer\Package\Package;
 use Composer\Package\RootPackageInterface;
+use Composer\Plugin\PluginEvents;
 use Composer\Plugin\PluginInterface;
+use Composer\Plugin\PreCommandRunEvent;
 use Composer\Repository\LockArrayRepository;
 use Composer\Repository\RepositoryInterface;
 use Composer\Repository\RepositoryManager;
@@ -36,6 +38,9 @@ use Composer\Util\HttpDownloader;
 use Composer\Util\Loop;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Console\Input\ArgvInput;
+use Symfony\Component\Console\Input\InputArgument;
+use Symfony\Component\Console\Input\InputDefinition;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Flex\Configurator;
 use Symfony\Flex\Downloader;
@@ -124,6 +129,32 @@ class FlexTest extends TestCase
         $flex->activate($composer, $io);
 
         $this->assertTrue(class_exists(Response::class, false));
+    }
+
+    #[DataProvider('provideCommandsResolvingPackageAliases')]
+    public function testPackageAliasesAreResolvedBeforeCommandRun(string $command, array $expectedPackages)
+    {
+        $downloader = $this->createStub(Downloader::class);
+        $downloader->method('getAliases')->willReturn(['serializer' => 'symfony/serializer-pack']);
+        $downloader->method('getVersions')->willReturn(['splits' => []]);
+        $downloader->method('getSymfonyPacks')->willReturn(['symfony/serializer-pack']);
+
+        $flex = $this->mockFlexCustom(new BufferIO(), $this->mockComposer($this->mockLocker(), $this->mockRootPackage()), $this->createStub(Configurator::class), $downloader, $this->mockLock());
+
+        $input = new ArgvInput(['composer', $command, 'serializer']);
+        $input->bind(new InputDefinition([new InputArgument('command'), new InputArgument('packages', InputArgument::IS_ARRAY)]));
+
+        $listener = Flex::getSubscribedEvents()[PluginEvents::PRE_COMMAND_RUN];
+        $flex->$listener(new PreCommandRunEvent(PluginEvents::PRE_COMMAND_RUN, $input, $command));
+
+        $this->assertSame($expectedPackages, $input->getArgument('packages'));
+    }
+
+    public static function provideCommandsResolvingPackageAliases(): iterable
+    {
+        yield 'require' => ['require', ['symfony/serializer-pack:*']];
+        yield 'remove' => ['remove', ['symfony/serializer-pack']];
+        yield 'other command' => ['show', ['serializer']];
     }
 
     public function testContribRecipeNotApprovedIsRemovedFromLock()
