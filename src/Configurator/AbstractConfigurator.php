@@ -110,7 +110,7 @@ abstract class AbstractConfigurator
 
         $pattern = '/'.preg_quote($startMark, '/').'.*?'.preg_quote($endMark, '/').'/s';
 
-        return preg_replace($pattern, trim($data), $contents);
+        return preg_replace_callback($pattern, static fn () => trim($data), $contents);
     }
 
     protected function extractSection(Recipe $recipe, string $contents): ?string

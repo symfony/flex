@@ -200,6 +200,88 @@ EOF
         }
     }
 
+    public function testUpdatePhpUnit()
+    {
+        $configurator = new EnvConfigurator(
+            $this->createStub(Composer::class),
+            $this->createStub(IOInterface::class),
+            new Options(['root-dir' => FLEX_TEST_DIR])
+        );
+
+        $recipe = $this->createStub(Recipe::class);
+        $recipe->method('getName')
+            ->willReturn('symfony/foo-bundle');
+        $recipeUpdate = new RecipeUpdate(
+            $recipe,
+            $recipe,
+            $this->createStub(Lock::class),
+            FLEX_TEST_DIR
+        );
+
+        @mkdir(FLEX_TEST_DIR);
+        foreach (['.env', '.env.dist', '.env.test', 'phpunit.dist.xml', 'phpunit.xml'] as $file) {
+            @unlink(FLEX_TEST_DIR.'/'.$file);
+        }
+        file_put_contents(
+            FLEX_TEST_DIR.'/phpunit.xml.dist',
+            <<<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit>
+    <php>
+        <ini name="error_reporting" value="-1" />
+
+        <!-- ###+ symfony/foo-bundle ### -->
+        <env name="APP_ENV" value="test bar"/>
+        <env name="APP_SECRET" value="EXISTING&amp;SECRET"/>
+        <!-- env name="TRUSTED_SECRET" value="EXISTING_TRUSTED_SECRET" -->
+        <!-- ###- symfony/foo-bundle ### -->
+    </php>
+</phpunit>
+EOF
+        );
+
+        $configurator->update(
+            $recipeUpdate,
+            ['APP_ENV' => 'original', 'APP_SECRET' => '%generate(secret)%', '#TRUSTED_SECRET' => '%generate(secret, 32)%'],
+            ['APP_ENV' => 'updated', 'APP_SECRET' => '%generate(secret)%', '#TRUSTED_SECRET' => '%generate(secret, 32)%', 'NEW_VAR' => 'orange']
+        );
+
+        $this->assertSame(['phpunit.xml.dist' => <<<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit>
+    <php>
+        <ini name="error_reporting" value="-1" />
+
+        <!-- ###+ symfony/foo-bundle ### -->
+        <env name="APP_ENV" value="original"/>
+        <env name="APP_SECRET" value="EXISTING&amp;SECRET"/>
+        <!-- env name="TRUSTED_SECRET" value="EXISTING_TRUSTED_SECRET" -->
+        <!-- ###- symfony/foo-bundle ### -->
+    </php>
+</phpunit>
+EOF
+        ], $recipeUpdate->getOriginalFiles());
+
+        $this->assertSame(['phpunit.xml.dist' => <<<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit>
+    <php>
+        <ini name="error_reporting" value="-1" />
+
+        <!-- ###+ symfony/foo-bundle ### -->
+        <env name="APP_ENV" value="updated"/>
+        <env name="APP_SECRET" value="EXISTING&amp;SECRET"/>
+        <!-- env name="TRUSTED_SECRET" value="EXISTING_TRUSTED_SECRET" -->
+        <env name="NEW_VAR" value="orange"/>
+        <!-- ###- symfony/foo-bundle ### -->
+    </php>
+</phpunit>
+EOF
+        ], $recipeUpdate->getNewFiles());
+
+        @unlink(FLEX_TEST_DIR.'/phpunit.xml.dist');
+    }
+
     public function testConfigureForce()
     {
         @mkdir(FLEX_TEST_DIR);
@@ -340,6 +422,60 @@ EOT;
 
         @unlink($env);
         @unlink($phpunit);
+        @unlink($phpunitDist);
+    }
+
+    public function testConfigureWithDollarsAndBackslashesInValues()
+    {
+        @mkdir(FLEX_TEST_DIR);
+        $configurator = new EnvConfigurator(
+            $this->createStub(Composer::class),
+            $this->createStub(IOInterface::class),
+            new Options(['root-dir' => FLEX_TEST_DIR])
+        );
+
+        $recipe = $this->createStub(Recipe::class);
+        $recipe->method('getName')->willReturn('FooBundle');
+
+        $env = FLEX_TEST_DIR.'/.env.dist';
+        $phpunitDist = FLEX_TEST_DIR.'/phpunit.xml.dist';
+        @unlink($env);
+        @unlink($phpunitDist);
+        touch($env);
+        copy(__DIR__.'/../Fixtures/phpunit.xml.dist', $phpunitDist);
+
+        $envContents = <<<'EOT'
+
+###> FooBundle ###
+DB_PASSWORD=pa$1word
+WIN_PATH=C:\\data
+###< FooBundle ###
+
+EOT;
+        $xmlContents = <<<'EOT'
+        <!-- ###+ FooBundle ### -->
+        <env name="DB_PASSWORD" value="pa$1word"/>
+        <env name="WIN_PATH" value="C:\\data"/>
+        <!-- ###- FooBundle ### -->
+
+EOT;
+
+        $lock = $this->createStub(Lock::class);
+        $vars = ['DB_PASSWORD' => 'pa$1word', 'WIN_PATH' => 'C:\\\\data'];
+
+        $configurator->configure($recipe, $vars, $lock);
+
+        $this->assertStringEqualsFile($env, $envContents);
+        $this->assertStringContainsString($xmlContents, file_get_contents($phpunitDist));
+
+        $configurator->configure($recipe, $vars, $lock, [
+            'force' => true,
+        ]);
+
+        $this->assertStringEqualsFile($env, $envContents);
+        $this->assertStringContainsString($xmlContents, file_get_contents($phpunitDist));
+
+        @unlink($env);
         @unlink($phpunitDist);
     }
 
@@ -525,5 +661,37 @@ FOO_DSN=foo://default
 
 EOF
         ], $recipeUpdate->getNewFiles());
+    }
+
+    public function testConfigureForceKeepsExistingQuotedSecrets()
+    {
+        @mkdir(FLEX_TEST_DIR);
+        $configurator = new EnvConfigurator(
+            $this->createStub(Composer::class),
+            $this->createStub(IOInterface::class),
+            new Options(['root-dir' => FLEX_TEST_DIR])
+        );
+
+        $recipe = $this->createStub(Recipe::class);
+        $recipe->method('getName')->willReturn('FooBundle');
+
+        $env = FLEX_TEST_DIR.'/.env';
+        $envContents = <<<'EOF'
+###> FooBundle ###
+#TRUSTED_SECRET="my \"trusted\" secret"
+APP_SECRET="my secret"
+###< FooBundle ###
+
+EOF;
+        file_put_contents($env, $envContents);
+
+        $configurator->configure($recipe, [
+            '#TRUSTED_SECRET' => '%generate(secret,32)%',
+            'APP_SECRET' => '%generate(secret)%',
+        ], $this->createStub(Lock::class), ['force' => true]);
+
+        $this->assertSame($envContents, file_get_contents($env));
+
+        @unlink($env);
     }
 }
