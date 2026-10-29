@@ -62,7 +62,7 @@ class CopyFromPackageConfigurator extends AbstractConfigurator
                 throw new \LogicException(\sprintf('File "%s" does not exist!', $source));
             }
 
-            $recipeUpdate->setNewFile($target, file_get_contents($source));
+            $recipeUpdate->setNewFile($target, $this->options->expandTargetDir(file_get_contents($source)));
         }
     }
 
