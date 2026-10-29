@@ -11,6 +11,8 @@
 
 namespace Symfony\Flex\Tests;
 
+use Composer\EventDispatcher\ScriptExecutionException;
+use Composer\IO\BufferIO;
 use Composer\IO\IOInterface;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Filesystem\Filesystem;
@@ -410,6 +412,28 @@ class PackageJsonSynchronizerTest extends TestCase
         ];
 
         $this->assertSame($expectedArguments, $actualArguments);
+    }
+
+    public function testSynchronizeAssetMapperIsFailSafeWhenImportmapRequireFails()
+    {
+        file_put_contents($this->tempDir.'/importmap.php', '<?php return [];');
+
+        $this->scriptExecutor
+            ->expects($this->exactly(4))
+            ->method('execute')
+            ->willThrowException(new ScriptExecutionException('importmap:require', 1));
+
+        $io = new BufferIO();
+        $synchronizer = new PackageJsonSynchronizer($this->tempDir, 'vendor', $this->scriptExecutor, $io);
+
+        $synchronizer->synchronize([
+            ['name' => 'symfony/existing-package', 'keywords' => ['symfony-ux']],
+            ['name' => 'symfony/new-package', 'keywords' => ['symfony-ux']],
+        ]);
+
+        $output = $io->getOutput();
+        $this->assertStringContainsString('Could not add the following packages to your importmap: @hotcake/foo, @symfony/new-package, @symfony/new-package/entry.js, @symfony/new-package/entry2.js.', $output);
+        $this->assertStringContainsString('Run "composer update --lock" to try again.', $output);
     }
 
     public function testSynchronizeAssetMapperUpgradesPackageIfNeeded()
