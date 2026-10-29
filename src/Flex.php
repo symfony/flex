@@ -177,8 +177,6 @@ class Flex implements PluginInterface, EventSubscriberInterface
                 }
             } elseif ('update' === $command) {
                 $this->displayThanksReminder = 1;
-            } elseif ('outdated' === $command) {
-                $symfonyRequire = null;
             }
 
             if (null !== $command && isset(self::$aliasResolveCommands[$command])) {
@@ -220,7 +218,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             break;
         }
 
-        $symfonyRequire = preg_replace('/\.x$/', '.x-dev', getenv('SYMFONY_REQUIRE') ?: ($composer->getPackage()->getExtra()['symfony']['require'] ?? ''));
+        $symfonyRequire = getenv('SYMFONY_REQUIRE') ?: ($composer->getPackage()->getExtra()['symfony']['require'] ?? '');
 
         if ($symfonyRequire || $this->ignorePreleases) {
             $this->filter = new PackageFilter($io, $symfonyRequire, $this->downloader, $this->ignorePreleases);

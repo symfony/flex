@@ -35,8 +35,9 @@ class PackageFilter
     public function __construct(IOInterface $io, string $symfonyRequire, Downloader $downloader, bool $ignorePreleases = false)
     {
         $this->versionParser = new VersionParser();
-        $this->symfonyRequire = $symfonyRequire;
-        $this->symfonyConstraints = '' !== $symfonyRequire ? $this->versionParser->parseConstraints($symfonyRequire) : null;
+        // "7.4" and "7.4.x" mean "7.4.*", while ">=7.4.x" needs "7.4.x-dev" to be parsed
+        $this->symfonyRequire = preg_replace(['/^v?(\d++(?:\.\d++)?)\.x$/i', '/^v?(\d++\.\d++)$/', '/\.x$/'], ['$1.*', '$1.*', '.x-dev'], $symfonyRequire);
+        $this->symfonyConstraints = '' !== $symfonyRequire ? $this->versionParser->parseConstraints($this->symfonyRequire) : null;
         $this->downloader = $downloader;
         $this->io = $io;
         $this->ignorePreleases = $ignorePreleases;
