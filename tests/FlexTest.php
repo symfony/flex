@@ -45,11 +45,6 @@ use Symfony\Flex\Response;
 
 class FlexTest extends TestCase
 {
-    protected function tearDown(): void
-    {
-        @unlink(__DIR__.'/Fixtures/symfony.lock');
-    }
-
     public function testPostInstall()
     {
         $data = [
@@ -165,7 +160,7 @@ class FlexTest extends TestCase
         // Recipe should NOT be installed
         $configurator->expects($this->never())->method('install');
 
-        $lock = new Lock(__DIR__.'/Fixtures/symfony.lock');
+        $lock = new Lock('php://memory');
         $composer = $this->mockComposer($this->mockLocker(), $rootPackage);
         $flex = $this->mockFlexCustom($io, $composer, $configurator, $downloader, $lock);
 

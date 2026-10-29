@@ -213,7 +213,7 @@ class DockerComposeConfiguratorTest extends TestCase
     {
         $this->configurator->configure($this->recipeDb, self::CONFIG_DB, $this->lock);
 
-        $servicesOnlyRecipe = $this->getMockBuilder(Recipe::class)->disableOriginalConstructor()->getMock();
+        $servicesOnlyRecipe = $this->createStub(Recipe::class);
         $servicesOnlyRecipe->method('getName')->willReturn('acme/services-only');
         $servicesOnlyConfig = [
             'services' => [
