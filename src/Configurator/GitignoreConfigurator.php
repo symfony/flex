@@ -47,12 +47,12 @@ class GitignoreConfigurator extends AbstractConfigurator
     {
         $recipeUpdate->setOriginalFile(
             '.gitignore',
-            $this->getContentsAfterApplyingRecipe($recipeUpdate->getRootDir(), $recipeUpdate->getOriginalRecipe(), $originalConfig)
+            $this->getContentsAfterApplyingRecipe($recipeUpdate->getRootDir(), $recipeUpdate->getOriginalRecipe(), $originalConfig, $recipeUpdate->getLock())
         );
 
         $recipeUpdate->setNewFile(
             '.gitignore',
-            $this->getContentsAfterApplyingRecipe($recipeUpdate->getRootDir(), $recipeUpdate->getNewRecipe(), $newConfig)
+            $this->getContentsAfterApplyingRecipe($recipeUpdate->getRootDir(), $recipeUpdate->getNewRecipe(), $newConfig, $recipeUpdate->getLock())
         );
     }
 
@@ -75,20 +75,20 @@ class GitignoreConfigurator extends AbstractConfigurator
         }
     }
 
-    private function getContentsAfterApplyingRecipe(string $rootDir, Recipe $recipe, $vars): ?string
+    private function getContentsAfterApplyingRecipe(string $rootDir, Recipe $recipe, $vars, Lock $lock): ?string
     {
-        if (0 === \count($vars)) {
-            return null;
-        }
-
         $file = $rootDir.'/.gitignore';
         $originalContents = file_exists($file) ? file_get_contents($file) : null;
 
-        $this->configureGitignore(
-            $recipe,
-            $vars,
-            true
-        );
+        if (0 === \count($vars)) {
+            $this->unconfigure($recipe, $vars, $lock);
+        } else {
+            $this->configureGitignore(
+                $recipe,
+                $vars,
+                true
+            );
+        }
 
         $updatedContents = file_exists($file) ? file_get_contents($file) : null;
 

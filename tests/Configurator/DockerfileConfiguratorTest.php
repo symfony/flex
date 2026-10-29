@@ -285,6 +285,76 @@ class DockerfileConfiguratorTest extends TestCase
         );
     }
 
+    public function testUpdateWhenTheNewRecipeHasNoEntries()
+    {
+        $configurator = $this->createConfigurator();
+        $recipe = $this->createStub(Recipe::class);
+        $recipe->method('getName')
+            ->willReturn('dummy/dummy');
+
+        $recipeUpdate = new RecipeUpdate(
+            $recipe,
+            $recipe,
+            $this->createStub(Lock::class),
+            FLEX_TEST_DIR
+        );
+
+        @mkdir(FLEX_TEST_DIR);
+        file_put_contents(
+            FLEX_TEST_DIR.'/Dockerfile',
+            <<<EOF
+                FROM php:7.1-fpm-alpine
+
+                ###> recipes ###
+                ###> dummy/dummy ###
+                RUN docker-php-ext-install pdo_dummy
+                ###< dummy/dummy ###
+                ###> doctrine/doctrine-bundle ###
+                RUN docker-php-ext-install pdo_mysql
+                ###< doctrine/doctrine-bundle ###
+                ###< recipes ###
+
+                EOF
+        );
+
+        $configurator->update($recipeUpdate, ['RUN docker-php-ext-install pdo_dummy'], []);
+
+        $this->assertSame(
+            [
+                'Dockerfile' => <<<EOF
+                    FROM php:7.1-fpm-alpine
+
+                    ###> recipes ###
+                    ###> dummy/dummy ###
+                    RUN docker-php-ext-install pdo_dummy
+                    ###< dummy/dummy ###
+                    ###> doctrine/doctrine-bundle ###
+                    RUN docker-php-ext-install pdo_mysql
+                    ###< doctrine/doctrine-bundle ###
+                    ###< recipes ###
+
+                    EOF,
+            ],
+            $recipeUpdate->getOriginalFiles()
+        );
+
+        $this->assertSame(
+            [
+                'Dockerfile' => <<<EOF
+                    FROM php:7.1-fpm-alpine
+
+                    ###> recipes ###
+                    ###> doctrine/doctrine-bundle ###
+                    RUN docker-php-ext-install pdo_mysql
+                    ###< doctrine/doctrine-bundle ###
+                    ###< recipes ###
+
+                    EOF,
+            ],
+            $recipeUpdate->getNewFiles()
+        );
+    }
+
     private function createConfigurator(): DockerfileConfigurator
     {
         $package = new RootPackage('dummy/dummy', '1.0.0', '1.0.0');

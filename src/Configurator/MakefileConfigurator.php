@@ -50,12 +50,12 @@ class MakefileConfigurator extends AbstractConfigurator
     {
         $recipeUpdate->setOriginalFile(
             'Makefile',
-            $this->getContentsAfterApplyingRecipe($recipeUpdate->getRootDir(), $recipeUpdate->getOriginalRecipe(), $originalConfig)
+            $this->getContentsAfterApplyingRecipe($recipeUpdate->getRootDir(), $recipeUpdate->getOriginalRecipe(), $originalConfig, $recipeUpdate->getLock())
         );
 
         $recipeUpdate->setNewFile(
             'Makefile',
-            $this->getContentsAfterApplyingRecipe($recipeUpdate->getRootDir(), $recipeUpdate->getNewRecipe(), $newConfig)
+            $this->getContentsAfterApplyingRecipe($recipeUpdate->getRootDir(), $recipeUpdate->getNewRecipe(), $newConfig, $recipeUpdate->getLock())
         );
     }
 
@@ -95,20 +95,20 @@ class MakefileConfigurator extends AbstractConfigurator
         }
     }
 
-    private function getContentsAfterApplyingRecipe(string $rootDir, Recipe $recipe, array $definitions): ?string
+    private function getContentsAfterApplyingRecipe(string $rootDir, Recipe $recipe, array $definitions, Lock $lock): ?string
     {
-        if (0 === \count($definitions)) {
-            return null;
-        }
-
         $file = $rootDir.'/Makefile';
         $originalContents = file_exists($file) ? file_get_contents($file) : null;
 
-        $this->configureMakefile(
-            $recipe,
-            $definitions,
-            true
-        );
+        if (0 === \count($definitions)) {
+            $this->unconfigure($recipe, $definitions, $lock);
+        } else {
+            $this->configureMakefile(
+                $recipe,
+                $definitions,
+                true
+            );
+        }
 
         $updatedContents = file_exists($file) ? file_get_contents($file) : null;
 
