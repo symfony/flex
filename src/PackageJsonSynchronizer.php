@@ -126,7 +126,7 @@ class PackageJsonSynchronizer
 
         foreach (['dependencies' => $jsDependencies, 'devDependencies' => $jsDevDependencies] as $key => $packages) {
             foreach ($packages as $name => $version) {
-                if ('@' !== $name[0] || !str_starts_with($version, 'file:'.$this->vendorDir.'/') || !str_contains($version, '/assets')) {
+                if (!str_starts_with($name, '@') || !str_starts_with($version, 'file:'.$this->vendorDir.'/') || !str_contains($version, '/assets')) {
                     continue;
                 }
                 if (file_exists($this->rootDir.'/'.substr($version, 5).'/package.json')) {
@@ -244,13 +244,13 @@ class PackageJsonSynchronizer
 
         if ($didChangePackageJson) {
             if (isset($content['dependencies'])) {
-                $manipulator->addMainKey('dependencies', $content['dependencies']);
+                $manipulator->addMainKey('dependencies', self::toJsonObject($content['dependencies']));
             }
 
             if (isset($content['devDependencies'])) {
                 $devDependencies = $content['devDependencies'];
                 uksort($devDependencies, 'strnatcmp');
-                $manipulator->addMainKey('devDependencies', $devDependencies);
+                $manipulator->addMainKey('devDependencies', self::toJsonObject($devDependencies));
             }
 
             $newContents = $manipulator->getContents();
@@ -476,5 +476,13 @@ class PackageJsonSynchronizer
         }
 
         return $phpPackages;
+    }
+
+    /**
+     * Composer < 2.7.5 encodes arrays whose first key is numeric as JSON lists.
+     */
+    private static function toJsonObject(array $packages): array|\ArrayObject
+    {
+        return \is_int(array_key_first($packages)) ? new \ArrayObject($packages) : $packages;
     }
 }
