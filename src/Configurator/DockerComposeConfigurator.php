@@ -90,11 +90,11 @@ class DockerComposeConfigurator extends AbstractConfigurator
         }
 
         $recipeUpdate->addOriginalFiles(
-            $this->getContentsAfterApplyingRecipe($recipeUpdate->getRootDir(), $recipeUpdate->getOriginalRecipe(), $originalConfig)
+            $this->getContentsAfterApplyingRecipe($recipeUpdate->getRootDir(), $recipeUpdate->getOriginalRecipe(), $originalConfig, $newConfig, $recipeUpdate->getLock())
         );
 
         $recipeUpdate->addNewFiles(
-            $this->getContentsAfterApplyingRecipe($recipeUpdate->getRootDir(), $recipeUpdate->getNewRecipe(), $newConfig)
+            $this->getContentsAfterApplyingRecipe($recipeUpdate->getRootDir(), $recipeUpdate->getNewRecipe(), $newConfig, $originalConfig, $recipeUpdate->getLock())
         );
     }
 
@@ -345,26 +345,31 @@ class DockerComposeConfigurator extends AbstractConfigurator
         return $modified;
     }
 
-    private function getContentsAfterApplyingRecipe(string $rootDir, Recipe $recipe, array $config): array
+    private function getContentsAfterApplyingRecipe(string $rootDir, Recipe $recipe, array $config, array $otherConfig, Lock $lock): array
     {
-        if (0 === \count($config)) {
-            return [];
-        }
+        $config = $this->normalizeConfig($config);
+        $removedConfig = array_diff_key($this->normalizeConfig($otherConfig), $config);
 
         $files = array_map(function ($file) use ($rootDir) {
             return $this->findDockerComposeFile($rootDir, $file) ?? $rootDir.'/'.$file;
-        }, array_keys($this->normalizeConfig($config)));
+        }, array_keys($config + $removedConfig));
 
         $originalContents = [];
         foreach ($files as $file) {
             $originalContents[$file] = file_exists($file) ? file_get_contents($file) : null;
         }
 
-        $this->configureDockerCompose(
-            $recipe,
-            $config,
-            true
-        );
+        if ($config) {
+            $this->configureDockerCompose(
+                $recipe,
+                $config,
+                true
+            );
+        }
+
+        if ($removedConfig) {
+            $this->unconfigure($recipe, $removedConfig, $lock);
+        }
 
         $updatedContents = [];
         foreach ($files as $file) {
