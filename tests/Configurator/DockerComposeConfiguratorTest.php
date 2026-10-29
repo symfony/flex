@@ -12,6 +12,7 @@
 namespace Symfony\Flex\Tests\Configurator;
 
 use Composer\Composer;
+use Composer\IO\BufferIO;
 use Composer\IO\IOInterface;
 use Composer\Package\RootPackage;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -615,6 +616,21 @@ class DockerComposeConfiguratorTest extends TestCase
         $this->assertStringEqualsFile($dockerComposeOverrideFile, self::ORIGINAL_CONTENT);
     }
 
+    public function testUnconfigureMultipleFilesWhenOneHasNoRecipeEntries()
+    {
+        $dockerComposeFile = FLEX_TEST_DIR.'/docker-compose.yml';
+        file_put_contents($dockerComposeFile, self::ORIGINAL_CONTENT);
+        $dockerComposeOverrideFile = FLEX_TEST_DIR.'/docker-compose.override.yml';
+        file_put_contents($dockerComposeOverrideFile, self::ORIGINAL_CONTENT);
+
+        $this->configurator->configure($this->recipeDb, self::CONFIG_DB_MULTIPLE_FILES, $this->lock);
+        file_put_contents($dockerComposeFile, self::ORIGINAL_CONTENT);
+
+        $this->configurator->unconfigure($this->recipeDb, self::CONFIG_DB_MULTIPLE_FILES, $this->lock);
+        $this->assertStringEqualsFile($dockerComposeFile, self::ORIGINAL_CONTENT);
+        $this->assertStringEqualsFile($dockerComposeOverrideFile, self::ORIGINAL_CONTENT);
+    }
+
     public function testConfigureEnvVar()
     {
         @mkdir(FLEX_TEST_DIR.'/child/');
@@ -926,5 +942,155 @@ class DockerComposeConfiguratorTest extends TestCase
             $io,
             new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
         );
+    }
+
+    #[DataProvider('provideUpdateWithNormalizedFileNameCases')]
+    public function testUpdateWithNormalizedFileName(array $originalConfig, array $newConfig)
+    {
+        $recipeUpdate = new RecipeUpdate($this->recipeDb, $this->recipeDb, $this->createStub(Lock::class), FLEX_TEST_DIR);
+
+        $contents = <<<EOF
+            services:
+            ###> doctrine/doctrine-bundle ###
+              database:
+                image: postgres:13-alpine
+            ###< doctrine/doctrine-bundle ###
+
+            EOF;
+        file_put_contents(FLEX_TEST_DIR.'/compose.yaml', $contents);
+
+        $this->configurator->update($recipeUpdate, $originalConfig, $newConfig);
+
+        $this->assertSame(['compose.yaml' => $contents], $recipeUpdate->getOriginalFiles());
+        $this->assertSame(['compose.yaml' => str_replace('13', '16', $contents)], $recipeUpdate->getNewFiles());
+        $this->assertStringEqualsFile(FLEX_TEST_DIR.'/compose.yaml', $contents);
+    }
+
+    public function testUpdateWithoutDockerComposeFile()
+    {
+        $recipeUpdate = new RecipeUpdate($this->recipeDb, $this->recipeDb, $this->createStub(Lock::class), FLEX_TEST_DIR);
+
+        $this->configurator->update(
+            $recipeUpdate,
+            ['docker-compose.yml' => ['services' => ['database:', '  image: postgres:13-alpine']]],
+            ['docker-compose.yml' => ['services' => ['database:', '  image: postgres:16-alpine']]]
+        );
+
+        $this->assertSame(['compose.yaml'], array_keys($recipeUpdate->getOriginalFiles()));
+        $this->assertSame(['compose.yaml'], array_keys($recipeUpdate->getNewFiles()));
+        $this->assertFileDoesNotExist(FLEX_TEST_DIR.'/compose.yaml');
+    }
+
+    public function testUpdateWhenTheNewRecipeHasNoEntries()
+    {
+        $recipeUpdate = new RecipeUpdate($this->recipeDb, $this->recipeDb, $this->createStub(Lock::class), FLEX_TEST_DIR);
+
+        $contents = <<<EOF
+            services:
+            ###> doctrine/doctrine-bundle ###
+              database:
+                image: postgres:13-alpine
+            ###< doctrine/doctrine-bundle ###
+
+            ###> symfony/mercure-bundle ###
+              mercure:
+                image: dunglas/mercure
+            ###< symfony/mercure-bundle ###
+
+            EOF;
+        file_put_contents(FLEX_TEST_DIR.'/compose.yaml', $contents);
+
+        $this->configurator->update($recipeUpdate, ['docker-compose.yml' => ['services' => ['database:', '  image: postgres:13-alpine']]], []);
+
+        $this->assertSame(['compose.yaml' => $contents], $recipeUpdate->getOriginalFiles());
+        $this->assertSame(['compose.yaml' => <<<EOF
+            services:
+
+            ###> symfony/mercure-bundle ###
+              mercure:
+                image: dunglas/mercure
+            ###< symfony/mercure-bundle ###
+
+            EOF], $recipeUpdate->getNewFiles());
+        $this->assertStringEqualsFile(FLEX_TEST_DIR.'/compose.yaml', $contents);
+    }
+
+    public function testUpdateWhenTheOriginalRecipeHasNoEntries()
+    {
+        $recipeUpdate = new RecipeUpdate($this->recipeDb, $this->recipeDb, $this->createStub(Lock::class), FLEX_TEST_DIR);
+
+        $contents = <<<EOF
+            services:
+            ###> symfony/mercure-bundle ###
+              mercure:
+                image: dunglas/mercure
+            ###< symfony/mercure-bundle ###
+
+            EOF;
+        file_put_contents(FLEX_TEST_DIR.'/compose.yaml', $contents);
+
+        $this->configurator->update($recipeUpdate, [], ['docker-compose.yml' => ['services' => ['database:', '  image: postgres:16-alpine']]]);
+
+        $this->assertSame(['compose.yaml' => $contents], $recipeUpdate->getOriginalFiles());
+        $this->assertSame(['compose.yaml' => <<<EOF
+            services:
+            ###> symfony/mercure-bundle ###
+              mercure:
+                image: dunglas/mercure
+            ###< symfony/mercure-bundle ###
+
+            ###> doctrine/doctrine-bundle ###
+              database:
+                image: postgres:16-alpine
+            ###< doctrine/doctrine-bundle ###
+
+            EOF], $recipeUpdate->getNewFiles());
+        $this->assertStringEqualsFile(FLEX_TEST_DIR.'/compose.yaml', $contents);
+    }
+
+    public function testUpdateWithFileInParentDir()
+    {
+        $io = new BufferIO();
+        $this->configurator = new DockerComposeConfigurator(
+            $this->composer,
+            $io,
+            new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR.'/child'])
+        );
+        $recipeUpdate = new RecipeUpdate($this->recipeDb, $this->recipeDb, $this->createStub(Lock::class), FLEX_TEST_DIR.'/child');
+
+        @mkdir(FLEX_TEST_DIR.'/child');
+        $contents = <<<EOF
+            services:
+            ###> doctrine/doctrine-bundle ###
+              database:
+                image: postgres:13-alpine
+            ###< doctrine/doctrine-bundle ###
+
+            EOF;
+        file_put_contents(FLEX_TEST_DIR.'/compose.yaml', $contents);
+
+        $this->configurator->update(
+            $recipeUpdate,
+            ['docker-compose.yml' => ['services' => ['database:', '  image: postgres:13-alpine']]],
+            ['docker-compose.yml' => ['services' => ['database:', '  image: postgres:16-alpine']]]
+        );
+
+        $this->assertSame([], $recipeUpdate->getOriginalFiles());
+        $this->assertSame([], $recipeUpdate->getNewFiles());
+        $this->assertStringContainsString('"'.FLEX_TEST_DIR.'/compose.yaml" is outside of the project directory and was not updated.', $io->getOutput());
+        $this->assertStringEqualsFile(FLEX_TEST_DIR.'/compose.yaml', $contents);
+    }
+
+    public static function provideUpdateWithNormalizedFileNameCases(): iterable
+    {
+        yield 'legacy file name' => [
+            ['docker-compose.yml' => ['services' => ['database:', '  image: postgres:13-alpine']]],
+            ['docker-compose.yml' => ['services' => ['database:', '  image: postgres:16-alpine']]],
+        ];
+
+        yield 'short syntax' => [
+            ['services' => ['database:', '  image: postgres:13-alpine']],
+            ['services' => ['database:', '  image: postgres:16-alpine']],
+        ];
     }
 }
