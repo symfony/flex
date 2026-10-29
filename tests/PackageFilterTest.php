@@ -209,6 +209,33 @@ class PackageFilterTest extends TestCase
         ]]];
     }
 
+    #[DataProvider('provideSymfonyRequireForms')]
+    public function testSymfonyRequireForms(array $expected, string $symfonyRequire)
+    {
+        $downloader = $this->createStub(Downloader::class);
+        $downloader
+            ->method('getVersions')
+            ->willReturn(['splits' => ['symfony/foo' => ['7.0', '7.3', '7.4', '8.0']]]);
+        $filter = new PackageFilter(new NullIO(), $symfonyRequire, $downloader);
+
+        $packages = $this->configToPackage(['symfony/foo' => array_fill_keys(['7.0.0', '7.3.0', '7.4.0', '7.4.1', '7.4.x-dev', '8.0.0'], [])]);
+        $actual = $filter->removeLegacyPackages($packages, new RootPackage('test/test', '1.0.0.0', '1.0'), []);
+
+        $this->assertSame($expected, array_map(static fn (PackageInterface $package) => $package->getPrettyVersion(), $actual));
+    }
+
+    public static function provideSymfonyRequireForms(): iterable
+    {
+        yield 'minor' => [['7.4.0', '7.4.1', '7.4.x-dev'], '7.4'];
+        yield 'v-prefixed minor' => [['7.4.0', '7.4.1', '7.4.x-dev'], 'v7.4'];
+        yield 'minor x-range' => [['7.4.0', '7.4.1', '7.4.x-dev'], '7.4.x'];
+        yield 'minor wildcard' => [['7.4.0', '7.4.1', '7.4.x-dev'], '7.4.*'];
+        yield 'major x-range' => [['7.0.0', '7.3.0', '7.4.0', '7.4.1', '7.4.x-dev'], '7.x'];
+        yield 'major is exact' => [['7.0.0'], '7'];
+        yield 'patch is exact' => [['7.4.1'], '7.4.1'];
+        yield 'operator with x-range' => [['7.4.x-dev', '8.0.0'], '>=7.4.x'];
+    }
+
     public function testIgnorePreleases()
     {
         $io = new NullIO();
