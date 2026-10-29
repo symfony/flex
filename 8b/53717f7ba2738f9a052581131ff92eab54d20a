@@ -1,0 +1,5 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-10-29T13:31:55Z
+
+I rebased this on top of #1125, which reads `7.4` and `7.4.x` as `7.4.*`. The warning is now useful only for the remaining exact values, like `7`, `7.4.1` or `=7.4`. I moved it to `PackageFilter` so that it checks the normalized constraint. The previous version also threw an exception for `SYMFONY_REQUIRE='>=5.x'`, because it parsed the raw value before the `.x-dev` rewrite.
