@@ -13,6 +13,7 @@ namespace Symfony\Flex\Tests;
 
 use Composer\IO\BufferIO;
 use Composer\IO\NullIO;
+use Composer\Package\BasePackage;
 use Composer\Package\CompletePackage;
 use Composer\Package\Link;
 use Composer\Package\Loader\ArrayLoader;
@@ -312,5 +313,43 @@ class PackageFilterTest extends TestCase
         $package->method('getStability')->willReturn($stability);
 
         return $package;
+    }
+
+    public function testRootConstraintWithoutIntersectionIsPreservedButWarnedAbout()
+    {
+        $io = new BufferIO();
+        $downloader = $this->createStub(Downloader::class);
+        $downloader
+            ->method('getVersions')
+            ->willReturn(['splits' => [
+                'symfony/foo' => ['2.8', '3.0'],
+                'symfony/bar' => ['2.8', '3.0'],
+                'symfony/baz' => ['2.8', '3.0'],
+            ]]);
+        $filter = new PackageFilter($io, '~2.8', $downloader);
+
+        $l = new ArrayLoader();
+        $packages = [];
+        foreach (['symfony/foo', 'symfony/bar', 'symfony/baz'] as $name) {
+            foreach (['2.8.0', '3.0.0'] as $version) {
+                $packages[] = $l->load(['name' => $name, 'version' => $version], CompletePackage::class);
+            }
+        }
+
+        $rootPackage = new RootPackage('test/test', '1.0.0.0', '1.0');
+        $rootPackage->setRequires([
+            'symfony/bar' => new Link('__root__', 'symfony/bar', new Constraint('>=', '3.0.0.0'), Link::TYPE_REQUIRE, '>=3.0'),
+            'symfony/baz' => new Link('__root__', 'symfony/baz', new Constraint('==', '3.0.9999999.9999999-dev'), Link::TYPE_REQUIRE, '3.0.x-dev'),
+        ]);
+        $rootPackage->setStabilityFlags(['symfony/baz' => BasePackage::STABILITY_DEV]);
+
+        $expected = $packages;
+        unset($expected[1]);
+        $this->assertSame(array_values($expected), $filter->removeLegacyPackages($packages, $rootPackage, []));
+
+        $output = $io->getOutput();
+        $this->assertStringContainsString('Restricting packages listed in "symfony/symfony" to "~2.8"', $output);
+        $this->assertStringContainsString('Version constraint ">= 3.0.0.0" for "symfony/bar" has no intersection with "~2.8", keeping the package unrestricted', $output);
+        $this->assertSame(1, substr_count($output, 'no intersection'), 'the warning should be emitted once per package and not for explicit unstable versions');
     }
 }
