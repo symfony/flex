@@ -223,6 +223,48 @@ class PackageJsonSynchronizerTest extends TestCase
         );
     }
 
+    public function testSynchronizeControllersJsonInCustomAssetsDir()
+    {
+        $this->scriptExecutor->expects($this->never())->method('execute');
+
+        (new Filesystem())->mkdir($this->tempDir.'/assets/website');
+        (new Filesystem())->rename($this->tempDir.'/assets/controllers.json', $this->tempDir.'/assets/website/controllers.json');
+
+        $synchronizer = new PackageJsonSynchronizer(
+            $this->tempDir,
+            'vendor',
+            $this->scriptExecutor,
+            $this->createStub(IOInterface::class),
+            'assets/website'
+        );
+
+        $synchronizer->synchronize([
+            [
+                'name' => 'symfony/new-package',
+                'keywords' => ['symfony-ux'],
+            ],
+        ]);
+
+        $this->assertFileDoesNotExist($this->tempDir.'/assets/controllers.json');
+        $this->assertSame(
+            [
+                'controllers' => [
+                    '@symfony/new-package' => [
+                        'new' => [
+                            'enabled' => true,
+                            'fetch' => 'lazy',
+                            'autoimport' => [
+                                '@symfony/new-package/dist/style.css' => true,
+                            ],
+                        ],
+                    ],
+                ],
+                'entrypoints' => ['admin.js'],
+            ],
+            json_decode(file_get_contents($this->tempDir.'/assets/website/controllers.json'), true)
+        );
+    }
+
     public function testArrayFormattingHasNotChanged()
     {
         $this->scriptExecutor->expects($this->never())->method('execute');

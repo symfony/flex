@@ -547,7 +547,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $rootDir = realpath($rootDir);
         $vendorDir = trim((new Filesystem())->makePathRelative($this->config->get('vendor-dir'), $rootDir), '/');
 
-        return new PackageJsonSynchronizer($rootDir, $vendorDir, new ScriptExecutor($this->composer, $this->io, $this->options), $this->io);
+        return new PackageJsonSynchronizer($rootDir, $vendorDir, new ScriptExecutor($this->composer, $this->io, $this->options), $this->io, $this->options->expandTargetDir('%ASSETS_DIR%'));
     }
 
     /**
@@ -740,6 +740,7 @@ class Flex implements PluginInterface, EventSubscriberInterface
             'src-dir' => 'src',
             'var-dir' => 'var',
             'public-dir' => 'public',
+            'assets-dir' => 'assets',
             'root-dir' => $extra['symfony']['root-dir'] ?? '.',
             'runtime' => $extra['runtime'] ?? [],
         ], $extra);
