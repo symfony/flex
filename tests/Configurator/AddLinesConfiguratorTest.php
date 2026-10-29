@@ -199,6 +199,36 @@ class AddLinesConfiguratorTest extends TestCase
         $this->assertSame($originalContent, $this->readFile('webpack.config.js'));
     }
 
+    #[DataProvider('provideMissingLinesMessages')]
+    public function testMissingLinesAreReported(array $patch, string $expectedMessage, int $expectedVerbosity)
+    {
+        $this->saveFile('webpack.config.js', "Encore\n    .setOutputPath('public/build/')\n;\n");
+
+        $messages = [];
+        $io = $this->createStub(IOInterface::class);
+        $io->method('writeError')->willReturnCallback(static function ($message, $newline = true, $verbosity = IOInterface::NORMAL) use (&$messages) {
+            $messages[] = [((array) $message)[0], $verbosity];
+        });
+
+        $configurator = $this->createConfigurator(null, $io);
+        $configurator->configure($this->createStub(Recipe::class), [$patch], $this->createStub(Lock::class));
+
+        $this->assertContains([$expectedMessage, $expectedVerbosity], $messages);
+    }
+
+    public static function provideMissingLinesMessages(): iterable
+    {
+        $missingFile = ['file' => '%CONFIG_DIR%/app.js', 'position' => 'top', 'content' => "import './bootstrap.js';"];
+        $missingTarget = ['file' => 'webpack.config.js', 'position' => 'after_target', 'target' => '.splitEntryChunks()', 'content' => '    .enableStimulusBridge()'];
+        $missingFileMessage = 'Could not add lines to file "config/app.js" as it does not exist. Missing lines:';
+        $missingTargetMessage = 'Could not add lines after ".splitEntryChunks()" as no such string was found in "webpack.config.js". Missing lines:';
+
+        yield 'missing file' => [$missingFile + ['warn_if_missing' => true], '    <warning>'.$missingFileMessage.'</warning>', IOInterface::NORMAL];
+        yield 'missing file, warn_if_missing false' => [$missingFile, '    '.$missingFileMessage, IOInterface::VERBOSE];
+        yield 'missing target' => [$missingTarget + ['warn_if_missing' => true], '    <warning>'.$missingTargetMessage.'</warning>', IOInterface::NORMAL];
+        yield 'missing target, warn_if_missing false' => [$missingTarget, '    '.$missingTargetMessage, IOInterface::VERBOSE];
+    }
+
     public function testPatchIgnoredIfValueAlreadyExists()
     {
         $originalContents = <<<JS
@@ -651,11 +681,11 @@ class AddLinesConfiguratorTest extends TestCase
         $configurator->unconfigure($recipe, $config, $lock);
     }
 
-    private function createConfigurator(?Composer $composer = null)
+    private function createConfigurator(?Composer $composer = null, ?IOInterface $io = null)
     {
         return new AddLinesConfigurator(
             $composer ?: $this->createStub(Composer::class),
-            $this->createStub(IOInterface::class),
+            $io ?: $this->createStub(IOInterface::class),
             new Options(['config-dir' => 'config', 'root-dir' => FLEX_TEST_DIR])
         );
     }
