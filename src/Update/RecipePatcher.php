@@ -125,11 +125,17 @@ class RecipePatcher
 
         // Use git binary to get project path from repository root
         $prefix = trim($this->execute('git rev-parse --show-prefix', $this->rootDir));
+        $objectFormat = trim($this->execute('git rev-parse --show-object-format', $this->rootDir));
         $tmpPath = sys_get_temp_dir().'/_flex_recipe_update'.uniqid(mt_rand(), true);
         $this->filesystem->mkdir($tmpPath);
 
         try {
             $this->execute('git init', $tmpPath);
+            // the blobs must be hashed with the algorithm of the app, which can differ from the default one
+            if ($objectFormat !== trim($this->execute('git rev-parse --show-object-format', $tmpPath))) {
+                $this->filesystem->remove($tmpPath.'/.git');
+                $this->execute('git init --object-format='.ProcessExecutor::escape($objectFormat), $tmpPath);
+            }
             $this->execute('git config commit.gpgsign false', $tmpPath);
             $this->execute('git config user.name "Flex Updater"', $tmpPath);
             $this->execute('git config user.email ""', $tmpPath);
@@ -148,7 +154,7 @@ class RecipePatcher
 
             $patchString = $this->execute(\sprintf('git diff --cached --src-prefix "a/%s" --dst-prefix "b/%s"', $prefix, $prefix), $tmpPath);
             $removedPatches = [];
-            $patchString = DiffHelper::removeFilesFromPatch($patchString, $deletedModifiedFiles, $removedPatches);
+            $patchString = DiffHelper::removeFilesFromPatch($patchString, $deletedModifiedFiles, $removedPatches, $prefix);
 
             return new RecipePatch(
                 $patchString,
@@ -205,24 +211,29 @@ class RecipePatcher
      * available to git as a blob. This is because the patch contains
      * the ref to the original blob, and git uses that to find the
      * original file (which is needed for the 3-way merge).
+     *
+     * The blobs are not removed afterwards. The index can still use them, for
+     * example as the base of a conflict, and "git gc" prunes them once unused.
      */
-    private function addMissingBlobs(array $blobs): array
+    private function addBlobs(array $blobs): void
     {
-        $addedBlobs = [];
-        foreach ($blobs as $hash => $contents) {
-            $blobPath = $this->getBlobPath($this->rootDir, $hash);
-            if (file_exists($blobPath)) {
-                continue;
-            }
-
-            $addedBlobs[] = $blobPath;
-            if (!file_exists(\dirname($blobPath))) {
-                $this->filesystem->mkdir(\dirname($blobPath));
-            }
-            file_put_contents($blobPath, $contents);
+        if (!$blobs) {
+            return;
         }
 
-        return $addedBlobs;
+        $tmpPath = sys_get_temp_dir().'/_flex_recipe_blobs'.uniqid(mt_rand(), true);
+        $this->filesystem->mkdir($tmpPath);
+
+        try {
+            $files = [];
+            foreach (array_values($blobs) as $i => $contents) {
+                file_put_contents($files[] = $tmpPath.'/'.$i, $contents);
+            }
+
+            $this->execute('git hash-object -w --no-filters -- '.implode(' ', array_map([ProcessExecutor::class, 'escape'], $files)), $this->rootDir);
+        } finally {
+            $this->filesystem->remove($tmpPath);
+        }
     }
 
     private function generateBlobs(array $originalFiles, string $originalFilesRoot): array
@@ -235,20 +246,10 @@ class RecipePatcher
             }
 
             $hash = trim($this->execute('git hash-object '.ProcessExecutor::escape($filename), $originalFilesRoot));
-            $addedBlobs[$hash] = file_get_contents($this->getBlobPath($originalFilesRoot, $hash));
+            $addedBlobs[$hash] = $this->execute('git cat-file blob '.$hash, $originalFilesRoot);
         }
 
         return $addedBlobs;
-    }
-
-    private function getBlobPath(string $gitRoot, string $hash): string
-    {
-        $gitDir = trim($this->execute('git rev-parse --absolute-git-dir', $gitRoot));
-
-        $hashStart = substr($hash, 0, 2);
-        $hashEnd = substr($hash, 2);
-
-        return $gitDir.'/objects/'.$hashStart.'/'.$hashEnd;
     }
 
     private function _applyPatchFile(RecipePatch $patch)
@@ -258,7 +259,7 @@ class RecipePatcher
             return true;
         }
 
-        $addedBlobs = $this->addMissingBlobs($patch->getBlobs());
+        $this->addBlobs($patch->getBlobs());
 
         $patchPath = $this->rootDir.'/_flex_recipe_update.patch';
         file_put_contents($patchPath, $patch->getPatch());
@@ -287,10 +288,6 @@ class RecipePatcher
             throw new \LogicException('Error applying the patch: '.$errorOutput);
         } finally {
             unlink($patchPath);
-            // clean up any temporary blobs
-            foreach ($addedBlobs as $filename) {
-                unlink($filename);
-            }
         }
     }
 
