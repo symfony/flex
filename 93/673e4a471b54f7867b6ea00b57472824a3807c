@@ -1,0 +1,5 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-10-29T13:09:50Z
+
+PR updated. The instructions now come from the installed recipe, not from the latest one, and nothing is displayed when the recipe isn't installed. I also added a test.
