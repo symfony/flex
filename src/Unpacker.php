@@ -12,7 +12,6 @@
 namespace Symfony\Flex;
 
 use Composer\Composer;
-use Composer\Config\JsonConfigSource;
 use Composer\Factory;
 use Composer\IO\IOInterface;
 use Composer\Json\JsonFile;
@@ -178,18 +177,15 @@ class Unpacker
     public function updateLock(Result $result, IOInterface $io): void
     {
         $json = new JsonFile(Factory::getComposerFile());
-        $manipulator = new JsonConfigSource($json);
         $locker = $this->composer->getLocker();
         $lockData = $locker->getLockData();
 
         foreach ($result->getUnpacked() as $package) {
-            $manipulator->removeLink('require-dev', $package->getName());
             foreach ($lockData['packages-dev'] as $i => $pkg) {
                 if ($package->getName() === $pkg['name']) {
                     unset($lockData['packages-dev'][$i]);
                 }
             }
-            $manipulator->removeLink('require', $package->getName());
             foreach ($lockData['packages'] as $i => $pkg) {
                 if ($package->getName() === $pkg['name']) {
                     unset($lockData['packages'][$i]);
@@ -202,12 +198,21 @@ class Unpacker
         $lockData['content-hash'] = Locker::getContentHash($jsonContent);
         $lockFile = new JsonFile(substr($json->getPath(), 0, -4).'lock', null, $io);
 
+        // keep empty objects as objects, like Composer does
+        foreach (['stability-flags', 'platform', 'platform-dev'] as $key) {
+            if ([] === ($lockData[$key] ?? null)) {
+                $lockData[$key] = new \stdClass();
+            }
+        }
+
         $lockFile->write($lockData);
 
         $locker = new Locker($io, $lockFile, $this->composer->getInstallationManager(), $jsonContent);
         $this->composer->setLocker($locker);
 
         $localRepo = $this->composer->getRepositoryManager()->getLocalRepository();
-        $localRepo->write($localRepo->getDevMode() ?? true, $this->composer->getInstallationManager());
+        // getDevMode() exists since Composer 2.2.6
+        $devMode = method_exists($localRepo, 'getDevMode') ? $localRepo->getDevMode() : null;
+        $localRepo->write($devMode ?? true, $this->composer->getInstallationManager());
     }
 }

@@ -703,4 +703,38 @@ class FlexTest extends TestCase
 
         return $this->mockFlexCustom($io, $composer, $configurator, $downloader, $lock);
     }
+
+    public function testUpdateComposerLockKeepsEmptyObjects()
+    {
+        $lock = "{\n    \"content-hash\": \"%s\",\n    \"stability-flags\": {},\n    \"platform\": {},\n    \"platform-dev\": {}\n}\n";
+
+        @mkdir(FLEX_TEST_DIR);
+        file_put_contents(FLEX_TEST_DIR.'/composer.json', "{}\n");
+        file_put_contents(FLEX_TEST_DIR.'/composer.lock', \sprintf($lock, 'outdated'));
+
+        $originalEnvComposer = $_SERVER['COMPOSER'] ?? null;
+        $_SERVER['COMPOSER'] = FLEX_TEST_DIR.'/composer.json';
+        // composer 2.1 and lower support
+        putenv('COMPOSER='.FLEX_TEST_DIR.'/composer.json');
+
+        $io = new BufferIO('', OutputInterface::VERBOSITY_VERBOSE);
+        $composer = $this->mockComposer($this->mockLocker(), $this->mockRootPackage());
+        $flex = $this->mockFlexCustom($io, $composer, $this->mockConfigurator(), $this->createStub(Downloader::class), $this->mockLock());
+
+        \Closure::bind(static function () use ($flex) {
+            $flex->updateComposerLock();
+        }, null, Flex::class)();
+
+        $this->assertSame(\sprintf($lock, Locker::getContentHash("{}\n")), file_get_contents(FLEX_TEST_DIR.'/composer.lock'));
+
+        if ($originalEnvComposer) {
+            $_SERVER['COMPOSER'] = $originalEnvComposer;
+        } else {
+            unset($_SERVER['COMPOSER']);
+        }
+        // composer 2.1 and lower support
+        putenv('COMPOSER='.$originalEnvComposer);
+        @unlink(FLEX_TEST_DIR.'/composer.json');
+        @unlink(FLEX_TEST_DIR.'/composer.lock');
+    }
 }

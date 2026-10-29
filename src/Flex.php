@@ -807,6 +807,14 @@ class Flex implements PluginInterface, EventSubscriberInterface
         $locker = new Locker($this->io, $lockFile, $this->composer->getInstallationManager(), $composerJson);
         $lockData = $locker->getLockData();
         $lockData['content-hash'] = Locker::getContentHash($composerJson);
+
+        // keep empty objects as objects, like Composer does
+        foreach (['stability-flags', 'platform', 'platform-dev'] as $key) {
+            if ([] === ($lockData[$key] ?? null)) {
+                $lockData[$key] = new \stdClass();
+            }
+        }
+
         $lockFile->write($lockData);
     }
 
