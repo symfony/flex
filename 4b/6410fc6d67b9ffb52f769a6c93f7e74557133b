@@ -1,0 +1,5 @@
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-10-29T13:09:52Z
+
+PR updated. The message is now displayed only when a Docker Compose file was actually changed. Otherwise, removing a package would tell people who said no to Docker to run `docker compose up`.
