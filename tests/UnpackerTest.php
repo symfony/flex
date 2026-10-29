@@ -231,4 +231,154 @@ class UnpackerTest extends TestCase
         @unlink($composerJsonPath);
         @unlink($composerLockPath);
     }
+
+    public function testUpdateLockMovesDevOnlyDependenciesToPackagesDev()
+    {
+        $composerJsonPath = FLEX_TEST_DIR.'/composer.json';
+        $composerLockPath = FLEX_TEST_DIR.'/composer.lock';
+
+        @mkdir(FLEX_TEST_DIR);
+        file_put_contents($composerJsonPath, <<<'JSON'
+            {
+                "require": {
+                    "pack": "*"
+                },
+                "require-dev": {
+                    "watcher": "^1.0"
+                }
+            }
+
+            JSON);
+        file_put_contents($composerLockPath, "{}\n");
+
+        $originalEnvComposer = $_SERVER['COMPOSER'] ?? null;
+        $_SERVER['COMPOSER'] = $composerJsonPath;
+        // composer 2.1 and lower support
+        putenv('COMPOSER='.$composerJsonPath);
+
+        $pack = new Package('pack', '1.0.0', '1.0.0');
+        $pack->setType('symfony-pack');
+        $pack->setRequires([
+            'real' => new Link('pack', 'real', new MatchAllConstraint(), 'requires', '^1.0'),
+            'tool' => new Link('pack', 'tool', new MatchAllConstraint(), 'requires', '^1.0'),
+        ]);
+        $pack->setDevRequires([
+            'tool' => new Link('pack', 'tool', new MatchAllConstraint(), 'requires', '^1.0'),
+        ]);
+
+        $localRepo = new InstalledArrayRepository([$pack]);
+        $repManager = $this->createStub(RepositoryManager::class);
+        $repManager->method('getLocalRepository')->willReturn($localRepo);
+
+        $locker = $this->createStub(Locker::class);
+        $locker->method('getLockData')->willReturn([
+            'packages' => [
+                ['name' => 'logger', 'version' => '1.0.0', 'provide' => ['psr/log-implementation' => '1.0']],
+                ['name' => 'pack', 'version' => '1.0.0', 'require' => ['real' => '^1.0', 'tool' => '^1.0']],
+                ['name' => 'real', 'version' => '1.0.0', 'require' => ['php' => '>=8.1', 'shared' => '^1.0', 'psr/log-implementation' => '^1.0']],
+                ['name' => 'shared', 'version' => '1.0.0'],
+                ['name' => 'tool', 'version' => '1.0.0', 'require' => ['logger' => '^1.0', 'shared' => '^1.0', 'tool-dep' => '^1.0']],
+                ['name' => 'tool-dep', 'version' => '1.0.0'],
+            ],
+            'packages-dev' => [
+                ['name' => 'watcher', 'version' => '1.0.0', 'require' => ['tool-dep' => '^1.0']],
+            ],
+        ]);
+
+        $composer = new Composer();
+        $composer->setRepositoryManager($repManager);
+        $composer->setLocker($locker);
+        $composer->setInstallationManager($this->createStub(InstallationManager::class));
+
+        $unpacker = new Unpacker($composer, $this->createStub(PackageResolver::class));
+
+        $operation = new Operation(true, false);
+        $operation->addPackage('pack', '*', false);
+
+        $result = $unpacker->unpack($operation);
+        $unpacker->updateLock($result, new NullIO());
+
+        $composerJson = json_decode(file_get_contents($composerJsonPath), true);
+        $this->assertSame(['real' => '^1.0'], $composerJson['require']);
+        $this->assertSame(['watcher' => '^1.0', 'tool' => '^1.0'], $composerJson['require-dev']);
+
+        $lockData = json_decode(file_get_contents($composerLockPath), true);
+        $this->assertSame(['logger', 'real', 'shared'], array_column($lockData['packages'], 'name'));
+        $this->assertSame(['tool', 'tool-dep', 'watcher'], array_column($lockData['packages-dev'], 'name'));
+        $this->assertSame(['tool', 'tool-dep', 'watcher'], $localRepo->getDevPackageNames());
+
+        if ($originalEnvComposer) {
+            $_SERVER['COMPOSER'] = $originalEnvComposer;
+        } else {
+            unset($_SERVER['COMPOSER']);
+        }
+        // composer 2.1 and lower support
+        putenv('COMPOSER='.$originalEnvComposer);
+        @unlink($composerJsonPath);
+        @unlink($composerLockPath);
+    }
+
+    public function testUpdateLockWithoutPackagesDev()
+    {
+        $composerJsonPath = FLEX_TEST_DIR.'/composer.json';
+        $composerLockPath = FLEX_TEST_DIR.'/composer.lock';
+
+        @mkdir(FLEX_TEST_DIR);
+        file_put_contents($composerJsonPath, "{\n    \"require\": {\n        \"pack\": \"*\"\n    }\n}\n");
+        file_put_contents($composerLockPath, "{}\n");
+
+        $originalEnvComposer = $_SERVER['COMPOSER'] ?? null;
+        $_SERVER['COMPOSER'] = $composerJsonPath;
+        // composer 2.1 and lower support
+        putenv('COMPOSER='.$composerJsonPath);
+
+        $pack = new Package('pack', '1.0.0', '1.0.0');
+        $pack->setType('symfony-pack');
+        $pack->setRequires([
+            'real' => new Link('pack', 'real', new MatchAllConstraint(), 'requires', '^1.0'),
+            'tool' => new Link('pack', 'tool', new MatchAllConstraint(), 'requires', '^1.0'),
+        ]);
+        $pack->setDevRequires([
+            'tool' => new Link('pack', 'tool', new MatchAllConstraint(), 'requires', '^1.0'),
+        ]);
+
+        $repManager = $this->createStub(RepositoryManager::class);
+        $repManager->method('getLocalRepository')->willReturn(new InstalledArrayRepository([$pack]));
+
+        $locker = $this->createStub(Locker::class);
+        $locker->method('getLockData')->willReturn([
+            'packages' => [
+                ['name' => 'pack', 'version' => '1.0.0', 'require' => ['real' => '^1.0', 'tool' => '^1.0']],
+                ['name' => 'real', 'version' => '1.0.0'],
+                ['name' => 'tool', 'version' => '1.0.0'],
+            ],
+        ]);
+
+        $composer = new Composer();
+        $composer->setRepositoryManager($repManager);
+        $composer->setLocker($locker);
+        $composer->setInstallationManager($this->createStub(InstallationManager::class));
+
+        $unpacker = new Unpacker($composer, $this->createStub(PackageResolver::class));
+
+        $operation = new Operation(true, false);
+        $operation->addPackage('pack', '*', false);
+
+        $result = $unpacker->unpack($operation);
+        $unpacker->updateLock($result, new NullIO());
+
+        $lockData = json_decode(file_get_contents($composerLockPath), true);
+        $this->assertSame(['real'], array_column($lockData['packages'], 'name'));
+        $this->assertSame(['tool'], array_column($lockData['packages-dev'], 'name'));
+
+        if ($originalEnvComposer) {
+            $_SERVER['COMPOSER'] = $originalEnvComposer;
+        } else {
+            unset($_SERVER['COMPOSER']);
+        }
+        // composer 2.1 and lower support
+        putenv('COMPOSER='.$originalEnvComposer);
+        @unlink($composerJsonPath);
+        @unlink($composerLockPath);
+    }
 }
