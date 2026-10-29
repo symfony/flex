@@ -11,10 +11,17 @@
 
 namespace Symfony\Flex\Tests\Command;
 
+use Composer\Composer;
 use Composer\Console\Application;
+use Composer\Downloader\TransportException;
+use Composer\EventDispatcher\EventDispatcher;
 use Composer\Factory;
 use Composer\IO\BufferIO;
+use Composer\Package\Package;
 use Composer\Plugin\PluginInterface;
+use Composer\Repository\InstalledArrayRepository;
+use Composer\Repository\RepositoryManager;
+use Composer\Util\HttpDownloader;
 use Composer\Util\Platform;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Tester\CommandTester;
@@ -24,6 +31,7 @@ use Symfony\Flex\Command\UpdateRecipesCommand;
 use Symfony\Flex\Configurator;
 use Symfony\Flex\Downloader;
 use Symfony\Flex\Flex;
+use Symfony\Flex\Lock;
 use Symfony\Flex\Options;
 use Symfony\Flex\ParallelDownloader;
 
@@ -85,6 +93,69 @@ class UpdateRecipesCommandTest extends TestCase
         $this->assertStringNotContainsString('vendor/autoload.php', file_get_contents(FLEX_TEST_DIR.'/bin/console'));
         // assert the recipe was updated
         $this->assertStringNotContainsString('c6d02bdfba9da13c22157520e32a602dbee8a75c', file_get_contents(FLEX_TEST_DIR.'/symfony.lock'));
+    }
+
+    public function testCommandDoesNotFailWhenTheChangelogCannotBeCalculated()
+    {
+        @mkdir(FLEX_TEST_DIR.'/config', 0777, true);
+        (new Process(['git', 'init'], FLEX_TEST_DIR))->mustRun();
+        (new Process(['git', 'config', 'user.name', 'Unit test'], FLEX_TEST_DIR))->mustRun();
+        (new Process(['git', 'config', 'user.email', ''], FLEX_TEST_DIR))->mustRun();
+        file_put_contents(FLEX_TEST_DIR.'/config/acme.yaml', "ref: original\n");
+        (new Process(['git', 'add', '-A'], FLEX_TEST_DIR))->mustRun();
+        (new Process(['git', 'commit', '-m', 'Committing original files'], FLEX_TEST_DIR))->mustRun();
+
+        $package = new Package('acme/foo', '1.0.0.0', '1.0.0');
+        $lock = new Lock(FLEX_TEST_DIR.'/symfony.lock');
+        $lock->set('acme/foo', ['version' => '1.0', 'recipe' => ['repo' => 'github.com/acme/recipes', 'branch' => 'main', 'version' => '1.0', 'ref' => 'original']]);
+
+        $flex = $this->createStub(Flex::class);
+        $flex->method('getLock')->willReturn($lock);
+        $flex->method('getComposerJsonHash')->willReturn('');
+
+        $downloader = $this->createStub(Downloader::class);
+        $downloader->method('getRecipes')->willReturnCallback(static function (array $operations) {
+            $ref = $operations[0]->getRecipeRef() ?? 'new';
+
+            return [
+                'manifests' => ['acme/foo' => [
+                    'manifest' => ['copy-from-recipe' => ['config/' => '%CONFIG_DIR%/']],
+                    'files' => ['config/acme.yaml' => ['contents' => "ref: $ref\n", 'executable' => false]],
+                ]],
+                'locks' => ['acme/foo' => ['version' => '1.0', 'recipe' => ['repo' => 'github.com/acme/recipes', 'branch' => 'main', 'version' => '1.0', 'ref' => $ref]]],
+            ];
+        });
+
+        $httpDownloader = $this->createStub(HttpDownloader::class);
+        $httpDownloader->method('get')->willThrowException(new TransportException('Could not authenticate against github.com', 401));
+
+        $repositoryManager = $this->createStub(RepositoryManager::class);
+        $repositoryManager->method('getLocalRepository')->willReturn(new InstalledArrayRepository([$package]));
+        $composer = $this->createStub(Composer::class);
+        $composer->method('getRepositoryManager')->willReturn($repositoryManager);
+        $composer->method('getEventDispatcher')->willReturn($this->createStub(EventDispatcher::class));
+
+        $io = new BufferIO();
+        $command = new UpdateRecipesCommand(
+            $flex,
+            $downloader,
+            $httpDownloader,
+            new Configurator($composer, $io, new Options(['root-dir' => FLEX_TEST_DIR, 'config-dir' => 'config'])),
+            FLEX_TEST_DIR
+        );
+        $command->setIO($io);
+        $command->setComposer($composer);
+
+        $application = new Application();
+        $application->{'add'.(method_exists($application, 'addCommand') ? 'Command' : '')}($command);
+        $tester = new CommandTester($application->find('recipes:update'));
+        $tester->execute(['package' => 'acme/foo']);
+
+        $this->assertSame(0, $tester->getStatusCode());
+        $this->assertStringContainsString('Recipe updated', $io->getOutput());
+        $this->assertStringContainsString('The CHANGELOG could not be calculated: Could not authenticate against github.com', $io->getOutput());
+        $this->assertStringContainsString('--no-changelog', $io->getOutput());
+        $this->assertSame("ref: new\n", file_get_contents(FLEX_TEST_DIR.'/config/acme.yaml'));
     }
 
     private function prepareRecipeUpdateFixture(): void

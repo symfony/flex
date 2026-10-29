@@ -12,6 +12,7 @@
 namespace Symfony\Flex\Command;
 
 use Composer\Command\BaseCommand;
+use Composer\Downloader\TransportException;
 use Composer\IO\IOInterface;
 use Composer\Package\Package;
 use Composer\Package\PackageInterface;
@@ -252,7 +253,12 @@ class UpdateRecipesCommand extends BaseCommand
         if ($patch->getPatch() && !$input->getOption('no-changelog')) {
             $io->write('');
             $io->write('  Calculating CHANGELOG...', false);
-            $changelog = $this->generateChangelog($originalRecipe);
+            try {
+                $changelog = $this->generateChangelog($originalRecipe);
+            } catch (TransportException $e) {
+                // the GitHub API can be rate limited
+                $changelog = [\sprintf('  <warning>The CHANGELOG could not be calculated: %s</warning> Use the <comment>--no-changelog</comment> option to skip it.', $e->getMessage())];
+            }
             $io->write("\r", false); // clear current line
             if ($changelog) {
                 $io->write($changelog);
