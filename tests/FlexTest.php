@@ -14,10 +14,12 @@ namespace Symfony\Flex\Tests;
 use Composer\Composer;
 use Composer\Config;
 use Composer\DependencyResolver\Operation\InstallOperation;
+use Composer\DependencyResolver\Operation\UninstallOperation;
 use Composer\Factory;
 use Composer\Installer\InstallationManager;
 use Composer\Installer\PackageEvent;
 use Composer\IO\BufferIO;
+use Composer\Package\CompletePackage;
 use Composer\Package\Link;
 use Composer\Package\Locker;
 use Composer\Package\Package;
@@ -453,6 +455,35 @@ class FlexTest extends TestCase
             'default_behavior' => [[]],
             'with_config_explicitly_set' => [['symfony/flex' => ['synchronize_package_json' => true]]],
         ];
+    }
+
+    #[DataProvider('getDataForTestRecordUninstalledImportMapEntryNames')]
+    public function testRecordUninstalledImportMapEntryNames(bool $isDevMode, array $devPackages, array $expectedEntryNames)
+    {
+        $config = $this->createStub(Config::class);
+        $config->method('get')->willReturn(__DIR__.'/Fixtures/packageJson/vendor');
+        $composer = $this->mockComposer($this->mockLocker(['packages-dev' => $devPackages]), $this->mockRootPackage(), $config);
+        $flex = $this->mockFlexCustom(new BufferIO(), $composer, $this->createStub(Configurator::class), $this->createStub(Downloader::class), $this->mockLock());
+
+        $package = new CompletePackage('symfony/new-package', '1.0.0.0', '1.0.0');
+        $package->setKeywords(['symfony-ux']);
+        $event = $this->createStub(PackageEvent::class);
+        $event->method('getOperation')->willReturn(new UninstallOperation($package));
+        $event->method('isDevMode')->willReturn($isDevMode);
+        $event->method('getComposer')->willReturn($composer);
+
+        $flex->recordUninstalledImportMapEntryNames($event);
+
+        $this->assertSame($expectedEntryNames, \Closure::bind(static fn () => $flex->uninstalledImportMapEntryNames, null, Flex::class)());
+    }
+
+    public static function getDataForTestRecordUninstalledImportMapEntryNames(): iterable
+    {
+        $entryNames = ['@hotcake/foo', '@symfony/new-package', '@symfony/new-package/entry.js', '@symfony/new-package/entry2.js'];
+
+        yield 'dev mode' => [true, [['name' => 'symfony/new-package']], $entryNames];
+        yield 'no-dev mode with a non-dev package' => [false, [], $entryNames];
+        yield 'no-dev mode with a dev package' => [false, [['name' => 'symfony/new-package']], []];
     }
 
     public static function getTestPackages(): array
