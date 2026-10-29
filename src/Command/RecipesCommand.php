@@ -114,10 +114,11 @@ class RecipesCommand extends BaseCommand
         $write = [];
         $hasOutdatedRecipes = false;
         foreach ($recipes as $name => $recipe) {
-            $lockRef = $this->symfonyLock->get($name)['recipe']['ref'] ?? null;
+            $recipeLock = $this->symfonyLock->get($name);
+            $lockRef = $recipeLock['recipe']['ref'] ?? null;
 
             $additional = null;
-            if (null === $lockRef && null !== $recipe->getRef()) {
+            if (!isset($recipeLock['recipe']) && null !== $recipe->getRef()) {
                 $additional = '<comment>(recipe not installed)</comment>';
             } elseif ($recipe->getRef() !== $lockRef && !$recipe->isAuto()) {
                 $additional = '<comment>(update available)</comment>';
@@ -175,7 +176,7 @@ class RecipesCommand extends BaseCommand
         $status = '<comment>up to date</comment>';
         if ($recipe->isAuto()) {
             $status = '<comment>auto-generated recipe</comment>';
-        } elseif (null === $lockRef && null !== $recipe->getRef()) {
+        } elseif (!isset($recipeLock['recipe']) && null !== $recipe->getRef()) {
             $status = '<comment>recipe not installed</comment>';
         } elseif ($recipe->getRef() !== $lockRef) {
             $status = '<comment>update available</comment>';
@@ -202,7 +203,7 @@ class RecipesCommand extends BaseCommand
         $io->write('<info>name</info>             : '.$recipe->getName());
         $io->write('<info>version</info>          : '.($lockVersion ?? 'n/a'));
         $io->write('<info>status</info>           : '.$status);
-        if (!$recipe->isAuto() && null !== $lockVersion) {
+        if (!$recipe->isAuto() && null !== $lockRepo && null !== $lockVersion) {
             $recipeUrl = \sprintf(
                 'https://%s/tree/%s/%s/%s',
                 $lockRepo,
@@ -219,7 +220,7 @@ class RecipesCommand extends BaseCommand
             $io->write('<info>latest recipe</info>    : '.$recipe->getURL());
         }
 
-        if ($lockRef !== $recipe->getRef() && null !== $lockVersion) {
+        if ($lockRef !== $recipe->getRef() && null !== $lockRepo && null !== $lockVersion) {
             $historyUrl = \sprintf(
                 'https://%s/commits/%s/%s',
                 $lockRepo,
@@ -257,7 +258,20 @@ class RecipesCommand extends BaseCommand
             }
         }
 
-        if ($lockRef !== $recipe->getRef()) {
+        if (!isset($recipeLock['recipe']) && null !== $recipe->getRef()) {
+            $io->write([
+                '',
+                'Install this recipe by running:',
+                \sprintf('<info>composer recipes:install %s --force -v</info>', $recipe->getName()),
+            ]);
+        } elseif ($lockRef !== $recipe->getRef() && !isset($recipeLock['recipe']['ref'], $recipeLock['recipe']['version'])) {
+            // recipes:update needs both, they are missing when the recipe was installed by an old version of Flex
+            $io->write([
+                '',
+                'Update this recipe by re-installing the latest version with:',
+                \sprintf('<info>composer recipes:install %s --force -v</info>', $recipe->getName()),
+            ]);
+        } elseif ($lockRef !== $recipe->getRef()) {
             $io->write([
                 '',
                 'Update this recipe by running:',
