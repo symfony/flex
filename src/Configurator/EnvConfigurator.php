@@ -100,7 +100,7 @@ class EnvConfigurator extends AbstractConfigurator
                 }
 
                 $value = $this->options->expandTargetDir($value);
-                if (false !== strpbrk($value, " \t\n&!\"")) {
+                if (!preg_match("/^'[^']*+'$/D", $value) && false !== strpbrk($value, " \t\n&!\"")) {
                     $value = '"'.str_replace(['\\', '"', "\t", "\n"], ['\\\\', '\\"', '\t', '\n'], $value).'"';
                 }
                 $data .= "$key=$value\n";
@@ -134,7 +134,7 @@ class EnvConfigurator extends AbstractConfigurator
                         $doc = new \DOMDocument();
                         $data .= '        '.$doc->saveXML($doc->createComment(' '.$value.' '))."\n";
                     } else {
-                        $value = $this->options->expandTargetDir($value);
+                        $value = preg_replace("/^'([^']*+)'$/D", '$1', $this->options->expandTargetDir($value));
                         $doc = new \DOMDocument();
                         $fragment = $doc->createElement('env');
                         $fragment->setAttribute('name', substr($key, 1));
@@ -142,7 +142,7 @@ class EnvConfigurator extends AbstractConfigurator
                         $data .= '        '.str_replace(['<', '/>'], ['<!-- ', ' -->'], $doc->saveXML($fragment))."\n";
                     }
                 } else {
-                    $value = $this->options->expandTargetDir($value);
+                    $value = preg_replace("/^'([^']*+)'$/D", '$1', $this->options->expandTargetDir($value));
                     $doc = new \DOMDocument();
                     $fragment = $doc->createElement('env');
                     $fragment->setAttribute('name', $key);

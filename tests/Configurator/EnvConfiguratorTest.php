@@ -56,6 +56,8 @@ class EnvConfiguratorTest extends TestCase
             '#2' => 'Comment 3',
             '#TRUSTED_SECRET' => 's3cretf0rt3st"<>',
             'APP_SECRET' => 's3cretf0rt3st"<>',
+            'ALLOWED_LANGUAGES' => '\'["en","de","es"]\'',
+            'APP_QUOTES' => "'foo' 'bar'",
         ], $lock);
 
         $envContents = <<<EOF
@@ -71,6 +73,8 @@ MAILER_USER=fabien
 # Comment 3
 #TRUSTED_SECRET="s3cretf0rt3st\"<>"
 APP_SECRET="s3cretf0rt3st\"<>"
+ALLOWED_LANGUAGES='["en","de","es"]'
+APP_QUOTES="'foo' 'bar'"
 ###< FooBundle ###
 
 EOF;
@@ -99,6 +103,8 @@ EOF;
         <!-- Comment 3 -->
         <!-- env name="TRUSTED_SECRET" value="s3cretf0rt3st&quot;&lt;&gt;" -->
         <env name="APP_SECRET" value="s3cretf0rt3st&quot;&lt;&gt;"/>
+        <env name="ALLOWED_LANGUAGES" value="[&quot;en&quot;,&quot;de&quot;,&quot;es&quot;]"/>
+        <env name="APP_QUOTES" value="'foo' 'bar'"/>
         <!-- ###- FooBundle ### -->
     </php>
 
