@@ -232,6 +232,70 @@ EOF
         ], $recipeUpdate->getNewFiles());
     }
 
+    public function testUpdateWhenTheNewRecipeHasNoDefinitions()
+    {
+        $configurator = new MakefileConfigurator(
+            $this->createStub(Composer::class),
+            $this->createStub(IOInterface::class),
+            new Options(['root-dir' => FLEX_TEST_DIR])
+        );
+
+        $recipe = $this->createStub(Recipe::class);
+        $recipe->method('getName')
+            ->willReturn('symfony/foo-bundle');
+        $recipeUpdate = new RecipeUpdate(
+            $recipe,
+            $recipe,
+            $this->createStub(Lock::class),
+            FLEX_TEST_DIR
+        );
+
+        @mkdir(FLEX_TEST_DIR);
+        file_put_contents(
+            FLEX_TEST_DIR.'/Makefile',
+            <<<EOF
+###> symfony/bar-bundle ###
+cache-clear:
+	@rm -rf var/cache/*
+.PHONY: cache-clear
+###< symfony/bar-bundle ###
+
+###> symfony/foo-bundle ###
+foo:
+	@echo foo
+###< symfony/foo-bundle ###
+
+EOF
+        );
+
+        $configurator->update($recipeUpdate, ['foo:', "\t@echo foo"], []);
+
+        $this->assertSame(['Makefile' => <<<EOF
+###> symfony/bar-bundle ###
+cache-clear:
+	@rm -rf var/cache/*
+.PHONY: cache-clear
+###< symfony/bar-bundle ###
+
+###> symfony/foo-bundle ###
+foo:
+	@echo foo
+###< symfony/foo-bundle ###
+
+EOF
+        ], $recipeUpdate->getOriginalFiles());
+
+        $this->assertSame(['Makefile' => <<<EOF
+###> symfony/bar-bundle ###
+cache-clear:
+	@rm -rf var/cache/*
+.PHONY: cache-clear
+###< symfony/bar-bundle ###
+
+EOF
+        ], $recipeUpdate->getNewFiles());
+    }
+
     public function testConfigureCreatesBoilerplateWithTabIndentation()
     {
         $configurator = new MakefileConfigurator(

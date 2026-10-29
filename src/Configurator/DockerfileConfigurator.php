@@ -55,12 +55,12 @@ class DockerfileConfigurator extends AbstractConfigurator
 
         $recipeUpdate->setOriginalFile(
             'Dockerfile',
-            $this->getContentsAfterApplyingRecipe($recipeUpdate->getOriginalRecipe(), $originalConfig)
+            $this->getContentsAfterApplyingRecipe($recipeUpdate->getOriginalRecipe(), $originalConfig, $recipeUpdate->getLock())
         );
 
         $recipeUpdate->setNewFile(
             'Dockerfile',
-            $this->getContentsAfterApplyingRecipe($recipeUpdate->getNewRecipe(), $newConfig)
+            $this->getContentsAfterApplyingRecipe($recipeUpdate->getNewRecipe(), $newConfig, $recipeUpdate->getLock())
         );
     }
 
@@ -94,21 +94,21 @@ class DockerfileConfigurator extends AbstractConfigurator
         file_put_contents($dockerfile, implode('', $lines));
     }
 
-    private function getContentsAfterApplyingRecipe(Recipe $recipe, array $config): ?string
+    private function getContentsAfterApplyingRecipe(Recipe $recipe, array $config, Lock $lock): ?string
     {
-        if (0 === \count($config)) {
-            return null;
-        }
-
         $dockerfile = $this->options->get('root-dir').'/Dockerfile';
         $originalContents = file_exists($dockerfile) ? file_get_contents($dockerfile) : null;
 
-        $this->configureDockerfile(
-            $recipe,
-            $config,
-            true,
-            false
-        );
+        if (0 === \count($config)) {
+            $this->unconfigure($recipe, $config, $lock);
+        } else {
+            $this->configureDockerfile(
+                $recipe,
+                $config,
+                true,
+                false
+            );
+        }
 
         $updatedContents = file_exists($dockerfile) ? file_get_contents($dockerfile) : null;
 

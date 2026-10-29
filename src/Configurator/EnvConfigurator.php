@@ -225,27 +225,31 @@ class EnvConfigurator extends AbstractConfigurator
         $dotenvPath = $this->options->get('runtime')['dotenv_path'] ?? '.env';
         $files = '' === $this->suffix ? [$dotenvPath, $dotenvPath.'.dist', 'phpunit.dist.xml', 'phpunit.xml.dist', 'phpunit.xml'] : [$dotenvPath.'.'.$this->suffix];
 
-        if (0 === \count($vars)) {
-            return array_fill_keys($files, null);
-        }
-
         $originalContents = [];
         foreach ($files as $file) {
             $originalContents[$file] = file_exists($rootDir.'/'.$file) ? file_get_contents($rootDir.'/'.$file) : null;
         }
 
-        $this->configureEnvDist(
-            $recipe,
-            $vars,
-            true
-        );
+        if (0 === \count($vars)) {
+            $this->unconfigureEnvFiles($recipe, $vars);
 
-        if ('' === $this->suffix && !file_exists($rootDir.'/'.$dotenvPath.'.test')) {
-            $this->configurePhpUnit(
+            if ('' === $this->suffix) {
+                $this->unconfigurePhpUnit($recipe, $vars);
+            }
+        } else {
+            $this->configureEnvDist(
                 $recipe,
                 $vars,
                 true
             );
+
+            if ('' === $this->suffix && !file_exists($rootDir.'/'.$dotenvPath.'.test')) {
+                $this->configurePhpUnit(
+                    $recipe,
+                    $vars,
+                    true
+                );
+            }
         }
 
         $updatedContents = [];

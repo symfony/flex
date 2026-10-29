@@ -219,4 +219,125 @@ EOF
 EOF
         ], $recipeUpdate->getNewFiles());
     }
+
+    public function testUpdateWhenTheNewRecipeHasNoEntries()
+    {
+        $configurator = new GitignoreConfigurator(
+            $this->createStub(Composer::class),
+            $this->createStub(IOInterface::class),
+            new Options(['public-dir' => 'public', 'root-dir' => FLEX_TEST_DIR])
+        );
+
+        $recipe = $this->createStub(Recipe::class);
+        $recipe->method('getName')
+            ->willReturn('symfony/foo-bundle');
+        $recipeUpdate = new RecipeUpdate(
+            $recipe,
+            $recipe,
+            $this->createStub(Lock::class),
+            FLEX_TEST_DIR
+        );
+
+        @mkdir(FLEX_TEST_DIR);
+        file_put_contents(
+            FLEX_TEST_DIR.'/.gitignore',
+            <<<EOF
+# preexisting content
+
+###> symfony/bar-bundle ###
+/.bar_file
+###< symfony/bar-bundle ###
+
+###> symfony/foo-bundle ###
+/.phpunit.result.cache
+###< symfony/foo-bundle ###
+
+EOF
+        );
+
+        $configurator->update($recipeUpdate, ['/.phpunit.result.cache', '/phpunit.xml'], []);
+
+        $this->assertSame(['.gitignore' => <<<EOF
+# preexisting content
+
+###> symfony/bar-bundle ###
+/.bar_file
+###< symfony/bar-bundle ###
+
+###> symfony/foo-bundle ###
+/.phpunit.result.cache
+/phpunit.xml
+###< symfony/foo-bundle ###
+
+EOF
+        ], $recipeUpdate->getOriginalFiles());
+
+        $this->assertSame(['.gitignore' => <<<EOF
+# preexisting content
+
+###> symfony/bar-bundle ###
+/.bar_file
+###< symfony/bar-bundle ###
+
+EOF
+        ], $recipeUpdate->getNewFiles());
+    }
+
+    public function testUpdateWhenTheOriginalRecipeHasNoEntries()
+    {
+        $configurator = new GitignoreConfigurator(
+            $this->createStub(Composer::class),
+            $this->createStub(IOInterface::class),
+            new Options(['public-dir' => 'public', 'root-dir' => FLEX_TEST_DIR])
+        );
+
+        $recipe = $this->createStub(Recipe::class);
+        $recipe->method('getName')
+            ->willReturn('symfony/foo-bundle');
+        $recipeUpdate = new RecipeUpdate(
+            $recipe,
+            $recipe,
+            $this->createStub(Lock::class),
+            FLEX_TEST_DIR
+        );
+
+        @mkdir(FLEX_TEST_DIR);
+        file_put_contents(
+            FLEX_TEST_DIR.'/.gitignore',
+            <<<EOF
+# preexisting content
+
+###> symfony/bar-bundle ###
+/.bar_file
+###< symfony/bar-bundle ###
+
+EOF
+        );
+
+        $configurator->update($recipeUpdate, [], ['/.phpunit.cache/']);
+
+        $this->assertSame(['.gitignore' => <<<EOF
+# preexisting content
+
+###> symfony/bar-bundle ###
+/.bar_file
+###< symfony/bar-bundle ###
+
+EOF
+        ], $recipeUpdate->getOriginalFiles());
+
+        $this->assertSame(['.gitignore' => <<<EOF
+# preexisting content
+
+###> symfony/bar-bundle ###
+/.bar_file
+###< symfony/bar-bundle ###
+
+###> symfony/foo-bundle ###
+/.phpunit.cache/
+###< symfony/foo-bundle ###
+
+EOF
+        ], $recipeUpdate->getNewFiles());
+    }
 }

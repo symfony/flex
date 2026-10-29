@@ -412,4 +412,118 @@ OTHER_VAR=1
 EOF
         ], $recipeUpdate->getNewFiles());
     }
+
+    public function testUpdateWhenTheNewRecipeHasNoVars()
+    {
+        $configurator = new EnvConfigurator(
+            $this->createStub(Composer::class),
+            $this->createStub(IOInterface::class),
+            new Options(['root-dir' => FLEX_TEST_DIR])
+        );
+
+        $recipe = $this->createStub(Recipe::class);
+        $recipe->method('getName')
+            ->willReturn('symfony/foo-bundle');
+        $recipeUpdate = new RecipeUpdate(
+            $recipe,
+            $recipe,
+            $this->createStub(Lock::class),
+            FLEX_TEST_DIR
+        );
+
+        @mkdir(FLEX_TEST_DIR);
+        file_put_contents(
+            FLEX_TEST_DIR.'/.env',
+            <<<EOF
+# Some comments on top
+###> symfony/baz-bundle ###
+OTHER_VAR=1
+###< symfony/baz-bundle ###
+
+###> symfony/foo-bundle ###
+FOO_DSN=foo://default
+###< symfony/foo-bundle ###
+
+EOF
+        );
+
+        $configurator->update($recipeUpdate, ['FOO_DSN' => 'foo://default'], []);
+
+        $this->assertSame(['.env' => <<<EOF
+# Some comments on top
+###> symfony/baz-bundle ###
+OTHER_VAR=1
+###< symfony/baz-bundle ###
+
+###> symfony/foo-bundle ###
+FOO_DSN=foo://default
+###< symfony/foo-bundle ###
+
+EOF
+        ], $recipeUpdate->getOriginalFiles());
+
+        $this->assertSame(['.env' => <<<EOF
+# Some comments on top
+###> symfony/baz-bundle ###
+OTHER_VAR=1
+###< symfony/baz-bundle ###
+
+EOF
+        ], $recipeUpdate->getNewFiles());
+    }
+
+    public function testUpdateWhenTheOriginalRecipeHasNoVars()
+    {
+        $configurator = new EnvConfigurator(
+            $this->createStub(Composer::class),
+            $this->createStub(IOInterface::class),
+            new Options(['root-dir' => FLEX_TEST_DIR])
+        );
+
+        $recipe = $this->createStub(Recipe::class);
+        $recipe->method('getName')
+            ->willReturn('symfony/foo-bundle');
+        $recipeUpdate = new RecipeUpdate(
+            $recipe,
+            $recipe,
+            $this->createStub(Lock::class),
+            FLEX_TEST_DIR
+        );
+
+        @mkdir(FLEX_TEST_DIR);
+        file_put_contents(
+            FLEX_TEST_DIR.'/.env',
+            <<<EOF
+# Some comments on top
+###> symfony/baz-bundle ###
+OTHER_VAR=1
+###< symfony/baz-bundle ###
+
+EOF
+        );
+
+        $configurator->update($recipeUpdate, [], ['FOO_DSN' => 'foo://default']);
+
+        $this->assertSame(['.env' => <<<EOF
+# Some comments on top
+###> symfony/baz-bundle ###
+OTHER_VAR=1
+###< symfony/baz-bundle ###
+
+EOF
+        ], $recipeUpdate->getOriginalFiles());
+
+        $this->assertSame(['.env' => <<<EOF
+# Some comments on top
+###> symfony/baz-bundle ###
+OTHER_VAR=1
+###< symfony/baz-bundle ###
+
+###> symfony/foo-bundle ###
+FOO_DSN=foo://default
+###< symfony/foo-bundle ###
+
+EOF
+        ], $recipeUpdate->getNewFiles());
+    }
 }
