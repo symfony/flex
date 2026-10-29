@@ -29,14 +29,16 @@ class PackageJsonSynchronizer
     private $vendorDir;
     private $scriptExecutor;
     private $io;
+    private $assetsDir;
     private $versionParser;
 
-    public function __construct(string $rootDir, string $vendorDir, ScriptExecutor $scriptExecutor, IOInterface $io)
+    public function __construct(string $rootDir, string $vendorDir, ScriptExecutor $scriptExecutor, IOInterface $io, string $assetsDir = 'assets')
     {
         $this->rootDir = $rootDir;
         $this->vendorDir = $vendorDir;
         $this->scriptExecutor = $scriptExecutor;
         $this->io = $io;
+        $this->assetsDir = $assetsDir;
         $this->versionParser = new VersionParser();
     }
 
@@ -383,7 +385,7 @@ class PackageJsonSynchronizer
 
     private function updateControllersJsonFile(array $phpPackages)
     {
-        if (!file_exists($controllersJsonPath = $this->rootDir.'/assets/controllers.json')) {
+        if (!file_exists($controllersJsonPath = $this->rootDir.'/'.$this->assetsDir.'/controllers.json')) {
             return;
         }
 
