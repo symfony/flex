@@ -1,0 +1,15 @@
+---------------------------------------------------------------------------
+
+by DjLeChuck at 2026-06-25T08:28:22Z
+
+Should I fix Fabbot issues about code style?
+
+---------------------------------------------------------------------------
+
+by nicolas-grekas at 2026-10-29T13:09:44Z
+
+I updated your PR. A value is now written as-is only when it starts and ends with a single quote, with no other single quote inside. With the `&&`, values like `'foo bar` were written without quotes, and dotenv could not parse them anymore.
+
+I also took the phpunit.xml part of #1099, thanks @Amoifr. The quotes are dotenv syntax, so phpunit.xml now gets the value without them.
+
+About Fabbot: no need, the reported issues are not related to your change.
