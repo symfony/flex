@@ -106,6 +106,10 @@ class SymfonyBundle
             return false;
         }
 
+        if ('symfony-bundle' === $this->package->getType()) {
+            return true;
+        }
+
         // heuristic that should work in almost all cases
         $classContents = file_get_contents($classPath);
 

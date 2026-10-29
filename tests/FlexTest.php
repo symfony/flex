@@ -539,6 +539,15 @@ class FlexTest extends TestCase
                 'autoload' => ['psr-4' => ['Symfony\\Bundle\\NouseBundle\\' => '']],
                 'bundles' => ['Symfony\\Bundle\\NouseBundle\\NouseBundle'],
             ],
+            'acme/intermediate-bundle' => [
+                'autoload' => ['psr-4' => ['Acme\\IntermediateBundle\\' => 'src/']],
+                'bundles' => ['Acme\\IntermediateBundle\\AcmeIntermediateBundle'],
+                'type' => 'symfony-bundle',
+            ],
+            'acme/intermediate-library' => [
+                'autoload' => ['psr-4' => ['Acme\\IntermediateLibrary\\' => 'src/']],
+                'bundles' => [],
+            ],
         ];
     }
 
